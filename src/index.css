@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { min-height: 100vh; }
+  #root { min-height: 100vh; display: flex; flex-direction: column; }
+}
+
+@layer components {
+  .stat-value { @apply text-2xl font-bold font-mono tracking-tight; }
+  .stat-label { @apply text-xs font-medium uppercase tracking-wider text-gray-500; }
+  .card { @apply bg-white rounded-xl border border-gray-200 shadow-sm; }
+  .card-hover { @apply card hover:shadow-md hover:border-gray-300 transition-shadow; }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+}
