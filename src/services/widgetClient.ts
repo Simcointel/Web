@@ -1,4 +1,6 @@
-const API = `${window.location.origin}/SimcoIntel/api/public/widget`;
+import { apiUrl } from "../config";
+
+const API = apiUrl("/public/widget");
 
 export interface WidgetScores {
   eh: number;

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Section } from "../components/Layout";
+import { apiUrl } from "../config";
 
-const API_BASE = "/SimcoIntel/api/public";
+const API_BASE = apiUrl("/public");
 
 const presetEndpoints = [
   { label: "Dashboard", url: `${API_BASE}/dashboard`, method: "GET" },
@@ -18,10 +19,13 @@ const presetEndpoints = [
   { label: "Widget Alerts", url: `${API_BASE}/widget/alerts?realm=0&limit=3&compact=1`, method: "GET" },
 ];
 
+const WIDGET_BASE = `${window.location.origin}${import.meta.env.BASE_URL}widgets`;
+const SCRIPT_BASE = `${window.location.origin}${import.meta.env.BASE_URL}`;
+
 const widgetEmbeds = [
-  { label: "Health iframe", code: `<iframe src="${API_BASE.replace("/api/public", "/widgets")}?type=health&realm=0" width="220" height="160" frameborder="0"></iframe>` },
-  { label: "Script embed", code: `<script src="${API_BASE.replace("/api/public", "")}/widget.js" data-widget="health" data-realm="0" data-refresh="30"></script>` },
-  { label: "Alerts iframe", code: `<iframe src="${API_BASE.replace("/api/public", "/widgets")}?type=alerts&realm=0" width="320" height="120" frameborder="0"></iframe>` },
+  { label: "Health iframe", code: `<iframe src="${WIDGET_BASE}?type=health&realm=0" width="220" height="160" frameborder="0"></iframe>` },
+  { label: "Script embed", code: `<script src="${SCRIPT_BASE}widget.js" data-widget="health" data-realm="0" data-refresh="30"></script>` },
+  { label: "Alerts iframe", code: `<iframe src="${WIDGET_BASE}?type=alerts&realm=0" width="320" height="120" frameborder="0"></iframe>` },
 ];
 
 export function PlaygroundPage() {

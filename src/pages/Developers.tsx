@@ -1,7 +1,8 @@
 import { Section } from "../components/Layout";
 import { useState } from "react";
+import { apiUrl } from "../config";
 
-const API_BASE = "/SimcoIntel";
+const PUBLIC = apiUrl("/public");
 
 const endpoints = [
   { path: "/api/public/status", method: "GET", desc: "Public API status, version, endpoint list, rate limit info" },
@@ -17,35 +18,35 @@ const endpoints = [
 ];
 
 const datasets = [
-  { name: "dashboard", desc: "Latest dashboard summaries", example: `${API_BASE}/api/public/export/dashboard` },
-  { name: "macro", desc: "Latest macro snapshot", example: `${API_BASE}/api/public/export/macro?realm=0` },
-  { name: "history", desc: "Macro history entries", example: `${API_BASE}/api/public/export/history?realm=0&limit=120` },
-  { name: "indexes", desc: "Price index series", example: `${API_BASE}/api/public/export/indexes?realm=0&limit=60` },
-  { name: "inflation", desc: "Inflation rate series", example: `${API_BASE}/api/public/export/inflation?realm=0&limit=60` },
-  { name: "correlations", desc: "Correlation data", example: `${API_BASE}/api/public/export/correlations` },
-  { name: "anomalies", desc: "Anomaly events", example: `${API_BASE}/api/public/export/anomalies` },
-  { name: "divergence", desc: "Divergence signals", example: `${API_BASE}/api/public/export/divergence` },
-  { name: "contagion", desc: "Contagion risk", example: `${API_BASE}/api/public/export/contagion` },
-  { name: "sectors", desc: "Sector intelligence", example: `${API_BASE}/api/public/export/sectors` },
+  { name: "dashboard", desc: "Latest dashboard summaries", example: `${PUBLIC}/export/dashboard` },
+  { name: "macro", desc: "Latest macro snapshot", example: `${PUBLIC}/export/macro?realm=0` },
+  { name: "history", desc: "Macro history entries", example: `${PUBLIC}/export/history?realm=0&limit=120` },
+  { name: "indexes", desc: "Price index series", example: `${PUBLIC}/export/indexes?realm=0&limit=60` },
+  { name: "inflation", desc: "Inflation rate series", example: `${PUBLIC}/export/inflation?realm=0&limit=60` },
+  { name: "correlations", desc: "Correlation data", example: `${PUBLIC}/export/correlations` },
+  { name: "anomalies", desc: "Anomaly events", example: `${PUBLIC}/export/anomalies` },
+  { name: "divergence", desc: "Divergence signals", example: `${PUBLIC}/export/divergence` },
+  { name: "contagion", desc: "Contagion risk", example: `${PUBLIC}/export/contagion` },
+  { name: "sectors", desc: "Sector intelligence", example: `${PUBLIC}/export/sectors` },
 ];
 
 const curlExamples = [
-  { label: "Get dashboard", cmd: `curl ${API_BASE}/api/public/dashboard` },
-  { label: "Get macro data", cmd: `curl "${API_BASE}/api/public/macro?realm=0"` },
-  { label: "Export as CSV", cmd: `curl "${API_BASE}/api/public/export/history?realm=0&limit=10&format=csv"` },
-  { label: "Filter events", cmd: `curl "${API_BASE}/api/public/events?realm=0&severity=critical&limit=5"` },
+  { label: "Get dashboard", cmd: `curl ${PUBLIC}/dashboard` },
+  { label: "Get macro data", cmd: `curl "${PUBLIC}/macro?realm=0"` },
+  { label: "Export as CSV", cmd: `curl "${PUBLIC}/export/history?realm=0&limit=10&format=csv"` },
+  { label: "Filter events", cmd: `curl "${PUBLIC}/events?realm=0&severity=critical&limit=5"` },
 ];
 
 const jsExamples = [
   {
     label: "Fetch dashboard",
-    code: `const res = await fetch("${API_BASE}/api/public/dashboard");
+    code: `const res = await fetch("${PUBLIC}/dashboard");
 const json = await res.json();
 console.log(json.data);`,
   },
   {
     label: "Export CSV",
-    code: `const res = await fetch("${API_BASE}/api/public/export/indexes?realm=0&format=csv");
+    code: `const res = await fetch("${PUBLIC}/export/indexes?realm=0&format=csv");
 const csv = await res.text();
 // Parse with PapaParse or split by lines`,
   },

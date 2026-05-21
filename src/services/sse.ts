@@ -1,3 +1,5 @@
+import { apiUrl } from "../config";
+
 type SseListener = (event: { type: string; data: Record<string, unknown>; channel: string }) => void;
 
 class SseManager {
@@ -9,7 +11,7 @@ class SseManager {
 
   connect(channels = "dashboard,alerts,events,regimes,sectors,operational"): void {
     if (this.eventSource) this.disconnect();
-    this.eventSource = new EventSource(`${window.location.origin}/api/sse?channels=${channels}`);
+    this.eventSource = new EventSource(apiUrl(`/sse?channels=${channels}`));
 
     this.eventSource.onopen = () => { this._connected = true; };
     this.eventSource.onerror = () => {

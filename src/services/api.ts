@@ -1,9 +1,8 @@
 import type { ApiEnvelope } from "../types/api";
-
-const BASE = "/api";
+import { apiUrl } from "../config";
 
 async function request<T>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(apiUrl(path), {
     headers: { "Content-Type": "application/json" },
     ...opts,
   });
