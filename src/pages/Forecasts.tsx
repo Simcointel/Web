@@ -22,9 +22,11 @@ const CATEGORY_COLORS: Record<string, string> = {
   "manufacturing": "#3b82f6", "technology": "#7c3aed", "construction": "#ea580c", "services-finance": "#0891b2",
 };
 
-function getDirection(dir: string) {
-  if (dir.includes("up") || dir.includes("Up")) return { arrow: "\u2191", color: "text-econ-green" };
-  if (dir.includes("down") || dir.includes("Down")) return { arrow: "\u2193", color: "text-econ-red" };
+function getDirection(dir: unknown) {
+  if (typeof dir === "string") {
+    if (dir.includes("up") || dir.includes("Up")) return { arrow: "\u2191", color: "text-econ-green" };
+    if (dir.includes("down") || dir.includes("Down")) return { arrow: "\u2193", color: "text-econ-red" };
+  }
   return { arrow: "\u2192", color: "text-gray-400" };
 }
 
