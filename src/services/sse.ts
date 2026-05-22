@@ -9,26 +9,9 @@ class SseManager {
 
   get connected() { return this._connected; }
 
-  connect(channels = "dashboard,alerts,events,regimes,sectors,operational"): void {
-    if (this.eventSource) this.disconnect();
-    this.eventSource = new EventSource(apiUrl(`/sse?channels=${channels}`));
-
-    this.eventSource.onopen = () => { this._connected = true; };
-    this.eventSource.onerror = () => {
-      this._connected = false;
-      if (this.eventSource?.readyState === EventSource.CLOSED) {
-        setTimeout(() => this.connect(channels), 3000);
-      }
-    };
-
-    this.eventSource.onmessage = (ev) => {
-      try {
-        const payload = JSON.parse(ev.data);
-        const type = ev.type.replace(/_/g, ":");
-        this.notify(type, payload);
-        if (payload.ch) this.notify(`ch:${payload.ch}`, payload);
-      } catch { /**/ }
-    };
+  connect(_channels?: string): void {
+    if (this.eventSource) return;
+    this._connected = false;
   }
 
   disconnect(): void {
