@@ -5,6 +5,23 @@ const DATA_REPO_BRANCH = "main";
 const GITHUB_RAW = `https://raw.githubusercontent.com/${DATA_REPO_OWNER}/${DATA_REPO_NAME}/${DATA_REPO_BRANCH}`;
 const GITHUB_API = `https://api.github.com/repos/${DATA_REPO_OWNER}/${DATA_REPO_NAME}`;
 
+const DATA_CACHE = new Map<string, { data: any; expiry: number }>();
+const CACHE_TTL = 2 * 60 * 1000;
+const CACHE_FAIL_TTL = 10 * 1000;
+
+async function withCache<T>(key: string, fn: () => Promise<T>, ttl = CACHE_TTL): Promise<T> {
+  const cached = DATA_CACHE.get(key);
+  if (cached && Date.now() < cached.expiry) return cached.data;
+  try {
+    const data = await fn();
+    DATA_CACHE.set(key, { data, expiry: Date.now() + ttl });
+    return data;
+  } catch (err) {
+    DATA_CACHE.set(key, { data: null, expiry: Date.now() + CACHE_FAIL_TTL });
+    throw err;
+  }
+}
+
 async function rawFetch(path: string): Promise<any> {
   const res = await fetch(`${GITHUB_RAW}/${path}`);
   if (!res.ok) throw new Error(`Data repo fetch failed: ${res.status}`);
@@ -87,18 +104,20 @@ async function listFiles(path: string): Promise<string[]> {
 }
 
 async function fetchAllFiles(dir: string, prefix: string, limit = 100): Promise<any[]> {
-  const index = await fetchIndex(dir);
-  let filenames: string[];
-  if (index?.files) {
-    filenames = index.files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).slice(0, limit);
-  } else {
-    const files = await listFiles(dir);
-    filenames = files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).sort().reverse().slice(0, limit);
-  }
-  const results = await Promise.all(
-    filenames.map(f => rawFetch(`${dir}/${f}`).catch(() => null as any))
-  );
-  return results.filter(Boolean);
+  return withCache(`allfiles:${dir}:${prefix}:${limit}`, async () => {
+    const index = await fetchIndex(dir);
+    let filenames: string[];
+    if (index?.files) {
+      filenames = index.files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).slice(0, limit);
+    } else {
+      const files = await listFiles(dir);
+      filenames = files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).sort().reverse().slice(0, limit);
+    }
+    const results = await Promise.all(
+      filenames.map(f => rawFetch(`${dir}/${f}`).catch(() => null as any))
+    );
+    return results.filter(Boolean);
+  });
 }
 
 function getTodayDate(): string {
@@ -158,23 +177,32 @@ export async function fetchMacroLatest(realm: number): Promise<any> {
   };
 }
 
+async function loadHistoryYearFiles(realm: number): Promise<any[]> {
+  return withCache(`history:${realm}`, async () => {
+    const dir = `aggregates/macro-history/realm-${realm}`;
+    const index = await fetchIndex(dir);
+    let yearFiles: string[];
+    if (index?.files) {
+      yearFiles = index.files.filter(f => /^\d{4}\.json$/.test(f)).sort();
+    } else {
+      const files = await listFiles(dir);
+      yearFiles = files.filter(f => /^\d{4}\.json$/.test(f)).sort();
+    }
+    const allChunks = await Promise.all(
+      yearFiles.map(f => rawFetch(`${dir}/${f}`).catch(() => null as any))
+    );
+    const allEntries: any[] = [];
+    for (const chunk of allChunks) {
+      if (chunk?.e) {
+        for (const entry of chunk.e) allEntries.push(entry);
+      }
+    }
+    return allEntries;
+  }, CACHE_TTL);
+}
+
 export async function fetchMacroHistory(realm: number, limit = 120): Promise<any> {
-  const dir = `aggregates/macro-history/realm-${realm}`;
-  const index = await fetchIndex(dir);
-  let yearFiles: string[];
-  if (index?.files) {
-    yearFiles = index.files.filter(f => /^\d{4}\.json$/.test(f)).sort();
-  } else {
-    const files = await listFiles(dir);
-    yearFiles = files.filter(f => /^\d{4}\.json$/.test(f)).sort();
-  }
-  const allChunks = await Promise.all(
-    yearFiles.map(f => rawFetch(`${dir}/${f}`).catch(() => null as any))
-  );
-  const allEntries: any[] = [];
-  for (const chunk of allChunks) {
-    if (chunk?.e) allEntries.push(...chunk.e);
-  }
+  const allEntries = await loadHistoryYearFiles(realm);
   const step = Math.max(1, Math.floor(allEntries.length / limit));
   const sampled = allEntries.filter((_, i) => i % step === 0 || i === allEntries.length - 1);
   return {
@@ -188,6 +216,30 @@ export async function fetchMacroHistory(realm: number, limit = 120): Promise<any
       checkpoint: e.cp,
     })),
     total: allEntries.length,
+  };
+}
+
+export async function fetchMacroPhases(realm: number): Promise<any> {
+  const allEntries = await loadHistoryYearFiles(realm);
+  const phases: Array<{ date: string; phase: string }> = [];
+  const seen = new Set<string>();
+  for (const e of allEntries) {
+    if (!e.ph || e.ph === "" || seen.has(e.d)) continue;
+    seen.add(e.d);
+    phases.push({ date: e.d, phase: e.ph });
+  }
+  phases.sort((a, b) => a.date.localeCompare(b.date));
+  const transitions: Array<{ from: string; to: string; date: string }> = [];
+  for (let i = 1; i < phases.length; i++) {
+    if (phases[i].phase !== phases[i - 1].phase) {
+      transitions.push({ from: phases[i - 1].phase, to: phases[i].phase, date: phases[i].date });
+    }
+  }
+  return {
+    totalDays: phases.length,
+    currentPhase: phases.length > 0 ? phases[phases.length - 1].phase : null,
+    transitions,
+    phases,
   };
 }
 
@@ -213,30 +265,6 @@ export async function fetchMacroInflation(realm: number, limit = 60): Promise<an
       coreCpiRate: item.in?.["core-cpi"]?.ch ?? null,
     })),
     total: items.length,
-  };
-}
-
-export async function fetchMacroPhases(realm: number): Promise<any> {
-  const history = await fetchMacroHistory(realm, 10000);
-  const phases: Array<{ date: string; phase: string }> = [];
-  const seen = new Set<string>();
-  for (const h of history.history) {
-    if (!h.phase || h.phase === "" || seen.has(h.date)) continue;
-    seen.add(h.date);
-    phases.push({ date: h.date, phase: h.phase });
-  }
-  phases.sort((a, b) => a.date.localeCompare(b.date));
-  const transitions: Array<{ from: string; to: string; date: string }> = [];
-  for (let i = 1; i < phases.length; i++) {
-    if (phases[i].phase !== phases[i - 1].phase) {
-      transitions.push({ from: phases[i - 1].phase, to: phases[i].phase, date: phases[i].date });
-    }
-  }
-  return {
-    totalDays: phases.length,
-    currentPhase: phases.length > 0 ? phases[phases.length - 1].phase : null,
-    transitions,
-    phases,
   };
 }
 
