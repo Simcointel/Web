@@ -30,6 +30,9 @@ export function Link({ to, children, className }: { to: string; children: React.
   );
 }
 
+const BASE = import.meta.env.BASE_URL; // "/Web/"
+const stripBase = (p: string) => p.replace(new RegExp("^" + BASE.replace(/\/$/, "")), "") || "/";
+
 export function createRouter() {
   const initialPath = (() => {
     const redirect = sessionStorage.redirect;
@@ -37,24 +40,25 @@ export function createRouter() {
       sessionStorage.removeItem("redirect");
       try {
         const url = new URL(redirect);
-        return url.pathname || "/";
+        return stripBase(url.pathname);
       } catch { /* fall through */ }
     }
-    return window.location.pathname || "/";
+    return stripBase(window.location.pathname);
   })();
 
   const [path, setPath] = useState(initialPath);
 
   useEffect(() => {
     const handler = () => {
-      setPath(window.location.pathname || "/");
+      setPath(stripBase(window.location.pathname));
     };
     window.addEventListener("popstate", handler);
     return () => window.removeEventListener("popstate", handler);
   }, []);
 
   const navigate = useCallback((to: string) => {
-    window.history.pushState({}, "", to);
+    const full = to.startsWith("/") ? BASE.replace(/\/$/, "") + to : to;
+    window.history.pushState({}, "", full);
     setPath(to);
   }, []);
 

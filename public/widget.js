@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var BASE = window.SIMCO_WIDGET_BASE || ("https://" + window.location.host);
+  var BASE = window.SIMCO_WIDGET_BASE || ("https://" + window.location.host + "/Web");
 
   function createStyle() {
     var s = document.createElement("style");
