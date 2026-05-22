@@ -5,12 +5,21 @@ const DATA_REPO_BRANCH = "main";
 const GITHUB_RAW = `https://raw.githubusercontent.com/${DATA_REPO_OWNER}/${DATA_REPO_NAME}/${DATA_REPO_BRANCH}`;
 const GITHUB_API = `https://api.github.com/repos/${DATA_REPO_OWNER}/${DATA_REPO_NAME}`;
 
-async function listFiles(path: string): Promise<string[]> {
-  const res = await fetch(`${GITHUB_API}/contents/${path}`);
-  if (!res.ok) return [];
-  const data = await res.json();
-  if (!Array.isArray(data)) return [];
-  return data.filter((f: any) => f.type === "file").map((f: any) => f.name);
+const PROXIES = [
+  (url: string) => fetch(url),
+  (url: string) => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`),
+  (url: string) => fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`),
+  (url: string) => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`),
+];
+
+async function fetchWithProxies(url: string): Promise<Response> {
+  for (const proxy of PROXIES) {
+    try {
+      const res = await proxy(url);
+      if (res.ok) return res;
+    } catch { /* try next proxy */ }
+  }
+  throw new Error(`All proxies failed for ${url}`);
 }
 
 async function fetchJson(path: string): Promise<any> {
@@ -19,11 +28,36 @@ async function fetchJson(path: string): Promise<any> {
   return res.json();
 }
 
+async function tryDirectFetch(dir: string, prefix: string, dateStr: string): Promise<any> {
+  const path = `${dir}/${prefix}${dateStr}.json`;
+  const res = await fetch(`${GITHUB_RAW}/${path}`);
+  if (res.ok) return res.json();
+  return null;
+}
+
 async function fetchLatest(dir: string, prefix: string): Promise<any> {
+  const today = new Date().toISOString().slice(0, 10);
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    const result = await tryDirectFetch(dir, prefix, d);
+    if (result) return result;
+  }
   const files = await listFiles(dir);
   const matches = files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).sort().reverse();
   if (matches.length === 0) return null;
   return fetchJson(`${dir}/${matches[0]}`);
+}
+
+async function listFiles(path: string): Promise<string[]> {
+  const url = `${GITHUB_API}/contents/${path}`;
+  try {
+    const res = await fetchWithProxies(url);
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data.filter((f: any) => f.type === "file").map((f: any) => f.name);
+  } catch {
+    return [];
+  }
 }
 
 async function fetchAllFiles(dir: string, prefix: string, limit = 100): Promise<any[]> {
