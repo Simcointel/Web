@@ -51,15 +51,20 @@ export function MacroPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {history?.history && history.history.length > 0 && (
-          <Section title="Companies Value History">
+          <Section title="Companies Value &amp; GDP History">
             <div className="card p-5">
               <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={history.history.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() }))}>
+                <LineChart data={(indexes?.indexes ? history.history.map((h) => {
+                  const ix = indexes.indexes.find((i: any) => i.date === h.date);
+                  return { ...h, gdp: ix?.gdp ?? null, d: new Date(h.date).toLocaleDateString() };
+                }) : history.history.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() })))}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
                   <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip />
+                  <Legend />
                   <Line type="monotone" dataKey="companiesValue" stroke="#3b82f6" strokeWidth={2} dot={false} name="Companies Value" />
+                  <Line type="monotone" dataKey="gdp" stroke="#059669" strokeWidth={2} dot={false} name="GDP" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -87,7 +92,7 @@ export function MacroPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {indexes?.indexes && indexes.indexes.length > 0 && (
-          <Section title="Price Indexes (CPI, Core CPI, GDP)">
+          <Section title="Price Indexes (CPI, Core CPI)">
             <div className="card p-5">
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={indexes.indexes.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() }))}>
@@ -98,7 +103,6 @@ export function MacroPage() {
                   <Legend />
                   <Line type="monotone" dataKey="cpi" stroke="#3b82f6" strokeWidth={2} dot={false} name="CPI" />
                   <Line type="monotone" dataKey="coreCpi" stroke="#7c3aed" strokeWidth={2} dot={false} name="Core CPI" />
-                  <Line type="monotone" dataKey="gdp" stroke="#059669" strokeWidth={2} dot={false} name="GDP" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
