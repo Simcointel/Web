@@ -17,15 +17,34 @@ async function fetchWithProxies(url: string): Promise<Response> {
     try {
       const res = await proxy(url);
       if (res.ok) return res;
-    } catch { /* try next proxy */ }
+    } catch { /* try next */ }
   }
   throw new Error(`All proxies failed for ${url}`);
 }
 
-async function fetchJson(path: string): Promise<any> {
+async function rawFetch(path: string): Promise<any> {
   const res = await fetch(`${GITHUB_RAW}/${path}`);
   if (!res.ok) throw new Error(`Data repo fetch failed: ${res.status}`);
   return res.json();
+}
+
+const INDEX_CACHE = new Map<string, { data: any; expiry: number }>();
+const INDEX_TTL = 5 * 60 * 1000;
+
+async function fetchIndex(dir: string): Promise<{ latest: string; files: string[] } | null> {
+  const key = `index:${dir}`;
+  const cached = INDEX_CACHE.get(key);
+  if (cached && Date.now() < cached.expiry) return cached.data;
+  try {
+    const data = await rawFetch(`${dir}/index.json`);
+    if (data && Array.isArray(data.files)) {
+      INDEX_CACHE.set(key, { data, expiry: Date.now() + INDEX_TTL });
+      return data;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 async function tryDirectFetch(dir: string, prefix: string, dateStr: string): Promise<any> {
@@ -36,16 +55,23 @@ async function tryDirectFetch(dir: string, prefix: string, dateStr: string): Pro
 }
 
 async function fetchLatest(dir: string, prefix: string): Promise<any> {
-  const today = new Date().toISOString().slice(0, 10);
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
-    const result = await tryDirectFetch(dir, prefix, d);
-    if (result) return result;
+  const index = await fetchIndex(dir);
+  if (index?.latest && index.latest.startsWith(prefix)) {
+    return rawFetch(`${dir}/${index.latest}`);
   }
+
+  const today = new Date();
+  const dates = Array.from({ length: 7 }, (_, i) =>
+    new Date(today.getTime() - i * 86400000).toISOString().slice(0, 10)
+  );
+  const results = await Promise.all(dates.map(d => tryDirectFetch(dir, prefix, d)));
+  const found = results.find(r => r !== null);
+  if (found) return found;
+
   const files = await listFiles(dir);
   const matches = files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).sort().reverse();
   if (matches.length === 0) return null;
-  return fetchJson(`${dir}/${matches[0]}`);
+  return rawFetch(`${dir}/${matches[0]}`);
 }
 
 async function listFiles(path: string): Promise<string[]> {
@@ -61,13 +87,18 @@ async function listFiles(path: string): Promise<string[]> {
 }
 
 async function fetchAllFiles(dir: string, prefix: string, limit = 100): Promise<any[]> {
-  const files = await listFiles(dir);
-  const matches = files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).sort().reverse().slice(0, limit);
-  const results: any[] = [];
-  for (const f of matches) {
-    try { results.push(await fetchJson(`${dir}/${f}`)); } catch { /* skip */ }
+  const index = await fetchIndex(dir);
+  let filenames: string[];
+  if (index?.files) {
+    filenames = index.files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).slice(0, limit);
+  } else {
+    const files = await listFiles(dir);
+    filenames = files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).sort().reverse().slice(0, limit);
   }
-  return results;
+  const results = await Promise.all(
+    filenames.map(f => rawFetch(`${dir}/${f}`).catch(() => null as any))
+  );
+  return results.filter(Boolean);
 }
 
 function getTodayDate(): string {
@@ -129,14 +160,20 @@ export async function fetchMacroLatest(realm: number): Promise<any> {
 
 export async function fetchMacroHistory(realm: number, limit = 120): Promise<any> {
   const dir = `aggregates/macro-history/realm-${realm}`;
-  const files = await listFiles(dir);
-  const yearFiles = files.filter(f => /^\d{4}\.json$/.test(f)).sort();
+  const index = await fetchIndex(dir);
+  let yearFiles: string[];
+  if (index?.files) {
+    yearFiles = index.files.filter(f => /^\d{4}\.json$/.test(f)).sort();
+  } else {
+    const files = await listFiles(dir);
+    yearFiles = files.filter(f => /^\d{4}\.json$/.test(f)).sort();
+  }
+  const allChunks = await Promise.all(
+    yearFiles.map(f => rawFetch(`${dir}/${f}`).catch(() => null as any))
+  );
   const allEntries: any[] = [];
-  for (const f of yearFiles) {
-    try {
-      const data = await fetchJson(`${dir}/${f}`);
-      if (data.e) allEntries.push(...data.e);
-    } catch { /* skip */ }
+  for (const chunk of allChunks) {
+    if (chunk?.e) allEntries.push(...chunk.e);
   }
   const step = Math.max(1, Math.floor(allEntries.length / limit));
   const sampled = allEntries.filter((_, i) => i % step === 0 || i === allEntries.length - 1);
