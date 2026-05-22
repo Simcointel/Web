@@ -209,7 +209,7 @@ export async function fetchMacroInflation(realm: number, limit = 60): Promise<an
   return {
     inflation: items.map((item: any) => ({
       date: item.t,
-      cpiRate: item.in?.["raw-materials"]?.ch ?? 0,
+      cpiRate: item.in?.["cpi"]?.ch ?? item.in?.["raw-materials"]?.ch ?? 0,
       coreCpiRate: item.in?.["core-cpi"]?.ch ?? null,
     })),
     total: items.length,
