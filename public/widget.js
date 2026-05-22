@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var BASE = window.SIMCO_WIDGET_BASE || ("https://" + window.location.host + "/SimcoIntel");
+  var BASE = window.SIMCO_WIDGET_BASE || ("https://" + window.location.host);
 
   function createStyle() {
     var s = document.createElement("style");

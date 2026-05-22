@@ -31,19 +31,30 @@ export function Link({ to, children, className }: { to: string; children: React.
 }
 
 export function createRouter() {
-  const [path, setPath] = useState(window.location.pathname.replace(/^\/SimcoIntel/, "") || "/");
+  const initialPath = (() => {
+    const redirect = sessionStorage.redirect;
+    if (redirect) {
+      sessionStorage.removeItem("redirect");
+      try {
+        const url = new URL(redirect);
+        return url.pathname || "/";
+      } catch { /* fall through */ }
+    }
+    return window.location.pathname || "/";
+  })();
+
+  const [path, setPath] = useState(initialPath);
 
   useEffect(() => {
     const handler = () => {
-      setPath(window.location.pathname.replace(/^\/SimcoIntel/, "") || "/");
+      setPath(window.location.pathname || "/");
     };
     window.addEventListener("popstate", handler);
     return () => window.removeEventListener("popstate", handler);
   }, []);
 
   const navigate = useCallback((to: string) => {
-    const full = to.startsWith("/") ? `/SimcoIntel${to}` : to;
-    window.history.pushState({}, "", full);
+    window.history.pushState({}, "", to);
     setPath(to);
   }, []);
 
