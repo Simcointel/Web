@@ -243,7 +243,7 @@ export async function fetchMacroPhases(realm: number): Promise<any> {
   };
 }
 
-export async function fetchMacroIndexes(realm: number, limit = 60): Promise<any> {
+export async function fetchMacroIndexes(realm: number, limit = 200): Promise<any> {
   const items = await fetchAllFiles(`aggregates/indexes/realm-${realm}`, "price-indexes-", limit);
   return {
     indexes: items.map((item: any) => ({
@@ -256,7 +256,7 @@ export async function fetchMacroIndexes(realm: number, limit = 60): Promise<any>
   };
 }
 
-export async function fetchMacroInflation(realm: number, limit = 60): Promise<any> {
+export async function fetchMacroInflation(realm: number, limit = 200): Promise<any> {
   const items = await fetchAllFiles(`aggregates/inflation/realm-${realm}`, "inflation-report-", limit);
   return {
     inflation: items.map((item: any) => ({
