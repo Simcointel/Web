@@ -248,7 +248,7 @@ export async function fetchMacroIndexes(realm: number, limit = 60): Promise<any>
   return {
     indexes: items.map((item: any) => ({
       date: item.t,
-      cpi: item.ix?.cpi?.v ?? item.ix?.["raw-materials"]?.v,
+      cpi: item.ix?.cpi?.v ?? null,
       coreCpi: item.ix?.["core-cpi"]?.v ?? null,
       gdp: item.ix?.gdp?.v ?? null,
     })),
@@ -261,7 +261,7 @@ export async function fetchMacroInflation(realm: number, limit = 60): Promise<an
   return {
     inflation: items.map((item: any) => ({
       date: item.t,
-      cpiRate: item.in?.["cpi"]?.ch ?? item.in?.["raw-materials"]?.ch ?? 0,
+      cpiRate: item.in?.["cpi"]?.ch ?? null,
       coreCpiRate: item.in?.["core-cpi"]?.ch ?? null,
     })),
     total: items.length,
