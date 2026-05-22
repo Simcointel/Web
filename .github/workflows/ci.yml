@@ -39,8 +39,6 @@ jobs:
 
       - name: Build
         run: npm run build
-        env:
-          VITE_API_BASE: ${{ vars.VITE_API_BASE || 'https://backend-beta-gules-78.vercel.app/api' }}
 
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main'

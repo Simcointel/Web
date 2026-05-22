@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
-import { api } from "../services/api";
 import { StatCard } from "../components/StatCard";
 import { Section, CardGrid } from "../components/Layout";
 import { LoadingState, ErrorState, EmptyState } from "../components/States";
@@ -33,7 +32,7 @@ function getDirection(dir: unknown) {
 export function ForecastsPage() {
   const [realm, setRealm] = useState(0);
   const connected = useSseConnected();
-  const { data, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchForecast(realm), 120000, [realm], () => api.forecast.get(realm));
+  const { data, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchForecast(realm), 120000, [realm]);
   useSseEvent("pipeline_forecast_complete", () => refresh());
 
   const seriesList = useMemo(() => {

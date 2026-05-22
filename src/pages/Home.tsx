@@ -1,7 +1,6 @@
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
-import { api } from "../services/api";
 import { StatCard } from "../components/StatCard";
 import { ScoreBar } from "../components/ScoreBar";
 import { MiniSparkline } from "../components/MiniSparkline";
@@ -12,14 +11,8 @@ import { useState } from "react";
 import type { RealmDashboard, EventFeedItem } from "../types/api";
 
 export function HomePage() {
-  const { data: dashState, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardState(0), 60000, [], async () => {
-    const r = await api.dashboard.state();
-    return r;
-  });
-  const { data: alerts } = useDataRepoPoll(() => dataRepo.fetchDashboardAlerts(0), 60000, [], async () => {
-    const r = await api.dashboard.alerts();
-    return { events: Object.values(r).flatMap((x: any) => x.events ?? []), total: 0 };
-  });
+  const { data: dashState, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardState(0), 60000);
+  const { data: alerts } = useDataRepoPoll(() => dataRepo.fetchDashboardAlerts(0), 60000);
   const connected = useSseConnected();
   const [realtimeAlert, setRealtimeAlert] = useState<EventFeedItem | null>(null);
 

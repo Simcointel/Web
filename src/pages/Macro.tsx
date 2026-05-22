@@ -1,6 +1,5 @@
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
-import { api } from "../services/api";
 import { StatCard } from "../components/StatCard";
 import { Section, CardGrid } from "../components/Layout";
 import { LoadingState, ErrorState, EmptyState } from "../components/States";
@@ -11,26 +10,11 @@ import {
 
 export function MacroPage() {
   const [realm, setRealm] = useState(0);
-  const { data: latest, loading: lLoading, error: lError, refresh: lRefresh } = useDataRepoPoll(() => dataRepo.fetchMacroLatest(realm), 60000, [realm], async () => {
-    const r = await api.macro.latest(realm);
-    return { latestHistory: r.latestHistory ?? null, latestIndexes: null, latestInflation: null };
-  });
-  const { data: history, loading: hLoading } = useDataRepoPoll(() => dataRepo.fetchMacroHistory(realm, 120), 120000, [realm], async () => {
-    const r = await api.macro.history(realm, { limit: 120 });
-    return r;
-  });
-  const { data: indexes, loading: iLoading } = useDataRepoPoll(() => dataRepo.fetchMacroIndexes(realm, 60), 120000, [realm], async () => {
-    const r = await api.macro.indexes(realm, 60);
-    return r;
-  });
-  const { data: inflation, loading: infLoading } = useDataRepoPoll(() => dataRepo.fetchMacroInflation(realm, 60), 120000, [realm], async () => {
-    const r = await api.macro.inflation(realm, 60);
-    return r;
-  });
-  const { data: phases } = useDataRepoPoll(() => dataRepo.fetchMacroPhases(realm), 120000, [realm], async () => {
-    const r = await api.macro.phases(realm);
-    return { phases: r.phases.map((p: any) => ({ date: p.startDate ?? p.date, phase: p.phase })), currentPhase: r.currentPhase, totalDays: r.totalDays, transitions: r.transitions ?? [] };
-  });
+  const { data: latest, loading: lLoading, error: lError, refresh: lRefresh } = useDataRepoPoll(() => dataRepo.fetchMacroLatest(realm), 60000, [realm]);
+  const { data: history, loading: hLoading } = useDataRepoPoll(() => dataRepo.fetchMacroHistory(realm, 120), 120000, [realm]);
+  const { data: indexes, loading: iLoading } = useDataRepoPoll(() => dataRepo.fetchMacroIndexes(realm, 60), 120000, [realm]);
+  const { data: inflation, loading: infLoading } = useDataRepoPoll(() => dataRepo.fetchMacroInflation(realm, 60), 120000, [realm]);
+  const { data: phases } = useDataRepoPoll(() => dataRepo.fetchMacroPhases(realm), 120000, [realm]);
 
   if (lLoading) return <LoadingState text="Loading macro data..." />;
   if (lError) return <ErrorState message={lError} onRetry={lRefresh} />;

@@ -1,6 +1,5 @@
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
-import { api } from "../services/api";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
 import { Section } from "../components/Layout";
 import { SeverityBadge } from "../components/SeverityBadge";
@@ -9,10 +8,7 @@ import { useState, useCallback } from "react";
 import type { EventFeedItem, UnifiedFeed } from "../types/api";
 
 export function AlertsPage() {
-  const { data: eventsData, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardEvents(0, 200), 60000, [], async () => {
-    const r = await api.dashboard.events({ limit: 200 });
-    return { events: Object.values(r).flatMap((x: any) => x.events ?? []), total: 0 };
-  });
+  const { data: eventsData, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardEvents(0, 200), 60000);
   const [severity, setSeverity] = useState<string>("all");
   const [category, setCategory] = useState<string>("all");
   const connected = useSseConnected();

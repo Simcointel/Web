@@ -1,15 +1,14 @@
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
-import { api } from "../services/api";
 import { StatCard } from "../components/StatCard";
 import { Section, CardGrid } from "../components/Layout";
 import { LoadingState, EmptyState } from "../components/States";
 
 export function IntelligencePage() {
-  const { data: momentum, loading: momLoading } = useDataRepoPoll(() => dataRepo.fetchMomentum(0), 60000, [], () => api.intelligence.momentum());
-  const { data: volatility, loading: volLoading } = useDataRepoPoll(() => dataRepo.fetchVolatility(0), 60000, [], () => api.intelligence.volatility());
-  const { data: regimes, loading: regLoading } = useDataRepoPoll(() => dataRepo.fetchRegimes(0), 60000, [], () => api.intelligence.regimes());
-  const { data: sectors, loading: secLoading } = useDataRepoPoll(() => dataRepo.fetchSectors(0), 60000, [], () => api.intelligence.sectors());
+  const { data: momentum, loading: momLoading } = useDataRepoPoll(() => dataRepo.fetchMomentum(0), 60000);
+  const { data: volatility, loading: volLoading } = useDataRepoPoll(() => dataRepo.fetchVolatility(0), 60000);
+  const { data: regimes, loading: regLoading } = useDataRepoPoll(() => dataRepo.fetchRegimes(0), 60000);
+  const { data: sectors, loading: secLoading } = useDataRepoPoll(() => dataRepo.fetchSectors(0), 60000);
 
   if (momLoading && volLoading && regLoading && secLoading) return <LoadingState text="Loading intelligence..." />;
 

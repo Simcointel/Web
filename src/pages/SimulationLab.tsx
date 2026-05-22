@@ -2,9 +2,8 @@ import { useState, useCallback } from "react";
 import { useDataRepo } from "../hooks/useDataRepo";
 import * as dataRepoService from "../services/dataRepo";
 import { useSseConnected } from "../hooks/useSse";
-import { api } from "../services/api";
 import { Section } from "../components/Layout";
-import { LoadingState, ErrorState, EmptyState } from "../components/States";
+import { ErrorState, LoadingState, EmptyState } from "../components/States";
 import type { SimulationResult, ScenarioInfo } from "../types/api";
 
 const SECTOR_LABELS: Record<string, string> = {
@@ -40,21 +39,12 @@ export function SimulationLabPage() {
   const [runError, setRunError] = useState<string | null>(null);
   const connected = useSseConnected();
 
-  const { data: scenarioList } = useDataRepo(() => dataRepoService.fetchSimulationScenarios(realm), [realm], () => api.simulation.list());
+  const { data: scenarioList } = useDataRepo(() => dataRepoService.fetchSimulationScenarios(realm), [realm]);
 
   const handleRun = useCallback(async () => {
     if (!scenario) return;
-    setRunning(true);
-    setRunError(null);
-    try {
-      const r = await api.simulation.run(realm, scenario, magnitude);
-      setResult(r);
-    } catch (err) {
-      setRunError(err instanceof Error ? err.message : "Simulation failed");
-    } finally {
-      setRunning(false);
-    }
-  }, [realm, scenario, magnitude]);
+    setRunError("Simulation runs are unavailable in the static deployment. They require the Backend API.");
+  }, [scenario]);
 
   const maxImpact = result ? Math.max(1, ...result.sectors.map((s) => Math.abs(s.impact))) : 1;
 
