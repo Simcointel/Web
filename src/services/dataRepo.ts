@@ -287,7 +287,19 @@ export async function fetchForecast(realm: number): Promise<any> {
 export async function fetchSignals(realm: number): Promise<any> {
   const data = await fetchLatest(`aggregates/signals/realm-${realm}`, "signals-");
   if (!data) throw new Error("No signal data");
-  return data.signals ?? [];
+  return (data.signals ?? []).map((s: any) => ({
+    type: s.type ?? "",
+    label: s.label ?? "",
+    severity: s.severity ?? "low",
+    confidence: s.confidence ?? 0,
+    affectedSectors: s.affectedSectors ?? [],
+    estimatedDurationDays: s.estimatedDurationDays ?? 0,
+    indicators: (s.indicators ?? []).map((ind: any) => {
+      if (typeof ind === "string") return { name: ind, value: 0, threshold: 0 };
+      return { name: ind.name ?? "", value: ind.value ?? 0, threshold: ind.threshold ?? 0 };
+    }),
+    rationale: s.rationale ?? "",
+  }));
 }
 
 /* ============================================================
@@ -296,7 +308,31 @@ export async function fetchSignals(realm: number): Promise<any> {
 export async function fetchCycles(realm: number): Promise<any> {
   const data = await fetchLatest(`aggregates/cycles/realm-${realm}`, "cycle-");
   if (!data) throw new Error("No cycle data");
-  return data;
+  const current = data.current ?? {};
+  const transitions: { from: string; to: string; probability: number }[] = [];
+  const tp = data.transitionProbabilities ?? {};
+  for (const [fromPh, toPhs] of Object.entries(tp)) {
+    for (const [toPh, prob] of Object.entries(toPhs as Record<string, number>)) {
+      transitions.push({ from: fromPh, to: toPh, probability: prob });
+    }
+  }
+  return {
+    current: {
+      phase: current.phase ?? "unknown",
+      confidence: current.confidence ?? 0,
+      duration: current.durationDays ?? 0,
+      intensity: current.intensity ?? 0,
+      stability: data.stability ?? 0,
+    },
+    transitions,
+    history: (data.history ?? []).map((h: any) => ({
+      phase: h.phase ?? "unknown",
+      startDate: h.detectedAt ?? null,
+      endDate: null,
+    })),
+    stability: data.stability ?? 0,
+    intensity: current.intensity ?? 0,
+  };
 }
 
 /* ============================================================
@@ -305,7 +341,26 @@ export async function fetchCycles(realm: number): Promise<any> {
 export async function fetchDependencies(realm: number): Promise<any> {
   const data = await fetchLatest(`aggregates/dependencies/realm-${realm}`, "dependency-");
   if (!data) throw new Error("No dependency data");
-  return data;
+  const risks: any[] = (data.risks ?? []).map((r: any) => ({
+    sector: r.category ?? "unknown",
+    score: r.riskScore ?? 0,
+    upstreamPressure: r.upstreamCount ?? 0,
+    downstreamPressure: r.downstreamCount ?? 0,
+    critical: r.isCritical ?? false,
+  }));
+  const riskScores: Record<string, number> = {};
+  for (const r of risks) riskScores[r.sector] = r.score;
+  return {
+    risks,
+    riskScores,
+    criticalResources: (data.criticalResources ?? []).map((cr: any) => cr.category ?? cr),
+    bottleneckChains: (data.bottleneckChains ?? []).map((bc: any) => ({
+      chain: Array.isArray(bc.chain) ? bc.chain.join(" → ") : (bc.chain ?? ""),
+      pressure: bc.score ?? bc.pressure ?? 0,
+      sectors: Array.isArray(bc.chain) ? bc.chain : [],
+    })),
+    dependencyMatrix: {},
+  };
 }
 
 /* ============================================================
