@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { useApiPoll } from "../hooks/useApi";
+import { useDataRepoPoll } from "../hooks/useDataRepo";
+import * as dataRepo from "../services/dataRepo";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
 import { api } from "../services/api";
 import { Section } from "../components/Layout";
@@ -77,7 +78,7 @@ export function SignalsPage() {
   const [sortBy, setSortBy] = useState<"severity" | "confidence" | "duration">("severity");
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
   const connected = useSseConnected();
-  const { data, loading, error, refresh } = useApiPoll(() => api.signals.get(realm), 30000, [realm]);
+  const { data, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchSignals(realm), 120000, [realm], () => api.signals.get(realm));
   useSseEvent("forecast_bubble_warning", () => refresh());
   useSseEvent("forecast_crash_warning", () => refresh());
   useSseEvent("forecast_major_reversal", () => refresh());

@@ -1,4 +1,5 @@
 import { apiUrl } from "../config";
+import * as dataRepo from "./dataRepo";
 
 const API = apiUrl("/public/widget");
 
@@ -18,6 +19,13 @@ export interface WidgetHealth {
 }
 
 export async function fetchWidget<T>(type: string, realm = 0, compact = true): Promise<T> {
+  try {
+    if (type === "health") {
+      const state = await dataRepo.fetchDashboardState(realm);
+      const ds = state[String(realm)];
+      if (ds) return { scores: ds.scores, regime: ds.regime, alerts: ds.alerts, sectors: ds.sectors } as T;
+    }
+  } catch { /* fall through to API */ }
   const res = await fetch(`${API}/${type}?realm=${realm}&compact=${compact ? "1" : "0"}`);
   const body = await res.json();
   if (!body.ok && !body.w) throw new Error(body.error ?? "Widget fetch failed");

@@ -1,4 +1,5 @@
-import { useApiPoll, useApi } from "../hooks/useApi";
+import { useDataRepoPoll } from "../hooks/useDataRepo";
+import * as dataRepo from "../services/dataRepo";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
 import { api } from "../services/api";
 import { StatCard } from "../components/StatCard";
@@ -11,8 +12,14 @@ import { useState } from "react";
 import type { RealmDashboard, EventFeedItem } from "../types/api";
 
 export function HomePage() {
-  const { data: dashState, loading, error, refresh } = useApiPoll(() => api.dashboard.state(), 15000);
-  const { data: alerts } = useApiPoll(() => api.dashboard.alerts(), 15000);
+  const { data: dashState, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardState(0), 60000, [], async () => {
+    const r = await api.dashboard.state();
+    return r;
+  });
+  const { data: alerts } = useDataRepoPoll(() => dataRepo.fetchDashboardAlerts(0), 60000, [], async () => {
+    const r = await api.dashboard.alerts();
+    return { events: Object.values(r).flatMap((x: any) => x.events ?? []), total: 0 };
+  });
   const connected = useSseConnected();
   const [realtimeAlert, setRealtimeAlert] = useState<EventFeedItem | null>(null);
 
@@ -22,14 +29,14 @@ export function HomePage() {
   if (error) return <ErrorState message={error} onRetry={refresh} />;
 
   const realm = dashState ? Object.keys(dashState)[0] : null;
-  const ds: RealmDashboard | undefined = realm ? dashState?.[realm] : undefined;
+  const ds: RealmDashboard | undefined = realm ? (dashState as any)?.[realm] : undefined;
   const scores = ds?.scores;
   const regime = ds?.regime;
 
   const sparkData = scores ? [scores.eh, scores.ms, scores.st, scores.ip, scores.sr] : [];
 
-  const alertList: EventFeedItem[] = alerts
-    ? Object.values(alerts).flatMap((r) => r.events ?? []).slice(0, 5)
+  const alertList = alerts
+    ? (Array.isArray(alerts) ? alerts : (alerts as any).events ?? []).slice(0, 5)
     : [];
 
   const topAlert = realtimeAlert ?? alertList[0];

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { useApiPoll } from "../hooks/useApi";
+import { useDataRepoPoll } from "../hooks/useDataRepo";
+import * as dataRepo from "../services/dataRepo";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
 import { api } from "../services/api";
 import { Section } from "../components/Layout";
@@ -18,7 +19,7 @@ const PHASE_NAMES: Record<string, string> = {
 export function CyclesPage() {
   const [realm, setRealm] = useState(0);
   const connected = useSseConnected();
-  const { data, loading, error, refresh } = useApiPoll(() => api.cycles.get(realm), 60000, [realm]);
+  const { data, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchCycles(realm), 120000, [realm], () => api.cycles.get(realm));
   useSseEvent("pipeline_forecast_complete", () => refresh());
 
   const phase = data?.current;

@@ -1,4 +1,5 @@
-import { useApiPoll } from "../hooks/useApi";
+import { useDataRepoPoll } from "../hooks/useDataRepo";
+import * as dataRepo from "../services/dataRepo";
 import { api } from "../services/api";
 import { Section, CardGrid } from "../components/Layout";
 import { StatCard } from "../components/StatCard";
@@ -10,10 +11,11 @@ type Tab = "correlations" | "anomalies" | "divergence" | "contagion";
 
 export function CorrelationsPage() {
   const [tab, setTab] = useState<Tab>("correlations");
-  const { data: correlations, loading: corrLoad } = useApiPoll(() => api.intelligence.correlations(), 30000);
-  const { data: anomalies, loading: anomLoad } = useApiPoll(() => api.intelligence.anomalies(), 15000);
-  const { data: divergence, loading: divLoad } = useApiPoll(() => api.intelligence.divergence(), 15000);
-  const { data: contagion, loading: conLoad } = useApiPoll(() => api.intelligence.contagion(), 15000);
+  const realm = 0;
+  const { data: correlations, loading: corrLoad } = useDataRepoPoll(() => dataRepo.fetchCorrelations(), 60000, [], () => api.intelligence.correlations());
+  const { data: anomalies, loading: anomLoad } = useDataRepoPoll(() => dataRepo.fetchAnomalies(realm), 60000, [realm], () => api.intelligence.anomalies());
+  const { data: divergence, loading: divLoad } = useDataRepoPoll(() => dataRepo.fetchDivergence(realm), 60000, [realm], () => api.intelligence.divergence());
+  const { data: contagion, loading: conLoad } = useDataRepoPoll(() => dataRepo.fetchContagion(realm), 60000, [realm], () => api.intelligence.contagion());
 
   const tabs: { key: Tab; label: string; loading: boolean }[] = [
     { key: "correlations", label: `Correlations (${correlations?.length ?? 0})`, loading: corrLoad },

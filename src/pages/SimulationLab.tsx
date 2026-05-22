@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { useApi } from "../hooks/useApi";
+import { useDataRepo } from "../hooks/useDataRepo";
+import * as dataRepoService from "../services/dataRepo";
 import { useSseConnected } from "../hooks/useSse";
 import { api } from "../services/api";
 import { Section } from "../components/Layout";
@@ -39,7 +40,7 @@ export function SimulationLabPage() {
   const [runError, setRunError] = useState<string | null>(null);
   const connected = useSseConnected();
 
-  const { data: scenarioList } = useApi(() => api.simulation.list(), []);
+  const { data: scenarioList } = useDataRepo(() => dataRepoService.fetchSimulationScenarios(realm), [realm], () => api.simulation.list());
 
   const handleRun = useCallback(async () => {
     if (!scenario) return;

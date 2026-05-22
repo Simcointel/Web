@@ -1,0 +1,325 @@
+const DATA_REPO_OWNER = "SimcoIntel";
+const DATA_REPO_NAME = "Data";
+const DATA_REPO_BRANCH = "main";
+
+const GITHUB_RAW = `https://raw.githubusercontent.com/${DATA_REPO_OWNER}/${DATA_REPO_NAME}/${DATA_REPO_BRANCH}`;
+const GITHUB_API = `https://api.github.com/repos/${DATA_REPO_OWNER}/${DATA_REPO_NAME}`;
+
+async function listFiles(path: string): Promise<string[]> {
+  const res = await fetch(`${GITHUB_API}/contents/${path}`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  if (!Array.isArray(data)) return [];
+  return data.filter((f: any) => f.type === "file").map((f: any) => f.name);
+}
+
+async function fetchJson(path: string): Promise<any> {
+  const res = await fetch(`${GITHUB_RAW}/${path}`);
+  if (!res.ok) throw new Error(`Data repo fetch failed: ${res.status}`);
+  return res.json();
+}
+
+async function fetchLatest(dir: string, prefix: string): Promise<any> {
+  const files = await listFiles(dir);
+  const matches = files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).sort().reverse();
+  if (matches.length === 0) return null;
+  return fetchJson(`${dir}/${matches[0]}`);
+}
+
+async function fetchAllFiles(dir: string, prefix: string, limit = 100): Promise<any[]> {
+  const files = await listFiles(dir);
+  const matches = files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).sort().reverse().slice(0, limit);
+  const results: any[] = [];
+  for (const f of matches) {
+    try { results.push(await fetchJson(`${dir}/${f}`)); } catch { /* skip */ }
+  }
+  return results;
+}
+
+function getTodayDate(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getCurrentYear(): number {
+  return new Date().getFullYear();
+}
+
+/* ============================================================
+   Dashboard
+   ============================================================ */
+export async function fetchDashboardState(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/dashboard/realm-${realm}`, "summary-");
+  if (!data) throw new Error("No dashboard data");
+  return {
+    [String(realm)]: {
+      scores: data.scores,
+      regime: data.regime,
+      alerts: data.alerts?.total ?? 0,
+      sectors: Object.keys(data.leaders ?? {}).length,
+    },
+  };
+}
+
+export async function fetchDashboardAlerts(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/events/realm-${realm}`, getTodayDate());
+  if (!data) return { events: [], total: 0 };
+  const events = Array.isArray(data) ? data : [];
+  return { events: events.slice(0, 5), total: events.length };
+}
+
+export async function fetchDashboardEvents(realm: number, limit = 200): Promise<any> {
+  const data = await fetchLatest(`aggregates/events/realm-${realm}`, getTodayDate());
+  if (!data) return { events: [], total: 0 };
+  const events = Array.isArray(data) ? data : [];
+  return { events: events.slice(0, limit), total: events.length };
+}
+
+/* ============================================================
+   Macro
+   ============================================================ */
+export async function fetchMacroLatest(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/realm-status/realm-${realm}`, "realm-status-");
+  if (!data) throw new Error("No macro latest data");
+  return {
+    latestHistory: {
+      date: data.t,
+      companiesValue: data.cv,
+      activeCompanies: data.ac,
+      bondsSold: data.bs,
+      totalBuildings: data.tb,
+    },
+    latestIndexes: null,
+    latestInflation: null,
+  };
+}
+
+export async function fetchMacroHistory(realm: number, limit = 120): Promise<any> {
+  const dir = `aggregates/macro-history/realm-${realm}`;
+  const files = await listFiles(dir);
+  const yearFiles = files.filter(f => /^\d{4}\.json$/.test(f)).sort();
+  const allEntries: any[] = [];
+  for (const f of yearFiles) {
+    try {
+      const data = await fetchJson(`${dir}/${f}`);
+      if (data.e) allEntries.push(...data.e);
+    } catch { /* skip */ }
+  }
+  const step = Math.max(1, Math.floor(allEntries.length / limit));
+  const sampled = allEntries.filter((_, i) => i % step === 0 || i === allEntries.length - 1);
+  return {
+    history: sampled.map((e: any) => ({
+      date: e.d,
+      activeCompanies: e.ac,
+      companiesValue: e.cv,
+      totalBuildings: e.tb,
+      bondsSold: e.bs,
+      phase: e.ph,
+      checkpoint: e.cp,
+    })),
+    total: allEntries.length,
+  };
+}
+
+export async function fetchMacroIndexes(realm: number, limit = 60): Promise<any> {
+  const items = await fetchAllFiles(`aggregates/indexes/realm-${realm}`, "price-indexes-", limit);
+  return {
+    indexes: items.map((item: any) => ({
+      date: item.t,
+      cpi: item.ix?.cpi?.v ?? item.ix?.["raw-materials"]?.v,
+      coreCpi: item.ix?.["core-cpi"]?.v ?? null,
+      gdp: item.ix?.gdp?.v ?? null,
+    })),
+    total: items.length,
+  };
+}
+
+export async function fetchMacroInflation(realm: number, limit = 60): Promise<any> {
+  const items = await fetchAllFiles(`aggregates/inflation/realm-${realm}`, "inflation-report-", limit);
+  return {
+    inflation: items.map((item: any) => ({
+      date: item.t,
+      cpiRate: item.in?.["raw-materials"]?.ch ?? 0,
+      coreCpiRate: item.in?.["core-cpi"]?.ch ?? null,
+    })),
+    total: items.length,
+  };
+}
+
+export async function fetchMacroPhases(realm: number): Promise<any> {
+  const history = await fetchMacroHistory(realm, 10000);
+  const phases: Array<{ date: string; phase: string }> = [];
+  const seen = new Set<string>();
+  for (const h of history.history) {
+    if (!h.phase || h.phase === "" || seen.has(h.date)) continue;
+    seen.add(h.date);
+    phases.push({ date: h.date, phase: h.phase });
+  }
+  phases.sort((a, b) => a.date.localeCompare(b.date));
+  const transitions: Array<{ from: string; to: string; date: string }> = [];
+  for (let i = 1; i < phases.length; i++) {
+    if (phases[i].phase !== phases[i - 1].phase) {
+      transitions.push({ from: phases[i - 1].phase, to: phases[i].phase, date: phases[i].date });
+    }
+  }
+  return {
+    totalDays: phases.length,
+    currentPhase: phases.length > 0 ? phases[phases.length - 1].phase : null,
+    transitions,
+    phases,
+  };
+}
+
+/* ============================================================
+   Intelligence
+   ============================================================ */
+export async function fetchMomentum(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/intelligence/realm-${realm}`, "momentum-");
+  if (!data) throw new Error("No momentum data");
+  const sectors = data.momentum ?? {};
+  const values = Object.values(sectors) as any[];
+  const avgMomentum = values.length > 0 ? values.reduce((s: number, v: any) => s + (v.st ?? 0), 0) / values.length : 0;
+  return {
+    [String(realm)]: {
+      momentum: avgMomentum,
+      direction: avgMomentum >= 0 ? "up" : "down",
+      trend: values.reduce((s: number, v: any) => s + (v.ts ?? 0), 0) / (values.length || 1),
+    },
+  };
+}
+
+export async function fetchVolatility(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/intelligence/realm-${realm}`, "stress-");
+  if (!data) throw new Error("No volatility data");
+  const stress = data.stress ?? {};
+  const values = Object.values(stress) as any[];
+  const flags = values.flatMap((v: any) => v.flags ?? []);
+  const avgVol = values.length > 0 ? values.reduce((s: number, v: any) => s + (v.scp ?? 0), 0) / values.length : 0;
+  return {
+    [String(realm)]: {
+      volatility: avgVol,
+      classification: avgVol > 0.5 ? "high" : avgVol > 0.2 ? "medium" : "low",
+    },
+  };
+}
+
+export async function fetchRegimes(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/intelligence/realm-${realm}`, "regime-");
+  if (!data) throw new Error("No regime data");
+  return {
+    [String(realm)]: {
+      regime: data.cr ?? "unknown",
+      confidence: data.rc ?? 0,
+    },
+  };
+}
+
+export async function fetchSectors(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/intelligence/realm-${realm}`, "sectors-");
+  if (!data) throw new Error("No sector data");
+  const sectors = data.sectors ?? {};
+  const list = Object.entries(sectors).map(([name, s]: [string, any]) => ({
+    sector: name,
+    strength: s.momentum?.st ?? 0,
+    momentum: s.momentum?.mt ?? 0,
+    leader: s.leaders ?? "-",
+    volatility: s.volatility?.v5 ?? 0,
+  }));
+  return { [String(realm)]: list };
+}
+
+export async function fetchCorrelations(): Promise<any> {
+  const data = await fetchLatest("aggregates/correlations", "correlation-");
+  if (!data) throw new Error("No correlation data");
+  const pairs = data.pairs ?? data.correlations ?? [];
+  return pairs.map((c: any) => ({
+    pair: c.pair ?? c.p ?? "unknown",
+    coefficient: c.coefficient ?? c.coef ?? c.v ?? 0,
+    strength: c.strength ?? c.s ?? "unknown",
+  }));
+}
+
+export async function fetchAnomalies(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/anomalies/realm-${realm}`, "anomaly-");
+  if (!data) throw new Error("No anomaly data");
+  const anomalies = data.an ?? [];
+  return anomalies.map((a: any) => ({
+    category: a.ca ?? "unknown",
+    zScore: a.zs ?? 0,
+    deviation: a.vl ?? 0,
+    direction: a.vl >= 0 ? "above" : "below",
+    timestamp: a.ts ?? data.t,
+  }));
+}
+
+export async function fetchDivergence(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/divergence/realm-${realm}`, "divergence-");
+  if (!data) throw new Error("No divergence data");
+  const divergences = data.di ?? [];
+  return divergences.map((d: any) => ({
+    sector: d.sector ?? "unknown",
+    strength: d.strength ?? 0,
+    type: d.type ?? "unknown",
+    signal: d.severity ?? "info",
+  }));
+}
+
+export async function fetchContagion(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/contagion/realm-${realm}`, "contagion-");
+  if (!data) throw new Error("No contagion data");
+  const contagions = data.co ?? [];
+  return contagions.map((c: any) => ({
+    origin: c.origin ?? "unknown",
+    spread: c.spread ?? 0,
+    risk: c.risk ?? "low",
+    affected: c.affected ?? [],
+  }));
+}
+
+/* ============================================================
+   Forecasts
+   ============================================================ */
+export async function fetchForecast(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/forecasts/realm-${realm}`, "forecast-");
+  if (!data) throw new Error("No forecast data");
+  return data.series ?? {};
+}
+
+export async function fetchSignals(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/signals/realm-${realm}`, "signals-");
+  if (!data) throw new Error("No signal data");
+  return data.signals ?? [];
+}
+
+/* ============================================================
+   Cycles
+   ============================================================ */
+export async function fetchCycles(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/cycles/realm-${realm}`, "cycle-");
+  if (!data) throw new Error("No cycle data");
+  return data;
+}
+
+/* ============================================================
+   Dependencies
+   ============================================================ */
+export async function fetchDependencies(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/dependencies/realm-${realm}`, "dependency-");
+  if (!data) throw new Error("No dependency data");
+  return data;
+}
+
+/* ============================================================
+   Simulation
+   ============================================================ */
+export async function fetchSimulationScenarios(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/simulations/realm-${realm}`, "simulation-");
+  if (!data) throw new Error("No simulation data");
+  const scenarios = Array.isArray(data) ? data : [];
+  return scenarios.map((s: any) => ({
+    name: s.scenario,
+    description: s.scenarioDesc,
+    shockPct: s.shockMagnitude * 10,
+    durationDays: s.estimatedRecoveryDays,
+    category: s.scenario,
+  }));
+}

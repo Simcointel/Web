@@ -1,14 +1,15 @@
-import { useApiPoll } from "../hooks/useApi";
+import { useDataRepoPoll } from "../hooks/useDataRepo";
+import * as dataRepo from "../services/dataRepo";
 import { api } from "../services/api";
 import { StatCard } from "../components/StatCard";
 import { Section, CardGrid } from "../components/Layout";
 import { LoadingState, EmptyState } from "../components/States";
 
 export function IntelligencePage() {
-  const { data: momentum, loading: momLoading } = useApiPoll(() => api.intelligence.momentum(), 30000);
-  const { data: volatility, loading: volLoading } = useApiPoll(() => api.intelligence.volatility(), 30000);
-  const { data: regimes, loading: regLoading } = useApiPoll(() => api.intelligence.regimes(), 30000);
-  const { data: sectors, loading: secLoading } = useApiPoll(() => api.intelligence.sectors(), 30000);
+  const { data: momentum, loading: momLoading } = useDataRepoPoll(() => dataRepo.fetchMomentum(0), 60000, [], () => api.intelligence.momentum());
+  const { data: volatility, loading: volLoading } = useDataRepoPoll(() => dataRepo.fetchVolatility(0), 60000, [], () => api.intelligence.volatility());
+  const { data: regimes, loading: regLoading } = useDataRepoPoll(() => dataRepo.fetchRegimes(0), 60000, [], () => api.intelligence.regimes());
+  const { data: sectors, loading: secLoading } = useDataRepoPoll(() => dataRepo.fetchSectors(0), 60000, [], () => api.intelligence.sectors());
 
   if (momLoading && volLoading && regLoading && secLoading) return <LoadingState text="Loading intelligence..." />;
 
@@ -74,17 +75,20 @@ export function IntelligencePage() {
         {momentum && Object.keys(momentum).length > 0 && (
           <Section title="Momentum by Realm">
             <div className="card divide-y divide-gray-100">
-              {Object.entries(momentum).map(([r, m]) => (
+              {Object.entries(momentum!).map(([r, m]) => {
+                const m2 = m as any;
+                return (
                 <div key={r} className="flex items-center justify-between px-5 py-3 text-sm">
                   <span className="text-gray-600">Realm {r}</span>
                   <div className="flex items-center gap-4">
-                    <span className="font-mono font-bold">{m.momentum.toFixed(3)}</span>
-                    <span className={`text-xs ${m.direction === "up" ? "text-econ-green" : "text-econ-red"}`}>
-                      {m.direction === "up" ? "\u2191" : "\u2193"} {m.trend.toFixed(2)}
+                    <span className="font-mono font-bold">{m2.momentum.toFixed(3)}</span>
+                    <span className={`text-xs ${m2.direction === "up" ? "text-econ-green" : "text-econ-red"}`}>
+                      {m2.direction === "up" ? "\u2191" : "\u2193"} {m2.trend.toFixed(2)}
                     </span>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </Section>
         )}
@@ -92,17 +96,20 @@ export function IntelligencePage() {
         {volatility && Object.keys(volatility).length > 0 && (
           <Section title="Volatility by Realm">
             <div className="card divide-y divide-gray-100">
-              {Object.entries(volatility).map(([r, v]) => (
+              {Object.entries(volatility!).map(([r, v]) => {
+                const v2 = v as any;
+                return (
                 <div key={r} className="flex items-center justify-between px-5 py-3 text-sm">
                   <span className="text-gray-600">Realm {r}</span>
                   <div className="flex items-center gap-4">
-                    <span className="font-mono font-bold">{v.volatility.toFixed(3)}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded ${v.classification === "low" ? "bg-green-100 text-green-700" : v.classification === "high" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
-                      {v.classification}
+                    <span className="font-mono font-bold">{v2.volatility.toFixed(3)}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded ${v2.classification === "low" ? "bg-green-100 text-green-700" : v2.classification === "high" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
+                      {v2.classification}
                     </span>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </Section>
         )}

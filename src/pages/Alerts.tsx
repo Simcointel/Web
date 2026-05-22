@@ -1,4 +1,5 @@
-import { useApi, useApiPoll } from "../hooks/useApi";
+import { useDataRepoPoll } from "../hooks/useDataRepo";
+import * as dataRepo from "../services/dataRepo";
 import { api } from "../services/api";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
 import { Section } from "../components/Layout";
@@ -8,7 +9,10 @@ import { useState, useCallback } from "react";
 import type { EventFeedItem, UnifiedFeed } from "../types/api";
 
 export function AlertsPage() {
-  const { data: eventsData, loading, error, refresh } = useApiPoll(() => api.dashboard.events({ limit: 200 }), 15000);
+  const { data: eventsData, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardEvents(0, 200), 60000, [], async () => {
+    const r = await api.dashboard.events({ limit: 200 });
+    return { events: Object.values(r).flatMap((x: any) => x.events ?? []), total: 0 };
+  });
   const [severity, setSeverity] = useState<string>("all");
   const [category, setCategory] = useState<string>("all");
   const connected = useSseConnected();
@@ -21,7 +25,9 @@ export function AlertsPage() {
   }, [refresh]));
 
   const allEvents = (() => {
-    const stored = eventsData ? Object.values(eventsData).flatMap((r) => (r as UnifiedFeed).events ?? []) : [];
+    const stored = eventsData
+    ? (Array.isArray(eventsData) ? eventsData : (eventsData as any).events ?? [])
+    : [];
     const merged = [...streamEvents, ...stored];
     return merged.filter((e, i, a) => a.findIndex((x) => x.id === e.id) === i);
   })();

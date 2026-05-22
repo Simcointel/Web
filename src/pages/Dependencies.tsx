@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useApiPoll } from "../hooks/useApi";
+import { useDataRepoPoll } from "../hooks/useDataRepo";
+import * as dataRepo from "../services/dataRepo";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
 import { api } from "../services/api";
 import { Section } from "../components/Layout";
@@ -93,7 +94,7 @@ function BottleneckCard({ chain, index }: { chain: BottleneckChain; index: numbe
 export function DependenciesPage() {
   const [realm, setRealm] = useState(0);
   const connected = useSseConnected();
-  const { data, loading, error, refresh } = useApiPoll(() => api.dependencies.get(realm), 60000, [realm]);
+  const { data, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDependencies(realm), 120000, [realm], () => api.dependencies.get(realm));
   useSseEvent("pipeline_forecast_complete", () => refresh());
 
   if (loading) return <LoadingState text="Mapping dependencies..." />;
