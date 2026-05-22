@@ -5,23 +5,6 @@ const DATA_REPO_BRANCH = "main";
 const GITHUB_RAW = `https://raw.githubusercontent.com/${DATA_REPO_OWNER}/${DATA_REPO_NAME}/${DATA_REPO_BRANCH}`;
 const GITHUB_API = `https://api.github.com/repos/${DATA_REPO_OWNER}/${DATA_REPO_NAME}`;
 
-const PROXIES = [
-  (url: string) => fetch(url),
-  (url: string) => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`),
-  (url: string) => fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`),
-  (url: string) => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`),
-];
-
-async function fetchWithProxies(url: string): Promise<Response> {
-  for (const proxy of PROXIES) {
-    try {
-      const res = await proxy(url);
-      if (res.ok) return res;
-    } catch { /* try next */ }
-  }
-  throw new Error(`All proxies failed for ${url}`);
-}
-
 async function rawFetch(path: string): Promise<any> {
   const res = await fetch(`${GITHUB_RAW}/${path}`);
   if (!res.ok) throw new Error(`Data repo fetch failed: ${res.status}`);
@@ -30,6 +13,7 @@ async function rawFetch(path: string): Promise<any> {
 
 const INDEX_CACHE = new Map<string, { data: any; expiry: number }>();
 const INDEX_TTL = 5 * 60 * 1000;
+const INDEX_FAIL_TTL = 30 * 1000;
 
 async function fetchIndex(dir: string): Promise<{ latest: string; files: string[] } | null> {
   const key = `index:${dir}`;
@@ -41,8 +25,10 @@ async function fetchIndex(dir: string): Promise<{ latest: string; files: string[
       INDEX_CACHE.set(key, { data, expiry: Date.now() + INDEX_TTL });
       return data;
     }
+    INDEX_CACHE.set(key, { data: null, expiry: Date.now() + INDEX_FAIL_TTL });
     return null;
   } catch {
+    INDEX_CACHE.set(key, { data: null, expiry: Date.now() + INDEX_FAIL_TTL });
     return null;
   }
 }
@@ -74,14 +60,28 @@ async function fetchLatest(dir: string, prefix: string): Promise<any> {
   return rawFetch(`${dir}/${matches[0]}`);
 }
 
+const LIST_CACHE = new Map<string, { files: string[]; expiry: number }>();
+const LIST_TTL = 60 * 1000;
+
 async function listFiles(path: string): Promise<string[]> {
+  const key = path;
+  const cached = LIST_CACHE.get(key);
+  if (cached && Date.now() < cached.expiry) return cached.files;
+
   const url = `${GITHUB_API}/contents/${path}`;
   try {
-    const res = await fetchWithProxies(url);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`GitHub API: ${res.status}`);
     const data = await res.json();
-    if (!Array.isArray(data)) return [];
-    return data.filter((f: any) => f.type === "file").map((f: any) => f.name);
+    if (!Array.isArray(data)) throw new Error("Not an array");
+    const files = data.filter((f: any) => f.type === "file").map((f: any) => f.name);
+    LIST_CACHE.set(key, { files, expiry: Date.now() + LIST_TTL });
+    return files;
   } catch {
+    LIST_CACHE.set(key, { files: [], expiry: Date.now() + LIST_TTL });
     return [];
   }
 }
