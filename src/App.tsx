@@ -11,6 +11,7 @@ import { AlertsPage } from "./pages/Alerts";
 import { AboutPage } from "./pages/About";
 import { DevelopersPage } from "./pages/Developers";
 import { PlaygroundPage } from "./pages/Playground";
+import { VWAPInflationPage } from "./pages/VWAPInflation";
 import { WidgetPage } from "./pages/WidgetRenderer";
 import { NotFoundPage } from "./pages/NotFound";
 
@@ -36,6 +37,7 @@ export function AppShell({ path }: { path: string }) {
     : path === "/dependencies" ? <LazyPage><DependenciesPage /></LazyPage>
     : path === "/developers" ? <DevelopersPage />
     : path === "/playground" ? <PlaygroundPage />
+    : path === "/vwap-inflation" ? <VWAPInflationPage />
     : path === "/about" ? <AboutPage />
     : isWidget ? <WidgetPage />
     : <NotFoundPage />;
