@@ -252,10 +252,12 @@ export async function fetchMacroPhases(realm: number): Promise<any> {
   };
 }
 
-const TODAY = new Date().toISOString().slice(0, 10);
+function todayStr(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function withoutToday<T extends { t?: string }>(items: T[]): T[] {
-  const filtered = items.filter(item => !item.t || item.t.slice(0, 10) !== TODAY);
+  const filtered = items.filter(item => !item.t || item.t.slice(0, 10) !== todayStr());
   return filtered.length > 0 ? filtered : items;
 }
 
@@ -279,6 +281,7 @@ export async function fetchMacroInflation(realm: number, limit = 200): Promise<a
       date: item.t,
       cpiRate: item.in?.["cpi"]?.ch ?? null,
       coreCpiRate: item.in?.["core-cpi"]?.ch ?? null,
+      gdpGrowth: null,
     })),
     total: items.length,
   };
@@ -295,6 +298,7 @@ export async function fetchMomentum(realm: number): Promise<any> {
   const avgMomentum = values.length > 0 ? values.reduce((s: number, v: any) => s + (v.st ?? 0), 0) / values.length : 0;
   return {
     [String(realm)]: {
+      realm: String(realm),
       momentum: avgMomentum,
       direction: avgMomentum >= 0 ? "up" : "down",
       trend: values.reduce((s: number, v: any) => s + (v.ts ?? 0), 0) / (values.length || 1),
@@ -311,8 +315,10 @@ export async function fetchVolatility(realm: number): Promise<any> {
   const avgVol = values.length > 0 ? values.reduce((s: number, v: any) => s + (v.scp ?? 0), 0) / values.length : 0;
   return {
     [String(realm)]: {
+      realm: String(realm),
       volatility: avgVol,
       classification: avgVol > 0.5 ? "high" : avgVol > 0.2 ? "medium" : "low",
+      trend: values.length > 0 ? values.reduce((s: number, v: any) => s + (v.trend ?? v.scp ?? 0), 0) / values.length : 0,
     },
   };
 }
@@ -346,7 +352,7 @@ export async function fetchCorrelations(realm = 0): Promise<any> {
   const data = await fetchLatest(`aggregates/correlations/realm-${realm}`, "correlation-");
   if (!data) throw new Error("No correlation data");
   const matrix = data.m ?? data.pairs ?? data.correlations ?? {};
-  const pairs: Array<{ pair: string; coefficient: number; strength: string }> = [];
+  const pairs: any[] = [];
   const categories = Object.keys(matrix);
   for (let i = 0; i < categories.length; i++) {
     const a = categories[i];
@@ -359,6 +365,7 @@ export async function fetchCorrelations(realm = 0): Promise<any> {
       const r = cell.r ?? cell.coefficient ?? null;
       if (r === null || r === undefined) continue;
       pairs.push({
+        realm: String(realm),
         pair: `${a} ↔ ${b}`,
         coefficient: r,
         strength: cell.s ?? cell.strength ?? "weak",
