@@ -2,10 +2,14 @@ import type { ApiEnvelope } from "../types/api";
 import { apiUrl } from "../config";
 
 async function request<T>(path: string, opts?: RequestInit): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
   const res = await fetch(apiUrl(path), {
     headers: { "Content-Type": "application/json" },
+    signal: controller.signal,
     ...opts,
   });
+  clearTimeout(timer);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as ApiEnvelope).error ?? `HTTP ${res.status}`);

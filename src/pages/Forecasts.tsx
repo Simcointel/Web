@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
@@ -33,7 +33,7 @@ export function ForecastsPage() {
   const [realm, setRealm] = useState(0);
   const connected = useSseConnected();
   const { data, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchForecast(realm), 120000, [realm]);
-  useSseEvent("pipeline_forecast_complete", () => refresh());
+  useSseEvent("pipeline_forecast_complete", useCallback(() => refresh(), [refresh]));
 
   const seriesList = useMemo(() => {
     if (!data) return [];

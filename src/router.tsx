@@ -31,7 +31,7 @@ export function Link({ to, children, className }: { to: string; children: React.
 }
 
 const BASE = import.meta.env.BASE_URL; // "/Web/"
-const stripBase = (p: string) => p.replace(new RegExp("^" + BASE.replace(/\/$/, "")), "") || "/";
+const stripBase = (p: string) => p.replace(new RegExp("^" + BASE.replace(/\/$/, "") + "(/|$|\\?)"), "$1") || "/";
 
 export function createRouter() {
   const initialPath = (() => {

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
@@ -19,7 +19,7 @@ export function CyclesPage() {
   const [realm, setRealm] = useState(0);
   const connected = useSseConnected();
   const { data, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchCycles(realm), 120000, [realm]);
-  useSseEvent("pipeline_forecast_complete", () => refresh());
+  useSseEvent("pipeline_forecast_complete", useCallback(() => refresh(), [refresh]));
 
   const phase = data?.current;
   const phaseColor = PHASE_COLORS[phase?.phase ?? ""] ?? "#6b7280";

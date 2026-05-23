@@ -124,10 +124,6 @@ function getTodayDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function getCurrentYear(): number {
-  return new Date().getFullYear();
-}
-
 /* ============================================================
    Dashboard
    ============================================================ */
@@ -162,7 +158,11 @@ export async function fetchDashboardEvents(realm: number, limit = 200): Promise<
    Macro
    ============================================================ */
 export async function fetchMacroLatest(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/realm-status/realm-${realm}`, "realm-status-");
+  const [data, ixData, infData] = await Promise.all([
+    fetchLatest(`aggregates/realm-status/realm-${realm}`, "realm-status-"),
+    fetchLatest(`aggregates/indexes/realm-${realm}`, "price-indexes-").catch(() => null),
+    fetchLatest(`aggregates/inflation/realm-${realm}`, "inflation-report-").catch(() => null),
+  ]);
   if (!data) throw new Error("No macro latest data");
   return {
     latestHistory: {
@@ -172,8 +172,16 @@ export async function fetchMacroLatest(realm: number): Promise<any> {
       bondsSold: data.bs,
       totalBuildings: data.tb,
     },
-    latestIndexes: null,
-    latestInflation: null,
+    latestIndexes: ixData?.ix ? {
+      cpi: ixData.ix.cpi?.v ?? null,
+      coreCpi: ixData.ix["core-cpi"]?.v ?? null,
+      gdp: ixData.ix.gdp?.v ?? null,
+    } : null,
+    latestInflation: infData?.in ? {
+      cpiRate: infData.in.cpi?.ch ?? null,
+      coreCpiRate: infData.in["core-cpi"]?.ch ?? null,
+      gdpGrowth: null,
+    } : null,
   };
 }
 
@@ -257,8 +265,7 @@ function todayStr(): string {
 }
 
 function withoutToday<T extends { t?: string }>(items: T[]): T[] {
-  const filtered = items.filter(item => !item.t || item.t.slice(0, 10) !== todayStr());
-  return filtered.length > 0 ? filtered : items;
+  return items.filter(item => !item.t || item.t.slice(0, 10) !== todayStr());
 }
 
 export async function fetchMacroIndexes(realm: number, limit = 200): Promise<any> {

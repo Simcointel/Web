@@ -12,6 +12,7 @@ import { AboutPage } from "./pages/About";
 import { DevelopersPage } from "./pages/Developers";
 import { PlaygroundPage } from "./pages/Playground";
 import { WidgetPage } from "./pages/WidgetRenderer";
+import { NotFoundPage } from "./pages/NotFound";
 
 const ForecastsPage = lazy(() => import("./pages/Forecasts").then((m) => ({ default: m.ForecastsPage })));
 const SignalsPage = lazy(() => import("./pages/Signals").then((m) => ({ default: m.SignalsPage })));
@@ -37,7 +38,7 @@ export function AppShell({ path }: { path: string }) {
     : path === "/playground" ? <PlaygroundPage />
     : path === "/about" ? <AboutPage />
     : isWidget ? <WidgetPage />
-    : <HomePage />;
+    : <NotFoundPage />;
 
   if (isWidget) {
     return <main className="bg-transparent">{page}</main>;

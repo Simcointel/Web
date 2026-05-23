@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 export function useDataRepo(
   fetcher: () => Promise<any>,
@@ -8,19 +8,20 @@ export function useDataRepo(
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [source, setSource] = useState<"repo" | "api">("repo");
+  const fetcherRef = useRef(fetcher);
+  const fallbackRef = useRef(fallback);
+  fetcherRef.current = fetcher;
+  fallbackRef.current = fallback;
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      setData(await fetcher());
-      setSource("repo");
+      setData(await fetcherRef.current());
     } catch {
-      if (fallback) {
+      if (fallbackRef.current) {
         try {
-          setData(await fallback());
-          setSource("api");
+          setData(await fallbackRef.current());
         } catch (err) {
           setError(err instanceof Error ? err.message : "Request failed");
         }
@@ -33,7 +34,7 @@ export function useDataRepo(
   }, deps);
 
   useEffect(() => { load(); }, [load]);
-  return { data, loading, error, refresh: load, source };
+  return { data, loading, error, refresh: load };
 }
 
 export function useDataRepoPoll(

@@ -7,7 +7,7 @@ import { MiniSparkline } from "../components/MiniSparkline";
 import { Section, CardGrid } from "../components/Layout";
 import { LoadingState, ErrorState } from "../components/States";
 import { SeverityBadge } from "../components/SeverityBadge";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { RealmDashboard, EventFeedItem } from "../types/api";
 
 export function HomePage() {
@@ -16,7 +16,7 @@ export function HomePage() {
   const connected = useSseConnected();
   const [realtimeAlert, setRealtimeAlert] = useState<EventFeedItem | null>(null);
 
-  useSseEvent("alert_generated", () => { refresh(); });
+  useSseEvent("alert_generated", useCallback(() => { refresh(); }, [refresh]));
 
   if (loading) return <LoadingState text="Loading dashboard..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;

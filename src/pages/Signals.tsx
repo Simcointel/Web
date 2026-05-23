@@ -78,9 +78,10 @@ export function SignalsPage() {
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
   const connected = useSseConnected();
   const { data, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchSignals(realm), 120000, [realm]);
-  useSseEvent("forecast_bubble_warning", () => refresh());
-  useSseEvent("forecast_crash_warning", () => refresh());
-  useSseEvent("forecast_major_reversal", () => refresh());
+  const onRefresh = useCallback(() => refresh(), [refresh]);
+  useSseEvent("forecast_bubble_warning", onRefresh);
+  useSseEvent("forecast_crash_warning", onRefresh);
+  useSseEvent("forecast_major_reversal", onRefresh);
 
   const signals = (data ?? []).filter((s) => filterSeverity === "all" || s.severity === filterSeverity);
   signals.sort((a, b) => {
