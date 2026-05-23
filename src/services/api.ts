@@ -93,13 +93,4 @@ export const api = {
     },
   },
 
-  simulation: {
-    list: () => request<import("../types/api").ScenarioInfo[]>("/public/simulation"),
-    run: (realm: number, scenario: string, magnitude?: number) => {
-      return request<import("../types/api").SimulationResult>(`/public/simulation`, {
-        method: "POST",
-        body: JSON.stringify({ scenario, realm, magnitude }),
-      });
-    },
-  },
 };

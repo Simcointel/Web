@@ -226,33 +226,3 @@ export interface DependencyData {
   dependencyMatrix: Record<string, Record<string, number>>;
 }
 
-export interface ScenarioInfo {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  shockPct: number;
-  durationDays: number;
-}
-
-export interface SimulationSectorImpact {
-  sector: string;
-  impact: number;
-  propagatedShocks: number[];
-  recoveryDays: number;
-}
-
-export interface SimulationResult {
-  scenario: string;
-  realm: number;
-  magnitude: number;
-  sectors: SimulationSectorImpact[];
-  winners: string[];
-  losers: string[];
-  projectedRegime: string;
-  contagionSpread: number;
-  totalImpact: number;
-  recoveryEstimateDays: number;
-  propagationSteps: { step: number; description: string }[];
-  ok: boolean;
-}

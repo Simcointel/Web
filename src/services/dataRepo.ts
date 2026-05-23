@@ -221,25 +221,34 @@ export async function fetchMacroHistory(realm: number, limit = 120): Promise<any
 
 export async function fetchMacroPhases(realm: number): Promise<any> {
   const allEntries = await loadHistoryYearFiles(realm);
-  const phases: Array<{ date: string; phase: string }> = [];
   const seen = new Set<string>();
+  const phases: Array<{ date: string; phase: string }> = [];
   for (const e of allEntries) {
     if (!e.ph || e.ph === "" || seen.has(e.d)) continue;
     seen.add(e.d);
     phases.push({ date: e.d, phase: e.ph });
   }
   phases.sort((a, b) => a.date.localeCompare(b.date));
-  const transitions: Array<{ from: string; to: string; date: string }> = [];
+  const phaseDetails = phases.map((p, i) => {
+    const next = phases[i + 1];
+    const startDate = p.date;
+    const endDate = next?.date ?? null;
+    const days = next
+      ? Math.round((new Date(next.date).getTime() - new Date(p.date).getTime()) / (1000 * 60 * 60 * 24))
+      : 1;
+    return { phase: p.phase, startDate, endDate, days };
+  });
+  const transitions: Array<{ from: string; to: string; date: string; reason: string }> = [];
   for (let i = 1; i < phases.length; i++) {
     if (phases[i].phase !== phases[i - 1].phase) {
-      transitions.push({ from: phases[i - 1].phase, to: phases[i].phase, date: phases[i].date });
+      transitions.push({ from: phases[i - 1].phase, to: phases[i].phase, date: phases[i].date, reason: "" });
     }
   }
   return {
-    totalDays: phases.length,
+    totalDays: phaseDetails.reduce((sum, p) => sum + p.days, 0),
     currentPhase: phases.length > 0 ? phases[phases.length - 1].phase : null,
     transitions,
-    phases,
+    phases: phaseDetails,
   };
 }
 
@@ -333,15 +342,31 @@ export async function fetchSectors(realm: number): Promise<any> {
   return { [String(realm)]: list };
 }
 
-export async function fetchCorrelations(): Promise<any> {
-  const data = await fetchLatest("aggregates/correlations", "correlation-");
+export async function fetchCorrelations(realm = 0): Promise<any> {
+  const data = await fetchLatest(`aggregates/correlations/realm-${realm}`, "correlation-");
   if (!data) throw new Error("No correlation data");
-  const pairs = data.pairs ?? data.correlations ?? [];
-  return pairs.map((c: any) => ({
-    pair: c.pair ?? c.p ?? "unknown",
-    coefficient: c.coefficient ?? c.coef ?? c.v ?? 0,
-    strength: c.strength ?? c.s ?? "unknown",
-  }));
+  const matrix = data.m ?? data.pairs ?? data.correlations ?? {};
+  const pairs: Array<{ pair: string; coefficient: number; strength: string }> = [];
+  const categories = Object.keys(matrix);
+  for (let i = 0; i < categories.length; i++) {
+    const a = categories[i];
+    const row = matrix[a] ?? {};
+    const subCategories = Object.keys(row);
+    for (let j = 0; j < subCategories.length; j++) {
+      const b = subCategories[j];
+      if (a === b) continue;
+      const cell = row[b] ?? {};
+      const r = cell.r ?? cell.coefficient ?? null;
+      if (r === null || r === undefined) continue;
+      pairs.push({
+        pair: `${a} ↔ ${b}`,
+        coefficient: r,
+        strength: cell.s ?? cell.strength ?? "weak",
+      });
+    }
+  }
+  pairs.sort((a, b) => Math.abs(b.coefficient) - Math.abs(a.coefficient));
+  return pairs;
 }
 
 export async function fetchAnomalies(realm: number): Promise<any> {
@@ -469,18 +494,4 @@ export async function fetchDependencies(realm: number): Promise<any> {
   };
 }
 
-/* ============================================================
-   Simulation
-   ============================================================ */
-export async function fetchSimulationScenarios(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/simulations/realm-${realm}`, "simulation-");
-  if (!data) throw new Error("No simulation data");
-  const scenarios = Array.isArray(data) ? data : [];
-  return scenarios.map((s: any) => ({
-    name: s.scenario,
-    description: s.scenarioDesc,
-    shockPct: s.shockMagnitude * 10,
-    durationDays: s.estimatedRecoveryDays,
-    category: s.scenario,
-  }));
-}
+

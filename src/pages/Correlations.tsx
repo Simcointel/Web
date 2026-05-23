@@ -11,7 +11,7 @@ type Tab = "correlations" | "anomalies" | "divergence" | "contagion";
 export function CorrelationsPage() {
   const [tab, setTab] = useState<Tab>("correlations");
   const realm = 0;
-  const { data: correlations, loading: corrLoad } = useDataRepoPoll(() => dataRepo.fetchCorrelations(), 60000);
+  const { data: correlations, loading: corrLoad } = useDataRepoPoll(() => dataRepo.fetchCorrelations(realm), 60000, [realm]);
   const { data: anomalies, loading: anomLoad } = useDataRepoPoll(() => dataRepo.fetchAnomalies(realm), 60000, [realm]);
   const { data: divergence, loading: divLoad } = useDataRepoPoll(() => dataRepo.fetchDivergence(realm), 60000, [realm]);
   const { data: contagion, loading: conLoad } = useDataRepoPoll(() => dataRepo.fetchContagion(realm), 60000, [realm]);

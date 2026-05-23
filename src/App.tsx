@@ -17,7 +17,6 @@ const ForecastsPage = lazy(() => import("./pages/Forecasts").then((m) => ({ defa
 const SignalsPage = lazy(() => import("./pages/Signals").then((m) => ({ default: m.SignalsPage })));
 const CyclesPage = lazy(() => import("./pages/Cycles").then((m) => ({ default: m.CyclesPage })));
 const DependenciesPage = lazy(() => import("./pages/Dependencies").then((m) => ({ default: m.DependenciesPage })));
-const SimulationLabPage = lazy(() => import("./pages/SimulationLab").then((m) => ({ default: m.SimulationLabPage })));
 
 function LazyPage({ children }: { children: ReactNode }) {
   return <Suspense fallback={<LoadingState text="Loading..." />}>{children}</Suspense>;
@@ -34,7 +33,6 @@ export function AppShell({ path }: { path: string }) {
     : path === "/signals" ? <LazyPage><SignalsPage /></LazyPage>
     : path === "/cycles" ? <LazyPage><CyclesPage /></LazyPage>
     : path === "/dependencies" ? <LazyPage><DependenciesPage /></LazyPage>
-    : path === "/simulation" ? <LazyPage><SimulationLabPage /></LazyPage>
     : path === "/developers" ? <DevelopersPage />
     : path === "/playground" ? <PlaygroundPage />
     : path === "/about" ? <AboutPage />
