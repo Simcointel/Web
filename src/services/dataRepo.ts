@@ -243,10 +243,16 @@ export async function fetchMacroPhases(realm: number): Promise<any> {
   };
 }
 
+const TODAY = new Date().toISOString().slice(0, 10);
+
+function excludeToday<T extends { t?: string }>(item: T): boolean {
+  return !item.t || item.t.slice(0, 10) !== TODAY;
+}
+
 export async function fetchMacroIndexes(realm: number, limit = 200): Promise<any> {
   const items = await fetchAllFiles(`aggregates/indexes/realm-${realm}`, "price-indexes-", limit);
   return {
-    indexes: items.map((item: any) => ({
+    indexes: items.filter(excludeToday).map((item: any) => ({
       date: item.t,
       cpi: item.ix?.cpi?.v ?? null,
       coreCpi: item.ix?.["core-cpi"]?.v ?? null,
@@ -259,7 +265,7 @@ export async function fetchMacroIndexes(realm: number, limit = 200): Promise<any
 export async function fetchMacroInflation(realm: number, limit = 200): Promise<any> {
   const items = await fetchAllFiles(`aggregates/inflation/realm-${realm}`, "inflation-report-", limit);
   return {
-    inflation: items.map((item: any) => ({
+    inflation: items.filter(excludeToday).map((item: any) => ({
       date: item.t,
       cpiRate: item.in?.["cpi"]?.ch ?? null,
       coreCpiRate: item.in?.["core-cpi"]?.ch ?? null,
