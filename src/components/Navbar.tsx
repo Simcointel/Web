@@ -9,6 +9,7 @@ const navLinks = [
   { to: "/cycles", label: "Cycles" },
   { to: "/dependencies", label: "Supply Chain" },
   { to: "/vwap-inflation", label: "VWAP Inflation" },
+  { to: "/profit-margins", label: "Profit Margins" },
   { to: "/intelligence", label: "Intelligence" },
   { to: "/alerts", label: "Alerts" },
   { to: "/developers", label: "Developers" },

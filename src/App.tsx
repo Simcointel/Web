@@ -12,6 +12,7 @@ import { AboutPage } from "./pages/About";
 import { DevelopersPage } from "./pages/Developers";
 import { PlaygroundPage } from "./pages/Playground";
 import { VWAPInflationPage } from "./pages/VWAPInflation";
+import { ProfitMarginsPage } from "./pages/ProfitMargins";
 import { WidgetPage } from "./pages/WidgetRenderer";
 import { NotFoundPage } from "./pages/NotFound";
 
@@ -38,6 +39,7 @@ export function AppShell({ path }: { path: string }) {
     : path === "/developers" ? <DevelopersPage />
     : path === "/playground" ? <PlaygroundPage />
     : path === "/vwap-inflation" ? <VWAPInflationPage />
+    : path === "/profit-margins" ? <ProfitMarginsPage />
     : path === "/about" ? <AboutPage />
     : isWidget ? <WidgetPage />
     : <NotFoundPage />;

@@ -312,6 +312,33 @@ export async function fetchMacroInflation(realm: number, limit = 200): Promise<a
 }
 
 /* ============================================================
+   Profit Margins
+   ============================================================ */
+export async function fetchProfitMargins(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/profit-margins/realm-${realm}`, "profit-margins-");
+  if (!data) throw new Error("No profit margins data");
+  return {
+    ts: data.t,
+    realm: data.r,
+    resources: (data.rs ?? []).map((r: any) => ({
+      id: r.i,
+      name: r.n,
+      category: r.c,
+      categoryName: r.cn,
+      producedPerHour: r.ph,
+      revenuePerHour: r.rv,
+      inputCostPerHour: r.ic,
+      wagesPerHour: r.wg,
+      transportPerHour: r.tr,
+      netProfitPerHour: r.np,
+      marginPct: r.mg,
+      outputVwap: r.vw,
+    })),
+    total: data.rs?.length ?? 0,
+  };
+}
+
+/* ============================================================
    VWAP Inflation
    ============================================================ */
 export async function fetchVWAPInflation(realm: number, limit = 200): Promise<any> {
