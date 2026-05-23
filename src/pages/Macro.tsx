@@ -5,7 +5,7 @@ import { Section, CardGrid } from "../components/Layout";
 import { LoadingState, ErrorState, EmptyState } from "../components/States";
 import { useState, useMemo } from "react";
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine,
 } from "recharts";
 
 export function MacroPage() {
@@ -15,6 +15,14 @@ export function MacroPage() {
   const { data: indexes, loading: iLoading } = useDataRepoPoll(() => dataRepo.fetchMacroIndexes(realm, 200), 120000, [realm]);
   const { data: inflation, loading: infLoading } = useDataRepoPoll(() => dataRepo.fetchMacroInflation(realm, 200), 120000, [realm]);
   const { data: phases } = useDataRepoPoll(() => dataRepo.fetchMacroPhases(realm), 120000, [realm]);
+
+  const [refOverride, setRefOverride] = useState(0);
+
+  const refPrice = useMemo(() => {
+    if (refOverride > 0) return refOverride;
+    if (indexes?.indexes?.length) return indexes.indexes[0].cpi ?? 0;
+    return 0;
+  }, [refOverride, indexes]);
 
   if (lLoading) return <LoadingState text="Loading macro data..." />;
   if (lError) return <ErrorState message={lError} onRetry={lRefresh} />;
@@ -127,6 +135,40 @@ export function MacroPage() {
           </Section>
         )}
       </div>
+
+      {indexes?.indexes && indexes.indexes.length > 0 && refPrice > 0 && (
+        <Section title="Inflation vs Reference" subtitle="Deviation from reference price (%)">
+          <div className="card p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs text-gray-500">Reference:</span>
+              <span className="text-xs font-mono font-medium text-gray-700">{refPrice.toFixed(2)}</span>
+              <span className="text-xs text-gray-400 ml-1">(first CPI value)</span>
+              <div className="ml-auto flex items-center gap-1">
+                <span className="text-xs text-gray-400">Override:</span>
+                <input type="number" value={refOverride || ""} onChange={(e) => setRefOverride(Number(e.target.value))} className="w-20 px-1.5 py-0.5 text-xs border border-gray-300 rounded" placeholder="0" />
+                {refOverride > 0 && <button onClick={() => setRefOverride(0)} className="text-xs text-gray-400 hover:text-gray-600">&times;</button>}
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={indexes.indexes.map((h) => ({
+                ...h,
+                d: new Date(h.date).toLocaleDateString(),
+                cpiDev: ((h.cpi - refPrice) / refPrice) * 100,
+                coreCpiDev: ((h.coreCpi - refPrice) / refPrice) * 100,
+              }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+                <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
+                <Tooltip formatter={(v: number) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`]} />
+                <Legend />
+                <ReferenceLine y={0} stroke="#666" strokeDasharray="5 5" label="Baseline" />
+                <Line type="monotone" dataKey="cpiDev" stroke="#3b82f6" strokeWidth={2} dot={false} name="CPI" />
+                <Line type="monotone" dataKey="coreCpiDev" stroke="#7c3aed" strokeWidth={2} dot={false} name="Core CPI" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Section>
+      )}
 
       {phases && (
         <Section title="Phase History" subtitle={`Current: ${phases.currentPhase} (${phases.totalDays} days tracked)`}>

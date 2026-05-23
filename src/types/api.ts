@@ -96,6 +96,11 @@ export interface MacroInflation {
   inflation: { date: string; cpiRate: number; coreCpiRate: number; gdpGrowth: number }[];
 }
 
+export interface ReferencePrice {
+  t: string;
+  ref: { cpi: number; coreCpi: number };
+}
+
 export interface MacroPhases {
   realm: string;
   totalDays: number;
