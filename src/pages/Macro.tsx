@@ -103,7 +103,6 @@ export function MacroPage() {
                   <Legend />
                   <Line type="monotone" dataKey="cpi" stroke="#3b82f6" strokeWidth={2} dot={false} name="CPI" />
                   <Line type="monotone" dataKey="coreCpi" stroke="#7c3aed" strokeWidth={2} dot={false} name="Core CPI" />
-                  <Line type="monotone" dataKey="gdp" stroke="#059669" strokeWidth={2} dot={false} name="GDP" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
