@@ -107,7 +107,7 @@ async function fetchAllFiles(dir: string, prefix: string, limit = 100): Promise<
   return withCache(`allfiles:${dir}:${prefix}:${limit}`, async () => {
     const index = await fetchIndex(dir);
     let filenames: string[];
-    if (index?.files) {
+    if (index?.files && index.files.length >= limit) {
       filenames = index.files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).slice(0, limit);
     } else {
       const files = await listFiles(dir);
