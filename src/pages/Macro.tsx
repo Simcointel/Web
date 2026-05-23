@@ -5,7 +5,7 @@ import { Section, CardGrid } from "../components/Layout";
 import { LoadingState, ErrorState, EmptyState } from "../components/States";
 import { useState, useMemo } from "react";
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
 
 export function MacroPage() {
@@ -113,15 +113,15 @@ export function MacroPage() {
           <Section title="Inflation Rates">
             <div className="card p-5">
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={inflation.inflation.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() }))}>
+                <LineChart data={inflation.inflation.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() }))}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
                   <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="cpiRate" fill="#3b82f6" name="CPI Rate" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="coreCpiRate" fill="#7c3aed" name="Core CPI Rate" radius={[2, 2, 0, 0]} />
-                </BarChart>
+                  <Line type="monotone" dataKey="cpiRate" stroke="#3b82f6" strokeWidth={2} dot={false} name="CPI Rate" />
+                  <Line type="monotone" dataKey="coreCpiRate" stroke="#7c3aed" strokeWidth={2} dot={false} name="Core CPI Rate" />
+                </LineChart>
               </ResponsiveContainer>
             </div>
           </Section>
