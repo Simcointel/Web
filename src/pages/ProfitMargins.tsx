@@ -100,6 +100,9 @@ export function ProfitMarginsPage() {
                   <th className="text-left px-4 py-3 font-medium text-gray-600 text-xs uppercase tracking-wider">Resource</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600 text-xs uppercase tracking-wider">Category</th>
                   <th className="text-right px-4 py-3 font-medium text-gray-600 text-xs uppercase tracking-wider">Margin</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-600 text-xs uppercase tracking-wider">Δ</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-600 text-xs uppercase tracking-wider">Trend</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-600 text-xs uppercase tracking-wider">Proj.</th>
                   <th className="text-right px-4 py-3 font-medium text-gray-600 text-xs uppercase tracking-wider">Profit/hr</th>
                   <th className="text-right px-4 py-3 font-medium text-gray-600 text-xs uppercase tracking-wider">Revenue/hr</th>
                   <th className="text-right px-4 py-3 font-medium text-gray-600 text-xs uppercase tracking-wider">Inputs/hr</th>
@@ -117,6 +120,33 @@ export function ProfitMarginsPage() {
                       <span className={`font-mono font-medium ${r.marginPct > 0 ? "text-green-600" : r.marginPct < 0 ? "text-red-600" : "text-gray-500"}`}>
                         {r.marginPct > 0 ? "+" : ""}{r.marginPct.toFixed(1)}%
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      {r.marginDelta != null ? (
+                        <span className={`font-mono text-xs ${r.marginDirection === "up" ? "text-green-500" : r.marginDirection === "down" ? "text-red-500" : "text-gray-400"}`}>
+                          {r.marginDelta > 0 ? "+" : ""}{r.marginDelta.toFixed(1)}pp
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      {r.trendDirection ? (
+                        <span className={`text-xs font-medium ${r.trendDirection === "improving" ? "text-green-500" : r.trendDirection === "declining" ? "text-red-500" : "text-gray-400"}`}>
+                          {r.trendDirection === "improving" ? "\u2191" : r.trendDirection === "declining" ? "\u2193" : "\u2192"}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      {r.forecastMargin != null ? (
+                        <span className={`font-mono text-xs ${r.forecastMargin > r.marginPct + 0.5 ? "text-green-500" : r.forecastMargin < r.marginPct - 0.5 ? "text-red-500" : "text-gray-400"}`}>
+                          {r.forecastMargin > 0 ? "+" : ""}{r.forecastMargin.toFixed(1)}%
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-300">—</span>
+                      )}
                     </td>
                     <td className={`px-4 py-3 text-right font-mono whitespace-nowrap ${r.netProfitPerHour > 0 ? "text-green-600" : r.netProfitPerHour < 0 ? "text-red-500" : "text-gray-500"}`}>
                       {r.netProfitPerHour > 0 ? "+" : ""}{fmt(r.netProfitPerHour)}
