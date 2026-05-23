@@ -100,9 +100,16 @@ export function VWAPInflationPage() {
 
 const QCOLORS = ["#3b82f6","#ef4444","#10b981","#f59e0b","#8b5cf6","#ec4899","#06b6d4","#84cc16","#f97316","#6366f1","#14b8a6","#e11d48","#a855f7"];
 
-function pctRef(data: any[], getVal: (item: any) => number | null): { d: string; v: number | null }[] {
+const BASE_PRICES: Record<string, number> = {
+  "101": 140.00,
+  "107": 300.00,
+  "111": 2200.00,
+  "108": 5.00,
+};
+
+function pctRef(data: any[], getVal: (item: any) => number | null, fixedRef?: number): { d: string; v: number | null }[] {
   const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date));
-  const ref = sorted.reduce<number | null>((acc, item) => acc ?? getVal(item), null);
+  const ref = fixedRef ?? sorted.reduce<number | null>((acc, item) => acc ?? getVal(item), null);
   if (ref == null || ref === 0) return [];
   return sorted.map(item => {
     const val = getVal(item);
@@ -164,21 +171,28 @@ function VWAPQualityChart({ data, qualities }: { data: any[]; qualities: string 
 
 function VWAPProductChart({ data, productId }: { data: any[]; productId: string }) {
   if (!productId) return <p className="text-xs text-gray-400 py-4 text-center">Select a product</p>;
-  const chart = pctRef(data, (item) => item.product?.[productId]?.vw ?? null);
+  const basePrice = BASE_PRICES[productId];
+  const chart = pctRef(data, (item) => item.product?.[productId]?.vw ?? null, basePrice);
   const name = data.find((d: any) => d.product?.[productId])?.product?.[productId]?.nm ?? `Product ${productId}`;
   if (chart.length < 2) return <p className="text-xs text-gray-400 py-4 text-center">Not enough data</p>;
   return (
-    <ResponsiveContainer width="100%" height={250}>
-      <LineChart data={chart}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-        <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-        <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
-        <Tooltip formatter={(v: number) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`]} />
-        <Legend />
-        <ReferenceLine y={0} stroke="#666" strokeDasharray="5 5" label="Baseline" />
-        <Line type="monotone" dataKey="v" stroke="#8b5cf6" strokeWidth={2} dot={false} name={name} />
-      </LineChart>
-    </ResponsiveContainer>
+    <div>
+      <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
+        Base price: <span className="font-mono font-medium text-gray-700">{basePrice?.toFixed(2) ?? "—"}</span>
+        {basePrice == null && <span className="text-gray-400">(using first VWAP as baseline)</span>}
+      </div>
+      <ResponsiveContainer width="100%" height={250}>
+        <LineChart data={chart}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+          <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
+          <Tooltip formatter={(v: number) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`]} />
+          <Legend />
+          <ReferenceLine y={0} stroke="#666" strokeDasharray="5 5" label="Baseline" />
+          <Line type="monotone" dataKey="v" stroke="#8b5cf6" strokeWidth={2} dot={false} name={name} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -187,11 +201,13 @@ function VWAPBothChart({ data, productId, qualities }: { data: any[]; productId:
   const qList = qualities.split(",").map(s => s.trim()).filter(Boolean);
   if (qList.length === 0) return <p className="text-xs text-gray-400 py-4 text-center">Enter quality levels (e.g. 0,1,2)</p>;
 
+  const basePrice = BASE_PRICES[productId];
   const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date));
 
   const refs: Record<string, number | null> = {};
   for (const q of qList) {
-    refs[q] = sorted.reduce<number | null>((acc, item) => acc ?? item.both?.[`${productId}_${q}`]?.vw ?? null, null);
+    const firstVal = sorted.reduce<number | null>((acc, item) => acc ?? item.both?.[`${productId}_${q}`]?.vw ?? null, null);
+    refs[q] = basePrice ?? firstVal;
   }
   if (qList.every(q => refs[q] == null || refs[q] === 0)) return <p className="text-xs text-gray-400 py-4 text-center">Not enough data</p>;
 
@@ -209,6 +225,10 @@ function VWAPBothChart({ data, productId, qualities }: { data: any[]; productId:
   return (
     <div>
       <p className="text-xs text-gray-500 mb-2">{nm} — VWAP inflation by quality</p>
+      <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
+        Base price: <span className="font-mono font-medium text-gray-700">{basePrice?.toFixed(2) ?? "—"}</span>
+        {basePrice == null && <span className="text-gray-400">(using first VWAP as baseline)</span>}
+      </div>
       <ResponsiveContainer width="100%" height={250}>
         <LineChart data={chart}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
