@@ -275,20 +275,20 @@ export async function fetchMacroPhases(realm: number): Promise<any> {
   };
 }
 
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function withoutToday<T extends { t?: string }>(items: T[]): T[] {
-  const today = todayStr();
-  const filtered = items.filter(item => !item.t || item.t.slice(0, 10) !== today);
-  return filtered.length > 0 ? filtered : items;
+function latestPerDay<T extends { t?: string }>(items: T[]): T[] {
+  const best = new Map<string, T>();
+  for (const item of items) {
+    const key = item.t ? item.t.slice(0, 10) : '';
+    if (!key) continue;
+    if (!best.has(key)) best.set(key, item);
+  }
+  return [...best.values()].sort((a, b) => (a.t ?? '').localeCompare(b.t ?? ''));
 }
 
 export async function fetchMacroIndexes(realm: number, limit = 200): Promise<any> {
   const items = await fetchAllFiles(`aggregates/indexes/realm-${realm}`, "price-indexes-", limit);
   return {
-    indexes: withoutToday(items).map((item: any) => ({
+    indexes: latestPerDay(items).map((item: any) => ({
       date: item.t,
       cpi: item.ix?.cpi?.v ?? null,
       coreCpi: item.ix?.["core-cpi"]?.v ?? null,
@@ -301,7 +301,7 @@ export async function fetchMacroIndexes(realm: number, limit = 200): Promise<any
 export async function fetchMacroInflation(realm: number, limit = 200): Promise<any> {
   const items = await fetchAllFiles(`aggregates/inflation/realm-${realm}`, "inflation-report-", limit);
   return {
-    inflation: withoutToday(items).map((item: any) => ({
+    inflation: latestPerDay(items).map((item: any) => ({
       date: item.t,
       cpiRate: item.in?.["cpi"]?.ch ?? null,
       coreCpiRate: item.in?.["core-cpi"]?.ch ?? null,
