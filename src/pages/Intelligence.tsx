@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { StatCard } from "../components/StatCard";
@@ -5,24 +6,32 @@ import { Section, CardGrid } from "../components/Layout";
 import { LoadingState, EmptyState } from "../components/States";
 
 export function IntelligencePage() {
-  const { data: momentum, loading: momLoading } = useDataRepoPoll(() => dataRepo.fetchMomentum(0), 60000);
-  const { data: volatility, loading: volLoading } = useDataRepoPoll(() => dataRepo.fetchVolatility(0), 60000);
-  const { data: regimes, loading: regLoading } = useDataRepoPoll(() => dataRepo.fetchRegimes(0), 60000);
-  const { data: sectors, loading: secLoading } = useDataRepoPoll(() => dataRepo.fetchSectors(0), 60000);
+  const [realm, setRealm] = useState(0);
+  const { data: momentum, loading: momLoading } = useDataRepoPoll(() => dataRepo.fetchMomentum(realm), 60000, [realm]);
+  const { data: volatility, loading: volLoading } = useDataRepoPoll(() => dataRepo.fetchVolatility(realm), 60000, [realm]);
+  const { data: regimes, loading: regLoading } = useDataRepoPoll(() => dataRepo.fetchRegimes(realm), 60000, [realm]);
+  const { data: sectors, loading: secLoading } = useDataRepoPoll(() => dataRepo.fetchSectors(realm), 60000, [realm]);
 
   if (momLoading && volLoading && regLoading && secLoading) return <LoadingState text="Loading intelligence..." />;
 
-  const realm = momentum ? Object.keys(momentum)[0] : "0";
-  const mom = momentum?.[realm];
-  const vol = volatility?.[realm];
-  const reg = regimes?.[realm];
-  const secList = sectors?.[realm];
+  const realmKey = momentum ? Object.keys(momentum)[0] : String(realm);
+  const mom = momentum?.[realmKey];
+  const vol = volatility?.[realmKey];
+  const reg = regimes?.[realmKey];
+  const secList = sectors?.[realmKey];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">Market Intelligence</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Momentum, volatility, regime classification, and sector analysis</p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Market Intelligence</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Momentum, volatility, regime classification, and sector analysis</p>
+        </div>
+        <select value={realm} onChange={(e) => setRealm(Number(e.target.value))}
+          className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg text-gray-700">
+          <option value={0}>Realm 0</option>
+          <option value={1}>Realm 1</option>
+        </select>
       </div>
 
       <Section title="Market Overview">

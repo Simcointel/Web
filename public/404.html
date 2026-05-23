@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <script>
     sessionStorage.redirect = location.href;
-    location.replace("/Web/");
+    location.replace(location.pathname.startsWith("/Web/") ? "/Web/" : "/");
   </script>
 </head>
 <body></body>

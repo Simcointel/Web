@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
           manualChunks(id: string) {
             if (id.includes("recharts") || id.includes("d3-")) return "vendor-charts";
             if (id.includes("node_modules/react") || id.includes("node_modules/scheduler")) return "vendor-react";
-            if (id.includes("node_modules")) return "vendor-other";
+            if (id.includes("node_modules") && !id.includes("react") && !id.includes("scheduler") && !id.includes("recharts") && !id.includes("d3-")) return "vendor-other";
           },
         },
       },

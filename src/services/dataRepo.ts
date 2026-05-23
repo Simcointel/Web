@@ -140,18 +140,33 @@ export async function fetchDashboardState(realm: number): Promise<any> {
   };
 }
 
-export async function fetchDashboardAlerts(realm: number): Promise<any> {
+function normalizeEvent(raw: any): any {
+  return {
+    id: raw.id ?? raw.i ?? "",
+    se: raw.se ?? raw.s ?? "info",
+    ts: raw.ts ?? raw.t ?? "",
+    ca: raw.ca ?? raw.c ?? "general",
+    ti: raw.ti ?? raw.ti ?? "",
+    de: raw.de ?? raw.d ?? "",
+    da: raw.da ?? raw.data ?? {},
+    ty: raw.ty ?? raw.type ?? "",
+  };
+}
+
+async function fetchEvents(realm: number, limit: number): Promise<any> {
   const data = await fetchLatest(`aggregates/events/realm-${realm}`, getTodayDate());
   if (!data) return { events: [], total: 0 };
-  const events = Array.isArray(data) ? data : [];
-  return { events: events.slice(0, 5), total: events.length };
+  const raw = Array.isArray(data) ? data : [];
+  const events = raw.map(normalizeEvent);
+  return { events: events.slice(0, limit), total: events.length };
+}
+
+export async function fetchDashboardAlerts(realm: number): Promise<any> {
+  return fetchEvents(realm, 5);
 }
 
 export async function fetchDashboardEvents(realm: number, limit = 200): Promise<any> {
-  const data = await fetchLatest(`aggregates/events/realm-${realm}`, getTodayDate());
-  if (!data) return { events: [], total: 0 };
-  const events = Array.isArray(data) ? data : [];
-  return { events: events.slice(0, limit), total: events.length };
+  return fetchEvents(realm, limit);
 }
 
 /* ============================================================
@@ -335,8 +350,10 @@ export async function fetchRegimes(realm: number): Promise<any> {
   if (!data) throw new Error("No regime data");
   return {
     [String(realm)]: {
+      realm: String(realm),
       regime: data.cr ?? "unknown",
-      confidence: data.rc ?? 0,
+      score: data.rs ?? data.rc ?? 0,
+      confidence: String(data.rc ?? 0),
     },
   };
 }

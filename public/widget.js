@@ -26,7 +26,7 @@
     if (el.parentNode) el.parentNode.removeChild(el);
 
     function fetchData() {
-      var url = BASE + "/api/public/widget/" + type + "?realm=" + realm + "&compact=1";
+      var url = "https://simco-backend.vercel.app/api/public/widget/" + type + "?realm=" + realm + "&compact=1";
       var xhr = new XMLHttpRequest();
       xhr.open("GET", url, true);
       xhr.onload = function () {
@@ -36,10 +36,10 @@
             renderWidget(container, type, data);
           } catch (e) { container.innerHTML = '<div class="simco-widget-error">Parse error</div>'; }
         } else {
-          container.innerHTML = '<div class="simco-widget-error">HTTP ' + xhr.status + '</div>';
+          container.innerHTML = '<div class="simco-widget-error">Widget unavailable (requires Backend API)</div>';
         }
       };
-      xhr.onerror = function () { container.innerHTML = '<div class="simco-widget-error">Network error</div>'; };
+      xhr.onerror = function () { container.innerHTML = '<div class="simco-widget-error">Widget unavailable (requires Backend API)</div>'; };
       xhr.send();
     }
 

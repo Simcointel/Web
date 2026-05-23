@@ -137,7 +137,7 @@ export function SignalsPage() {
       {!data || data.length === 0 ? <EmptyState message="No signals detected currently" />
         : signals.length === 0 ? <EmptyState message="No signals match the selected filter" />
         : <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {signals.map((s, i) => <SignalCard key={s.type + i} signal={s} />)}
+            {signals.map((s, i) => <SignalCard key={s.type + "-" + i} signal={s} />)}
           </div>
       }
     </div>

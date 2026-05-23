@@ -10,7 +10,7 @@ type Tab = "correlations" | "anomalies" | "divergence" | "contagion";
 
 export function CorrelationsPage() {
   const [tab, setTab] = useState<Tab>("correlations");
-  const realm = 0;
+  const [realm, setRealm] = useState(0);
   const { data: correlations, loading: corrLoad } = useDataRepoPoll(() => dataRepo.fetchCorrelations(realm), 60000, [realm]);
   const { data: anomalies, loading: anomLoad } = useDataRepoPoll(() => dataRepo.fetchAnomalies(realm), 60000, [realm]);
   const { data: divergence, loading: divLoad } = useDataRepoPoll(() => dataRepo.fetchDivergence(realm), 60000, [realm]);
@@ -25,9 +25,16 @@ export function CorrelationsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">Correlations &amp; Anomalies</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Cross-category correlations, anomaly detection, divergence signals, and contagion risk</p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Correlations &amp; Anomalies</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Cross-category correlations, anomaly detection, divergence signals, and contagion risk</p>
+        </div>
+        <select value={realm} onChange={(e) => setRealm(Number(e.target.value))}
+          className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg text-gray-700">
+          <option value={0}>Realm 0</option>
+          <option value={1}>Realm 1</option>
+        </select>
       </div>
 
       <div className="flex gap-2 flex-wrap">

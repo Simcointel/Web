@@ -8,21 +8,20 @@ import { Section, CardGrid } from "../components/Layout";
 import { LoadingState, ErrorState } from "../components/States";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { useState, useCallback } from "react";
-import type { RealmDashboard, EventFeedItem } from "../types/api";
+import type { RealmDashboard } from "../types/api";
 
 export function HomePage() {
-  const { data: dashState, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardState(0), 60000);
-  const { data: alerts } = useDataRepoPoll(() => dataRepo.fetchDashboardAlerts(0), 60000);
+  const [realm, setRealm] = useState(0);
+  const { data: dashState, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardState(realm), 60000, [realm]);
+  const { data: alerts } = useDataRepoPoll(() => dataRepo.fetchDashboardAlerts(realm), 60000, [realm]);
   const connected = useSseConnected();
-  const [realtimeAlert, setRealtimeAlert] = useState<EventFeedItem | null>(null);
 
   useSseEvent("alert_generated", useCallback(() => { refresh(); }, [refresh]));
 
   if (loading) return <LoadingState text="Loading dashboard..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
 
-  const realm = dashState ? Object.keys(dashState)[0] : null;
-  const ds: RealmDashboard | undefined = realm ? (dashState as any)?.[realm] : undefined;
+  const ds: RealmDashboard | undefined = realm != null ? (dashState as any)?.[String(realm)] : undefined;
   const scores = ds?.scores;
   const regime = ds?.regime;
 
@@ -32,7 +31,7 @@ export function HomePage() {
     ? (Array.isArray(alerts) ? alerts : (alerts as any).events ?? []).slice(0, 5)
     : [];
 
-  const topAlert = realtimeAlert ?? alertList[0];
+  const topAlert = alertList[0];
 
   return (
     <div className="space-y-6">
@@ -40,13 +39,18 @@ export function HomePage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">Economic Intelligence Dashboard</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {realm ? `Realm ${realm}` : "No realm data"} &middot; {connected ? "Live" : "Polling"}
+            <span className="hidden sm:inline">Dashboard</span> &middot; Realm {realm} &middot; {connected ? "Live" : "Polling"}
           </p>
         </div>
         <span className={`inline-flex items-center gap-1.5 text-xs ${connected ? "text-econ-green" : "text-gray-400"}`}>
           <span className={`w-2 h-2 rounded-full ${connected ? "bg-econ-green" : "bg-gray-300"}`} />
           {connected ? "Connected" : "Offline"}
         </span>
+        <select value={realm} onChange={(e) => setRealm(Number(e.target.value))}
+          className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg text-gray-700">
+          <option value={0}>Realm 0</option>
+          <option value={1}>Realm 1</option>
+        </select>
       </div>
 
       <Section title="Composite Scores" subtitle="Five key economic health indicators (0–100)">

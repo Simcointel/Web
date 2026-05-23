@@ -1,18 +1,18 @@
+import { useState, useCallback } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
 import { Section } from "../components/Layout";
-import { SeverityBadge } from "../components/SeverityBadge";
 import { LoadingState, ErrorState, EmptyState } from "../components/States";
-import { useState, useCallback } from "react";
-import type { EventFeedItem, UnifiedFeed } from "../types/api";
+import { SeverityBadge } from "../components/SeverityBadge";
 
 export function AlertsPage() {
-  const { data: eventsData, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardEvents(0, 200), 60000);
+  const [realm, setRealm] = useState(0);
+  const { data: eventsData, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardEvents(realm, 200), 60000, [realm]);
   const [severity, setSeverity] = useState<string>("all");
   const [category, setCategory] = useState<string>("all");
   const connected = useSseConnected();
-  const [streamEvents, setStreamEvents] = useState<EventFeedItem[]>([]);
+  const [streamEvents, setStreamEvents] = useState<any[]>([]);
 
   useSseEvent("alert_generated", useCallback((data: { count?: number }) => {
     if (data?.count && data.count > 0) {
@@ -51,6 +51,11 @@ export function AlertsPage() {
             </span>
           </p>
         </div>
+        <select value={realm} onChange={(e) => setRealm(Number(e.target.value))}
+          className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg text-gray-700">
+          <option value={0}>Realm 0</option>
+          <option value={1}>Realm 1</option>
+        </select>
       </div>
 
       <div className="flex flex-wrap gap-2">
