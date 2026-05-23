@@ -195,7 +195,7 @@ export async function fetchMacroLatest(realm: number): Promise<any> {
     latestInflation: infData?.in ? {
       cpiRate: infData.in.cpi?.ch ?? null,
       coreCpiRate: infData.in["core-cpi"]?.ch ?? null,
-      gdpGrowth: null,
+      gdpGrowth: infData.in["gdp"]?.ch ?? null,
     } : null,
   };
 }
@@ -280,7 +280,9 @@ function todayStr(): string {
 }
 
 function withoutToday<T extends { t?: string }>(items: T[]): T[] {
-  return items.filter(item => !item.t || item.t.slice(0, 10) !== todayStr());
+  const today = todayStr();
+  const filtered = items.filter(item => !item.t || item.t.slice(0, 10) !== today);
+  return filtered.length > 0 ? filtered : items;
 }
 
 export async function fetchMacroIndexes(realm: number, limit = 200): Promise<any> {
@@ -303,7 +305,7 @@ export async function fetchMacroInflation(realm: number, limit = 200): Promise<a
       date: item.t,
       cpiRate: item.in?.["cpi"]?.ch ?? null,
       coreCpiRate: item.in?.["core-cpi"]?.ch ?? null,
-      gdpGrowth: null,
+      gdpGrowth: item.in?.["gdp"]?.ch ?? null,
     })),
     total: items.length,
   };
