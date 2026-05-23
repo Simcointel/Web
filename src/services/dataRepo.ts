@@ -312,6 +312,23 @@ export async function fetchMacroInflation(realm: number, limit = 200): Promise<a
 }
 
 /* ============================================================
+   VWAP Inflation
+   ============================================================ */
+export async function fetchVWAPInflation(realm: number, limit = 200): Promise<any> {
+  const items = await fetchAllFiles(`aggregates/vwap-inflation/realm-${realm}`, "vwap-inflation-", limit);
+  return {
+    vwapInflation: latestPerDay(items).map((item: any) => ({
+      date: item.t,
+      overall: item.overall,
+      quality: item.quality ?? {},
+      product: item.product ?? {},
+      both: item.both ?? {},
+    })),
+    total: items.length,
+  };
+}
+
+/* ============================================================
    Intelligence
    ============================================================ */
 export async function fetchMomentum(realm: number): Promise<any> {
