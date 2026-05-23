@@ -37,7 +37,7 @@ export function VWAPInflationPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-bold text-gray-900">VWAP Inflation</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Day-over-day inflation from raw VWAP data, broken down by quality and product</p>
+          <p className="text-sm text-gray-500 mt-0.5">VWAP values across all products and quality levels</p>
         </div>
         <select
           value={realm}
@@ -49,7 +49,7 @@ export function VWAPInflationPage() {
         </select>
       </div>
 
-      <Section title="VWAP Inflation">
+      <Section title="VWAP Inflation" subtitle="Raw VWAP values across products and quality levels">
         <div className="card p-5">
           <div className="flex flex-wrap items-center gap-2 mb-3">
             {(["overall", "quality", "product", "both"] as const).map((t) => (
@@ -100,19 +100,14 @@ export function VWAPInflationPage() {
 
 const QCOLORS = ["#3b82f6","#ef4444","#10b981","#f59e0b","#8b5cf6","#ec4899","#06b6d4","#84cc16","#f97316","#6366f1","#14b8a6","#e11d48","#a855f7"];
 
-function inflationSeries(data: any[], getVal: (item: any) => number | null): { d: string; v: number | null }[] {
-  const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date));
-  return sorted.map((item, i) => {
-    const cur = getVal(item);
-    if (i === 0 || cur == null) return { d: new Date(item.date).toLocaleDateString(), v: null };
-    const prev = getVal(sorted[i - 1]);
-    if (prev == null || prev === 0) return { d: new Date(item.date).toLocaleDateString(), v: null };
-    return { d: new Date(item.date).toLocaleDateString(), v: ((cur - prev) / prev) * 100 };
-  });
+function vwapSeries(data: any[], getVal: (item: any) => number | null): { d: string; v: number | null }[] {
+  return [...data]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map(item => ({ d: new Date(item.date).toLocaleDateString(), v: getVal(item) ?? null }));
 }
 
 function VWAPOverallChart({ data }: { data: any[] }) {
-  const chart = inflationSeries(data, (item) => item.overall?.vw ?? null);
+  const chart = vwapSeries(data, (item) => item.overall?.vw ?? null);
   if (chart.length < 2) return <p className="text-xs text-gray-400 py-4 text-center">Not enough data</p>;
   return (
     <ResponsiveContainer width="100%" height={250}>
@@ -120,10 +115,9 @@ function VWAPOverallChart({ data }: { data: any[] }) {
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
         <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
         <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
-        <Tooltip formatter={(v: number) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`]} />
+        <Tooltip formatter={(v: number) => [v.toFixed(2)]} />
         <Legend />
-        <ReferenceLine y={0} stroke="#666" strokeDasharray="5 5" />
-        <Line type="monotone" dataKey="v" stroke="#3b82f6" strokeWidth={2} dot={false} name="Overall Inflation" />
+        <Line type="monotone" dataKey="v" stroke="#3b82f6" strokeWidth={2} dot={false} name="Overall VWAP" />
       </LineChart>
     </ResponsiveContainer>
   );
@@ -134,28 +128,20 @@ function VWAPQualityChart({ data, qualities }: { data: any[]; qualities: string 
   if (qList.length === 0) return <p className="text-xs text-gray-400 py-4 text-center">Enter quality levels (e.g. 0,1,2)</p>;
 
   const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date));
-  const chart = sorted.map((item, i) => {
+  const chart = sorted.map(item => {
     const entry: any = { d: new Date(item.date).toLocaleDateString() };
-    for (const q of qList) {
-      const cur = item.quality?.[q]?.vw;
-      if (i === 0 || cur == null) { entry[q] = null; continue; }
-      const prev = sorted[i - 1].quality?.[q]?.vw;
-      if (prev == null || prev === 0) { entry[q] = null; continue; }
-      entry[q] = ((cur - prev) / prev) * 100;
-    }
+    for (const q of qList) entry[q] = item.quality?.[q]?.vw ?? null;
     return entry;
   });
 
-  if (chart.length < 2) return <p className="text-xs text-gray-400 py-4 text-center">Not enough data</p>;
   return (
     <ResponsiveContainer width="100%" height={250}>
       <LineChart data={chart}>
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
         <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
         <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
-        <Tooltip formatter={(v: number) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`]} />
+        <Tooltip />
         <Legend />
-        <ReferenceLine y={0} stroke="#666" strokeDasharray="5 5" />
         {qList.map((q, i) => <Line key={q} type="monotone" dataKey={q} stroke={QCOLORS[i % QCOLORS.length]} strokeWidth={2} dot={false} name={`Q${q}`} />)}
       </LineChart>
     </ResponsiveContainer>
@@ -164,18 +150,16 @@ function VWAPQualityChart({ data, qualities }: { data: any[]; qualities: string 
 
 function VWAPProductChart({ data, productId }: { data: any[]; productId: string }) {
   if (!productId) return <p className="text-xs text-gray-400 py-4 text-center">Select a product</p>;
-  const chart = inflationSeries(data, (item) => item.product?.[productId]?.vw ?? null);
+  const chart = vwapSeries(data, (item) => item.product?.[productId]?.vw ?? null);
   const name = data.find((d: any) => d.product?.[productId])?.product?.[productId]?.nm ?? `Product ${productId}`;
-  if (chart.length < 2) return <p className="text-xs text-gray-400 py-4 text-center">Not enough data</p>;
   return (
     <ResponsiveContainer width="100%" height={250}>
       <LineChart data={chart}>
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
         <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
         <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
-        <Tooltip formatter={(v: number) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`]} />
+        <Tooltip />
         <Legend />
-        <ReferenceLine y={0} stroke="#666" strokeDasharray="5 5" />
         <Line type="monotone" dataKey="v" stroke="#8b5cf6" strokeWidth={2} dot={false} name={name} />
       </LineChart>
     </ResponsiveContainer>
@@ -188,31 +172,23 @@ function VWAPBothChart({ data, productId, qualities }: { data: any[]; productId:
   if (qList.length === 0) return <p className="text-xs text-gray-400 py-4 text-center">Enter quality levels (e.g. 0,1,2)</p>;
 
   const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date));
-  const chart = sorted.map((item, i) => {
+  const chart = sorted.map(item => {
     const entry: any = { d: new Date(item.date).toLocaleDateString() };
-    for (const q of qList) {
-      const cur = item.both?.[`${productId}_${q}`]?.vw;
-      if (i === 0 || cur == null) { entry[q] = null; continue; }
-      const prev = sorted[i - 1].both?.[`${productId}_${q}`]?.vw;
-      if (prev == null || prev === 0) { entry[q] = null; continue; }
-      entry[q] = ((cur - prev) / prev) * 100;
-    }
+    for (const q of qList) entry[q] = item.both?.[`${productId}_${q}`]?.vw ?? null;
     return entry;
   });
 
   const nm = data.find((d: any) => d.product?.[productId])?.product?.[productId]?.nm ?? `Product ${productId}`;
-  if (chart.length < 2) return <p className="text-xs text-gray-400 py-4 text-center">Not enough data</p>;
   return (
     <div>
-      <p className="text-xs text-gray-500 mb-2">{nm} — quality-level inflation</p>
+      <p className="text-xs text-gray-500 mb-2">{nm} — VWAP by quality</p>
       <ResponsiveContainer width="100%" height={250}>
         <LineChart data={chart}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
           <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
-          <Tooltip formatter={(v: number) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`]} />
+          <Tooltip />
           <Legend />
-          <ReferenceLine y={0} stroke="#666" strokeDasharray="5 5" />
           {qList.map((q, i) => <Line key={q} type="monotone" dataKey={q} stroke={QCOLORS[i % QCOLORS.length]} strokeWidth={2} dot={false} name={`Q${q}`} />)}
         </LineChart>
       </ResponsiveContainer>
