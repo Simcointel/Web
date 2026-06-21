@@ -1,3 +1,4 @@
+import React from "react";
 import { SearchParams, useSearchParams } from "../router";
 import { WidgetHealthCard } from "../components/widgets/WidgetHealthCard";
 import { WidgetAlertList } from "../components/widgets/WidgetAlertList";

@@ -6,16 +6,14 @@ import { LoadingState } from "./components/States";
 import { HomePage } from "./pages/Home";
 import { MacroPage } from "./pages/Macro";
 import { IntelligencePage } from "./pages/Intelligence";
-import { CorrelationsPage } from "./pages/Correlations";
 import { AlertsPage } from "./pages/Alerts";
 import { AboutPage } from "./pages/About";
-import { PlaygroundPage } from "./pages/Playground";
 import { VWAPInflationPage } from "./pages/VWAPInflation";
 import { ProfitMarginsPage } from "./pages/ProfitMargins";
 import { WidgetPage } from "./pages/WidgetRenderer";
 import { NotFoundPage } from "./pages/NotFound";
 import { CompanyToolsPage } from "./pages/CompanyTools";
-import { Suspense, lazy } from "react";
+import React, { Suspense, lazy } from "react";
 
 const ForecastsPage = lazy(() => import("./pages/Forecasts").then((m) => ({ default: m.ForecastsPage })));
 const SignalsPage = lazy(() => import("./pages/Signals").then((m) => ({ default: m.SignalsPage })));
@@ -34,14 +32,12 @@ export function AppShell({ path }: { path: string }) {
   const page = path === "/" ? <HomePage />
     : path === "/macro" ? <MacroPage />
     : path === "/intelligence" ? <IntelligencePage />
-    : path === "/correlations" ? <CorrelationsPage />
     : path === "/alerts" ? <AlertsPage />
     : path === "/forecasts" ? <LazyPage><ForecastsPage /></LazyPage>
     : path === "/signals" ? <LazyPage><SignalsPage /></LazyPage>
     : path === "/cycles" ? <LazyPage><CyclesPage /></LazyPage>
     : path === "/dependencies" ? <LazyPage><DependenciesPage /></LazyPage>
     : path === "/company-tools" ? <CompanyToolsPage />
-    : path === "/playground" ? <PlaygroundPage />
     : path === "/vwap-inflation" ? <VWAPInflationPage />
     : path === "/profit-margins" ? <ProfitMarginsPage />
     : path === "/about" ? <AboutPage />

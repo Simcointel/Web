@@ -1,5 +1,7 @@
 import { LoadingState } from "./States";
 
+import React from "react";
+
 export function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <section className="space-y-4">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, createContext, useContext } from "react";
+import React, { useState, useEffect, useCallback, createContext, useContext } from "react";
 
 type RouterContext = { path: string; navigate: (to: string) => void };
 const Ctx = createContext<RouterContext>({ path: "/", navigate: () => {} });
