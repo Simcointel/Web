@@ -4,12 +4,11 @@ import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
 import { StatCard } from "../components/StatCard";
-import { Section, CardGrid } from "../components/Layout";
+import { Section, CardGrid, Tooltip as UITooltip } from "../components/Layout";
 import { LoadingState, ErrorState, EmptyState } from "../components/States";
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, AreaChart, Area,
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, AreaChart, Area,
 } from "recharts";
-import type { ForecastSeries } from "../types/api";
 
 const CATEGORIES = ["raw-materials", "energy-fuel", "agriculture", "manufacturing", "technology", "construction", "services-finance"];
 const CATEGORY_LABELS: Record<string, string> = {
@@ -17,8 +16,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   "manufacturing": "Manufacturing", "technology": "Technology", "construction": "Construction", "services-finance": "Services & Finance",
 };
 const CATEGORY_COLORS: Record<string, string> = {
-  "raw-materials": "#d97706", "energy-fuel": "#dc2626", "agriculture": "#059669",
-  "manufacturing": "#3b82f6", "technology": "#7c3aed", "construction": "#ea580c", "services-finance": "#0891b2",
+  "raw-materials": "#0ea5e9", "energy-fuel": "#ef4444", "agriculture": "#10b981",
+  "manufacturing": "#8b5cf6", "technology": "#f59e0b", "construction": "#ec4899", "services-finance": "#06b6d4",
 };
 
 function getDirection(dir: unknown) {
@@ -26,7 +25,7 @@ function getDirection(dir: unknown) {
     if (dir.includes("up") || dir.includes("Up")) return { arrow: "\u2191", color: "text-econ-green" };
     if (dir.includes("down") || dir.includes("Down")) return { arrow: "\u2193", color: "text-econ-red" };
   }
-  return { arrow: "\u2192", color: "text-gray-400" };
+  return { arrow: "\u2192", color: "text-surface-400" };
 }
 
 export function ForecastsPage() {
@@ -61,149 +60,124 @@ export function ForecastsPage() {
   const inflationSeries = seriesList.find((s) => s.key === "agriculture" || s.key === "raw-materials");
   const avgReliability = seriesList.length > 0 ? seriesList.reduce((a, s) => a + (s.reliability ?? 0), 0) / seriesList.length : 0;
 
-  if (loading) return <LoadingState text="Loading forecasts..." />;
+  if (loading && !data) return <LoadingState text="Generating forecasts..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
   if (!data) return <EmptyState message="No forecast data available" />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-gray-900">Forecasts</h1>
-            <span className={`w-2 h-2 rounded-full ${connected ? "bg-econ-green" : "bg-gray-300"}`} title={connected ? "Live" : "Disconnected"} />
-          </div>
-          <p className="text-sm text-gray-500 mt-0.5">Predictive projections across all economic categories</p>
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400 mb-2 inline-block">
+            Predictive Analytics
+          </span>
+          <h1 className="text-3xl font-bold text-surface-900 dark:text-white tracking-tight">Forecast Engine</h1>
+          <p className="text-surface-500 dark:text-surface-400 mt-1">
+            Projections across all economic sectors using high-fidelity simulations.
+          </p>
         </div>
-        <select value={realm} onChange={(e) => setRealm(Number(e.target.value))} className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg text-gray-700">
-          <option value={0}>Realm 0</option>
-          <option value={1}>Realm 1</option>
-        </select>
+
+        <div className="flex items-center gap-3 bg-white dark:bg-surface-900 p-1.5 rounded-xl border border-surface-200 dark:border-surface-800 shadow-sm">
+          <label className="text-xs font-bold text-surface-400 dark:text-surface-500 uppercase ml-2">Realm</label>
+          <select
+            value={realm}
+            onChange={(e) => setRealm(Number(e.target.value))}
+            className="bg-surface-50 dark:bg-surface-800 border-none rounded-lg text-sm font-semibold px-4 py-1.5 focus:ring-2 focus:ring-brand-500 dark:text-white"
+          >
+            <option value={0}>Realm 0</option>
+            <option value={1}>Realm 1</option>
+          </select>
+        </div>
       </div>
 
-      <Section title="Macro Forecast Overview" subtitle="Next-period predicted values and direction">
+      <Section title="Next-Period Outlook" subtitle="Predicted values for the immediate upcoming cycle">
         <CardGrid cols={4}>
           {seriesList.slice(0, 4).map((s) => {
             const d = getDirection(s.trend);
             return (
               <StatCard key={s.key} title={s.label}
                 value={s.fc?.[0]?.v != null ? fmt(s.fc[0].v) : "-"}
-                subtitle={`${d.arrow} ${s.direction} (${((s.reliability ?? 0) * 100).toFixed(0)}% confidence)`}
+                subtitle={`${s.direction?.toUpperCase()} (${((s.reliability ?? 0) * 100).toFixed(0)}% CONF)`}
+                trend={d.arrow === "\u2191" ? 1 : d.arrow === "\u2193" ? -1 : 0}
+                color={`border-l-[${s.color}]`}
+                icon={d.arrow === "\u2191" ? "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" : "M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"}
               />
             );
           })}
         </CardGrid>
       </Section>
 
-      {forecastChart.length > 0 && (
-        <Section title="Sector Forecast Comparison" subtitle="Projected values across all sectors">
-          <div className="card p-5">
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={forecastChart}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="idx" tick={{ fontSize: 10 }} label={{ value: "Period", position: "insideBottom", offset: -5 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Legend />
-                {seriesList.map((s) => (
-                  <Line key={s.key} type="monotone" dataKey={s.key} stroke={s.color} strokeWidth={2} dot={false} name={s.label} />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Section>
-      )}
-
-      <Section title="Sector Forecast Grid" subtitle="Detailed forecast per sector">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {seriesList.map((s) => {
-            const d = getDirection(s.trend);
-            const latest = s.fc?.[0];
-            const prev = s.fc?.[1];
-            const pctChange = latest && prev && prev.v ? (((latest.v - prev.v) / prev.v) * 100).toFixed(1) : null;
-            return (
-              <div key={s.key} className="card p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-900">{s.label}</h3>
-                  <span className={`text-xs font-mono ${d.color}`}>{d.arrow} {pctChange ? `${pctChange}%` : ""}</span>
-                </div>
-                <div className="text-2xl font-bold font-mono text-gray-900 mb-2">{latest?.v != null ? fmt(latest.v) : "-"}</div>
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>Reliability: {((s.reliability ?? 0) * 100).toFixed(0)}%</span>
-                  <span>Volatility: {(s.volatility ?? 0).toFixed(2)}</span>
-                </div>
-                <div className="mt-2 w-full bg-gray-100 rounded-full h-1.5">
-                  <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${((s.reliability ?? 0) * 100).toFixed(0)}%` }} />
-                </div>
-                <p className="text-xs text-gray-400 mt-2 capitalize">{s.direction}</p>
-              </div>
-            );
-          })}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-8 card p-6">
+           <h3 className="font-bold text-surface-900 dark:text-white mb-6">Aggregate Sector Trajectory</h3>
+           <div className="h-[350px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={forecastChart}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="idx" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                  <Legend iconType="circle" />
+                  {seriesList.map((s) => (
+                    <Line key={s.key} type="monotone" dataKey={s.key} stroke={s.color} strokeWidth={2} dot={false} name={s.label} />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+           </div>
         </div>
-      </Section>
 
-      {inflationSeries && (
-        <Section title="Inflation Outlook" subtitle="CPI/inflation sector forecast trajectory">
-          <div className="card p-5">
-            <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={(inflationSeries.fc ?? []).map((p, i) => ({ ...p, idx: i }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="idx" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Area type="monotone" dataKey="v" stroke={inflationSeries.color} fill={inflationSeries.color + "22"} strokeWidth={2} name="Projected" />
-              </AreaChart>
-            </ResponsiveContainer>
-            <ExplainText>
-              This sector tracks price and availability trends. The forecast uses Holt-Winters exponential smoothing with
-              volatility-adjusted confidence bands. Reliability of {(inflationSeries.reliability * 100).toFixed(0)}%
-              reflects historical forecast accuracy for this category.
-            </ExplainText>
-          </div>
-        </Section>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Section title="Forecast Confidence" subtitle="Reliability scores per sector">
-          <div className="card p-5">
-            <div className="space-y-3">
-              {seriesList.map((s) => (
-                <div key={s.key}>
-                  <div className="flex justify-between text-xs text-gray-600 mb-1">
-                    <span>{s.label}</span>
-                    <span>{((s.reliability ?? 0) * 100).toFixed(0)}%</span>
+        <div className="lg:col-span-4 space-y-6">
+           <div className="card p-6">
+              <h3 className="font-bold text-surface-900 dark:text-white mb-4">Confidence Distribution</h3>
+              <div className="space-y-4">
+                {seriesList.map((s) => (
+                  <div key={s.key}>
+                    <div className="flex justify-between text-[10px] font-bold text-surface-500 uppercase mb-1">
+                      <span>{s.label}</span>
+                      <span>{((s.reliability ?? 0) * 100).toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full bg-surface-100 dark:bg-surface-800 rounded-full h-1.5 overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${((s.reliability ?? 0) * 100).toFixed(0)}%`, backgroundColor: s.color }} />
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
-                    <div className="h-2 rounded-full" style={{ width: `${((s.reliability ?? 0) * 100).toFixed(0)}%`, backgroundColor: s.color }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-gray-400 mt-3">
-              Reliability is derived from volatility, historical accuracy, and data recency. Higher = more trustworthy.
-              Average: {(avgReliability * 100).toFixed(0)}%.
-            </p>
-          </div>
-        </Section>
+                ))}
+              </div>
+           </div>
 
-        <Section title="Forecast Accuracy" subtitle="Directional accuracy and historical performance">
-          <div className="card p-5">
-            <div className="text-center py-6">
-              <div className="text-4xl font-bold font-mono text-gray-900 mb-2">{(avgReliability * 100).toFixed(0)}%</div>
-              <p className="text-sm text-gray-500">Average forecast confidence</p>
-            </div>
-            <div className="border-t border-gray-100 pt-4 space-y-2">
-              {seriesList.slice(0, 4).map((s) => (
-                <div key={s.key} className="flex justify-between text-xs">
-                  <span className="text-gray-600">{s.label}</span>
-                  <span className="text-gray-900 font-mono">
-                    {s.fc?.[0]?.v != null ? fmt(s.fc[0].v) : "-"} &rarr; {s.direction}
-                  </span>
+           <div className="card p-6 bg-brand-600 text-white border-none shadow-lg shadow-brand-600/20">
+              <h3 className="font-bold mb-2">Simulation Accuracy</h3>
+              <div className="text-4xl font-black mb-1">{(avgReliability * 100).toFixed(1)}%</div>
+              <p className="text-xs text-brand-100 mb-4 uppercase font-bold tracking-widest">Mean Confidence Score</p>
+              <div className="text-xs opacity-80 leading-relaxed">
+                 Aggregate reliability is calculated from historical prediction convergence and data variance. High confidence suggests stable production cycles.
+              </div>
+           </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {seriesList.map((s) => {
+          const d = getDirection(s.trend);
+          const latest = s.fc?.[0];
+          const prev = s.fc?.[1];
+          const pctChange = latest && prev && prev.v ? (((latest.v - prev.v) / prev.v) * 100).toFixed(1) : null;
+          return (
+            <div key={s.key} className="card p-5 group hover:border-brand-500 transition-colors">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-surface-100 dark:bg-surface-800" style={{ color: s.color }}>
+                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
                 </div>
-              ))}
+                <span className={`text-xs font-bold font-mono ${d.color}`}>{d.arrow} {pctChange ? `${pctChange}%` : ""}</span>
+              </div>
+              <h3 className="text-sm font-bold text-surface-900 dark:text-white mb-1 uppercase tracking-tight">{s.label}</h3>
+              <div className="text-xl font-black text-surface-900 dark:text-white mb-4">{latest?.v != null ? fmt(latest.v) : "-"}</div>
+              <div className="flex items-center justify-between text-[10px] font-bold text-surface-400 uppercase">
+                <span>Rel: {((s.reliability ?? 0) * 100).toFixed(0)}%</span>
+                <span>Vol: {(s.volatility ?? 0).toFixed(2)}</span>
+              </div>
             </div>
-          </div>
-        </Section>
+          );
+        })}
       </div>
     </div>
   );
@@ -213,8 +187,4 @@ function fmt(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
   if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
   return n.toFixed(2);
-}
-
-function ExplainText({ children }: { children: ReactNode }) {
-  return <details className="mt-3 text-xs text-gray-400"><summary className="cursor-pointer hover:text-gray-600">Why this forecast?</summary>{children}</details>;
 }

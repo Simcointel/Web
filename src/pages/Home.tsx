@@ -18,7 +18,7 @@ export function HomePage() {
 
   useSseEvent("alert_generated", useCallback(() => { refresh(); }, [refresh]));
 
-  if (loading) return <LoadingState text="Loading dashboard..." />;
+  if (loading && !dashState) return <LoadingState text="Loading dashboard..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
 
   const ds: RealmDashboard | undefined = realm != null ? (dashState as any)?.[String(realm)] : undefined;
@@ -34,89 +34,127 @@ export function HomePage() {
   const topAlert = alertList[0];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Economic Intelligence Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            <span className="hidden sm:inline">Dashboard</span> &middot; Realm {realm} &middot; {connected ? "Live" : "Polling"}
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
+              Overview
+            </span>
+            <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${connected ? "text-econ-green" : "text-surface-400"}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-econ-green animate-pulse" : "bg-surface-300"}`} />
+              {connected ? "Live System" : "Historical View"}
+            </span>
+          </div>
+          <h1 className="text-3xl font-bold text-surface-900 dark:text-white tracking-tight">Intelligence Dashboard</h1>
+          <p className="text-surface-500 dark:text-surface-400 mt-1 max-w-2xl">
+            Real-time monitoring of economic stability, market sentiment, and systemic risk factors across Simco realms.
           </p>
         </div>
-        <span className={`inline-flex items-center gap-1.5 text-xs ${connected ? "text-econ-green" : "text-gray-400"}`}>
-          <span className={`w-2 h-2 rounded-full ${connected ? "bg-econ-green" : "bg-gray-300"}`} />
-          {connected ? "Connected" : "Offline"}
-        </span>
-        <select value={realm} onChange={(e) => setRealm(Number(e.target.value))}
-          className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg text-gray-700">
-          <option value={0}>Realm 0</option>
-          <option value={1}>Realm 1</option>
-        </select>
+
+        <div className="flex items-center gap-3 bg-white dark:bg-surface-900 p-1.5 rounded-xl border border-surface-200 dark:border-surface-800 shadow-sm">
+          <label className="text-xs font-bold text-surface-400 dark:text-surface-500 uppercase ml-2">Realm</label>
+          <select
+            value={realm}
+            onChange={(e) => setRealm(Number(e.target.value))}
+            className="bg-surface-50 dark:bg-surface-800 border-none rounded-lg text-sm font-semibold px-4 py-1.5 focus:ring-2 focus:ring-brand-500 dark:text-white"
+          >
+            <option value={0}>Global 0</option>
+            <option value={1}>Sandbox 1</option>
+          </select>
+        </div>
       </div>
 
-      <Section title="Composite Scores" subtitle="Five key economic health indicators (0–100)">
+      <Section title="Economic Vitality" subtitle="Primary health indicators for the current operating environment">
         <CardGrid cols={5}>
-          <StatCard title="Economic Health" value={scores?.eh ?? "-"} color="border-l-blue-500" icon={"\u2302"} />
-          <StatCard title="Market Sentiment" value={scores?.ms ?? "-"} color="border-l-purple-500" icon={"\u2605"} />
-          <StatCard title="Stability" value={scores?.st ?? "-"} color="border-l-green-500" icon={"\u2696"} />
-          <StatCard title="Inflation Pressure" value={scores?.ip ?? "-"} color="border-l-amber-500" icon={"\u2191"} />
-          <StatCard title="Systemic Risk" value={scores?.sr ?? "-"} color="border-l-red-500" icon={"\u26A0"} />
+          <StatCard title="Economic Health" value={scores?.eh ?? "-"} color="border-l-brand-500" icon={"\u2302"} />
+          <StatCard title="Market Sentiment" value={scores?.ms ?? "-"} color="border-l-econ-purple" icon={"\u2605"} />
+          <StatCard title="Stability" value={scores?.st ?? "-"} color="border-l-econ-green" icon={"\u2696"} />
+          <StatCard title="Inflation Pressure" value={scores?.ip ?? "-"} color="border-l-econ-amber" icon={"\u2191"} />
+          <StatCard title="Systemic Risk" value={scores?.sr ?? "-"} color="border-l-econ-red" icon={"\u26A0"} />
         </CardGrid>
       </Section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Section title="Score Breakdown">
-            <div className="card p-5 space-y-3">
-              <ScoreBar value={scores?.eh ?? 0} label="Economic Health" color="bg-blue-500" />
-              <ScoreBar value={scores?.ms ?? 0} label="Market Sentiment" color="bg-purple-500" />
-              <ScoreBar value={scores?.st ?? 0} label="Stability" color="bg-green-500" />
-              <ScoreBar value={scores?.ip ?? 0} label="Inflation Pressure" color="bg-amber-500" />
-              <ScoreBar value={scores?.sr ?? 0} label="Systemic Risk" color="bg-red-500" />
-            </div>
-          </Section>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-8 space-y-8">
+          <div className="card overflow-hidden">
+             <div className="px-6 py-4 border-b border-surface-200 dark:border-surface-800 flex items-center justify-between">
+                <h3 className="font-bold text-surface-900 dark:text-white">Health Composition</h3>
+                <div className="flex gap-2">
+                   <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-brand-500"></span>
+                      <span className="text-[10px] font-bold text-surface-400 uppercase">Current</span>
+                   </div>
+                </div>
+             </div>
+             <div className="p-8 space-y-6">
+                <ScoreBar value={scores?.eh ?? 0} label="Economic Health" color="bg-brand-500" />
+                <ScoreBar value={scores?.ms ?? 0} label="Market Sentiment" color="bg-econ-purple" />
+                <ScoreBar value={scores?.st ?? 0} label="Stability" color="bg-econ-green" />
+                <ScoreBar value={scores?.ip ?? 0} label="Inflation Pressure" color="bg-econ-amber" />
+                <ScoreBar value={scores?.sr ?? 0} label="Systemic Risk" color="bg-econ-red" />
+             </div>
+          </div>
+
+          <div className="card overflow-hidden">
+             <div className="px-6 py-4 border-b border-surface-200 dark:border-surface-800">
+                <h3 className="font-bold text-surface-900 dark:text-white">Recent Activity</h3>
+             </div>
+             <div className="divide-y divide-surface-100 dark:divide-surface-800">
+               {alertList.length > 0 ? alertList.map((a) => (
+                  <div key={a.id} className="flex items-start gap-4 px-6 py-4 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors">
+                    <div className="mt-1"><SeverityBadge severity={a.se} /></div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs font-bold text-surface-400 uppercase tracking-tight">{a.ca}</span>
+                        <span className="text-[10px] text-surface-400 font-mono">{new Date(a.ts).toLocaleTimeString()}</span>
+                      </div>
+                      <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 truncate">{a.ti}</p>
+                      {a.de && <p className="text-xs text-surface-500 dark:text-surface-400 mt-1 line-clamp-1">{a.de}</p>}
+                    </div>
+                  </div>
+                )) : (
+                  <div className="px-6 py-12 text-center text-surface-400 text-sm">No recent activity detected</div>
+                )}
+             </div>
+          </div>
         </div>
 
-        <div>
-          <Section title="Current Regime">
-            <div className="card p-5 text-center">
-              <div className={`text-3xl font-bold mb-1 ${regime?.na === "Expansion" ? "text-econ-green" : regime?.na === "Recession" ? "text-econ-red" : regime?.na === "Recovery" ? "text-blue-600" : "text-econ-amber"}`}>
-                {regime?.na ?? "-"}
-              </div>
-              <div className="text-sm text-gray-500 mb-3">Confidence: {regime?.sc ?? "-"}%</div>
-              <MiniSparkline data={sparkData} color="#3b82f6" />
-              <div className="text-[10px] text-gray-400 mt-2">Score distribution</div>
+        <div className="lg:col-span-4 space-y-8">
+          <div className="card p-8 flex flex-col items-center text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 via-econ-green to-econ-amber"></div>
+            <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest mb-4">Current Economic Regime</span>
+            <div className={`text-4xl font-black mb-2 tracking-tighter ${regime?.na === "Expansion" ? "text-econ-green" : regime?.na === "Recession" ? "text-econ-red" : regime?.na === "Recovery" ? "text-brand-600" : "text-econ-amber"}`}>
+              {regime?.na ?? "Neutral"}
             </div>
-          </Section>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-100 dark:bg-surface-800 text-xs font-bold text-surface-600 dark:text-surface-300 mb-8">
+              {regime?.sc ?? "0"}% Confidence
+            </div>
+            <div className="w-full h-16">
+              <MiniSparkline data={sparkData} color={regime?.na === "Expansion" ? "#10b981" : "#3b82f6"} />
+            </div>
+            <p className="text-[10px] text-surface-400 font-medium uppercase tracking-wider mt-4">Composite Factor Distribution</p>
+          </div>
 
           {topAlert && (
-            <Section title="Latest Alert">
-              <div className="card p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <SeverityBadge severity={topAlert.se} />
-                  <span className="text-xs text-gray-500">{new Date(topAlert.ts).toLocaleString()}</span>
-                </div>
-                <p className="text-sm font-medium text-gray-900">{topAlert.ti}</p>
-                {topAlert.de && <p className="text-xs text-gray-500 mt-1">{topAlert.de}</p>}
+            <div className="card overflow-hidden border-l-4 border-l-econ-red">
+              <div className="bg-econ-red/5 px-6 py-4 border-b border-surface-200 dark:border-surface-800">
+                <h3 className="font-bold text-econ-red text-sm uppercase tracking-wider">Critical Alert</h3>
               </div>
-            </Section>
+              <div className="p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[10px] font-mono text-surface-400">{new Date(topAlert.ts).toLocaleString()}</span>
+                </div>
+                <p className="text-base font-bold text-surface-900 dark:text-white leading-tight mb-2">{topAlert.ti}</p>
+                {topAlert.de && <p className="text-sm text-surface-600 dark:text-surface-400">{topAlert.de}</p>}
+                <button className="mt-4 text-xs font-bold text-brand-600 dark:text-brand-400 uppercase tracking-widest hover:underline">
+                  Investigate Signal &rarr;
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>
-
-      {alertList.length > 0 && (
-        <Section title="Recent Alerts" subtitle="Latest 5 events across all realms">
-          <div className="card divide-y divide-gray-100">
-            {alertList.map((a) => (
-              <div key={a.id} className="flex items-center gap-3 px-5 py-3 text-sm">
-                <SeverityBadge severity={a.se} />
-                <span className="text-gray-500 text-xs w-16 shrink-0">{new Date(a.ts).toLocaleDateString()}</span>
-                <span className="text-gray-400 text-xs w-16 shrink-0">{a.ca}</span>
-                <span className="text-gray-900 truncate">{a.ti}</span>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
     </div>
   );
 }
