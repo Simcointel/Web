@@ -2,10 +2,10 @@ import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { StatCard } from "../components/StatCard";
 import { Section, CardGrid } from "../components/Layout";
-import { LoadingState, ErrorState, EmptyState } from "../components/States";
+import { LoadingState, ErrorState } from "../components/States";
 import { useState, useMemo } from "react";
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine,
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine, AreaChart, Area
 } from "recharts";
 
 export function MacroPage() {
@@ -28,165 +28,174 @@ export function MacroPage() {
   if (lError) return <ErrorState message={lError} onRetry={lRefresh} />;
 
   const latestH = latest?.latestHistory;
-  const latestI = latest?.latestIndexes;
-  const latestInf = latest?.latestInflation;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Macro Economy</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Realm-level economic indicators, history, and phase analysis</p>
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400 mb-2 inline-block">
+            Macro Statistics
+          </span>
+          <h1 className="text-3xl font-bold text-surface-900 dark:text-white tracking-tight">Economic Indicators</h1>
+          <p className="text-surface-500 dark:text-surface-400 mt-1">
+            Historical and real-time performance of the realm-wide economy.
+          </p>
         </div>
-        <select
-          value={realm}
-          onChange={(e) => setRealm(Number(e.target.value))}
-          className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg text-gray-700"
-        >
-          <option value={0}>Realm 0</option>
-          <option value={1}>Realm 1</option>
-        </select>
+
+        <div className="flex items-center gap-3 bg-white dark:bg-surface-900 p-1.5 rounded-xl border border-surface-200 dark:border-surface-800 shadow-sm">
+          <label className="text-xs font-bold text-surface-400 dark:text-surface-500 uppercase ml-2">Realm</label>
+          <select
+            value={realm}
+            onChange={(e) => setRealm(Number(e.target.value))}
+            className="bg-surface-50 dark:bg-surface-800 border-none rounded-lg text-sm font-semibold px-4 py-1.5 focus:ring-2 focus:ring-brand-500 dark:text-white"
+          >
+            <option value={0}>Realm 0</option>
+            <option value={1}>Realm 1</option>
+          </select>
+        </div>
       </div>
 
-      <Section title="Latest State">
+      <Section title="Latest Snapshot">
         <CardGrid cols={4}>
-          <StatCard title="Companies Value" value={latestH?.companiesValue != null ? fmt(latestH.companiesValue) : "-"} subtitle={latestH?.date ? new Date(latestH.date).toLocaleDateString() : undefined} color="border-l-blue-500" />
-          <StatCard title="Active Companies" value={latestH?.activeCompanies ?? "-"} color="border-l-green-500" />
-          <StatCard title="Bonds Sold" value={latestH?.bondsSold != null ? fmt(latestH.bondsSold) : "-"} color="border-l-purple-500" />
-          <StatCard title="Total Buildings" value={latestH?.totalBuildings ?? "-"} color="border-l-amber-500" />
+          <StatCard title="Companies Value" value={latestH?.companiesValue != null ? fmt(latestH.companiesValue) : "-"} subtitle={latestH?.date ? new Date(latestH.date).toLocaleDateString() : undefined} color="border-l-brand-500" />
+          <StatCard title="Active Companies" value={latestH?.activeCompanies ?? "-"} color="border-l-econ-green" />
+          <StatCard title="Bonds Sold" value={latestH?.bondsSold != null ? fmt(latestH.bondsSold) : "-"} color="border-l-econ-purple" />
+          <StatCard title="Total Buildings" value={latestH?.totalBuildings ?? "-"} color="border-l-econ-amber" />
         </CardGrid>
       </Section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {history?.history && history.history.length > 0 && (
-          <Section title="Companies Value &amp; GDP History">
-            <div className="card p-5">
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={(indexes?.indexes ? history.history.map((h) => {
+          <div className="card p-6">
+            <h3 className="font-bold text-surface-900 dark:text-white mb-6">Valuation & Output</h3>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={(indexes?.indexes ? history.history.map((h) => {
                   const ix = indexes.indexes.find((i: any) => i.date === h.date);
                   return { ...h, gdp: ix?.gdp ?? null, d: new Date(h.date).toLocaleDateString() };
                 }) : history.history.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() })))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="companiesValue" stroke="#3b82f6" strokeWidth={2} dot={false} name="Companies Value" />
-                  <Line type="monotone" dataKey="gdp" stroke="#059669" strokeWidth={2} dot={false} name="GDP" />
-                </LineChart>
+                  <defs>
+                    <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                  <Legend iconType="circle" />
+                  <Area type="monotone" dataKey="companiesValue" stroke="#0ea5e9" fillOpacity={1} fill="url(#colorVal)" name="Companies Value" strokeWidth={2} />
+                  <Line type="monotone" dataKey="gdp" stroke="#10b981" strokeWidth={2} dot={false} name="GDP" />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
-          </Section>
+          </div>
         )}
 
         {history?.history && history.history.length > 0 && (
-          <Section title="Active Companies &amp; Buildings">
-            <div className="card p-5">
-              <ResponsiveContainer width="100%" height={250}>
+          <div className="card p-6">
+            <h3 className="font-bold text-surface-900 dark:text-white mb-6">Market Activity</h3>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={history.history.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="activeCompanies" stroke="#059669" strokeWidth={2} dot={false} name="Active Companies" />
-                  <Line type="monotone" dataKey="totalBuildings" stroke="#d97706" strokeWidth={2} dot={false} name="Total Buildings" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                  <Legend iconType="circle" />
+                  <Line type="monotone" dataKey="activeCompanies" stroke="#10b981" strokeWidth={2} dot={false} name="Active Companies" />
+                  <Line type="monotone" dataKey="totalBuildings" stroke="#f59e0b" strokeWidth={2} dot={false} name="Total Buildings" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
-          </Section>
+          </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {indexes?.indexes && indexes.indexes.length > 0 && (
-          <Section title="Price Indexes (CPI, Core CPI)">
-            <div className="card p-5">
-              <ResponsiveContainer width="100%" height={250}>
+          <div className="card p-6">
+            <h3 className="font-bold text-surface-900 dark:text-white mb-6">Price Indexes</h3>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={indexes.indexes.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="cpi" stroke="#3b82f6" strokeWidth={2} dot={false} name="CPI" />
-                  <Line type="monotone" dataKey="coreCpi" stroke="#7c3aed" strokeWidth={2} dot={false} name="Core CPI" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                  <Legend iconType="circle" />
+                  <Line type="monotone" dataKey="cpi" stroke="#0ea5e9" strokeWidth={2} dot={false} name="CPI" />
+                  <Line type="monotone" dataKey="coreCpi" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Core CPI" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
-          </Section>
+          </div>
         )}
 
         {inflation?.inflation && inflation.inflation.length > 0 && (
-          <Section title="Inflation Rates">
-            <div className="card p-5">
-              <ResponsiveContainer width="100%" height={250}>
+          <div className="card p-6">
+            <h3 className="font-bold text-surface-900 dark:text-white mb-6">Inflation Dynamics</h3>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={inflation.inflation.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="cpiRate" stroke="#3b82f6" strokeWidth={2} dot={false} name="CPI Rate" />
-                  <Line type="monotone" dataKey="coreCpiRate" stroke="#7c3aed" strokeWidth={2} dot={false} name="Core CPI Rate" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                  <Legend iconType="circle" />
+                  <ReferenceLine y={0} stroke="#94a3b8" />
+                  <Line type="monotone" dataKey="cpiRate" stroke="#0ea5e9" strokeWidth={2} dot={false} name="CPI Rate" />
+                  <Line type="monotone" dataKey="coreCpiRate" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Core CPI Rate" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
-          </Section>
+          </div>
         )}
       </div>
 
-      {indexes?.indexes && indexes.indexes.length > 0 && refPrice > 0 && (
-        <Section title="Inflation vs Reference" subtitle="Deviation from reference price (%)">
-          <div className="card p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xs text-gray-500">Reference:</span>
-              <span className="text-xs font-mono font-medium text-gray-700">{refPrice.toFixed(2)}</span>
-              <span className="text-xs text-gray-400 ml-1">(first CPI value)</span>
-              <div className="ml-auto flex items-center gap-1">
-                <span className="text-xs text-gray-400">Override:</span>
-                <input type="number" value={refOverride || ""} onChange={(e) => setRefOverride(Number(e.target.value))} className="w-20 px-1.5 py-0.5 text-xs border border-gray-300 rounded" placeholder="0" />
-                {refOverride > 0 && <button onClick={() => setRefOverride(0)} className="text-xs text-gray-400 hover:text-gray-600">&times;</button>}
-              </div>
-            </div>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={indexes.indexes.map((h) => ({
-                ...h,
-                d: new Date(h.date).toLocaleDateString(),
-                cpiDev: ((h.cpi - refPrice) / refPrice) * 100,
-                coreCpiDev: ((h.coreCpi - refPrice) / refPrice) * 100,
-              }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
-                <Tooltip formatter={(v: number) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`]} />
-                <Legend />
-                <ReferenceLine y={0} stroke="#666" strokeDasharray="5 5" label="Baseline" />
-                <Line type="monotone" dataKey="cpiDev" stroke="#3b82f6" strokeWidth={2} dot={false} name="CPI" />
-                <Line type="monotone" dataKey="coreCpiDev" stroke="#7c3aed" strokeWidth={2} dot={false} name="Core CPI" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Section>
-      )}
-
       {phases && (
-        <Section title="Phase History" subtitle={`Current: ${phases.currentPhase} (${phases.totalDays} days tracked)`}>
-          <div className="card divide-y divide-gray-100">
-            {phases.phases.map((p, i) => (
-              <div key={i} className="flex items-center justify-between px-5 py-3 text-sm">
-                <div className="flex items-center gap-3">
-                  <PhaseDot phase={p.phase} />
-                  <span className="font-medium text-gray-900">{p.phase}</span>
-                </div>
-                <div className="text-xs text-gray-500">
-                  {new Date(p.startDate).toLocaleDateString()} &ndash; {p.endDate ? new Date(p.endDate).toLocaleDateString() : "Present"}
-                  <span className="ml-2 text-gray-400">({p.days}d)</span>
-                </div>
-              </div>
-            ))}
+        <div className="card overflow-hidden">
+          <div className="px-6 py-4 border-b border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/50 flex items-center justify-between">
+            <h3 className="font-bold text-surface-900 dark:text-white">Regime History</h3>
+            <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
+              Current: <span className="font-bold text-brand-600 dark:text-brand-400">{phases.currentPhase}</span>
+            </span>
           </div>
-        </Section>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-surface-50 dark:bg-surface-800/30 text-[10px] font-bold uppercase tracking-wider text-surface-400">
+                <tr>
+                  <th className="px-6 py-3">Phase</th>
+                  <th className="px-6 py-3 text-right">Start Date</th>
+                  <th className="px-6 py-3 text-right">End Date</th>
+                  <th className="px-6 py-3 text-right">Duration</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
+                {phases.phases.slice().reverse().map((p, i) => (
+                  <tr key={i} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/30 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3 font-semibold text-surface-900 dark:text-white">
+                        <PhaseDot phase={p.phase} />
+                        {p.phase}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right text-surface-500 dark:text-surface-400 tabular-nums">
+                      {new Date(p.startDate).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-right text-surface-500 dark:text-surface-400 tabular-nums">
+                      {p.endDate ? new Date(p.endDate).toLocaleDateString() : "Present"}
+                    </td>
+                    <td className="px-6 py-4 text-right font-medium text-surface-900 dark:text-white tabular-nums">
+                      {p.days}d
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -199,6 +208,12 @@ function fmt(n: number): string {
 }
 
 function PhaseDot({ phase }: { phase: string }) {
-  const colors: Record<string, string> = { Expansion: "bg-econ-green", Stagnation: "bg-econ-amber", Recession: "bg-econ-red", Recovery: "bg-blue-500", Volatile: "bg-purple-500" };
-  return <span className={`w-2.5 h-2.5 rounded-full ${colors[phase] ?? "bg-gray-400"}`} />;
+  const colors: Record<string, string> = {
+    Expansion: "bg-econ-green",
+    Stagnation: "bg-econ-amber",
+    Recession: "bg-econ-red",
+    Recovery: "bg-brand-500",
+    Volatile: "bg-econ-purple"
+  };
+  return <span className={`w-2 h-2 rounded-full ring-4 ring-offset-0 ${colors[phase] ?? "bg-surface-400"} ${colors[phase]?.replace('bg-', 'ring-')}/20`} />;
 }

@@ -15,17 +15,17 @@ describe("StatCard", () => {
   });
 
   it("renders up trend", () => {
-    render(<StatCard title="GDP" value="$1.2T" trend={{ up: true, label: "+2.5%" }} />);
+    render(<StatCard title="GDP" value="$1.2T" trend={2.5} />);
     expect(screen.getByText("+2.5%", { exact: false })).toBeDefined();
   });
 
   it("renders down trend", () => {
-    render(<StatCard title="GDP" value="$1.2T" trend={{ up: false, label: "-1.2%" }} />);
+    render(<StatCard title="GDP" value="$1.2T" trend={-1.2} />);
     expect(screen.getByText("-1.2%", { exact: false })).toBeDefined();
   });
 
-  it("renders children", () => {
-    render(<StatCard title="Card"><div data-testid="child">Extra</div></StatCard>);
-    expect(screen.getByTestId("child")).toBeDefined();
+  it("renders icon", () => {
+    render(<StatCard title="Card" value="100" icon={<span data-testid="icon">I</span>} />);
+    expect(screen.getByTestId("icon")).toBeDefined();
   });
 });
