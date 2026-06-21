@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
+import { BUILDINGS, CONSTRUCTION_MATERIALS } from "../data/simco_static";
 import * as dataRepo from "../services/dataRepo";
 import { Section, CardGrid } from "../components/Layout";
 import { LoadingState } from "../components/States";
 
-type StatementType = "income" | "cashflow" | "receipts" | "balance" | "calculators";
+type StatementType = "income" | "cashflow" | "receipts" | "balance" | "calculators" | "board";
 
 interface CSVData {
   id: string;
@@ -90,7 +91,7 @@ export function CompanyToolsPage() {
       </div>
 
       <div className="flex overflow-x-auto gap-1 bg-surface-100 dark:bg-surface-800 p-1 rounded-xl w-fit">
-        {(["income", "cashflow", "receipts", "balance", "calculators"] as const).map((tab) => (
+        {(["income", "cashflow", "receipts", "balance", "calculators", "board"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -104,13 +105,16 @@ export function CompanyToolsPage() {
             {tab === "income" ? "Income" :
              tab === "cashflow" ? "Cash Flow" :
              tab === "receipts" ? "Receipts" :
-             tab === "balance" ? "Balance" : "Calculators"}
+             tab === "balance" ? "Balance" :
+             tab === "calculators" ? "Calculators" : "Board"}
           </button>
         ))}
       </div>
 
       {activeTab === "calculators" ? (
         <CalculatorsView margins={margins?.resources ?? []} loading={mLoading} realm={realm} />
+      ) : activeTab === "board" ? (
+        <BoardImpactView />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-4 space-y-8">
@@ -182,6 +186,8 @@ export function CompanyToolsPage() {
 }
 
 function CalculatorsView({ margins, loading, realm }: { margins: any[]; loading: boolean; realm: number }) {
+  const [activeCalc, setActiveCalc] = useState<"production" | "construction" | "retail">("production");
+  const [selectedBuilding, setSelectedBuilding] = useState<number>(1);
   const [selectedResource, setSelectedResource] = useState<string>("");
   const [qty, setQty] = useState<number>(100);
   const [adminCost, setAdminCost] = useState<number>(10);
@@ -195,11 +201,28 @@ function CalculatorsView({ margins, loading, realm }: { margins: any[]; loading:
   }, [res, deps]);
 
   return (
+    <div className="space-y-8">
+      <div className="flex gap-4">
+        <button onClick={() => setActiveCalc("production")} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeCalc === "production" ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20" : "bg-surface-100 dark:bg-surface-800 text-surface-500"}`}>Production</button>
+        <button onClick={() => setActiveCalc("construction")} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeCalc === "construction" ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20" : "bg-surface-100 dark:bg-surface-800 text-surface-500"}`}>Construction</button>
+        <button onClick={() => setActiveCalc("retail")} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeCalc === "retail" ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20" : "bg-surface-100 dark:bg-surface-800 text-surface-500"}`}>Retail</button>
+      </div>
+
+    {activeCalc === "production" && (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-500">
        <div className="lg:col-span-4 space-y-8">
           <div className="card p-6 border-l-4 border-l-brand-600">
              <h3 className="font-bold text-surface-900 dark:text-white mb-6 uppercase text-xs tracking-widest">Production Config</h3>
              <div className="space-y-4">
+                <div>
+                   <label className="text-[10px] font-bold text-surface-400 uppercase mb-1 block">Building</label>
+                   <select value={selectedBuilding} onChange={(e) => {
+                      setSelectedBuilding(Number(e.target.value));
+                      setSelectedResource("");
+                   }} className="input">
+                      {BUILDINGS.filter(b => b.type === "production").map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                   </select>
+                </div>
                 <div>
                    <label className="text-[10px] font-bold text-surface-400 uppercase mb-1.5 block">Target Resource</label>
                    <select
@@ -208,7 +231,10 @@ function CalculatorsView({ margins, loading, realm }: { margins: any[]; loading:
                       className="input"
                    >
                       <option value="">-- select resource --</option>
-                      {margins.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                      {BUILDINGS.find(b => b.id === selectedBuilding)?.produces?.map(pid => {
+                         const m = margins.find(rm => rm.id === pid);
+                         return m ? <option key={m.id} value={m.id}>{m.name}</option> : null;
+                      })}
                    </select>
                 </div>
                 <div>
@@ -272,7 +298,7 @@ function CalculatorsView({ margins, loading, realm }: { margins: any[]; loading:
                    <span className="px-2 py-0.5 bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 rounded text-[10px] font-bold uppercase">Dynamic Analysis</span>
                 </div>
                 <div className="p-8">
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-12">
                       <div className="p-6 rounded-2xl bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800">
                          <p className="text-[10px] font-bold text-surface-400 uppercase mb-1">Hourly Revenue</p>
                          <div className="text-3xl font-black text-surface-900 dark:text-white font-mono tracking-tighter">${(res.outputVwap * qty).toFixed(2)}</div>
@@ -284,6 +310,10 @@ function CalculatorsView({ margins, loading, realm }: { margins: any[]; loading:
                       <div className="p-6 rounded-2xl bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-800/50">
                          <p className="text-[10px] font-bold text-brand-600 dark:text-brand-400 uppercase mb-1">Net Profit / HR</p>
                          <div className="text-3xl font-black text-econ-green font-mono tracking-tighter">${((res.outputVwap * qty) - ((res.inputCostPerHour + res.wagesPerHour + res.transportPerHour) * (qty/res.producedPerHour) * (1 + adminCost/100))).toFixed(2)}</div>
+                      </div>
+                      <div className="p-6 rounded-2xl bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800">
+                         <p className="text-[10px] font-bold text-surface-400 uppercase mb-1">PPHPL (Profit/Hr/Lvl)</p>
+                         <div className="text-3xl font-black text-surface-900 dark:text-white font-mono tracking-tighter">${(((res.outputVwap * res.producedPerHour) - (res.inputCostPerHour + res.wagesPerHour + res.transportPerHour)) * (1 - adminCost/100)).toFixed(2)}</div>
                       </div>
                    </div>
 
@@ -350,6 +380,291 @@ function CalculatorsView({ margins, loading, realm }: { margins: any[]; loading:
                 <h3 className="text-xl font-black text-surface-900 dark:text-white mb-2 uppercase tracking-tight">Production Engine Idle</h3>
                 <p className="text-sm text-surface-500 max-w-xs leading-relaxed">Select a target resource from the configuration panel to run a profitability simulation.</p>
              </div>
+          )}
+       </div>
+    </div>
+    )}
+
+    {activeCalc === "construction" && <ConstructionCalculator margins={margins} />}
+    {activeCalc === "retail" && <RetailCalculator realm={realm} />}
+    </div>
+  );
+}
+
+function BoardImpactView() {
+  const [coo, setCoo] = useState(0);
+  const [cfo, setCfo] = useState(0);
+  const [cmo, setCmo] = useState(0);
+  const [cto, setCto] = useState(0);
+  const [cash, setCash] = useState(5000000);
+
+  const threshold = 3000000 + (cfo * 500000); // Sample formula: 3M + 500k per skill
+  const aoReduction = coo * 0.02; // 2% per point?
+  const salesSpeed = cmo * 0.01; // 1% per point?
+  const patentProb = 0.1 + (cto * 0.015); // 10% base + 1.5% per point?
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-500">
+       <div className="lg:col-span-4 space-y-6">
+          <div className="card p-6 border-l-4 border-l-brand-600">
+             <h3 className="font-bold text-surface-900 dark:text-white mb-6 uppercase text-xs tracking-widest">Executive Stats</h3>
+             <div className="space-y-4">
+                <div>
+                   <label className="text-[10px] font-bold text-surface-400 uppercase mb-1 block">COO Management</label>
+                   <input type="number" value={coo} onChange={(e) => setCoo(Number(e.target.value))} className="input" />
+                </div>
+                <div>
+                   <label className="text-[10px] font-bold text-surface-400 uppercase mb-1 block">CFO Accounting</label>
+                   <input type="number" value={cfo} onChange={(e) => setCfo(Number(e.target.value))} className="input" />
+                </div>
+                <div>
+                   <label className="text-[10px] font-bold text-surface-400 uppercase mb-1 block">CMO Communication</label>
+                   <input type="number" value={cmo} onChange={(e) => setCmo(Number(e.target.value))} className="input" />
+                </div>
+                <div>
+                   <label className="text-[10px] font-bold text-surface-400 uppercase mb-1 block">CTO Science</label>
+                   <input type="number" value={cto} onChange={(e) => setCto(Number(e.target.value))} className="input" />
+                </div>
+                <div className="pt-4 border-t border-surface-100 dark:border-surface-800">
+                   <label className="text-[10px] font-bold text-surface-400 uppercase mb-1 block">Current Cash</label>
+                   <input type="number" value={cash} onChange={(e) => setCash(Number(e.target.value))} className="input font-mono" />
+                </div>
+             </div>
+          </div>
+       </div>
+
+       <div className="lg:col-span-8 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div className="card p-6">
+                <p className="text-[10px] font-bold text-surface-400 uppercase mb-1">Accounting Fee Threshold</p>
+                <div className="text-2xl font-black text-surface-900 dark:text-white font-mono">${threshold.toLocaleString()}</div>
+                <p className="text-[10px] text-surface-500 mt-2">Cash above this is taxed at 0.5% - 3.0% daily.</p>
+             </div>
+             <div className="card p-6">
+                <p className="text-[10px] font-bold text-surface-400 uppercase mb-1">Daily Accounting Tax</p>
+                <div className="text-2xl font-black text-econ-red font-mono">
+                   ${(cash > threshold ? (cash - threshold) * 0.005 : 0).toFixed(2)}
+                </div>
+                <p className="text-[10px] text-surface-500 mt-2">Estimated daily fee at 0.5% bracket.</p>
+             </div>
+             <div className="card p-6">
+                <p className="text-[10px] font-bold text-surface-400 uppercase mb-1">Retail Sales Speed</p>
+                <div className="text-2xl font-black text-econ-green font-mono">+{ (salesSpeed * 100).toFixed(1) }%</div>
+                <p className="text-[10px] text-surface-500 mt-2">Reduction in selling time for retail units.</p>
+             </div>
+             <div className="card p-6">
+                <p className="text-[10px] font-bold text-surface-400 uppercase mb-1">Patent Probability</p>
+                <div className="text-2xl font-black text-brand-600 font-mono">{(patentProb * 100).toFixed(1)}%</div>
+                <p className="text-[10px] text-surface-500 mt-2">Chance of research points becoming patents.</p>
+             </div>
+          </div>
+
+          <div className="card p-8">
+             <h3 className="font-bold text-surface-900 dark:text-white mb-6 uppercase text-xs tracking-widest">Advanced Analysis</h3>
+             <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-brand-600">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                   </div>
+                   <div>
+                      <h4 className="text-sm font-bold text-surface-900 dark:text-white">Training ROI</h4>
+                      <p className="text-xs text-surface-500">Increasing CFO by 1 point saves ${(0.005 * 500000).toFixed(2)} in daily taxes (at 0.5% bracket).</p>
+                   </div>
+                </div>
+                <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-econ-amber">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                   </div>
+                   <div>
+                      <h4 className="text-sm font-bold text-surface-900 dark:text-white">Research Cost Optimizer</h4>
+                      <p className="text-xs text-surface-500">Effective research cost is reduced by {((1 - 1/(1+cto*0.02)) * 100).toFixed(1)}% due to CTO science skill.</p>
+                   </div>
+                </div>
+                <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-econ-purple">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                   </div>
+                   <div>
+                      <h4 className="text-sm font-bold text-surface-900 dark:text-white">Admin Cap Analysis</h4>
+                      <p className="text-xs text-surface-500">Current COO skill allows for approximately {Math.floor(1 + (coo * 0.02 * 170))} additional building levels before reaching next overhead bracket.</p>
+                   </div>
+                </div>
+             </div>
+          </div>
+       </div>
+    </div>
+  );
+}
+
+function ConstructionCalculator({ margins }: { margins: any[] }) {
+  const [selectedBuilding, setSelectedBuilding] = useState<number>(1);
+  const [currentLevel, setCurrentLevel] = useState<number>(0);
+  const [targetLevel, setTargetLevel] = useState<number>(1);
+
+  const b = useMemo(() => BUILDINGS.find(b => b.id === selectedBuilding), [selectedBuilding]);
+
+  const getMaterialPrice = (id: number) => {
+    // Try to find in real-time margins if it's there, else base price
+    const mName = CONSTRUCTION_MATERIALS.find(cm => cm.id === id)?.name;
+    const real = margins.find(m => m.name === mName);
+    return real?.outputVwap ?? CONSTRUCTION_MATERIALS.find(cm => cm.id === id)?.basePrice ?? 0;
+  };
+
+  const cost = useMemo(() => {
+    if (!b) return { cash: 0, materials: [] as any[] };
+    let totalCash = 0;
+    const materialMap = new Map<number, number>();
+
+    // Level 1 cost: b.cost
+    // Level 2 cost: b.cost
+    // Level L cost: (L-1) * b.cost
+    for (let l = currentLevel + 1; l <= targetLevel; l++) {
+       const mult = l <= 2 ? 1 : l - 1;
+       totalCash += b.cost * mult;
+       if (b.resources) {
+         b.resources.forEach(r => {
+           materialMap.set(r.id, (materialMap.get(r.id) || 0) + (r.qty * mult));
+         });
+       }
+    }
+
+    return {
+      cash: totalCash,
+      materials: Array.from(materialMap.entries()).map(([id, qty]) => ({
+        id,
+        qty,
+        name: CONSTRUCTION_MATERIALS.find(cm => cm.id === id)?.name || "Unknown",
+        price: getMaterialPrice(id)
+      }))
+    };
+  }, [b, currentLevel, targetLevel, margins]);
+
+  const totalMarketValue = cost.materials.reduce((sum, m) => sum + (m.qty * m.price), 0) + cost.cash;
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-500">
+       <div className="lg:col-span-4 space-y-6">
+          <div className="card p-6 border-l-4 border-l-econ-amber">
+             <h3 className="font-bold text-surface-900 dark:text-white mb-6 uppercase text-xs tracking-widest">Construction Config</h3>
+             <div className="space-y-4">
+                <div>
+                   <label className="text-[10px] font-bold text-surface-400 uppercase mb-1 block">Building</label>
+                   <select value={selectedBuilding} onChange={(e) => setSelectedBuilding(Number(e.target.value))} className="input">
+                      {BUILDINGS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                   </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                   <div>
+                      <label className="text-[10px] font-bold text-surface-400 uppercase mb-1 block">Current Level</label>
+                      <input type="number" value={currentLevel} onChange={(e) => setCurrentLevel(Number(e.target.value))} className="input" />
+                   </div>
+                   <div>
+                      <label className="text-[10px] font-bold text-surface-400 uppercase mb-1 block">Target Level</label>
+                      <input type="number" value={targetLevel} onChange={(e) => setTargetLevel(Number(e.target.value))} className="input" />
+                   </div>
+                </div>
+             </div>
+          </div>
+       </div>
+       <div className="lg:col-span-8">
+          <div className="card p-8">
+             <div className="flex items-center justify-between mb-8">
+                <h3 className="font-bold text-surface-900 dark:text-white uppercase text-xs tracking-widest">Resource Requirements</h3>
+                <div className="text-right">
+                   <p className="text-[10px] font-bold text-surface-400 uppercase">Total Estimate</p>
+                   <p className="text-2xl font-black text-brand-600 font-mono">${totalMarketValue.toLocaleString()}</p>
+                </div>
+             </div>
+
+             <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-surface-50 dark:bg-surface-900 rounded-xl border border-surface-100 dark:border-surface-800">
+                   <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-econ-green/20 flex items-center justify-center text-econ-green">
+                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      </div>
+                      <span className="text-sm font-bold text-surface-900 dark:text-white uppercase">Construction Cash</span>
+                   </div>
+                   <span className="font-mono font-bold text-surface-900 dark:text-white">${cost.cash.toLocaleString()}</span>
+                </div>
+
+                {cost.materials.map((m, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 bg-surface-50 dark:bg-surface-900 rounded-xl border border-surface-100 dark:border-surface-800">
+                     <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-brand-600">
+                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                        </div>
+                        <div>
+                           <p className="text-sm font-bold text-surface-900 dark:text-white uppercase">{m.name}</p>
+                           <p className="text-[10px] text-surface-500 font-mono">Unit: ${m.price.toFixed(2)}</p>
+                        </div>
+                     </div>
+                     <div className="text-right">
+                        <p className="font-mono font-bold text-surface-900 dark:text-white">{m.qty.toLocaleString()}</p>
+                        <p className="text-[10px] text-surface-400 font-mono">${(m.qty * m.price).toLocaleString()}</p>
+                     </div>
+                  </div>
+                ))}
+             </div>
+          </div>
+       </div>
+    </div>
+  );
+}
+
+function RetailCalculator({ realm }: { realm: number }) {
+  const { data: retail } = useDataRepoPoll(() => dataRepo.fetchRetailData(realm), 120000, [realm]);
+  const [selectedProduct, setSelectedProduct] = useState<string>("");
+
+  const products = useMemo(() => {
+    if (!retail?.retail) return [];
+    return Object.entries(retail.retail).map(([k, v]: [string, any]) => ({ id: k, ...v }));
+  }, [retail]);
+
+  const p = useMemo(() => products.find(p => p.id === selectedProduct), [products, selectedProduct]);
+
+  return (
+     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-500">
+       <div className="lg:col-span-4 space-y-6">
+          <div className="card p-6 border-l-4 border-l-econ-purple">
+             <h3 className="font-bold text-surface-900 dark:text-white mb-6 uppercase text-xs tracking-widest">Retail Config</h3>
+             <div className="space-y-4">
+                <div>
+                   <label className="text-[10px] font-bold text-surface-400 uppercase mb-1 block">Product</label>
+                   <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} className="input">
+                      <option value="">-- select product --</option>
+                      {products.map(pr => <option key={pr.id} value={pr.id}>{pr.id}</option>)}
+                   </select>
+                </div>
+             </div>
+          </div>
+       </div>
+       <div className="lg:col-span-8">
+          {p ? (
+            <div className="card p-8">
+               <h3 className="font-bold text-surface-900 dark:text-white mb-8 uppercase text-xs tracking-widest">Sales Analysis: {p.id}</h3>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800">
+                     <p className="text-[10px] font-bold text-surface-400 uppercase mb-1">Average Price</p>
+                     <p className="text-xl font-black text-surface-900 dark:text-white font-mono">${p.avgPrice?.toFixed(2)}</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800">
+                     <p className="text-[10px] font-bold text-surface-400 uppercase mb-1">Saturation</p>
+                     <p className="text-xl font-black text-econ-amber font-mono">{p.saturation?.toFixed(2)}</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-800/50">
+                     <p className="text-[10px] font-bold text-brand-600 uppercase mb-1">Profit/Unit</p>
+                     <p className="text-xl font-black text-econ-green font-mono">${p.profitPerUnit?.toFixed(2)}</p>
+                  </div>
+               </div>
+               <div className="space-y-4 text-xs text-surface-500">
+                  <p>Daily demand estimated at <span className="font-bold text-surface-900 dark:text-white">{p.demand?.toLocaleString()} units</span> realm-wide.</p>
+                  <p>Recommended selling price for optimal speed: <span className="font-bold text-brand-600">${p.optimalPrice?.toFixed(2)}</span></p>
+               </div>
+            </div>
+          ) : (
+            <div className="card h-full min-h-[300px] flex items-center justify-center text-surface-400 text-sm italic">
+               Select a product to view retail metrics.
+            </div>
           )}
        </div>
     </div>

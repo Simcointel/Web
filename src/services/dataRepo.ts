@@ -312,6 +312,15 @@ export async function fetchMacroInflation(realm: number, limit = 200): Promise<a
 }
 
 /* ============================================================
+   Retail
+   ============================================================ */
+export async function fetchRetailData(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/retail/realm-${realm}`, "retail-summary-");
+  if (!data) throw new Error("No retail data");
+  return data;
+}
+
+/* ============================================================
    Profit Margins
    ============================================================ */
 export async function fetchProfitMargins(realm: number): Promise<any> {
