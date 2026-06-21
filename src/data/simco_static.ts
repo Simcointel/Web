@@ -1,22 +1,48 @@
 export const BUILDINGS = [
-  { id: 1, name: "Power Plant", type: "production", cost: 6900, produces: [1], baseTime: 4, resources: [{ id: 1, qty: 1 }, { id: 2, qty: 10 }, { id: 3, qty: 5 }] },
-  { id: 2, name: "Water Reservoir", type: "production", cost: 6900, produces: [2], baseTime: 4, resources: [{ id: 1, qty: 1 }, { id: 2, qty: 10 }, { id: 3, qty: 5 }] },
-  { id: 3, name: "Farm", type: "production", cost: 6900, produces: [11, 12, 13, 14, 15], baseTime: 4, resources: [{ id: 3, qty: 20 }, { id: 2, qty: 100 }] },
-  { id: 4, name: "Plantation", type: "production", cost: 6900, produces: [16, 17, 18, 19, 20], baseTime: 4, resources: [{ id: 3, qty: 20 }, { id: 2, qty: 100 }] },
-  { id: 5, name: "Quarry", type: "production", cost: 6900, produces: [21, 22, 23], baseTime: 4, resources: [{ id: 3, qty: 20 }, { id: 2, qty: 100 }] },
-  { id: 6, name: "Mine", type: "production", cost: 69000, produces: [24, 25, 26, 27, 28, 29], baseTime: 12, resources: [{ id: 1, qty: 10 }, { id: 2, qty: 500 }, { id: 3, qty: 200 }] },
-  { id: 7, name: "Factory", type: "production", cost: 69000, produces: [30, 31, 32, 33, 34], baseTime: 12, resources: [{ id: 1, qty: 10 }, { id: 2, qty: 500 }, { id: 3, qty: 200 }] },
-  { id: 8, name: "Electronics Factory", type: "production", cost: 69000, produces: [35, 36, 37, 38], baseTime: 12, resources: [{ id: 1, qty: 10 }, { id: 2, qty: 500 }, { id: 3, qty: 200 }] },
-  { id: 15, name: "Oil Rig", type: "production", cost: 69000, produces: [40], baseTime: 12, resources: [{ id: 1, qty: 10 }, { id: 2, qty: 500 }, { id: 3, qty: 200 }] },
-  { id: 16, name: "Refinery", type: "production", cost: 69000, produces: [41, 42, 43], baseTime: 12, resources: [{ id: 1, qty: 10 }, { id: 2, qty: 500 }, { id: 3, qty: 200 }] },
-  { id: 17, name: "Aerospace Factory", type: "production", cost: 138000, produces: [50, 51, 52], baseTime: 16, resources: [{ id: 1, qty: 20 }, { id: 2, qty: 1000 }, { id: 3, qty: 400 }] },
-  { id: 18, name: "Catering", type: "production", cost: 69000, produces: [60, 61], baseTime: 12, resources: [{ id: 1, qty: 10 }, { id: 2, qty: 500 }, { id: 3, qty: 200 }] },
-  { id: 9, name: "Grocery Store", type: "retail", cost: 6900, produces: [], baseTime: 4, resources: [{ id: 3, qty: 20 }, { id: 2, qty: 100 }] },
-  { id: 10, name: "Electronics Store", type: "retail", cost: 6900, produces: [], baseTime: 4, resources: [{ id: 3, qty: 20 }, { id: 2, qty: 100 }] },
-  { id: 11, name: "Gas Station", type: "retail", cost: 6900, produces: [], baseTime: 4, resources: [{ id: 3, qty: 20 }, { id: 2, qty: 100 }] },
-  { id: 12, name: "Car Dealership", type: "retail", cost: 6900, produces: [], baseTime: 4, resources: [{ id: 3, qty: 20 }, { id: 2, qty: 100 }] },
-  { id: 13, name: "Hardware Store", type: "retail", cost: 6900, produces: [], baseTime: 4, resources: [{ id: 3, qty: 20 }, { id: 2, qty: 100 }] },
-  { id: 14, name: "Fashion Store", type: "retail", cost: 6900, produces: [], baseTime: 4, resources: [{ id: 3, qty: 20 }, { id: 2, qty: 100 }] },
+  { id: 1, name: "Power Plant", type: "production", cost: 6900, baseTime: 4, wages: 103.5 },
+  { id: 2, name: "Water Reservoir", type: "production", cost: 6900, baseTime: 4, wages: 103.5 },
+  { id: 3, name: "Farm", type: "production", cost: 6900, baseTime: 4, wages: 103.5 },
+  { id: 4, name: "Plantation", type: "production", cost: 6900, baseTime: 4, wages: 103.5 },
+  { id: 5, name: "Quarry", type: "production", cost: 6900, baseTime: 4, wages: 103.5 },
+  { id: 6, name: "Mine", type: "production", cost: 69000, baseTime: 12, wages: 414 },
+  { id: 7, name: "Factory", type: "production", cost: 69000, baseTime: 12, wages: 414 },
+  { id: 8, name: "Electronics Factory", type: "production", cost: 69000, baseTime: 12, wages: 414 },
+  { id: 15, name: "Oil Rig", type: "production", cost: 69000, baseTime: 12, wages: 517.5 },
+  { id: 16, name: "Refinery", type: "production", cost: 69000, baseTime: 12, wages: 517.5 },
+  { id: 17, name: "Aerospace Factory", type: "production", cost: 138000, baseTime: 16, wages: 724.5 },
+  { id: 18, name: "Catering", type: "production", cost: 69000, baseTime: 12, wages: 345 },
+  { id: 19, name: "Food Processing Plant", type: "production", cost: 69000, baseTime: 12, wages: 345 },
+  { id: 20, name: "Software House", type: "production", cost: 69000, baseTime: 12, wages: 586.5 },
+  { id: 21, name: "Automotive Factory", type: "production", cost: 138000, baseTime: 16, wages: 724.5 },
+  { id: 9, name: "Grocery Store", type: "retail", cost: 6900, baseTime: 4, wages: 138 },
+  { id: 10, name: "Electronics Store", type: "retail", cost: 6900, baseTime: 4, wages: 138 },
+  { id: 11, name: "Gas Station", type: "retail", cost: 6900, baseTime: 4, wages: 138 },
+  { id: 12, name: "Car Dealership", type: "retail", cost: 6900, baseTime: 4, wages: 138 },
+  { id: 13, name: "Hardware Store", type: "retail", cost: 6900, baseTime: 4, wages: 138 },
+  { id: 14, name: "Fashion Store", type: "retail", cost: 6900, baseTime: 4, wages: 138 },
+];
+
+export interface ResourceData {
+  id: number;
+  name: string;
+  transport: number;
+  buildingId?: number;
+  basePh?: number;
+  baseWages?: number;
+  inputs?: Record<number, number>;
+}
+
+export const RESOURCES: ResourceData[] = [
+  { id: 1, name: "Power", transport: 0, buildingId: 1, basePh: 1100, baseWages: 103.5 },
+  { id: 2, name: "Water", transport: 0, buildingId: 2, basePh: 1200, baseWages: 103.5 },
+  { id: 3, name: "Apples", transport: 1, buildingId: 3, basePh: 202, baseWages: 103.5, inputs: { 2: 3 } },
+  { id: 11, name: "Oranges", transport: 1, buildingId: 3, basePh: 180, baseWages: 103.5, inputs: { 2: 3 } },
+  { id: 18, name: "Aluminium", transport: 1, buildingId: 7, basePh: 99, baseWages: 414, inputs: { 1: 15 } },
+  { id: 40, name: "Crude Oil", transport: 1, buildingId: 15, basePh: 50, baseWages: 517.5, inputs: { 1: 10 } },
+  { id: 50, name: "Satellite", transport: 1, buildingId: 17, basePh: 0.1, baseWages: 724.5, inputs: { 1: 100, 18: 50 } },
+  { id: 100, name: "Aerospace research", transport: 0, buildingId: 17, basePh: 0.35, baseWages: 517.5 },
+  { id: 60, name: "Catering", transport: 1, buildingId: 18, basePh: 40, baseWages: 345, inputs: { 3: 10, 11: 10 } },
+  { id: 70, name: "Processors", transport: 1, buildingId: 8, basePh: 10, baseWages: 414, inputs: { 1: 20, 18: 5 } },
 ];
 
 export const CONSTRUCTION_MATERIALS = [
