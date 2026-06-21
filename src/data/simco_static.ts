@@ -11,6 +11,9 @@ export const BUILDINGS = [
   { id: 16, name: "Refinery", type: "production", cost: 69000, baseTime: 12, wages: 517.5 },
   { id: 17, name: "Aerospace Factory", type: "production", cost: 138000, baseTime: 16, wages: 724.5 },
   { id: 18, name: "Catering", type: "production", cost: 69000, baseTime: 12, wages: 345 },
+  { id: 19, name: "Food Processing Plant", type: "production", cost: 69000, baseTime: 12, wages: 345 },
+  { id: 20, name: "Software House", type: "production", cost: 69000, baseTime: 12, wages: 586.5 },
+  { id: 21, name: "Automotive Factory", type: "production", cost: 138000, baseTime: 16, wages: 724.5 },
   { id: 9, name: "Grocery Store", type: "retail", cost: 6900, baseTime: 4, wages: 138 },
   { id: 10, name: "Electronics Store", type: "retail", cost: 6900, baseTime: 4, wages: 138 },
   { id: 11, name: "Gas Station", type: "retail", cost: 6900, baseTime: 4, wages: 138 },
@@ -37,6 +40,9 @@ export const RESOURCES: ResourceData[] = [
   { id: 18, name: "Aluminium", transport: 1, buildingId: 7, basePh: 99, baseWages: 414, inputs: { 1: 15 } },
   { id: 40, name: "Crude Oil", transport: 1, buildingId: 15, basePh: 50, baseWages: 517.5, inputs: { 1: 10 } },
   { id: 50, name: "Satellite", transport: 1, buildingId: 17, basePh: 0.1, baseWages: 724.5, inputs: { 1: 100, 18: 50 } },
+  { id: 100, name: "Aerospace research", transport: 0, buildingId: 17, basePh: 0.35, baseWages: 517.5 },
+  { id: 60, name: "Catering", transport: 1, buildingId: 18, basePh: 40, baseWages: 345, inputs: { 3: 10, 11: 10 } },
+  { id: 70, name: "Processors", transport: 1, buildingId: 8, basePh: 10, baseWages: 414, inputs: { 1: 20, 18: 5 } },
 ];
 
 export const CONSTRUCTION_MATERIALS = [

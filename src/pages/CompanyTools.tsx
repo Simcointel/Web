@@ -534,24 +534,88 @@ function ConstructionCalculator({ margins }: { margins: any[] }) {
 function RetailCalculator({ realm }: { realm: number }) {
   const { data: retail } = useDataRepoPoll(() => dataRepo.fetchRetailData(realm), 120000, [realm]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
+  const [sellingPrice, setSellingPrice] = useState<number>(0);
+  const [sourcingCost, setSourcingCost] = useState<number>(0);
+
   const products = useMemo(() => { if (!retail?.retail) return []; return Object.entries(retail.retail).map(([k, v]: [string, any]) => ({ id: k, ...v })); }, [retail]);
   const p = useMemo(() => products.find(p => p.id === selectedProduct), [products, selectedProduct]);
+
+  useEffect(() => {
+    if (p) {
+      setSellingPrice(p.avgPrice || 0);
+      setSourcingCost(p.avgPrice ? p.avgPrice * 0.8 : 0);
+    }
+  }, [p]);
+
+  const stats = useMemo(() => {
+    if (!p) return null;
+    const saturation = p.saturation || 0;
+    // Simple retail speed model: base_time * (price / avg_price)^2 * saturation_factor
+    const baseSpeed = 100; // units per hr
+    const priceFactor = Math.pow(sellingPrice / (p.avgPrice || sellingPrice), 2);
+    const speed = baseSpeed / (priceFactor * (1 + saturation));
+    const profitPerUnit = sellingPrice - sourcingCost;
+    return { speed, profitPerUnit, hourlyProfit: speed * profitPerUnit };
+  }, [p, sellingPrice, sourcingCost]);
+
   return (
      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-500">
        <div className="lg:col-span-4 space-y-6">
-          <div className="card p-6 border-l-4 border-l-econ-purple bg-white dark:bg-surface-900 shadow-sm">
-             <h3 className="font-bold text-surface-900 dark:text-white mb-6 uppercase text-xs tracking-widest text-surface-400">Inventory Select</h3>
-             <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} className="input"><option value="">-- select product --</option>{products.map(pr => <option key={pr.id} value={pr.id}>{pr.id}</option>)}</select>
+          <div className="card p-6 border-l-4 border-l-econ-purple bg-white dark:bg-surface-900 shadow-sm space-y-4">
+             <h3 className="font-bold text-surface-900 dark:text-white mb-2 uppercase text-xs tracking-widest text-surface-400">Retail Config</h3>
+             <div>
+                <label className="text-[10px] font-bold uppercase block mb-1">Product</label>
+                <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} className="input">
+                   <option value="">-- select product --</option>
+                   {products.map(pr => <option key={pr.id} value={pr.id}>{pr.id}</option>)}
+                </select>
+             </div>
+             {p && (
+               <>
+                 <div>
+                    <label className="text-[10px] font-bold uppercase block mb-1">Sourcing Cost</label>
+                    <input type="number" value={sourcingCost} onChange={(e) => setSourcingCost(Number(e.target.value))} className="input font-mono" />
+                 </div>
+                 <div>
+                    <label className="text-[10px] font-bold uppercase block mb-1">Selling Price</label>
+                    <input type="number" value={sellingPrice} onChange={(e) => setSellingPrice(Number(e.target.value))} className="input font-mono" />
+                 </div>
+               </>
+             )}
           </div>
        </div>
        <div className="lg:col-span-8">
-          {p ? (
+          {p && stats ? (
             <div className="card p-8">
                <h3 className="font-bold text-surface-900 dark:text-white mb-8 uppercase text-xs tracking-widest">Market Analysis: {p.id}</h3>
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="p-6 rounded-2xl bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800"><p className="text-[10px] font-bold text-surface-400 uppercase mb-1">Avg Sale Price</p><p className="text-2xl font-black font-mono tracking-tighter text-surface-900 dark:text-white">\${p.avgPrice?.toFixed(2)}</p></div>
-                  <div className="p-6 rounded-2xl bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800"><p className="text-[10px] font-bold text-surface-400 uppercase mb-1 underline decoration-dotted cursor-help" title="Saturation reflects relative supply in the retail market. High saturation (>1.0) leads to slower sales.">Saturation</p><p className="text-2xl font-black font-mono tracking-tighter text-econ-amber">{p.saturation?.toFixed(2)}</p></div>
-                  <div className="p-6 rounded-2xl bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-800/50"><p className="text-[10px] font-bold text-brand-600 uppercase mb-1">Profit/Unit</p><p className="text-2xl font-black font-mono tracking-tighter text-econ-green">\${p.profitPerUnit?.toFixed(2)}</p></div>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="p-6 rounded-2xl bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800">
+                     <p className="text-[10px] font-bold text-surface-400 uppercase mb-1">Selling Speed</p>
+                     <p className="text-2xl font-black font-mono tracking-tighter text-surface-900 dark:text-white">{stats.speed.toFixed(1)}/hr</p>
+                  </div>
+                  <div className="p-6 rounded-2xl bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800">
+                     <p className="text-[10px] font-bold text-surface-400 uppercase mb-1">Hourly Profit</p>
+                     <p className={`text-2xl font-black font-mono tracking-tighter ${stats.hourlyProfit > 0 ? "text-econ-green" : "text-econ-red"}`}>
+                        ${stats.hourlyProfit.toFixed(2)}
+                     </p>
+                  </div>
+                  <div className="p-6 rounded-2xl bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-800/50">
+                     <p className="text-[10px] font-bold text-brand-600 uppercase mb-1">Margin/Unit</p>
+                     <p className="text-2xl font-black font-mono tracking-tighter text-econ-green">
+                        ${stats.profitPerUnit.toFixed(2)}
+                     </p>
+                  </div>
+               </div>
+               <div className="card p-4 bg-surface-900 text-white border-none">
+                  <p className="text-[10px] uppercase font-black tracking-widest text-surface-500 mb-2">Market Context</p>
+                  <div className="flex justify-between text-xs font-mono">
+                     <span className="opacity-60 uppercase">Market Saturation:</span>
+                     <span className="text-econ-amber font-bold">{p.saturation?.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-mono mt-2">
+                     <span className="opacity-60 uppercase">Average Realm Price:</span>
+                     <span className="text-brand-400 font-bold">${p.avgPrice?.toFixed(2)}</span>
+                  </div>
                </div>
             </div>
           ) : <div className="card h-full min-h-[300px] flex items-center justify-center text-surface-400 text-xs font-bold uppercase tracking-widest opacity-40">Select inventory product to view retail dynamics.</div>}
