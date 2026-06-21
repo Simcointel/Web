@@ -29,59 +29,67 @@ export function VWAPInflationPage() {
     return list;
   }, [data]);
 
-  if (loading) return <LoadingState text="Loading VWAP inflation data..." />;
+  if (loading && !data) return <LoadingState text="Calculating price variations..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+    <div className="space-y-8 animate-in fade-in duration-500">
+       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">VWAP Inflation</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Cumulative inflation from VWAP baseline (%)</p>
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400 mb-2 inline-block">
+            Inflation Tracking
+          </span>
+          <h1 className="text-3xl font-bold text-surface-900 dark:text-white tracking-tight">VWAP Inflation</h1>
+          <p className="text-surface-500 dark:text-surface-400 mt-1">
+            Cumulative price deviation from standard VWAP baselines.
+          </p>
         </div>
-        <select
-          value={realm}
-          onChange={(e) => setRealm(Number(e.target.value))}
-          className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg text-gray-700"
-        >
-          <option value={0}>Realm 0</option>
-          <option value={1}>Realm 1</option>
-        </select>
+
+        <div className="flex items-center gap-3 bg-white dark:bg-surface-900 p-1.5 rounded-xl border border-surface-200 dark:border-surface-800 shadow-sm">
+          <label className="text-xs font-bold text-surface-400 dark:text-surface-500 uppercase ml-2">Realm</label>
+          <select
+            value={realm}
+            onChange={(e) => setRealm(Number(e.target.value))}
+            className="bg-surface-50 dark:bg-surface-800 border-none rounded-lg text-sm font-semibold px-4 py-1.5 focus:ring-2 focus:ring-brand-500 dark:text-white"
+          >
+            <option value={0}>Realm 0</option>
+            <option value={1}>Realm 1</option>
+          </select>
+        </div>
       </div>
 
-      <Section title="VWAP Inflation" subtitle="Cumulative deviation from VWAP baseline (%)">
-        <div className="card p-5">
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            {(["overall", "quality", "product", "both"] as const).map((t) => (
-              <button key={t} onClick={() => setVwapTab(t)} className={`px-2.5 py-1 text-xs rounded font-medium ${vwapTab === t ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
-                {t === "overall" ? "Overall" : t === "quality" ? "By Quality" : t === "product" ? "By Product" : "By Both"}
-              </button>
-            ))}
+      <div className="card overflow-hidden">
+        <div className="p-4 border-b border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/50 flex flex-wrap items-center justify-between gap-4">
+           <div className="flex gap-1 bg-surface-100 dark:bg-surface-800 p-1 rounded-lg">
+             {(["overall", "quality", "product", "both"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setVwapTab(t)}
+                  className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${vwapTab === t ? "bg-white dark:bg-surface-700 text-brand-600 dark:text-brand-400 shadow-sm" : "text-surface-500 hover:text-surface-700 dark:hover:text-surface-300"}`}
+                >
+                  {t}
+                </button>
+              ))}
+           </div>
+
             {vwapTab === "quality" && (
-              <span className="ml-auto flex items-center gap-1">
-                <span className="text-xs text-gray-400">Q:</span>
-                <input value={selectedQualities} onChange={(e) => setSelectedQualities(e.target.value)} className="w-32 px-1.5 py-0.5 text-xs border border-gray-300 rounded font-mono" placeholder="0,1,2" />
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-surface-400 uppercase">Qualities:</span>
+                <input value={selectedQualities} onChange={(e) => setSelectedQualities(e.target.value)} className="w-32 px-2 py-1 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded text-xs focus:ring-1 focus:ring-brand-500 dark:text-white font-mono" placeholder="0,1,2" />
+              </div>
             )}
-            {vwapTab === "product" && (
-              <span className="ml-auto flex items-center gap-1">
-                <span className="text-xs text-gray-400">Product:</span>
-                <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} className="text-xs border border-gray-300 rounded px-1.5 py-0.5 max-w-[160px]">
+            {(vwapTab === "product" || vwapTab === "both") && (
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-surface-400 uppercase">Resource:</span>
+                <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} className="text-xs bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded px-2 py-1 focus:ring-1 focus:ring-brand-500 dark:text-white max-w-[160px]">
                   <option value="">-- select --</option>
                   {productList.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
-              </span>
+              </div>
             )}
-            {vwapTab === "both" && (
-              <span className="ml-auto flex items-center gap-1">
-                <span className="text-xs text-gray-400">Product:</span>
-                <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} className="text-xs border border-gray-300 rounded px-1.5 py-0.5 max-w-[160px]">
-                  <option value="">-- select --</option>
-                  {productList.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </span>
-            )}
-          </div>
+        </div>
+
+        <div className="p-8">
           {data?.vwapInflation && data.vwapInflation.length > 1 ? (
             <>
               {vwapTab === "overall" && <VWAPOverallChart data={data.vwapInflation} />}
@@ -90,15 +98,17 @@ export function VWAPInflationPage() {
               {vwapTab === "both" && <VWAPBothChart data={data.vwapInflation} productId={selectedProduct} qualities={selectedQualities} />}
             </>
           ) : (
-            <p className="text-xs text-gray-400 py-8 text-center">Not enough data — need at least 2 dates with VWAP records</p>
+            <div className="py-20 text-center">
+               <p className="text-sm text-surface-400 font-medium italic">Insufficient historical data to calculate inflation trajectory</p>
+            </div>
           )}
         </div>
-      </Section>
+      </div>
     </div>
   );
 }
 
-const QCOLORS = ["#3b82f6","#ef4444","#10b981","#f59e0b","#8b5cf6","#ec4899","#06b6d4","#84cc16","#f97316","#6366f1","#14b8a6","#e11d48","#a855f7"];
+const QCOLORS = ["#0ea5e9", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16", "#f97316", "#6366f1", "#14b8a6", "#e11d48", "#a855f7"];
 
 const BASE_PRICES: Record<string, number> = {
   "101": 140.00,
@@ -107,29 +117,60 @@ const BASE_PRICES: Record<string, number> = {
   "108": 5.00,
 };
 
-function pctRef(data: any[], getVal: (item: any) => number | null, fixedRef?: number): { d: string; v: number | null }[] {
+function pctRef(data: any[], getVal: (item: any) => number | null, fixedRef?: number): { d: string; v: number | null; raw: number | null }[] {
   const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date));
   const ref = fixedRef ?? sorted.reduce<number | null>((acc, item) => acc ?? getVal(item), null);
   if (ref == null || ref === 0) return [];
   return sorted.map(item => {
     const val = getVal(item);
-    return { d: new Date(item.date).toLocaleDateString(), v: val != null ? ((val - ref) / ref) * 100 : null };
+    return { d: new Date(item.date).toLocaleDateString(), v: val != null ? ((val - ref) / ref) * 100 : null, raw: val };
   });
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white dark:bg-surface-900 p-4 border border-surface-200 dark:border-surface-800 rounded-lg shadow-xl shadow-black/10">
+        <p className="text-[10px] font-bold text-surface-400 uppercase mb-2">{label}</p>
+        <div className="space-y-1.5">
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex items-center justify-between gap-8">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                <span className="text-xs font-semibold text-surface-700 dark:text-surface-300">{entry.name}</span>
+              </div>
+              <div className="flex flex-col items-end">
+                 <span className="text-xs font-black text-surface-900 dark:text-white">
+                   {entry.value >= 0 ? "+" : ""}{entry.value.toFixed(2)}%
+                 </span>
+                 {entry.payload.raw != null && (
+                   <span className="text-[10px] font-mono text-surface-400">
+                     Price: {entry.payload.raw.toFixed(2)}
+                   </span>
+                 )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 function VWAPOverallChart({ data }: { data: any[] }) {
   const chart = pctRef(data, (item) => item.overall?.vw ?? null);
-  if (chart.length < 2) return <p className="text-xs text-gray-400 py-4 text-center">Not enough data</p>;
+  if (chart.length < 2) return <div className="text-center py-10 text-surface-400 text-sm italic">Not enough data</div>;
   return (
-    <ResponsiveContainer width="100%" height={250}>
+    <ResponsiveContainer width="100%" height={300}>
       <LineChart data={chart}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-        <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-        <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
-        <Tooltip formatter={(v: number) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`]} />
-        <Legend />
-        <ReferenceLine y={0} stroke="#666" strokeDasharray="5 5" label="Baseline" />
-        <Line type="monotone" dataKey="v" stroke="#3b82f6" strokeWidth={2} dot={false} name="Overall VWAP" />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+        <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={["auto", "auto"]} />
+        <Tooltip content={<CustomTooltip />} />
+        <Legend iconType="circle" />
+        <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="5 5" />
+        <Line type="monotone" dataKey="v" stroke="#0ea5e9" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: 'white' }} name="Overall VWAP Deviation" />
       </LineChart>
     </ResponsiveContainer>
   );
@@ -137,12 +178,11 @@ function VWAPOverallChart({ data }: { data: any[] }) {
 
 function VWAPQualityChart({ data, qualities }: { data: any[]; qualities: string }) {
   const qList = qualities.split(",").map(s => s.trim()).filter(Boolean);
-  if (qList.length === 0) return <p className="text-xs text-gray-400 py-4 text-center">Enter quality levels (e.g. 0,1,2)</p>;
+  if (qList.length === 0) return <div className="text-center py-10 text-surface-400 text-sm italic">Select qualities to visualize</div>;
 
   const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date));
   const refs: Record<string, number | null> = {};
   for (const q of qList) refs[q] = sorted.reduce<number | null>((acc, item) => acc ?? item.quality?.[q]?.vw ?? null, null);
-  if (qList.every(q => refs[q] == null || refs[q] === 0)) return <p className="text-xs text-gray-400 py-4 text-center">Not enough data</p>;
 
   const chart = sorted.map(item => {
     const entry: any = { d: new Date(item.date).toLocaleDateString() };
@@ -150,19 +190,43 @@ function VWAPQualityChart({ data, qualities }: { data: any[]; qualities: string 
       const val = item.quality?.[q]?.vw;
       const ref = refs[q];
       entry[q] = (val != null && ref != null && ref !== 0) ? ((val - ref) / ref) * 100 : null;
+      entry[`${q}_raw`] = val;
     }
     return entry;
   });
 
   return (
-    <ResponsiveContainer width="100%" height={250}>
+    <ResponsiveContainer width="100%" height={300}>
       <LineChart data={chart}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-        <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-        <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
-        <Tooltip formatter={(v: number) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`]} />
-        <Legend />
-        <ReferenceLine y={0} stroke="#666" strokeDasharray="5 5" label="Baseline" />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+        <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={["auto", "auto"]} />
+        <Tooltip content={({ active, payload, label }: any) => {
+          if (active && payload && payload.length) {
+            return (
+              <div className="bg-white dark:bg-surface-900 p-4 border border-surface-200 dark:border-surface-800 rounded-lg shadow-xl shadow-black/10">
+                <p className="text-[10px] font-bold text-surface-400 uppercase mb-2">{label}</p>
+                <div className="space-y-1.5">
+                  {payload.map((entry: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between gap-6">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                        <span className="text-xs font-semibold text-surface-700 dark:text-surface-300">Quality {entry.name.replace('Q', '')}</span>
+                      </div>
+                      <div className="flex flex-col items-end">
+                         <span className="text-xs font-black text-surface-900 dark:text-white">{entry.value.toFixed(2)}%</span>
+                         <span className="text-[10px] font-mono text-surface-400">Price: {entry.payload[`${entry.name.replace('Q', '')}_raw`]?.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+          return null;
+        }} />
+        <Legend iconType="circle" />
+        <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="5 5" />
         {qList.map((q, i) => <Line key={q} type="monotone" dataKey={q} stroke={QCOLORS[i % QCOLORS.length]} strokeWidth={2} dot={false} name={`Q${q}`} />)}
       </LineChart>
     </ResponsiveContainer>
@@ -170,26 +234,28 @@ function VWAPQualityChart({ data, qualities }: { data: any[]; qualities: string 
 }
 
 function VWAPProductChart({ data, productId }: { data: any[]; productId: string }) {
-  if (!productId) return <p className="text-xs text-gray-400 py-4 text-center">Select a product</p>;
+  if (!productId) return <div className="text-center py-10 text-surface-400 text-sm italic">Please select a resource to analyze</div>;
   const basePrice = BASE_PRICES[productId];
   const chart = pctRef(data, (item) => item.product?.[productId]?.vw ?? null, basePrice);
   const name = data.find((d: any) => d.product?.[productId])?.product?.[productId]?.nm ?? `Product ${productId}`;
-  if (chart.length < 2) return <p className="text-xs text-gray-400 py-4 text-center">Not enough data</p>;
+
   return (
     <div>
-      <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
-        Base price: <span className="font-mono font-medium text-gray-700">{basePrice?.toFixed(2) ?? "—"}</span>
-        {basePrice == null && <span className="text-gray-400">(using first VWAP as baseline)</span>}
+      <div className="flex items-center gap-2 mb-6 text-[10px] font-bold text-surface-400 uppercase tracking-widest">
+        <span>Baseline Benchmark:</span>
+        <span className="bg-surface-100 dark:bg-surface-800 px-2 py-0.5 rounded text-surface-900 dark:text-white font-mono">
+          {basePrice?.toFixed(2) ?? "FIRST RECORD"}
+        </span>
       </div>
-      <ResponsiveContainer width="100%" height={250}>
+      <ResponsiveContainer width="100%" height={300}>
         <LineChart data={chart}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-          <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
-          <Tooltip formatter={(v: number) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`]} />
-          <Legend />
-          <ReferenceLine y={0} stroke="#666" strokeDasharray="5 5" label="Baseline" />
-          <Line type="monotone" dataKey="v" stroke="#8b5cf6" strokeWidth={2} dot={false} name={name} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+          <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={["auto", "auto"]} />
+          <Tooltip content={<CustomTooltip />} />
+          <Legend iconType="circle" />
+          <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="5 5" />
+          <Line type="monotone" dataKey="v" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: 'white' }} name={name} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -197,9 +263,9 @@ function VWAPProductChart({ data, productId }: { data: any[]; productId: string 
 }
 
 function VWAPBothChart({ data, productId, qualities }: { data: any[]; productId: string; qualities: string }) {
-  if (!productId) return <p className="text-xs text-gray-400 py-4 text-center">Select a product</p>;
+  if (!productId) return <div className="text-center py-10 text-surface-400 text-sm italic">Select a resource for joint analysis</div>;
   const qList = qualities.split(",").map(s => s.trim()).filter(Boolean);
-  if (qList.length === 0) return <p className="text-xs text-gray-400 py-4 text-center">Enter quality levels (e.g. 0,1,2)</p>;
+  if (qList.length === 0) return <div className="text-center py-10 text-surface-400 text-sm italic">Select quality levels</div>;
 
   const basePrice = BASE_PRICES[productId];
   const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date));
@@ -209,7 +275,6 @@ function VWAPBothChart({ data, productId, qualities }: { data: any[]; productId:
     const firstVal = sorted.reduce<number | null>((acc, item) => acc ?? item.both?.[`${productId}_${q}`]?.vw ?? null, null);
     refs[q] = basePrice ?? firstVal;
   }
-  if (qList.every(q => refs[q] == null || refs[q] === 0)) return <p className="text-xs text-gray-400 py-4 text-center">Not enough data</p>;
 
   const chart = sorted.map(item => {
     const entry: any = { d: new Date(item.date).toLocaleDateString() };
@@ -217,6 +282,7 @@ function VWAPBothChart({ data, productId, qualities }: { data: any[]; productId:
       const val = item.both?.[`${productId}_${q}`]?.vw;
       const ref = refs[q];
       entry[q] = (val != null && ref != null && ref !== 0) ? ((val - ref) / ref) * 100 : null;
+      entry[`${q}_raw`] = val;
     }
     return entry;
   });
@@ -224,19 +290,45 @@ function VWAPBothChart({ data, productId, qualities }: { data: any[]; productId:
   const nm = data.find((d: any) => d.product?.[productId])?.product?.[productId]?.nm ?? `Product ${productId}`;
   return (
     <div>
-      <p className="text-xs text-gray-500 mb-2">{nm} — VWAP inflation by quality</p>
-      <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
-        Base price: <span className="font-mono font-medium text-gray-700">{basePrice?.toFixed(2) ?? "—"}</span>
-        {basePrice == null && <span className="text-gray-400">(using first VWAP as baseline)</span>}
+      <div className="flex items-center gap-2 mb-6 text-[10px] font-bold text-surface-400 uppercase tracking-widest">
+        <span>Resource: {nm}</span>
+        <span className="mx-2">|</span>
+        <span>Baseline:</span>
+        <span className="bg-surface-100 dark:bg-surface-800 px-2 py-0.5 rounded text-surface-900 dark:text-white font-mono">
+          {basePrice?.toFixed(2) ?? "DYNAMIC"}
+        </span>
       </div>
-      <ResponsiveContainer width="100%" height={250}>
+      <ResponsiveContainer width="100%" height={300}>
         <LineChart data={chart}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis dataKey="d" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-          <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
-          <Tooltip formatter={(v: number) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`]} />
-          <Legend />
-          <ReferenceLine y={0} stroke="#666" strokeDasharray="5 5" label="Baseline" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+          <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={["auto", "auto"]} />
+          <Tooltip content={({ active, payload, label }: any) => {
+             if (active && payload && payload.length) {
+               return (
+                 <div className="bg-white dark:bg-surface-900 p-4 border border-surface-200 dark:border-surface-800 rounded-lg shadow-xl shadow-black/10">
+                   <p className="text-[10px] font-bold text-surface-400 uppercase mb-2">{label}</p>
+                   <div className="space-y-1.5">
+                     {payload.map((entry: any, index: number) => (
+                       <div key={index} className="flex items-center justify-between gap-6">
+                         <div className="flex items-center gap-2">
+                           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                           <span className="text-xs font-semibold text-surface-700 dark:text-surface-300">Q{entry.name} {nm}</span>
+                         </div>
+                         <div className="flex flex-col items-end">
+                            <span className="text-xs font-black text-surface-900 dark:text-white">{entry.value.toFixed(2)}%</span>
+                            <span className="text-[10px] font-mono text-surface-400">Price: {entry.payload[`${entry.name}_raw`]?.toFixed(2)}</span>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 </div>
+               );
+             }
+             return null;
+          }} />
+          <Legend iconType="circle" />
+          <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="5 5" />
           {qList.map((q, i) => <Line key={q} type="monotone" dataKey={q} stroke={QCOLORS[i % QCOLORS.length]} strokeWidth={2} dot={false} name={`Q${q}`} />)}
         </LineChart>
       </ResponsiveContainer>

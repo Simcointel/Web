@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { fetchWidget } from "../../services/widgetClient";
 
 const style: Record<string, React.CSSProperties> = {

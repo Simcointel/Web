@@ -1,3 +1,4 @@
+import React from "react";
 import { Tooltip } from "./Layout";
 
 export function StatCard({ title, value, subtitle, color, icon, trend, trendLabel }: {

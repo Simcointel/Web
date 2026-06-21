@@ -2,13 +2,13 @@ import { useState, useMemo, useCallback } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
-import { Section } from "../components/Layout";
+import { Section, CardGrid } from "../components/Layout";
 import { LoadingState, ErrorState, EmptyState } from "../components/States";
-import type { CycleData } from "../types/api";
+import { StatCard } from "../components/StatCard";
 
 const PHASE_COLORS: Record<string, string> = {
-  expansion: "#059669", stagnation: "#d97706", recession: "#dc2626",
-  recovery: "#3b82f6", volatile: "#7c3aed", contraction: "#b91c1c",
+  expansion: "bg-econ-green", stagnation: "bg-econ-amber", recession: "bg-econ-red",
+  recovery: "bg-brand-500", volatile: "bg-econ-purple", contraction: "bg-econ-red",
 };
 const PHASE_NAMES: Record<string, string> = {
   expansion: "Expansion", stagnation: "Stagnation", recession: "Recession",
@@ -22,145 +22,133 @@ export function CyclesPage() {
   useSseEvent("pipeline_forecast_complete", useCallback(() => refresh(), [refresh]));
 
   const phase = data?.current;
-  const phaseColor = PHASE_COLORS[phase?.phase ?? ""] ?? "#6b7280";
-  const phaseName = PHASE_NAMES[phase?.phase ?? ""] ?? phase?.phase ?? "Unknown";
+  const phaseKey = phase?.phase?.toLowerCase() ?? "";
+  const phaseColorClass = PHASE_COLORS[phaseKey] ?? "bg-surface-400";
+  const phaseName = PHASE_NAMES[phaseKey] ?? phase?.phase ?? "Neutral";
 
-  if (loading) return <LoadingState text="Analyzing cycle data..." />;
+  if (loading && !data) return <LoadingState text="Calculating cycles..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
-  if (!data) return <EmptyState message="No cycle data available" />;
+  if (!data) return <EmptyState message="Cycle analysis currently unavailable" />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-gray-900">Economic Cycle</h1>
-            <span className={`w-2 h-2 rounded-full ${connected ? "bg-econ-green" : "bg-gray-300"}`} />
-          </div>
-          <p className="text-sm text-gray-500 mt-0.5">Market cycle phase detection and transition analysis</p>
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400 mb-2 inline-block">
+            Market Dynamics
+          </span>
+          <h1 className="text-3xl font-bold text-surface-900 dark:text-white tracking-tight">Economic Cycles</h1>
+          <p className="text-surface-500 dark:text-surface-400 mt-1">
+            Systemic phase detection and long-term transition probabilities.
+          </p>
         </div>
-        <select value={realm} onChange={(e) => setRealm(Number(e.target.value))} className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg text-gray-700">
-          <option value={0}>Realm 0</option>
-          <option value={1}>Realm 1</option>
-        </select>
+
+        <div className="flex items-center gap-3 bg-white dark:bg-surface-900 p-1.5 rounded-xl border border-surface-200 dark:border-surface-800 shadow-sm">
+          <label className="text-xs font-bold text-surface-400 dark:text-surface-500 uppercase ml-2">Realm</label>
+          <select
+            value={realm}
+            onChange={(e) => setRealm(Number(e.target.value))}
+            className="bg-surface-50 dark:bg-surface-800 border-none rounded-lg text-sm font-semibold px-4 py-1.5 focus:ring-2 focus:ring-brand-500 dark:text-white"
+          >
+            <option value={0}>Realm 0</option>
+            <option value={1}>Realm 1</option>
+          </select>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Section title="Current Cycle Phase">
-            <div className="card p-6 text-center">
-              <div className="w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: phaseColor + "22", border: `4px solid ${phaseColor}` }}>
-                <span className="text-3xl font-bold font-mono" style={{ color: phaseColor }}>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-4">
+           <div className="card p-8 flex flex-col items-center text-center relative overflow-hidden h-full">
+              <div className={`absolute top-0 left-0 w-full h-1 ${phaseColorClass}`}></div>
+              <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest mb-6">Current Detection</span>
+
+              <div className={`w-32 h-32 rounded-full mb-6 flex items-center justify-center border-4 ${phaseColorClass.replace('bg-', 'border-')} ${phaseColorClass.replace('bg-', 'bg-')}/10 shadow-lg shadow-black/5`}>
+                <span className={`text-5xl font-black ${phaseColorClass.replace('bg-', 'text-')}`}>
                   {phaseName.charAt(0)}
                 </span>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1" style={{ color: phaseColor }}>{phaseName}</h2>
-              <p className="text-sm text-gray-500 mb-4">Confidence: {((phase?.confidence ?? 0) * 100).toFixed(0)}%</p>
 
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-gray-500 text-xs">Duration</div>
-                  <div className="font-mono font-semibold text-gray-900">{phase?.duration ?? 0}d</div>
+              <h2 className="text-3xl font-black text-surface-900 dark:text-white mb-2">{phaseName}</h2>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-100 dark:bg-surface-800 text-xs font-bold text-surface-600 dark:text-surface-300 mb-8">
+                {((phase?.confidence ?? 0) * 100).toFixed(0)}% Confidence
+              </div>
+
+              <div className="w-full grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-800/50 border border-surface-100 dark:border-surface-800">
+                   <div className="text-[10px] font-bold text-surface-400 uppercase mb-1">Duration</div>
+                   <div className="text-xl font-mono font-bold text-surface-900 dark:text-white">{phase?.duration ?? 0}d</div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-gray-500 text-xs">Intensity</div>
-                  <div className="font-mono font-semibold text-gray-900">{(phase?.intensity ?? 0).toFixed(2)}</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-gray-500 text-xs">Stability</div>
-                  <div className="font-mono font-semibold text-gray-900">{(data.stability * 100).toFixed(0)}%</div>
+                <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-800/50 border border-surface-100 dark:border-surface-800">
+                   <div className="text-[10px] font-bold text-surface-400 uppercase mb-1">Intensity</div>
+                   <div className="text-xl font-mono font-bold text-surface-900 dark:text-white">{(phase?.intensity ?? 0).toFixed(2)}</div>
                 </div>
               </div>
-            </div>
-          </Section>
+           </div>
         </div>
 
-        <Section title="Transition Probabilities">
-          <div className="card p-5 space-y-2">
-            {data.transitions.length === 0 ? (
-              <p className="text-sm text-gray-400">No transition data yet</p>
-            ) : data.transitions.slice(0, 6).map((t, i) => {
-              const fromColor = PHASE_COLORS[t.from] ?? "#6b7280";
-              const toColor = PHASE_COLORS[t.to] ?? "#6b7280";
-              return (
-                <div key={i} className="flex items-center gap-2 text-sm">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: fromColor }} />
-                  <span className="text-gray-700 text-xs">{PHASE_NAMES[t.from] ?? t.from}</span>
-                  <span className="text-gray-400">&rarr;</span>
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: toColor }} />
-                  <span className="text-gray-700 text-xs">{PHASE_NAMES[t.to] ?? t.to}</span>
-                  <span className="ml-auto font-mono text-xs font-semibold">{(t.probability * 100).toFixed(0)}%</span>
-                </div>
-              );
-            })}
-          </div>
-        </Section>
-      </div>
-
-      {data.history.length > 0 && (
-        <Section title="Cycle Timeline" subtitle="Historical phase transitions">
-          <div className="card overflow-hidden">
-            <div className="relative px-6 py-8">
-              <div className="absolute left-6 right-6 top-1/2 h-0.5 bg-gray-200" />
-              <div className="relative flex items-center justify-between">
-                {data.history.map((h, i) => {
-                  const c = PHASE_COLORS[h.phase] ?? "#6b7280";
-                  const isLast = i === data.history.length - 1;
+        <div className="lg:col-span-8 space-y-8">
+           <div className="card overflow-hidden">
+              <div className="px-6 py-4 border-b border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/50">
+                 <h3 className="font-bold text-surface-900 dark:text-white">Transition Matrix</h3>
+              </div>
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                {data.transitions.length === 0 ? (
+                  <div className="col-span-2 py-12 text-center text-surface-400 text-sm italic">No probabilistic data available for this realm</div>
+                ) : data.transitions.map((t: any, i: number) => {
+                  const fromColor = PHASE_COLORS[t.from.toLowerCase()] ?? "bg-surface-400";
+                  const toColor = PHASE_COLORS[t.to.toLowerCase()] ?? "bg-surface-400";
                   return (
-                    <div key={i} className="flex flex-col items-center text-center" style={{ flex: 1 }}>
-                      <div className={`w-4 h-4 rounded-full border-2 border-white mb-2 ${isLast ? "ring-2" : ""}`} style={{ backgroundColor: c }} />
-                      <span className="text-xs font-medium text-gray-900">{PHASE_NAMES[h.phase] ?? h.phase}</span>
-                      <span className="text-[10px] text-gray-400 mt-0.5">
-                        {h.startDate ? new Date(h.startDate).toLocaleDateString() : ""}
-                        {h.endDate ? " - " + new Date(h.endDate).toLocaleDateString() : " (Current)"}
-                      </span>
+                    <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-surface-100 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800/30 transition-colors">
+                      <div className="flex items-center gap-3">
+                         <div className={`w-2 h-2 rounded-full ${fromColor}`}></div>
+                         <span className="text-xs font-bold text-surface-600 dark:text-surface-400 uppercase">{PHASE_NAMES[t.from.toLowerCase()] ?? t.from}</span>
+                         <span className="text-surface-300">&rarr;</span>
+                         <div className={`w-2 h-2 rounded-full ${toColor}`}></div>
+                         <span className="text-xs font-bold text-surface-900 dark:text-white uppercase">{PHASE_NAMES[t.to.toLowerCase()] ?? t.to}</span>
+                      </div>
+                      <span className="text-sm font-mono font-black text-brand-600 dark:text-brand-400">{(t.probability * 100).toFixed(0)}%</span>
                     </div>
                   );
                 })}
               </div>
-            </div>
-          </div>
-        </Section>
-      )}
+           </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Section title="Cycle Strength">
-          <div className="card p-5">
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <div className="flex justify-between text-xs text-gray-600 mb-1">
-                  <span>Stability</span>
-                  <span>{(data.stability * 100).toFixed(0)}%</span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-3">
-                  <div className="bg-blue-500 h-3 rounded-full" style={{ width: `${(data.stability * 100).toFixed(0)}%` }} />
-                </div>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="card p-6">
+                 <h3 className="font-bold text-surface-900 dark:text-white mb-4">Cycle Stability</h3>
+                 <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-[10px] font-bold text-surface-500 uppercase mb-1">
+                        <span>Current Phase Stability</span>
+                        <span>{(data.stability * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="w-full bg-surface-100 dark:bg-surface-800 rounded-full h-2 overflow-hidden">
+                        <div className="h-full bg-econ-green rounded-full transition-all duration-1000" style={{ width: `${(data.stability * 100).toFixed(0)}%` }} />
+                      </div>
+                    </div>
+                    <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">
+                       {data.stability > 0.7 ? "The current cycle is highly stable with low risk of immediate phase transition." :
+                        data.stability > 0.4 ? "Market shows moderate stability; surveillance of leading indicators is recommended." :
+                        "High transition risk detected. Prepare for systemic regime shift."}
+                    </p>
+                 </div>
               </div>
-              <div className="flex-1">
-                <div className="flex justify-between text-xs text-gray-600 mb-1">
-                  <span>Intensity</span>
-                  <span>{(data.intensity ?? 0).toFixed(2)}</span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-3">
-                  <div className="bg-purple-500 h-3 rounded-full" style={{ width: `${Math.min((data.intensity ?? 0) * 50, 100)}%` }} />
-                </div>
+              <div className="card p-6">
+                 <h3 className="font-bold text-surface-900 dark:text-white mb-4">Phase History</h3>
+                 <div className="space-y-3 max-h-[160px] overflow-y-auto pr-2">
+                    {data.history.slice().reverse().map((h: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between py-2 border-b border-surface-50 dark:border-surface-800 last:border-0">
+                         <div className="flex items-center gap-2">
+                            <div className={`w-1.5 h-1.5 rounded-full ${PHASE_COLORS[h.phase.toLowerCase()] ?? "bg-surface-400"}`}></div>
+                            <span className="text-xs font-bold text-surface-900 dark:text-white uppercase">{PHASE_NAMES[h.phase.toLowerCase()] ?? h.phase}</span>
+                         </div>
+                         <span className="text-[10px] font-mono text-surface-400">{h.startDate ? new Date(h.startDate).toLocaleDateString() : "Unknown"}</span>
+                      </div>
+                    ))}
+                 </div>
               </div>
-            </div>
-          </div>
-        </Section>
-
-        <Section title="What This Means">
-          <div className="card p-5">
-            <p className="text-sm text-gray-600 leading-relaxed">
-              The economy is currently in <strong>{phaseName}</strong> phase with {((phase?.confidence ?? 0) * 100).toFixed(0)}% confidence.
-              This phase has persisted for {phase?.duration ?? 0} days with an intensity of {(phase?.intensity ?? 0).toFixed(2)}.
-              Market stability is rated at {(data.stability * 100).toFixed(0)}%.
-              {data.stability > 0.7 ? " The cycle is relatively stable with low probability of near-term phase change." :
-               data.stability > 0.4 ? " Moderate stability — some transition risk exists." :
-               " Low stability — a phase transition may be approaching."}
-            </p>
-          </div>
-        </Section>
+           </div>
+        </div>
       </div>
     </div>
   );

@@ -24,7 +24,26 @@ export function MacroPage() {
     return 0;
   }, [refOverride, indexes]);
 
-  if (lLoading) return <LoadingState text="Loading macro data..." />;
+  // Filter phases to show roughly one per 7 days or only major transitions
+  const filteredPhases = useMemo(() => {
+    if (!phases?.phases) return [];
+
+    const sorted = phases.phases.slice().sort((a, b) => b.startDate.localeCompare(a.startDate));
+    const result = [];
+    let lastDate = null;
+
+    for (const p of sorted) {
+      const d = new Date(p.startDate);
+      // If first or more than 6 days since last added
+      if (!lastDate || (lastDate.getTime() - d.getTime()) >= (6 * 24 * 60 * 60 * 1000)) {
+        result.push(p);
+        lastDate = d;
+      }
+    }
+    return result;
+  }, [phases]);
+
+  if (lLoading && !latest) return <LoadingState text="Loading macro data..." />;
   if (lError) return <ErrorState message={lError} onRetry={lRefresh} />;
 
   const latestH = latest?.latestHistory;
@@ -157,7 +176,7 @@ export function MacroPage() {
       {phases && (
         <div className="card overflow-hidden">
           <div className="px-6 py-4 border-b border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/50 flex items-center justify-between">
-            <h3 className="font-bold text-surface-900 dark:text-white">Regime History</h3>
+            <h3 className="font-bold text-surface-900 dark:text-white uppercase text-xs tracking-widest">Weekly Regime History</h3>
             <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
               Current: <span className="font-bold text-brand-600 dark:text-brand-400">{phases.currentPhase}</span>
             </span>
@@ -173,7 +192,7 @@ export function MacroPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
-                {phases.phases.slice().reverse().map((p, i) => (
+                {filteredPhases.map((p, i) => (
                   <tr key={i} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/30 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3 font-semibold text-surface-900 dark:text-white">
