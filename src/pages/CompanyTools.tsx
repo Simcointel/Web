@@ -303,11 +303,11 @@ function FinancialsView({ type, savedData, deleteData, handleFileUpload }: any) 
             </label>
          </div>
 
-         {parsedData.length > 0 && (
+         {metrics && metrics.chartType === "bar" && (
            <div className="card p-6 bg-surface-900 text-white border-none shadow-xl">
               <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-500 mb-6">Historical Peak</h4>
               <div className="text-3xl font-black font-mono tracking-tighter text-brand-400">
-                ${Math.max(...parsedData.map((d: any) => Math.abs(d.value))).toLocaleString()}
+                ${Math.max(...(metrics.data as any[]).map((d: any) => d.value)).toLocaleString()}
               </div>
               <p className="text-[10px] opacity-60 mt-2 font-medium">Highest absolute transaction value in sync period.</p>
            </div>
