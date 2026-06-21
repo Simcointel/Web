@@ -8,6 +8,13 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine, AreaChart, Area
 } from "recharts";
 
+interface PhaseRecord {
+  phase: string;
+  startDate: string;
+  endDate: string | null;
+  days: number;
+}
+
 export function MacroPage() {
   const [realm, setRealm] = useState(0);
   const { data: latest, loading: lLoading, error: lError, refresh: lRefresh } = useDataRepoPoll(() => dataRepo.fetchMacroLatest(realm), 60000, [realm]);
@@ -25,12 +32,12 @@ export function MacroPage() {
   }, [refOverride, indexes]);
 
   // Filter phases to show roughly one per 7 days or only major transitions
-  const filteredPhases = useMemo(() => {
+  const filteredPhases = useMemo<PhaseRecord[]>(() => {
     if (!phases?.phases) return [];
 
-    const sorted = phases.phases.slice().sort((a, b) => b.startDate.localeCompare(a.startDate));
-    const result = [];
-    let lastDate = null;
+    const sorted = (phases.phases as PhaseRecord[]).slice().sort((a, b) => b.startDate.localeCompare(a.startDate));
+    const result: PhaseRecord[] = [];
+    let lastDate: Date | null = null;
 
     for (const p of sorted) {
       const d = new Date(p.startDate);
