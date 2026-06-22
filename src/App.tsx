@@ -2,10 +2,8 @@ import { useState, useEffect } from "react";
 import { Link } from "./router";
 import { Sidebar } from "./components/Sidebar";
 import { Footer } from "./components/Footer";
-import { LoadingState } from "./components/States";
 import { HomePage } from "./pages/Home";
 import { MacroPage } from "./pages/Macro";
-import { IntelligencePage } from "./pages/Intelligence";
 import { AlertsPage } from "./pages/Alerts";
 import { AboutPage } from "./pages/About";
 import { ArrowLeft } from "lucide-react";
@@ -14,16 +12,7 @@ import { ProfitMarginsPage } from "./pages/ProfitMargins";
 import { WidgetPage } from "./pages/WidgetRenderer";
 import { NotFoundPage } from "./pages/NotFound";
 import { CompanyToolsPage } from "./pages/CompanyTools";
-import React, { Suspense, lazy } from "react";
-
-const ForecastsPage = lazy(() => import("./pages/Forecasts").then((m) => ({ default: m.ForecastsPage })));
-const SignalsPage = lazy(() => import("./pages/Signals").then((m) => ({ default: m.SignalsPage })));
-const CyclesPage = lazy(() => import("./pages/Cycles").then((m) => ({ default: m.CyclesPage })));
-const DependenciesPage = lazy(() => import("./pages/Dependencies").then((m) => ({ default: m.DependenciesPage })));
-
-function LazyPage({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<LoadingState text="Loading..." />}>{children}</Suspense>;
-}
+import React from "react";
 
 export function AppShell({ path }: { path: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -32,12 +21,7 @@ export function AppShell({ path }: { path: string }) {
 
   const page = path === "/" ? <HomePage />
     : path === "/macro" ? <MacroPage />
-    : path === "/intelligence" ? <IntelligencePage />
     : path === "/alerts" ? <AlertsPage />
-    : path === "/forecasts" ? <LazyPage><ForecastsPage /></LazyPage>
-    : path === "/signals" ? <LazyPage><SignalsPage /></LazyPage>
-    : path === "/cycles" ? <LazyPage><CyclesPage /></LazyPage>
-    : path === "/dependencies" ? <LazyPage><DependenciesPage /></LazyPage>
     : path === "/company-tools" ? <CompanyToolsPage />
     : path === "/vwap-inflation" ? <VWAPInflationPage />
     : path === "/profit-margins" ? <ProfitMarginsPage />
