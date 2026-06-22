@@ -51,22 +51,24 @@ export function AppShell({ path }: { path: string }) {
 
   if (isCompanyTools) {
     return (
-      <div className="flex flex-col h-screen bg-surface-50 dark:bg-surface-950 overflow-hidden terminal-scan">
-        <header className="h-20 glass border-b-2 border-surface-200 dark:border-surface-800 flex items-center px-10 shrink-0 justify-between z-30">
+      <div className="flex flex-col h-screen bg-surface-50 dark:bg-surface-950 overflow-hidden">
+        <header className="h-16 bg-white dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800 flex items-center px-8 shrink-0 justify-between z-30">
            <div className="flex items-center gap-6">
-              <Link to="/" className="btn btn-secondary py-2 px-5 gap-3 border-2">
+              <Link to="/" className="text-surface-500 hover:text-surface-900 dark:hover:text-white flex items-center gap-2 text-sm font-bold transition-colors">
                  <ArrowLeft size={16} />
-                 DASHBOARD_EXIT
+                 Exit to Dashboard
               </Link>
-              <div className="h-8 w-px bg-surface-200 dark:bg-surface-800 hidden md:block" />
+              <div className="h-6 w-px bg-surface-200 dark:bg-surface-800 hidden md:block" />
               <div className="hidden md:flex flex-col">
-                 <span className="text-[10px] font-black text-brand-600 uppercase tracking-[0.3em]">SYSTEM_STATUS</span>
-                 <span className="text-xs font-black text-econ-green uppercase tabular-nums">OPERATIONAL // ENCRYPTED</span>
+                 <span className="text-[10px] font-bold text-econ-green uppercase tracking-widest flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-econ-green" />
+                    System Operational
+                 </span>
               </div>
            </div>
            <div className="flex items-center gap-4">
-              <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white text-xs font-black shadow-lg shadow-brand-500/20">TC</div>
-              <span className="font-black text-sm dark:text-white uppercase tracking-[0.4em] italic">TERMINAL_CO</span>
+              <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white text-xs font-black shadow-lg shadow-brand-500/20">SI</div>
+              <span className="font-bold text-sm dark:text-white uppercase tracking-widest">SimcoIntel Suite</span>
            </div>
            <div className="flex items-center gap-6">
               <div className="hidden lg:flex flex-col text-right">

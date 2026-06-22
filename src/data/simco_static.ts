@@ -5,20 +5,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "8",
@@ -26,20 +13,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "7",
@@ -47,20 +21,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "a",
@@ -68,20 +29,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "j",
@@ -89,20 +37,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "n",
@@ -110,20 +45,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "z",
@@ -131,20 +53,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "6",
@@ -152,20 +61,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "b",
@@ -173,20 +69,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "2",
@@ -194,20 +77,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "1",
@@ -215,20 +85,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "m",
@@ -236,20 +93,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 345,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 345
   },
   {
     "id": "c",
@@ -257,20 +101,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "o",
@@ -278,20 +109,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "x",
@@ -299,20 +117,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "L",
@@ -320,20 +125,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "C",
@@ -341,20 +133,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "Y",
@@ -362,20 +141,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "P",
@@ -383,20 +149,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 6900,
     "baseTime": 4,
-    "wages": 103.5,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 103.5
   },
   {
     "id": "f",
@@ -404,20 +157,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "T",
@@ -425,20 +165,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "H",
@@ -446,20 +173,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "k",
@@ -467,20 +181,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "v",
@@ -488,20 +189,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "A",
@@ -509,20 +197,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "g",
@@ -530,20 +205,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "G",
@@ -551,20 +213,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "t",
@@ -572,20 +221,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "0",
@@ -593,20 +229,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "d",
@@ -614,20 +237,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "q",
@@ -635,20 +245,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "5",
@@ -656,20 +253,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "l",
@@ -677,20 +261,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "i",
@@ -698,20 +269,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "M",
@@ -720,19 +278,7 @@ export const BUILDINGS = [
     "cost": 69000,
     "baseTime": 12,
     "wages": 414,
-    "abundance": true,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "abundance": true
   },
   {
     "id": "O",
@@ -740,20 +286,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "4",
@@ -761,20 +294,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "h",
@@ -782,20 +302,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "p",
@@ -803,20 +310,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "E",
@@ -824,20 +318,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "D",
@@ -845,20 +326,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "Q",
@@ -867,19 +335,7 @@ export const BUILDINGS = [
     "cost": 6900,
     "baseTime": 4,
     "wages": 103.5,
-    "abundance": true,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "abundance": true
   },
   {
     "id": "F",
@@ -887,20 +343,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "R",
@@ -908,20 +351,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 517.5,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 517.5
   },
   {
     "id": "r",
@@ -929,20 +359,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "B",
@@ -950,20 +367,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "S",
@@ -971,20 +375,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "e",
@@ -992,20 +383,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "s",
@@ -1013,20 +391,7 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
   },
   {
     "id": "I",
@@ -1034,20 +399,31 @@ export const BUILDINGS = [
     "type": "production",
     "cost": 69000,
     "baseTime": 12,
-    "wages": 414,
-    "abundance": false,
-    "resources": [
-      {
-        "id": 102,
-    "buildingId": "x",
-        "qty": 100
-      },
-      {
-        "id": 103,
-    "buildingId": "x",
-        "qty": 50
-      }
-    ]
+    "wages": 414
+  },
+  {
+    "id": "V",
+    "name": "Vertical integration facility",
+    "type": "production",
+    "cost": 69000,
+    "baseTime": 12,
+    "wages": 414
+  },
+  {
+    "id": "W",
+    "name": "Water reservoir",
+    "type": "production",
+    "cost": 6900,
+    "baseTime": 4,
+    "wages": 103.5
+  },
+  {
+    "id": "K",
+    "name": "Castle",
+    "type": "production",
+    "cost": 0,
+    "baseTime": 12,
+    "wages": 0
   }
 ];
 
@@ -4037,10 +3413,10 @@ export const RESOURCES: ResourceData[] = [
 ];
 
 export const CONSTRUCTION_MATERIALS = [
-  { id: 101, name: "Reinforced Concrete", basePrice: 166.66 },
+  { id: 101, name: "Reinforced concrete", basePrice: 166.66 },
   { id: 102, name: "Bricks", basePrice: 2.16 },
-  { id: 103, name: "Planks", basePrice: 9.08 },
-  { id: 104, name: "Construction Units", basePrice: 2501.71 },
-  { id: 105, name: "Windows", basePrice: 38.5 },
-  { id: 106, name: "Tools", basePrice: 14.5 }
+  { id: 108, name: "Planks", basePrice: 9.08 },
+  { id: 111, name: "Construction units", basePrice: 2501.71 },
+  { id: 109, name: "Windows", basePrice: 38.5 },
+  { id: 110, name: "Tools", basePrice: 14.5 }
 ];
