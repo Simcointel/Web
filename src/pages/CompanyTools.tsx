@@ -83,18 +83,18 @@ export function CompanyToolsPage() {
       <div className="absolute top-0 left-1/4 w-px h-full bg-brand-500/5 pointer-events-none" />
       <div className="absolute top-0 right-1/4 w-px h-full bg-brand-500/5 pointer-events-none" />
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b-2 border-surface-200 dark:border-surface-800 pb-10">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3 text-brand-600 dark:text-brand-400 font-black text-[10px] uppercase tracking-[0.4em]">
-            <Activity size={14} className="animate-pulse" />
-            SIMCO_INTEL_SYSTEMS_v4.0
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 border-b border-surface-200 dark:border-surface-800 pb-8">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-bold text-[10px] uppercase tracking-widest">
+            <Activity size={12} />
+            Internal Systems
           </div>
-          <h2 className="text-6xl font-black text-surface-900 dark:text-white tracking-tighter italic terminal-glow">TERMINAL_CO</h2>
+          <h2 className="text-4xl font-bold text-surface-900 dark:text-white tracking-tight">Corporate Suite</h2>
         </div>
         <div className="flex items-center gap-4">
-          <button onClick={downloadCombinedCSV} className="btn btn-secondary py-3 px-6 gap-3 text-[10px] font-black uppercase tracking-[0.2em] border-2 group hover:bg-brand-600 hover:text-white transition-all">
-             <Download size={14} className="group-hover:translate-y-0.5 transition-transform" />
-             EXPORT_ALL_DATA
+          <button onClick={downloadCombinedCSV} className="btn btn-secondary py-2.5 px-5 gap-2 text-[10px] font-bold uppercase tracking-widest border transition-all">
+             <Download size={14} />
+             Export Configuration
           </button>
           <div className="relative group">
              <div className="absolute -inset-1 bg-brand-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition-all" />
@@ -120,10 +120,7 @@ export function CompanyToolsPage() {
       </div>
 
       <AnimatePresence mode="wait">
-        <motion.div key={category} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ type: "spring", damping: 20, stiffness: 100 }} className="terminal-card min-h-[700px] relative">
-           <div className="absolute top-0 right-0 p-4 font-mono text-[10px] text-surface-400 pointer-events-none opacity-30 select-none">
-              SECURE_LINK // {category.toUpperCase()} // ADDR: 0x{Math.random().toString(16).slice(2, 8).toUpperCase()}
-           </div>
+        <motion.div key={category} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="terminal-card min-h-[700px] relative">
            {category === "financials" && <FinancialsTools savedData={savedData} deleteData={deleteData} handleFileUpload={handleFileUpload} activeTab={activeTab} setActiveTab={setActiveTab} />}
            {category === "operations" && <OperationsTools realm={realm} margins={margins?.resources ?? []} />}
            {category === "simulators" && <SimulatorsTools realm={realm} margins={margins?.resources ?? []} />}
@@ -136,11 +133,11 @@ export function CompanyToolsPage() {
 
 function FinancialsTools({ savedData, deleteData, handleFileUpload, activeTab, setActiveTab }: any) {
    const tabs = [
-     { id: "overview", label: "SYS_PULSE", icon: Activity },
-     { id: "income", label: "INCOME_STMT", icon: LineIcon },
-     { id: "balance", label: "BALANCE_SHEET", icon: PieIcon },
-     { id: "cashflow", label: "CASH_FLOW", icon: DollarSign },
-     { id: "receipts", label: "RECEIPT_LOG", icon: Receipt }
+     { id: "overview", label: "Overview", icon: Activity },
+     { id: "income", label: "Income", icon: LineIcon },
+     { id: "balance", label: "Balance", icon: PieIcon },
+     { id: "cashflow", label: "Cash Flow", icon: DollarSign },
+     { id: "receipts", label: "Receipts", icon: Receipt }
    ];
    return (
       <div className="space-y-12">
@@ -170,34 +167,34 @@ function OverviewView({ savedData, deleteData, handleFileUpload }: any) {
          <div className="lg:col-span-8 space-y-10">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                <div className="terminal-card p-10 border-brand-500/20 bg-brand-500/[0.02]">
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-500 mb-6">SYNC_NODES</p>
-                  <div className="text-6xl font-black text-surface-900 dark:text-white tabular-nums italic font-mono">{savedData.length}</div>
-                  <div className="mt-4 flex items-center gap-2 text-[8px] font-black text-surface-400 uppercase tracking-widest">
-                     <div className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse" />
-                     Data_Synced
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-brand-600 mb-6">Data Points</p>
+                  <div className="text-5xl font-bold text-surface-900 dark:text-white tabular-nums">{savedData.length}</div>
+                  <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-surface-400 uppercase">
+                     <div className="w-1.5 h-1.5 rounded-full bg-brand-500" />
+                     Statements Loaded
                   </div>
                </div>
                <div className="terminal-card p-10 border-econ-green/20 bg-econ-green/[0.02]">
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-econ-green mb-6">SYSTEM_INTEGRITY</p>
-                  <div className="text-3xl font-black text-econ-green flex items-center gap-3 uppercase italic">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-econ-green mb-6">Integration</p>
+                  <div className="text-3xl font-bold text-econ-green flex items-center gap-3 uppercase">
                      <UserCheck size={28} />
-                     VERIFIED
+                     ACTIVE
                   </div>
-                  <div className="mt-4 text-[8px] font-black text-surface-400 uppercase tracking-widest">Security_Protocol: 0x9F</div>
+                  <div className="mt-4 text-[10px] font-bold text-surface-400 uppercase">Local Storage Enabled</div>
                </div>
                <div className="terminal-card p-10 border-surface-200 dark:border-surface-800 bg-surface-500/[0.02]">
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-surface-400 mb-6">LAST_UPDATE</p>
-                  <div className="text-sm font-black text-surface-900 dark:text-white tabular-nums italic font-mono">
-                     {savedData.length > 0 ? new Date(savedData[0].date).toLocaleDateString() : "NO_DATA"}
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-surface-400 mb-6">Latest Sync</p>
+                  <div className="text-lg font-bold text-surface-900 dark:text-white tabular-nums">
+                     {savedData.length > 0 ? new Date(savedData[0].date).toLocaleDateString() : "No data"}
                   </div>
-                  <div className="mt-4 text-[8px] font-black text-surface-400 uppercase tracking-widest">Relay: S-01</div>
+                  <div className="mt-4 text-[10px] font-bold text-surface-400 uppercase tracking-widest">Verified Baseline</div>
                </div>
             </div>
             <div className="terminal-card overflow-hidden border-2 p-0">
                <div className="px-8 py-6 border-b-2 border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/50 flex items-center justify-between font-black text-[10px] uppercase tracking-[0.3em] text-surface-500">
                   <div className="flex items-center gap-3">
                      <Activity size={14} className="text-brand-500" />
-                     CENTRAL_LEDGER_ACTIVITY
+                     Recent Transactions
                   </div>
                   <span className="tabular-nums">TOP_8_ENTRIES</span>
                </div>
@@ -221,7 +218,7 @@ function OverviewView({ savedData, deleteData, handleFileUpload }: any) {
                        <button onClick={() => deleteData(d.id)} className="p-3 text-surface-300 hover:text-white hover:bg-econ-red rounded-xl transition-all opacity-0 group-hover:opacity-100 shadow-lg shadow-econ-red/20"><Trash2 size={20} /></button>
                     </div>
                   )) : (
-                    <div className="p-32 text-center text-surface-400 font-black uppercase text-[10px] tracking-[0.5em] opacity-30 italic">EMPTY_DATABASE_PENDING_INGEST</div>
+                    <div className="p-32 text-center text-surface-400 font-black uppercase text-[10px] tracking-[0.5em] opacity-30 italic">No data statements found.</div>
                   )}
                </div>
             </div>
@@ -229,12 +226,12 @@ function OverviewView({ savedData, deleteData, handleFileUpload }: any) {
          <div className="lg:col-span-4 space-y-10">
             <div className="terminal-card p-12 border-dashed border-4 border-brand-500/30 text-center bg-brand-500/[0.02] group hover:border-brand-500 hover:bg-brand-500/[0.05] transition-all cursor-pointer relative overflow-hidden">
                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Upload size={120} /></div>
-               <h3 className="font-black text-xs uppercase mb-10 tracking-[0.4em] text-brand-600">DATA_INGEST_PORT</h3>
+               <h3 className="font-black text-xs uppercase mb-10 tracking-[0.4em] text-brand-600">Data Import</h3>
                <div className="flex flex-col gap-6 relative z-10">
                   <input type="file" id="bulk-upload" className="hidden" onChange={(e) => handleFileUpload(e, "income")} />
                   <label htmlFor="bulk-upload" className="btn btn-primary w-full py-6 rounded-2xl cursor-pointer flex items-center justify-center gap-5 text-xs font-black shadow-2xl shadow-brand-500/30 border-2 border-brand-400 group-hover:scale-[1.02] transition-transform">
                      <Upload size={24} className="animate-bounce" />
-                     LOAD_CSV_SNAPSHOT
+                     Upload CSV Statement
                   </label>
                   <p className="text-[10px] font-black text-surface-500 uppercase leading-loose tracking-widest px-6 opacity-60">
                      Accepts [INCOME], [BALANCE], [CASHFLOW], or [RECEIPTS] exported CSV clusters.
@@ -243,7 +240,7 @@ function OverviewView({ savedData, deleteData, handleFileUpload }: any) {
                <div className="mt-12 pt-8 border-t border-brand-500/10 text-left">
                   <div className="flex items-center gap-3 mb-4 text-[9px] font-black text-brand-500 uppercase tracking-widest">
                      <Info size={12} />
-                     INGEST_NOTES
+                     Data Usage Notes
                   </div>
                   <ul className="space-y-2">
                      <li className="text-[8px] font-black text-surface-400 uppercase tracking-tighter list-disc list-inside">End-to-end local encryption</li>
@@ -646,14 +643,14 @@ function AdvancedProductionSimulator({ margins }: { margins: any[] }) {
                              </div>
                           </div>
                           <div className="text-right">
-                             <p className="text-[10px] font-black text-brand-600 uppercase mb-3 tracking-[0.2em]">NET PPHPL</p>
+                             <p className="text-[10px] font-black text-brand-600 uppercase mb-3 tracking-[0.2em]">Profit per Hour per Level</p>
                              <div className={`text-5xl font-black font-mono tracking-tighter italic tabular-nums ${s.pphpl > 0 ? "text-econ-green" : "text-econ-red"}`}>${s.pphpl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                           </div>
                        </div>
                        <div className="grid grid-cols-3 gap-8">
-                          <div className="bg-surface-50 rounded-2xl p-6 border-2 border-surface-100"><p className="text-[9px] font-black text-surface-400 uppercase mb-3 tracking-widest">UNIT COST BASIS</p><p className="text-lg font-black font-mono tabular-nums">${s.costPerUnit.toLocaleString(undefined, { minimumFractionDigits: 3 })}</p></div>
-                          <div className="bg-surface-50 rounded-2xl p-6 border-2 border-surface-100"><p className="text-[9px] font-black text-surface-400 uppercase mb-3 tracking-widest">MARKET VWAP</p><p className="text-lg font-black font-mono tabular-nums">${s.revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p></div>
-                          <div className="bg-brand-50 rounded-2xl p-6 border-2 border-brand-100"><p className="text-[9px] font-black text-brand-600 uppercase mb-3 tracking-widest">UNIT MARGIN</p><p className={`text-lg font-black font-mono tabular-nums ${s.profit > 0 ? "text-econ-green" : "text-econ-red"}`}>${s.profit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p></div>
+                          <div className="bg-surface-50 rounded-2xl p-6 border-2 border-surface-100"><p className="text-[9px] font-black text-surface-400 uppercase mb-3 tracking-widest">Production Cost</p><p className="text-lg font-black font-mono tabular-nums">${s.costPerUnit.toLocaleString(undefined, { minimumFractionDigits: 3 })}</p></div>
+                          <div className="bg-surface-50 rounded-2xl p-6 border-2 border-surface-100"><p className="text-[9px] font-black text-surface-400 uppercase mb-3 tracking-widest">Market Price</p><p className="text-lg font-black font-mono tabular-nums">${s.revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p></div>
+                          <div className="bg-brand-50 rounded-2xl p-6 border-2 border-brand-100"><p className="text-[9px] font-black text-brand-600 uppercase mb-3 tracking-widest">Unit Margin</p><p className={`text-lg font-black font-mono tabular-nums ${s.profit > 0 ? "text-econ-green" : "text-econ-red"}`}>${s.profit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p></div>
                        </div>
                     </div>
                  )) : (
@@ -739,11 +736,11 @@ function EncyclopediaTools({ margins, realm }: { margins: any[], realm: number }
        <div className="flex flex-col md:flex-row gap-10 items-start md:items-center justify-between border-b-2 border-surface-200 dark:border-surface-800 pb-10">
           <div className="max-w-xl w-full relative group">
              <div className="absolute -inset-1 bg-brand-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-all" />
-             <input type="text" placeholder="QUERY_MASTER_DATABASE..." value={search} onChange={(e) => setSearch(e.target.value)} className="relative input pl-16 rounded-2xl py-5 shadow-sm border-2 border-surface-200 dark:border-surface-700 font-black text-xs uppercase tracking-[0.2em] bg-surface-50 dark:bg-surface-800/50 focus:bg-white dark:focus:bg-surface-800 transition-all w-full focus:ring-0 focus:border-brand-500" />
+             <input type="text" placeholder="Search Encyclopedia..." value={search} onChange={(e) => setSearch(e.target.value)} className="relative input pl-16 rounded-2xl py-5 shadow-sm border-2 border-surface-200 dark:border-surface-700 font-black text-xs uppercase tracking-[0.2em] bg-surface-50 dark:bg-surface-800/50 focus:bg-white dark:focus:bg-surface-800 transition-all w-full focus:ring-0 focus:border-brand-500" />
              <div className="absolute left-6 top-1/2 -translate-y-1/2 text-brand-600"><Search size={24} /></div>
           </div>
           <div className="flex gap-3 bg-surface-100 dark:bg-surface-800 p-2 rounded-2xl border-2 border-surface-200 dark:border-surface-700">
-             <button onClick={() => setMode("buildings")} className={`px-10 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] transition-all ${mode === "buildings" ? "bg-white dark:bg-surface-700 text-brand-600 shadow-xl border border-surface-200 dark:border-surface-600" : "text-surface-500 hover:text-surface-900 dark:hover:text-surface-200"}`}>FACILITIES</button>
+             <button onClick={() => setMode("buildings")} className={`px-10 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] transition-all ${mode === "buildings" ? "bg-white dark:bg-surface-700 text-brand-600 shadow-xl border border-surface-200 dark:border-surface-600" : "text-surface-500 hover:text-surface-900 dark:hover:text-surface-200"}`}>BUILDINGS</button>
              <button onClick={() => setMode("resources")} className={`px-10 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] transition-all ${mode === "resources" ? "bg-white dark:bg-surface-700 text-brand-600 shadow-xl border border-surface-200 dark:border-surface-600" : "text-surface-500 hover:text-surface-900 dark:hover:text-surface-200"}`}>RESOURCES</button>
           </div>
        </div>
@@ -754,27 +751,27 @@ function EncyclopediaTools({ margins, realm }: { margins: any[], realm: number }
                 <div className="flex justify-between items-start mb-10">
                    <div className="space-y-1">
                       <h3 className="font-black text-2xl uppercase tracking-tighter italic group-hover:text-brand-600 transition-colors">{b.name}</h3>
-                      <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest opacity-60">FAC_ID: 0x{Number(b.id).toString(16).toUpperCase() || b.id}</p>
+                      <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest opacity-60">Building ID: 0x{Number(b.id).toString(16).toUpperCase() || b.id}</p>
                    </div>
                    <span className="text-[9px] font-black uppercase bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 px-4 py-1.5 rounded-lg text-surface-500 tracking-[0.3em] shadow-inner">{b.type}</span>
                 </div>
                 <div className="space-y-6">
                    <div className="flex justify-between items-center text-[10px] border-b border-surface-100 dark:border-surface-800 pb-4 group/row">
-                      <span className="text-surface-400 font-black uppercase tracking-[0.2em] group-hover/row:text-surface-600 transition-colors">OP_WAGE_BASIS</span>
+                      <span className="text-surface-400 font-black uppercase tracking-[0.2em] group-hover/row:text-surface-600 transition-colors">Wages per Hour</span>
                       <span className="font-mono text-surface-900 dark:text-white font-black tabular-nums italic text-sm">${b.wages}/HR</span>
                    </div>
                    <div className="flex justify-between items-center text-[10px] border-b border-surface-100 dark:border-surface-800 pb-4 group/row">
-                      <span className="text-surface-400 font-black uppercase tracking-[0.2em] group-hover/row:text-surface-600 transition-colors">CONST_CYCLE</span>
+                      <span className="text-surface-400 font-black uppercase tracking-[0.2em] group-hover/row:text-surface-600 transition-colors">Construction Time</span>
                       <span className="font-mono text-surface-900 dark:text-white font-black tabular-nums italic text-sm">{b.baseTime} HOURS</span>
                    </div>
                    <div className="flex justify-between items-center text-[10px] group/row">
-                      <span className="text-surface-400 font-black uppercase tracking-[0.2em] group-hover/row:text-surface-600 transition-colors">UNIT_CAPEX_REQ</span>
+                      <span className="text-surface-400 font-black uppercase tracking-[0.2em] group-hover/row:text-surface-600 transition-colors">Reference Cost</span>
                       <span className="font-mono text-brand-600 font-black tabular-nums italic text-lg">${b.cost.toLocaleString()}</span>
                    </div>
                 </div>
                 <div className="mt-10 pt-8 border-t-2 border-surface-50 dark:border-surface-800 flex justify-center opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
                    <button className="text-[9px] font-black uppercase tracking-[0.4em] text-brand-600 flex items-center gap-2 hover:scale-105 transition-transform">
-                      VIEW_DETAILED_SCHEMATICS
+                      View Production Details
                       <ChevronRight size={12} />
                    </button>
                 </div>
@@ -815,17 +812,17 @@ function EncyclopediaTools({ margins, realm }: { margins: any[], realm: number }
                    <div className="space-y-6 relative z-10">
                       <div className="grid grid-cols-2 gap-6 border-b border-surface-100 dark:border-surface-800 pb-6">
                          <div className="space-y-2">
-                            <p className="text-[9px] font-black text-surface-400 uppercase tracking-widest">LOGISTICS_UNIT</p>
+                            <p className="text-[9px] font-black text-surface-400 uppercase tracking-widest">Transport Required</p>
                             <p className="font-mono text-sm font-black tabular-nums italic">{r.transport} U</p>
                          </div>
                          <div className="space-y-2 text-right">
-                            <p className="text-[9px] font-black text-surface-400 uppercase tracking-widest text-right">PEAK_FLOW</p>
+                            <p className="text-[9px] font-black text-surface-400 uppercase tracking-widest text-right">Production Rate</p>
                             <p className="font-mono text-sm font-black tabular-nums italic">{r.basePh?.toFixed(2)}/H</p>
                          </div>
                       </div>
                       {r.inputs && Object.keys(r.inputs).length > 0 && (
                          <div className="space-y-4">
-                            <p className="text-[9px] font-black text-surface-400 uppercase tracking-[0.3em]">INPUT_REQUIREMENTS</p>
+                            <p className="text-[9px] font-black text-surface-400 uppercase tracking-[0.3em]">Required Inputs</p>
                             <div className="flex flex-wrap gap-2">
                                {Object.entries(r.inputs).map(([iid, qty]) => {
                                   const ir = RESOURCES.find(res => res.id === Number(iid));
@@ -838,7 +835,7 @@ function EncyclopediaTools({ margins, realm }: { margins: any[], realm: number }
                          <div className="pt-8 border-t-2 border-surface-50 dark:border-surface-800 flex justify-between items-end">
                             <div className="space-y-1">
                                <span className="text-[9px] font-black text-brand-600 uppercase tracking-[0.3em] block">MARKET_VWAP</span>
-                               <span className="text-[8px] font-black text-surface-400 uppercase tracking-widest block italic opacity-50">REAL_TIME_SYNC</span>
+                               <span className="text-[8px] font-black text-surface-400 uppercase tracking-widest block italic opacity-50">Market Value</span>
                             </div>
                             <span className="font-mono text-2xl text-econ-green font-black tabular-nums italic terminal-glow">${m.outputVwap?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                          </div>
@@ -848,7 +845,7 @@ function EncyclopediaTools({ margins, realm }: { margins: any[], realm: number }
                    <div className="absolute -bottom-4 -right-4 text-7xl font-black text-surface-100 dark:text-surface-800/30 pointer-events-none select-none italic font-mono group-hover:text-brand-500/5 transition-colors">{r.id}</div>
                    <div className="mt-8 pt-6 border-t border-surface-50 dark:border-surface-800 flex justify-end">
                       <button className="text-[9px] font-black uppercase tracking-[0.2em] text-brand-600 flex items-center gap-2 group-hover:translate-x-1 transition-transform">
-                         EXPLORE_MARKET_TRENDS
+                         Market Trends
                          <ChevronRight size={12} />
                       </button>
                    </div>
@@ -939,9 +936,19 @@ function RetailCalculator({ realm }: { realm: number }) {
   const stats = useMemo(() => {
     if (!p) return null;
     const saturation = p.saturation || 0;
-    const baseSpeed = 100;
-    const priceFactor = Math.pow(settings.sellingPrice / (p.avgPrice || settings.sellingPrice), 2);
-    const speed = baseSpeed / (priceFactor * (1 + saturation));
+
+    // Attempt to match with static resource data for better base speed
+    const staticRes = RESOURCES.find(r => r.name.toLowerCase() === p.id.toLowerCase() || r.id.toString() === p.id);
+    const baseSpeed = staticRes?.retailInfo?.[0]?.modeledUnitsSoldAnHour || 100;
+    const refPrice = p.avgPrice || staticRes?.retailInfo?.[0]?.averagePrice || settings.sellingPrice;
+
+    // SimCo Retail Physics Approximation
+    const priceFactor = Math.pow(settings.sellingPrice / (refPrice || settings.sellingPrice), 3);
+    const speed = baseSpeed / (priceFactor * (1 + saturation * 0.22)); // 0.22 is a common saturation weight
+
+    // Apply CMO bonus if we had access to board state here (ideally)
+    // For now, we assume base speed from modeled data which might already include some baseline
+
     const profitPerUnit = settings.sellingPrice - settings.sourcingCost;
     return { speed, profitPerUnit, hourlyProfit: speed * profitPerUnit };
   }, [p, settings]);
@@ -966,13 +973,12 @@ function BoardImpactView() {
     localStorage.setItem("simco_board_config", JSON.stringify(board));
   }, [board]);
 
-  const cfoLift = board.cfo * 250000;
+  const cfoLift = board.cfo * 500000;
   const threshold = 3000000 + cfoLift;
   const rawAO = Math.max(0, (board.buildingLevels - 1) / 170);
-  const cooReduction = (board.coo * 0.01);
-  const actualAO = Math.max(0, rawAO - cooReduction);
-  const salesSpeedBonus = board.cmo * 0.01;
-  const patentProb = 0.05 + (board.cto * 0.02);
+  const actualAO = rawAO * (1 - (board.coo * 0.01)); // COO: 1% per point
+  const salesSpeedBonus = board.cmo * 0.01; // CMO: 1% per point
+  const patentProb = 0.10 + (board.cto * 0.015); // CTO: 1.5% per point
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 animate-in fade-in duration-500">
@@ -980,15 +986,24 @@ function BoardImpactView() {
        <div className="lg:col-span-8 space-y-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
              <div className="card p-10 bg-white dark:bg-surface-900 border-2 border-surface-100 group rounded-3xl"><p className="text-[10px] font-black text-surface-400 uppercase mb-4 tracking-[0.2em] group-hover:text-brand-600 transition-colors">Accounting Threshold</p><div className="text-4xl font-black font-mono tracking-tighter italic tabular-nums">${threshold.toLocaleString()}</div><p className="text-[10px] text-surface-500 mt-6 font-bold uppercase tracking-tight">Executive Impact: <span className="text-econ-green font-black">+${cfoLift.toLocaleString()}</span></p></div>
-             <div className="card p-10 bg-white dark:bg-surface-900 border-2 border-surface-100 group rounded-3xl"><p className="text-[10px] font-black text-surface-400 uppercase mb-4 tracking-[0.2em] group-hover:text-brand-600 transition-colors">Effective Admin OH</p><div className="text-4xl font-black font-mono tracking-tighter italic tabular-nums">{(actualAO * 100).toFixed(2)}%</div><p className="text-[10px] text-surface-500 mt-6 font-bold uppercase tracking-tight">Base: {(rawAO * 100).toFixed(2)}% | <span className="text-econ-green font-black">-{ (cooReduction * 100).toFixed(1) }% COO Bonus</span></p></div>
+             <div className="card p-10 bg-white dark:bg-surface-900 border-2 border-surface-100 group rounded-3xl"><p className="text-[10px] font-black text-surface-400 uppercase mb-4 tracking-[0.2em] group-hover:text-brand-600 transition-colors">Effective Admin OH</p><div className="text-4xl font-black font-mono tracking-tighter italic tabular-nums">{(actualAO * 100).toFixed(2)}%</div><p className="text-[10px] text-surface-500 mt-6 font-bold uppercase tracking-tight">Base: {(rawAO * 100).toFixed(2)}% | <span className="text-econ-green font-black">-{ (board.coo) }% COO Reduction</span></p></div>
              <div className="card p-10 bg-white dark:bg-surface-900 border-2 border-surface-100 group rounded-3xl"><p className="text-[10px] font-black text-surface-400 uppercase mb-4 tracking-[0.2em] group-hover:text-brand-600 transition-colors">Sales Velocity Boost</p><div className="text-4xl font-black font-mono tracking-tighter text-econ-green italic tabular-nums">+{ (salesSpeedBonus * 100).toFixed(1) }%</div></div>
              <div className="card p-10 bg-white dark:bg-surface-900 border-2 border-surface-100 group rounded-3xl"><p className="text-[10px] font-black text-surface-400 uppercase mb-4 tracking-[0.2em] group-hover:text-brand-600 transition-colors">Patent Prob (R&D)</p><div className="text-4xl font-black font-mono tracking-tighter text-brand-600 italic tabular-nums">{(patentProb * 100).toFixed(1)}%</div></div>
           </div>
-          <Section title="Strategic Governance Analytics">
+          <Section title="Strategic Governance Analysis">
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="card p-8 bg-surface-50 dark:bg-surface-800/40 border-2 border-surface-100 rounded-3xl group transition-all"><h4 className="text-[10px] font-black uppercase mb-6 text-brand-600 tracking-[0.2em]">CFO ROI</h4><p className="text-[11px] leading-relaxed text-surface-500 font-bold uppercase italic">Improving CFO by 1 point saves <span className="text-surface-900 dark:text-white tabular-nums">${(0.005 * 250000).toFixed(0)}/day</span> in bracket leakage.</p></div>
-                <div className="card p-8 bg-surface-50 dark:bg-surface-800/40 border-2 border-surface-100 rounded-3xl group transition-all"><h4 className="text-[10px] font-black uppercase mb-6 text-econ-amber tracking-[0.2em]">CTO YIELD</h4><p className="text-[11px] leading-relaxed text-surface-500 font-bold uppercase italic">Science skill increases R&D ROI by <span className="text-surface-900 dark:text-white">{(board.cto * 1.8).toFixed(1)}%</span> vs market average.</p></div>
-                <div className="card p-8 bg-surface-50 dark:bg-surface-800/40 border-2 border-surface-100 rounded-3xl group transition-all"><h4 className="text-[10px] font-black uppercase mb-6 text-econ-purple tracking-[0.2em]">MAP SCALING</h4><p className="text-[11px] leading-relaxed text-surface-500 font-bold uppercase italic">Add <span className="text-surface-900 dark:text-white tabular-nums">{Math.floor(board.coo * 1.7)}</span> levels before hitting next major efficiency decay.</p></div>
+                <div className="card p-8 bg-surface-50 dark:bg-surface-800/40 border border-surface-200 dark:border-surface-700 rounded-2xl group transition-all">
+                  <h4 className="text-[10px] font-bold uppercase mb-6 text-brand-600 tracking-widest">CFO Impact</h4>
+                  <p className="text-xs leading-relaxed text-surface-600 dark:text-surface-400 font-medium">Each point in Accounting skill increases the tax-free threshold by <span className="text-surface-900 dark:text-white">$500,000</span>.</p>
+                </div>
+                <div className="card p-8 bg-surface-50 dark:bg-surface-800/40 border border-surface-200 dark:border-surface-700 rounded-2xl group transition-all">
+                  <h4 className="text-[10px] font-bold uppercase mb-6 text-econ-amber tracking-widest">CTO Yield</h4>
+                  <p className="text-xs leading-relaxed text-surface-600 dark:text-surface-400 font-medium">Each point in Science skill increases the base patent probability by <span className="text-surface-900 dark:text-white">1.5%</span>.</p>
+                </div>
+                <div className="card p-8 bg-surface-50 dark:bg-surface-800/40 border border-surface-200 dark:border-surface-700 rounded-2xl group transition-all">
+                  <h4 className="text-[10px] font-bold uppercase mb-6 text-econ-purple tracking-widest">COO Efficiency</h4>
+                  <p className="text-xs leading-relaxed text-surface-600 dark:text-surface-400 font-medium">Each point in Management skill reduces effective Admin Overhead by <span className="text-surface-900 dark:text-white">1%</span> of the base rate.</p>
+                </div>
              </div>
           </Section>
        </div>
