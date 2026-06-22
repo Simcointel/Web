@@ -2,15 +2,14 @@ import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
 import { StatCard } from "../components/StatCard";
-import { ScoreBar } from "../components/ScoreBar";
 import { MiniSparkline } from "../components/MiniSparkline";
-import { Section, CardGrid } from "../components/Layout";
+import { Section } from "../components/Layout";
 import { LoadingState, ErrorState } from "../components/States";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { useState, useCallback } from "react";
 import type { RealmDashboard } from "../types/api";
 import { Link } from "../router";
-import { Briefcase, Factory, ShoppingCart, Construction, Users, Activity, TrendingUp, Shield, BarChart3, AlertCircle } from "lucide-react";
+import { Briefcase, Factory, ShoppingCart, Construction, Users, Activity, TrendingUp, Shield, AlertCircle } from "lucide-react";
 
 export function HomePage() {
   const [realm, setRealm] = useState(0);
@@ -162,7 +161,7 @@ export function HomePage() {
           </div>
         </div>
 
-        <div className="lg:col-span-4 space-y-8">
+        <div className="lg:col-span-1 space-y-8">
           <div className="card p-8 flex flex-col items-center text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-surface-200 dark:bg-surface-800"></div>
             <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest mb-4">Economic Regime Status</span>
@@ -189,9 +188,6 @@ export function HomePage() {
                 </div>
                 <p className="text-base font-bold text-surface-900 dark:text-white leading-tight mb-2">{topAlert.ti}</p>
                 {topAlert.de && <p className="text-sm text-surface-600 dark:text-surface-400">{topAlert.de}</p>}
-                <Link to="/signals" className="mt-4 inline-block text-xs font-bold text-brand-600 dark:text-brand-400 uppercase tracking-widest hover:underline">
-                  View Analysis &rarr;
-                </Link>
               </div>
             </div>
           )}
