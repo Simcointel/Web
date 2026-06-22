@@ -323,9 +323,8 @@ export async function fetchRetailData(realm: number): Promise<any> {
 /* ============================================================
    Profit Margins
    ============================================================ */
-export async function fetchProfitMargins(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/profit-margins/realm-${realm}`, "profit-margins-");
-  if (!data) throw new Error("No profit margins data");
+function mapProfitMargins(data: any) {
+  if (!data) return null;
   return {
     ts: data.t,
     realm: data.r,
@@ -350,6 +349,33 @@ export async function fetchProfitMargins(realm: number): Promise<any> {
     })),
     total: data.rs?.length ?? 0,
   };
+}
+
+export async function fetchProfitMargins(realm: number): Promise<any> {
+  const data = await fetchLatest(`aggregates/profit-margins/realm-${realm}`, "profit-margins-");
+  const mapped = mapProfitMargins(data);
+  if (!mapped) throw new Error("No profit margins data");
+  return mapped;
+}
+
+export async function fetchResourcePriceHistory(realm: number, resourceId: number, limit = 20): Promise<any[]> {
+  const items = await fetchAllFiles(`aggregates/profit-margins/realm-${realm}`, "profit-margins-", limit);
+  const history: any[] = [];
+
+  for (const item of items) {
+    const mapped = mapProfitMargins(item);
+    if (!mapped) continue;
+    const res = mapped.resources.find((r: any) => r.id === resourceId);
+    if (res) {
+      history.push({
+        date: mapped.ts,
+        vwap: res.outputVwap,
+        profit: res.netProfitPerHour
+      });
+    }
+  }
+
+  return history.reverse();
 }
 
 /* ============================================================
