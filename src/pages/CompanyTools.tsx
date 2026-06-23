@@ -27,7 +27,7 @@ interface CSVData {
   content: string;
 }
 
-const FAST_TRANSITION = { duration: 0.15, ease: "easeOut" };
+const FAST_TRANSITION = { duration: 0.15, ease: "easeOut" } as const;
 
 export function CompanyToolsPage() {
   const [category, setCategory] = useState<ToolCategory>("financials");
