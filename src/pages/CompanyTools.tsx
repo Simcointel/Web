@@ -104,7 +104,7 @@ export function CompanyToolsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
          {navItems.map((cat) => (
            <button key={cat.id} onClick={() => { setCategory(cat.id as any); setActiveTab(cat.id === "financials" ? "overview" : "main"); }} className={`group relative flex flex-col p-6 rounded-xl border transition-all duration-200 ${category === cat.id ? "bg-brand-600 border-brand-500 text-white shadow-lg" : "bg-white dark:bg-surface-900 border-surface-200 dark:border-surface-800 hover:border-brand-500/50"}`}>
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 transition-all ${category === cat.id ? "bg-white/20 shadow-md" : "bg-surface-50 dark:bg-surface-800 text-brand-600 dark:text-brand-400"}`}><cat.icon size={20} /></div>
@@ -132,7 +132,10 @@ function FinancialsTools({ savedData, deleteData, handleFileUpload, activeTab, s
      { id: "income", label: "Income", icon: LineIcon },
      { id: "balance", label: "Balance", icon: PieIcon },
      { id: "cashflow", label: "Cash Flow", icon: DollarSign },
-     { id: "receipts", label: "Receipts", icon: Receipt }
+     { id: "receipts", label: "Receipts", icon: Receipt },
+     { id: "bonds", label: "Debt & Bonds", icon: Landmark },
+     { id: "contracts", label: "Contract vs Exchange", icon: ArrowUpRight },
+     { id: "inventory", label: "Inventory Valuator", icon: Package }
    ];
    return (
       <div className="space-y-8">
@@ -149,7 +152,11 @@ function FinancialsTools({ savedData, deleteData, handleFileUpload, activeTab, s
             ))}
          </div>
          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={FAST_TRANSITION}>
-            {activeTab === "overview" ? <OverviewView savedData={savedData} deleteData={deleteData} handleFileUpload={handleFileUpload} /> : <FinancialsView type={activeTab} savedData={savedData} deleteData={deleteData} handleFileUpload={handleFileUpload} />}
+            {activeTab === "overview" && <OverviewView savedData={savedData} deleteData={deleteData} handleFileUpload={handleFileUpload} />}
+            {["income", "balance", "cashflow", "receipts"].includes(activeTab) && <FinancialsView type={activeTab} savedData={savedData} deleteData={deleteData} handleFileUpload={handleFileUpload} />}
+            {activeTab === "bonds" && <BondCalculator />}
+            {activeTab === "contracts" && <ContractCalculator />}
+            {activeTab === "inventory" && <InventoryValuator margins={margins?.resources ?? []} />}
          </motion.div>
       </div>
    );
@@ -420,8 +427,9 @@ function FacilityManager({ realm, margins }: { realm: number, margins: any[] }) 
                    <div className="text-2xl font-bold font-mono text-econ-red tabular-nums">${(dailyLabor * (1 + rawAO)).toLocaleString(undefined, { maximumFractionDigits: 0 })}/DAY</div>
                 </div>
                 <div>
-                   <p className="text-[9px] font-bold text-surface-500 uppercase mb-1 tracking-wider">CAPITAL ALLOCATION</p>
-                   <div className="text-2xl font-bold font-mono text-brand-400 tabular-nums">${mapCapitalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                   <p className="text-[9px] font-bold text-surface-500 uppercase mb-1 tracking-wider">ADMIN SWEET SPOT</p>
+                   <div className="text-xl font-bold font-mono text-brand-400 tabular-nums">~{Math.round(rawAO * 170 + 1)} LEVELS</div>
+                   <p className="text-[8px] text-surface-500 uppercase mt-1">Optimal levels for current overhead</p>
                 </div>
              </div>
              <div className="relative z-10 pt-6 border-t border-white/10">
@@ -445,11 +453,13 @@ function SimulatorsTools({ realm, margins }: any) {
   const [activeSub, setActiveSub] = useState("production");
   return (
     <div className="space-y-8">
-       <div className="flex gap-4 border-b pb-3">
+       <div className="flex gap-4 border-b pb-3 overflow-x-auto">
           {[
             { id: "production", label: "Production Yields", icon: Package },
             { id: "construction", label: "Expansion Logistics", icon: Building2 },
-            { id: "retail", label: "Retail Momentum", icon: Wallet }
+            { id: "retail", label: "Retail Momentum", icon: Wallet },
+            { id: "roi", label: "Training ROI", icon: GraduationCap },
+            { id: "matrix", label: "Profit Matrix", icon: Activity }
           ].map(t => (
             <button key={t.id} onClick={() => setActiveSub(t.id)} className={`text-[10px] font-bold uppercase tracking-wider transition-all relative flex items-center gap-2 ${activeSub === t.id ? "text-brand-600" : "text-surface-400 hover:text-surface-600"}`}>
                <t.icon size={14} />
@@ -462,6 +472,8 @@ function SimulatorsTools({ realm, margins }: any) {
           {activeSub === "production" && <AdvancedProductionSimulator margins={margins} />}
           {activeSub === "construction" && <ConstructionCalculator margins={margins} />}
           {activeSub === "retail" && <RetailCalculator realm={realm} />}
+          {activeSub === "roi" && <TrainingROISimulator />}
+          {activeSub === "matrix" && <ProfitMatrix margins={margins} />}
        </motion.div>
     </div>
   );
@@ -508,6 +520,7 @@ function AdvancedProductionSimulator({ margins }: { margins: any[] }) {
   }, [buildingResources, margins]);
 
   const simulations = useMemo(() => {
+    if (!buildingResources.length) return [];
     return buildingResources.map(res => {
       const market = margins.find(m => m.id === res.id);
       const baseWages = res.baseWages || 0;
@@ -590,10 +603,11 @@ function AdvancedProductionSimulator({ margins }: { margins: any[] }) {
                              <div className={`text-4xl font-black font-mono tracking-tighter ${s.pphpl > 0 ? "text-econ-green" : "text-econ-red"}`}>${s.pphpl.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                           </div>
                        </div>
-                       <div className="grid grid-cols-3 gap-6">
+                       <div className="grid grid-cols-4 gap-4">
                           <div className="bg-surface-50 rounded-xl p-4 border"><p className="text-[8px] font-bold text-surface-400 uppercase mb-1 tracking-widest">Unit Cost</p><p className="text-sm font-bold font-mono">${s.costPerUnit.toLocaleString(undefined, { minimumFractionDigits: 3 })}</p></div>
                           <div className="bg-surface-50 rounded-xl p-4 border"><p className="text-[8px] font-bold text-surface-400 uppercase mb-1 tracking-widest">Revenue</p><p className="text-sm font-bold font-mono">${s.revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p></div>
                           <div className="bg-brand-50 rounded-xl p-4 border-brand-100 border"><p className="text-[8px] font-bold text-brand-600 uppercase mb-1 tracking-widest">Margin</p><p className={`text-sm font-bold font-mono ${s.profit > 0 ? "text-econ-green" : "text-econ-red"}`}>${s.profit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p></div>
+                          <div className="bg-surface-50 rounded-xl p-4 border"><p className="text-[8px] font-bold text-surface-400 uppercase mb-1 tracking-widest">Transport Hit</p><p className="text-sm font-bold font-mono text-econ-red">-${(s.transport * 0.35).toFixed(2)}</p></div>
                        </div>
                     </div>
                  )) : (
@@ -611,8 +625,14 @@ function EncyclopediaTools({ margins, realm }: { margins: any[], realm: number }
   const [mode, setMode] = useState<"buildings" | "resources">("buildings");
   const [selectedResource, setSelectedResource] = useState<number | null>(null);
 
-  const filteredBuildings = useMemo(() => BUILDINGS.filter(b => b.name.toLowerCase().includes(search.toLowerCase())), [search]);
-  const filteredResources = useMemo(() => RESOURCES.filter(r => r.name.toLowerCase().includes(search.toLowerCase())), [search]);
+  const filteredBuildings = useMemo(() => {
+    const s = search.toLowerCase();
+    return BUILDINGS.filter(b => b.name.toLowerCase().includes(s));
+  }, [search]);
+  const filteredResources = useMemo(() => {
+    const s = search.toLowerCase();
+    return RESOURCES.filter(r => r.name.toLowerCase().includes(s));
+  }, [search]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -662,6 +682,84 @@ function EncyclopediaTools({ margins, realm }: { margins: any[], realm: number }
   );
 }
 
+function ProfitMatrix({ margins }: { margins: any[] }) {
+  const [selectedBuildingType, setSelectedBuildingType] = useState("production");
+
+  const relevantBuildings = useMemo(() => BUILDINGS.filter(b => b.type === selectedBuildingType), [selectedBuildingType]);
+
+  const pphplData = useMemo(() => {
+    return relevantBuildings.map(b => {
+      const bResources = RESOURCES.filter(r => r.buildingId === b.id);
+      const maxPphpl = bResources.reduce((max, res) => {
+         const m = margins.find(mr => mr.id === res.id);
+         const rev = m?.outputVwap || 0;
+         const wages = (b.wages || 0) * 1.1; // estimate 10% admin
+         const cost = (rev * 0.85) + (wages / (res.basePh || 1));
+         const profit = rev - cost;
+         const pphpl = profit * (res.basePh || 0);
+         return Math.max(max, pphpl);
+      }, 0);
+      return { name: b.name, pphpl: maxPphpl };
+    }).sort((a, b) => b.pphpl - a.pphpl);
+  }, [relevantBuildings, margins]);
+
+  return (
+    <div className="card p-8 bg-white dark:bg-surface-900 border rounded-2xl">
+      <div className="flex items-center justify-between mb-8 border-b pb-4">
+        <h3 className="font-bold text-[10px] uppercase tracking-wider">Top Profit per Hour (PPHPL)</h3>
+        <select value={selectedBuildingType} onChange={(e) => setSelectedBuildingType(e.target.value)} className="input text-[10px] font-bold uppercase py-1 bg-surface-50 border-none rounded">
+          <option value="production">Production</option>
+          <option value="retail">Retail</option>
+        </select>
+      </div>
+      <div className="space-y-4">
+        {pphplData.map((d, i) => (
+          <div key={i} className="flex items-center gap-4">
+            <div className="w-24 text-[9px] font-bold uppercase text-surface-400 truncate">{d.name}</div>
+            <div className="flex-1 h-2 bg-surface-100 rounded-full overflow-hidden">
+               <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (d.pphpl / (pphplData[0].pphpl || 1)) * 100)}%` }} className="h-full bg-brand-500" />
+            </div>
+            <div className="w-20 text-right font-mono font-bold text-[10px] text-econ-green">${d.pphpl.toFixed(2)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TrainingROISimulator() {
+  const [data, setData] = useState({ trainingCost: 10000, currentSkill: 10, targetSkill: 15, dailyProfit: 50000 });
+
+  const skillImpact = (data.targetSkill - data.currentSkill) * 0.01;
+  const dailyGain = data.dailyProfit * skillImpact;
+  const daysToPayback = dailyGain > 0 ? data.trainingCost / dailyGain : Infinity;
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="lg:col-span-4">
+        <div className="card p-6 border bg-white dark:bg-surface-900 space-y-6 rounded-2xl">
+          <h3 className="font-bold text-[10px] uppercase tracking-wider border-b pb-3">Training ROI</h3>
+          <div className="space-y-4">
+             <div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Total Training Cost ($)</label><input type="number" value={data.trainingCost} onChange={(e) => setData({...data, trainingCost: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" /></div>
+             <div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Current Base Profit / Day ($)</label><input type="number" value={data.dailyProfit} onChange={(e) => setData({...data, dailyProfit: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" /></div>
+             <div className="grid grid-cols-2 gap-3">
+                <div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Current Skill</label><input type="number" value={data.currentSkill} onChange={(e) => setData({...data, currentSkill: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" /></div>
+                <div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Target Skill</label><input type="number" value={data.targetSkill} onChange={(e) => setData({...data, targetSkill: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" /></div>
+             </div>
+          </div>
+        </div>
+      </div>
+      <div className="lg:col-span-8">
+        <div className="card p-8 bg-surface-900 text-white rounded-2xl h-full flex flex-col justify-center">
+           <p className="text-[9px] font-bold text-brand-400 uppercase mb-1">Payback Period</p>
+           <div className="text-6xl font-black font-mono tracking-tighter text-econ-amber italic">{daysToPayback === Infinity ? "∞" : daysToPayback.toFixed(1)} DAYS</div>
+           <p className="text-[10px] font-bold text-surface-500 uppercase mt-4">Estimated Profit Increase: <span className="text-econ-green">${dailyGain.toLocaleString()}/DAY</span></p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ConstructionCalculator({ margins }: { margins: any[] }) {
   const [config, setConfig] = useState(() => {
     const saved = localStorage.getItem("simco_const_config");
@@ -696,12 +794,51 @@ function ConstructionCalculator({ margins }: { margins: any[] }) {
     return { cash: totalCash, materials: Array.from(materialMap.entries()).map(([id, qty]) => ({ id, qty, name: CONSTRUCTION_MATERIALS.find(cm => cm.id === id)?.name || "Unknown", price: getMaterialPrice(id) })) };
   }, [b, config.currentLevel, config.targetLevel, margins, manualPrices]);
 
-  const totalMarketValue = cost.materials.reduce((sum, m) => sum + (m.qty * m.price), 0) + cost.cash;
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
        <div className="lg:col-span-4 space-y-6"><div className="card p-6 border bg-white dark:bg-surface-900 shadow-sm space-y-6 rounded-2xl"><h3 className="font-bold text-[10px] uppercase tracking-wider border-b pb-3 text-surface-900 dark:text-white">Expansion Logistics</h3><div className="space-y-4"><div><label className="text-[9px] font-bold uppercase mb-2 block text-surface-400">Target Facility</label><select value={config.selectedBuilding} onChange={(e) => setConfig({...config, selectedBuilding: e.target.value})} className="input py-2 px-3 font-bold text-xs uppercase bg-surface-50 border-none rounded-lg w-full">{BUILDINGS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></div><div className="grid grid-cols-2 gap-3"><div><label className="text-[9px] font-bold uppercase mb-2 block text-surface-400">Current Lvl</label><input type="number" value={config.currentLevel} onChange={(e) => setConfig({...config, currentLevel: Number(e.target.value)})} className="input py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg w-full" /></div><div><label className="text-[9px] font-bold uppercase mb-2 block text-surface-400">Target Lvl</label><input type="number" value={config.targetLevel} onChange={(e) => setConfig({...config, targetLevel: Number(e.target.value)})} className="input py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg w-full" /></div></div></div></div></div>
-       <div className="lg:col-span-8"><div className="card p-8 bg-white dark:bg-surface-900 border rounded-2xl"><div className="flex items-center justify-between mb-8 pb-4 border-b"><h3 className="font-bold text-[10px] uppercase tracking-wider">Upgrade Summary</h3><div className="text-right"><p className="text-[9px] font-bold text-surface-400 uppercase mb-1">Total Market Value</p><p className="text-4xl font-black text-brand-600 font-mono tracking-tighter italic">${totalMarketValue.toLocaleString()}</p></div></div><div className="space-y-4"><div className="flex items-center justify-between p-4 bg-surface-50 dark:bg-surface-800 rounded-xl border group"><div className="flex items-center gap-3"><DollarSign size={18} className="text-brand-600" /><span className="text-[10px] font-bold uppercase tracking-wider">CASH RESERVE</span></div><span className="font-bold font-mono text-xl tabular-nums">${cost.cash.toLocaleString()}</span></div>{cost.materials.map((m, i) => <div key={i} className="flex items-center justify-between p-4 bg-white dark:bg-surface-900 rounded-xl border group hover:border-brand-500/50 transition-all"><div><div className="flex items-center gap-3 mb-1"><Package size={16} className="text-surface-400" /><span className="text-[10px] font-bold uppercase group-hover:text-brand-600 transition-colors">{m.name}</span></div><div className="flex items-center gap-2"><span className="text-[8px] text-surface-400 uppercase font-bold">Price:</span><input type="number" value={m.price} onChange={(e) => setManualPrices(prev => ({ ...prev, [m.id]: Number(e.target.value) }))} className="bg-transparent border-none text-[9px] font-bold font-mono w-20 text-brand-500 focus:ring-0" /></div></div><div className="text-right"><p className="font-bold font-mono text-2xl tabular-nums">{m.qty.toLocaleString()}</p><p className="text-[9px] text-surface-400 font-bold tracking-widest opacity-60">Value: ${(m.qty * m.price).toLocaleString()}</p></div></div>)}</div></div></div>
+       <div className="lg:col-span-8 space-y-6">
+          <div className="card p-8 bg-white dark:bg-surface-900 border rounded-2xl">
+             <div className="flex items-center justify-between mb-8 pb-4 border-b">
+                <h3 className="font-bold text-[10px] uppercase tracking-wider">Upgrade Summary</h3>
+             </div>
+             <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-surface-50 dark:bg-surface-800 rounded-xl border group">
+                   <div className="flex items-center gap-3"><DollarSign size={18} className="text-brand-600" /><span className="text-[10px] font-bold uppercase tracking-wider">CASH RESERVE</span></div>
+                   <span className="font-bold font-mono text-xl tabular-nums">${cost.cash.toLocaleString()}</span>
+                </div>
+                {cost.materials.map((m, i) => (
+                   <div key={i} className="flex items-center justify-between p-4 bg-white dark:bg-surface-900 rounded-xl border group hover:border-brand-500/50 transition-all">
+                      <div>
+                         <div className="flex items-center gap-3 mb-1"><Package size={16} className="text-surface-400" /><span className="text-[10px] font-bold uppercase group-hover:text-brand-600 transition-colors">{m.name}</span></div>
+                         <div className="flex items-center gap-2"><span className="text-[8px] text-surface-400 uppercase font-bold">Price:</span><input type="number" value={m.price} onChange={(e) => setManualPrices(prev => ({ ...prev, [m.id]: Number(e.target.value) }))} className="bg-transparent border-none text-[9px] font-bold font-mono w-20 text-brand-500 focus:ring-0" /></div>
+                      </div>
+                      <div className="text-right">
+                         <p className="font-bold font-mono text-2xl tabular-nums">{m.qty.toLocaleString()}</p>
+                         <p className="text-[9px] text-surface-400 font-bold tracking-widest opacity-60">Value: ${(m.qty * m.price).toLocaleString()}</p>
+                      </div>
+                   </div>
+                ))}
+             </div>
+          </div>
+
+          <div className="card p-6 bg-brand-600 text-white rounded-2xl">
+             <div className="flex items-center gap-2 mb-4">
+                <Clock size={16} />
+                <h3 className="text-[10px] font-bold uppercase tracking-wider">Production Timeline</h3>
+             </div>
+             <div className="grid grid-cols-2 gap-8">
+                <div>
+                   <p className="text-[9px] font-bold text-brand-200 uppercase mb-1">Self-Production Time</p>
+                   <p className="text-2xl font-black font-mono italic">~{Math.round(cost.materials.reduce((s, m) => s + m.qty, 0) / 40)} HOURS</p>
+                </div>
+                <div>
+                   <p className="text-[9px] font-bold text-brand-200 uppercase mb-1">Logistics Load</p>
+                   <p className="text-2xl font-black font-mono italic">~{Math.round(cost.materials.reduce((s, m) => s + (m.qty * 1), 0))} TRANSPORT</p>
+                </div>
+             </div>
+          </div>
+       </div>
     </div>
   );
 }
@@ -752,6 +889,124 @@ function RetailCalculator({ realm }: { realm: number }) {
      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
        <div className="lg:col-span-4 space-y-6"><div className="card p-6 border bg-white dark:bg-surface-900 shadow-sm space-y-6 rounded-2xl"><h3 className="font-bold text-[10px] uppercase tracking-wider text-surface-900 dark:text-white border-b pb-3">Retail Strategy</h3><div className="space-y-4"><div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Inventory Ledger</label><select value={settings.selectedProduct} onChange={(e) => setSettings({...settings, selectedProduct: e.target.value})} className="input py-2 px-3 font-bold text-xs uppercase bg-surface-50 border-none rounded-lg w-full"><option value="">-- NONE --</option>{products.map(pr => <option key={pr.id} value={pr.id}>{pr.id}</option>)}</select></div>{p && <><div className="pt-6 border-t space-y-4"><div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Sourcing Basis</label><input type="number" value={settings.sourcingCost} onChange={(e) => setSettings({...settings, sourcingCost: Number(e.target.value)})} className="input py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg w-full" /></div><div><label className="text-[9px] font-bold uppercase block mb-2 text-brand-600 tracking-wider">Price Target</label><input type="number" value={settings.sellingPrice} onChange={(e) => setSettings({...settings, sellingPrice: Number(e.target.value)})} className="input py-2 px-3 font-bold text-xs bg-brand-50 border border-brand-100 text-brand-600 rounded-lg w-full" /></div></div></>}</div></div></div>
        <div className="lg:col-span-8">{p && stats ? <div className="card p-8 bg-white dark:bg-surface-900 border rounded-2xl"><div className="flex items-center justify-between mb-8 pb-4 border-b"><h3 className="font-bold text-[10px] uppercase tracking-wider">{p.id} Dynamics</h3><span className="text-[9px] font-bold text-econ-amber bg-econ-amber/10 px-3 py-1 rounded-lg border border-econ-amber/20">Saturation: {p.saturation?.toFixed(2)}</span></div><div className="grid grid-cols-1 md:grid-cols-3 gap-6"><div className="p-6 rounded-2xl bg-surface-50 dark:bg-surface-800/40 border group"><p className="text-[9px] font-bold text-surface-400 uppercase mb-2 tracking-wider">Velocity</p><p className="text-3xl font-black font-mono italic tabular-nums">{stats.speed.toFixed(1)}/H</p></div><div className="p-6 rounded-2xl bg-surface-50 dark:bg-surface-800/40 border group"><p className="text-[9px] font-bold text-surface-400 uppercase mb-2 tracking-wider">Yield</p><p className={`text-3xl font-black font-mono italic tabular-nums ${stats.hourlyProfit > 0 ? "text-econ-green" : "text-econ-red"}`}>${stats.hourlyProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div><div className="p-6 rounded-2xl bg-brand-50 dark:bg-brand-900/10 border border-brand-100 shadow-sm"><p className="text-[9px] font-bold text-brand-600 uppercase mb-2">Unit Margin</p><p className="text-3xl font-black font-mono text-econ-green italic tabular-nums">${stats.profitPerUnit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></div></div></div> : <div className="card p-24 text-center bg-surface-50/50 border-dashed border-2 rounded-2xl flex flex-col items-center gap-4"><Package size={40} className="text-surface-200" /><p className="text-surface-400 text-[10px] font-bold uppercase tracking-widest opacity-50 italic">Select inventory item.</p></div>}</div>
+    </div>
+  );
+}
+
+function InventoryValuator({ margins }: { margins: any[] }) {
+  const [items, setItems] = useState<Array<{ id: number; qty: number }>>([]);
+
+  const totalValue = useMemo(() => {
+    return items.reduce((sum, item) => {
+      const price = margins.find(m => m.id === item.id)?.outputVwap || 0;
+      return sum + (price * item.qty);
+    }, 0);
+  }, [items, margins]);
+
+  const add = (id: number) => setItems([...items, { id, qty: 0 }]);
+  const update = (idx: number, qty: number) => { const n = [...items]; n[idx].qty = qty; setItems(n); };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="lg:col-span-8 space-y-4">
+        <div className="flex justify-between items-center mb-4"><h3 className="text-[10px] font-bold uppercase">Warehouse Manifest</h3><button onClick={() => add(RESOURCES[0].id)} className="btn btn-secondary text-[10px] py-1 px-3">Add Item</button></div>
+        {items.map((item, i) => (
+          <div key={i} className="card p-4 flex gap-4 items-center bg-white dark:bg-surface-900 border">
+             <select value={item.id} onChange={(e) => { const n = [...items]; n[i].id = Number(e.target.value); setItems(n); }} className="input flex-1 py-1 px-2 text-xs font-bold uppercase bg-surface-50 border-none">{RESOURCES.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select>
+             <input type="number" value={item.qty} onChange={(e) => update(i, Number(e.target.value))} className="input w-32 py-1 px-2 text-xs font-bold text-center bg-surface-50 border-none" placeholder="Quantity" />
+          </div>
+        ))}
+      </div>
+      <div className="lg:col-span-4">
+        <div className="card p-8 bg-surface-900 text-white rounded-2xl">
+           <p className="text-[9px] font-bold text-brand-400 uppercase mb-1">Total Market Liquidity</p>
+           <div className="text-4xl font-black font-mono tracking-tighter italic text-econ-green">${totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContractCalculator() {
+  const [data, setData] = useState({ price: 10, quantity: 1000 });
+  const exchangeTotal = (data.price * data.quantity) * 0.97;
+  const contractTotal = (data.price * 0.97) * data.quantity; // assuming 3% discount or fee avoidance
+  const exchangeFees = (data.price * data.quantity) * 0.03;
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="lg:col-span-4 space-y-6">
+        <div className="card p-6 border bg-white dark:bg-surface-900 rounded-2xl">
+           <h3 className="font-bold text-[10px] uppercase tracking-wider border-b pb-3">Contract Simulation</h3>
+           <div className="space-y-4">
+              <div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Market Price ($)</label><input type="number" value={data.price} onChange={(e) => setData({...data, price: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" /></div>
+              <div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Quantity</label><input type="number" value={data.quantity} onChange={(e) => setData({...data, quantity: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" /></div>
+           </div>
+        </div>
+      </div>
+      <div className="lg:col-span-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+           <div className="card p-8 bg-surface-50 border rounded-2xl">
+              <p className="text-[9px] font-bold text-surface-400 uppercase mb-2">Exchange Sale</p>
+              <p className="text-2xl font-black font-mono tabular-nums text-surface-900">${exchangeTotal.toLocaleString()}</p>
+              <p className="text-[10px] font-bold text-econ-red uppercase mt-4">Fees: -${exchangeFees.toLocaleString()}</p>
+           </div>
+           <div className="card p-8 bg-brand-600 border-none rounded-2xl text-white shadow-lg">
+              <p className="text-[9px] font-bold text-brand-100 uppercase mb-2">Contract Sale (Net)</p>
+              <p className="text-2xl font-black font-mono tabular-nums">${(data.price * data.quantity).toLocaleString()}</p>
+              <p className="text-[10px] font-bold text-econ-green uppercase mt-4">Extra Profit: +${exchangeFees.toLocaleString()}</p>
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BondCalculator() {
+  const [bonds, setBonds] = useState(() => {
+    const saved = localStorage.getItem("simco_bonds");
+    return saved ? JSON.parse(saved) : { currentDebt: 0, interestRate: 0.5 };
+  });
+
+  useEffect(() => {
+    localStorage.setItem("simco_bonds", JSON.stringify(bonds));
+  }, [bonds]);
+
+  const dailyInterest = (bonds.currentDebt * (bonds.interestRate / 100));
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="lg:col-span-4">
+        <div className="card p-6 border bg-white dark:bg-surface-900 space-y-6 rounded-2xl">
+          <h3 className="font-bold text-[10px] uppercase tracking-wider border-b pb-3">Debt Management</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Total Debt ($)</label>
+              <input type="number" value={bonds.currentDebt} onChange={(e) => setBonds({...bonds, currentDebt: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" />
+            </div>
+            <div>
+              <label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Daily Interest %</label>
+              <input type="number" step="0.01" value={bonds.interestRate} onChange={(e) => setBonds({...bonds, interestRate: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="lg:col-span-8">
+        <div className="card p-8 bg-surface-900 text-white rounded-2xl">
+          <p className="text-[9px] font-bold text-brand-400 uppercase mb-1">Daily Interest Expense</p>
+          <div className="text-5xl font-black font-mono tracking-tighter text-econ-red">${dailyInterest.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+          <div className="mt-8 pt-8 border-t border-white/10 grid grid-cols-2 gap-8">
+            <div>
+              <p className="text-[9px] font-bold text-surface-500 uppercase mb-1">Weekly Expense</p>
+              <p className="text-xl font-bold font-mono">${(dailyInterest * 7).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+            </div>
+            <div>
+              <p className="text-[9px] font-bold text-surface-500 uppercase mb-1">30-Day Outlook</p>
+              <p className="text-xl font-bold font-mono">${(dailyInterest * 30).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -903,6 +1158,11 @@ function ExecutiveSuiteView() {
                 <div className="pt-6 border-t border-white/10">
                    <p className="text-[9px] font-bold uppercase text-brand-200 mb-1">Daily Wages</p>
                    <div className="text-2xl font-bold font-mono tracking-tighter text-econ-red italic">${results.totalDailyWages.toLocaleString()}</div>
+                </div>
+                <div>
+                   <p className="text-[9px] font-bold uppercase text-brand-200 mb-1">Tax Est. (1M Profit)</p>
+                   <div className="text-2xl font-bold font-mono tracking-tighter text-econ-amber italic">${Math.max(0, (1000000 - results.threshold) * 0.07).toLocaleString()}</div>
+                   <p className="text-[7px] text-brand-200/50 uppercase mt-1">Projected daily tax on $1M profit</p>
                 </div>
                 <div className="space-y-2">
                    <label className="text-[8px] font-bold uppercase text-brand-200 block">Company Map Levels</label>
