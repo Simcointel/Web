@@ -116,7 +116,7 @@ export function CompanyToolsPage() {
 
       <AnimatePresence mode="wait">
         <motion.div key={category} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FAST_TRANSITION} className="terminal-card min-h-[600px] relative">
-           {category === "financials" && <FinancialsTools savedData={savedData} deleteData={deleteData} handleFileUpload={handleFileUpload} activeTab={activeTab} setActiveTab={setActiveTab} />}
+           {category === "financials" && <FinancialsTools savedData={savedData} deleteData={deleteData} handleFileUpload={handleFileUpload} activeTab={activeTab} setActiveTab={setActiveTab} margins={margins} />}
            {category === "operations" && <OperationsTools realm={realm} margins={margins?.resources ?? []} />}
            {category === "simulators" && <SimulatorsTools realm={realm} margins={margins?.resources ?? []} />}
            {category === "encyclopedia" && <EncyclopediaTools realm={realm} margins={margins?.resources ?? []} />}
@@ -126,7 +126,7 @@ export function CompanyToolsPage() {
   );
 }
 
-function FinancialsTools({ savedData, deleteData, handleFileUpload, activeTab, setActiveTab }: any) {
+function FinancialsTools({ savedData, deleteData, handleFileUpload, activeTab, setActiveTab, margins }: any) {
    const tabs = [
      { id: "overview", label: "Overview", icon: Activity },
      { id: "income", label: "Income", icon: LineIcon },
