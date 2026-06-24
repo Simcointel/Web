@@ -2,13 +2,15 @@ import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, CartesianGrid, AreaChart, Area
+  PieChart, Pie, Cell, LineChart, Line, CartesianGrid, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from "recharts";
 import {
   TrendingUp, Activity, Calculator, BookOpen, Upload, Download, Trash2,
-  ChevronRight, Building2, Package, UserCheck, DollarSign, ArrowLeft,
+  ChevronRight, Building2, Package, UserCheck, DollarSign, ArrowLeft, FileText,
   PieChart as PieIcon, LineChart as LineIcon, Receipt, Landmark, Info, Search,
-  ArrowUpRight, ArrowDownRight, Clock, Wallet, GraduationCap, Users, UserPlus, Zap
+  ArrowUpRight, ArrowDownRight, Clock, Wallet, GraduationCap, Users, UserPlus, Zap,
+  AlertTriangle, ShieldCheck, BarChart3, Layers, Microscope, Target, Eye, Settings,
+  Repeat, TrendingDown, Briefcase, Globe
 } from "lucide-react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import { BUILDINGS, CONSTRUCTION_MATERIALS, RESOURCES, ResourceData } from "../data/simco_static";
@@ -16,1161 +18,585 @@ import * as dataRepo from "../services/dataRepo";
 import { Section, CardGrid, Tooltip } from "../components/Layout";
 import { LoadingState } from "../components/States";
 
-type ToolCategory = "financials" | "operations" | "simulators" | "encyclopedia";
-type StatementType = "overview" | "income" | "cashflow" | "receipts" | "balance";
-
-interface CSVData {
-  id: string;
-  name: string;
-  date: string;
-  type: string;
-  content: string;
-}
-
 const FAST_TRANSITION = { duration: 0.15, ease: "easeOut" } as const;
 
+interface MapItem { id: string; level: number; }
+interface Executive { skill: number; age: number; }
+interface InventoryItem { id: number; qty: number; }
+
+interface MarginResource {
+  id: number;
+  name: string;
+  outputVwap: number;
+  netProfitPerHour: number;
+}
+
+interface RetailItem {
+  saturation: number;
+  marketPrice: number;
+}
+
+interface SuiteState {
+  map: MapItem[];
+  board: {
+    coo: Executive; cfo: Executive; cmo: Executive; cto: Executive;
+  };
+  inventory: InventoryItem[];
+  settings: {
+    prodBonus: number;
+    robotBonus: number;
+    realm: number;
+    estDailyProfit: number;
+    showSensitivity: boolean;
+    whatIfLevel: number;
+  };
+  debt: { current: number; rate: number; };
+}
+
 export function CompanyToolsPage() {
-  const [category, setCategory] = useState<ToolCategory>("financials");
-  const [activeTab, setActiveTab] = useState<StatementType | string>("overview");
   const [realm, setRealm] = useState(0);
-  const [savedData, setSavedData] = useState<CSVData[]>(() => {
-    const saved = localStorage.getItem("simco_company_data");
-    return saved ? JSON.parse(saved) : [];
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const { data: margins, loading: mLoading } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 60000, [realm]);
+  const { data: retail } = useDataRepoPoll(() => dataRepo.fetchRetailData(realm), 120000, [realm]);
+
+  const [state, setState] = useState<SuiteState>(() => {
+    const saved = localStorage.getItem("simco_suite_v5");
+    if (saved) return JSON.parse(saved);
+    return {
+      map: [{ id: BUILDINGS[0].id, level: 1 }],
+      board: {
+        coo: { skill: 15, age: 35 }, cfo: { skill: 15, age: 35 },
+        cmo: { skill: 15, age: 35 }, cto: { skill: 15, age: 35 },
+      },
+      inventory: [],
+      settings: { prodBonus: 12, robotBonus: 0, realm: 0, estDailyProfit: 250000, showSensitivity: true, whatIfLevel: 0 },
+      debt: { current: 2000000, rate: 0.5 }
+    };
   });
 
-  const { data: margins, loading: mLoading } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 60000, [realm]);
+  useEffect(() => { localStorage.setItem("simco_suite_v5", JSON.stringify(state)); }, [state]);
 
-  useEffect(() => {
-    localStorage.setItem("simco_company_data", JSON.stringify(savedData));
-  }, [savedData]);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
-    const file = e.target.files?.[0];
+  const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
+
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const newData: CSVData = { id: crypto.randomUUID(), name: file.name, date: new Date().toISOString(), type, content: event.target?.result as string };
-      setSavedData(prev => [newData, ...prev]);
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split('\n').map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+      if (lines.length < 2) return;
+
+      const headers = lines[0].map(h => h.toLowerCase());
+
+      // Case 1: Warehouse / Inventory Export
+      if (headers.includes('resource') && headers.includes('quantity')) {
+        const qtyIdx = headers.indexOf('quantity');
+        const nameIdx = headers.indexOf('resource');
+        const nextInv: InventoryItem[] = [];
+
+        lines.slice(1).forEach(row => {
+          if (!row[nameIdx]) return;
+          const res = RESOURCES.find(r => r.name.toLowerCase() === row[nameIdx].toLowerCase());
+          const qty = parseInt(row[qtyIdx]);
+          if (res && !isNaN(qty)) nextInv.push({ id: res.id, qty });
+        });
+
+        if (nextInv.length > 0) setState(prev => ({ ...prev, inventory: nextInv }));
+      }
+
+      // Case 2: Income Statement (Daily Profit estimation)
+      if (headers.includes('profit/loss') || headers.includes('profit')) {
+        const profitIdx = headers.findIndex(h => h.includes('profit'));
+        const lastProfit = parseFloat(lines[1][profitIdx]);
+        if (!isNaN(lastProfit)) {
+          setState(prev => ({ ...prev, settings: { ...prev.settings, estDailyProfit: Math.abs(lastProfit) } }));
+        }
+      }
     };
     reader.readAsText(file);
   };
 
-  const deleteData = (id: string) => setSavedData(prev => prev.filter(d => d.id !== id));
+  // CORE LOGIC: Interconnected Calculations
+  const core = useMemo(() => {
+    const totalLevels = state.map.reduce((s, i) => s + i.level, 0) + state.settings.whatIfLevel;
+    const rawAO = Math.max(0, (totalLevels - 1) / 170);
+    const actualAO = rawAO * (1 - (state.board.coo.skill * 0.01));
+    const taxThreshold = 3000000 + (state.board.cfo.skill * 500000);
+    const salesSpeedBonus = state.board.cmo.skill * 0.01;
+    const patentProb = 0.10 + (state.board.cto.skill * 0.015);
 
-  const downloadCombinedCSV = () => {
-    if (savedData.length === 0) return;
-    let combined = "Type,Name,Date,Content\n";
-    savedData.forEach(d => {
-       const escapedContent = `"${d.content.replace(/"/g, '""')}"`;
-       combined += `${d.type},${d.name},${d.date},${escapedContent}\n`;
-    });
-    const blob = new Blob([combined], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `simcointel_combined_export_${new Date().toISOString().slice(0,10)}.csv`;
-    link.click();
-  };
+    const dailyWages = state.map.reduce((sum, item) => {
+      const b = BUILDINGS.find(bu => bu.id === item.id);
+      return sum + (item.level * (b?.wages || 0) * 24);
+    }, 0);
 
-  const navItems = [
-    { id: "financials", label: "Financial Hub", icon: Landmark, desc: "Sync & Trends" },
-    { id: "operations", label: "Map & Ops", icon: Activity, desc: "Efficiency & AO" },
-    { id: "simulators", label: "Simulation", icon: Calculator, desc: "Yields & Retail" },
-    { id: "encyclopedia", label: "Data Bank", icon: BookOpen, desc: "Ref Encyclopedia" }
-  ];
+    const dailyInterest = state.debt.current * (state.debt.rate / 100);
 
-  return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-8 space-y-8 relative">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-surface-200 dark:border-surface-800 pb-6">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-bold text-[10px] uppercase tracking-widest">
-            <Activity size={12} />
-            Internal Systems
-          </div>
-          <h2 className="text-3xl font-bold text-surface-900 dark:text-white tracking-tight">Corporate Suite</h2>
-        </div>
-        <div className="flex items-center gap-3">
-          <button onClick={downloadCombinedCSV} className="btn btn-secondary py-2 px-4 gap-2 text-[10px] font-bold uppercase tracking-widest border transition-all">
-             <Download size={14} />
-             Export Configuration
-          </button>
-          <div className="relative group">
-             <select value={realm} onChange={(e) => setRealm(Number(e.target.value))} className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-lg text-xs font-bold px-4 py-2 uppercase tracking-widest focus:ring-brand-500 appearance-none pr-8">
-                <option value={0}>R0 // GLOBAL</option>
-                <option value={1}>R1 // MAGNATES</option>
-             </select>
-             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-surface-400"><ChevronRight size={12} className="rotate-90" /></div>
-          </div>
-        </div>
-      </div>
+    // Feature 1: Live Tax Estimator
+    const dailyProfit = state.settings.estDailyProfit;
+    const taxableAmount = Math.max(0, dailyProfit - (taxThreshold / 30)); // Daily equivalent threshold
+    const estimatedDailyTax = taxableAmount * 0.07; // Approx corporate tax rate
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-         {navItems.map((cat) => (
-           <button key={cat.id} onClick={() => { setCategory(cat.id as any); setActiveTab(cat.id === "financials" ? "overview" : "main"); }} className={`group relative flex flex-col p-6 rounded-xl border transition-all duration-200 ${category === cat.id ? "bg-brand-600 border-brand-500 text-white shadow-lg" : "bg-white dark:bg-surface-900 border-surface-200 dark:border-surface-800 hover:border-brand-500/50"}`}>
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 transition-all ${category === cat.id ? "bg-white/20 shadow-md" : "bg-surface-50 dark:bg-surface-800 text-brand-600 dark:text-brand-400"}`}><cat.icon size={20} /></div>
-              <span className="text-xs font-black uppercase tracking-wider">{cat.label}</span>
-              <span className={`text-[9px] mt-1 font-bold tracking-widest ${category === cat.id ? "text-white/70" : "text-surface-400"}`}>{cat.desc}</span>
-           </button>
-         ))}
-      </div>
+    // Feature 2: Global Valuation Summary (Liquid vs Fixed)
+    const inventoryValue = state.inventory.reduce((sum, item) => {
+      const price = (margins?.resources as MarginResource[] | undefined)?.find(m => m.id === item.id)?.outputVwap || 0;
+      return sum + (price * item.qty);
+    }, 0);
+    const mapValue = state.map.reduce((sum, item) => {
+      const b = BUILDINGS.find(bu => bu.id === item.id);
+      if (!b) return sum;
+      let cost = 0;
+      for(let l=1; l<=item.level; l++) cost += b.cost * (l <= 2 ? 1 : l-1);
+      return sum + cost;
+    }, 0);
 
-      <AnimatePresence mode="wait">
-        <motion.div key={category} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FAST_TRANSITION} className="terminal-card min-h-[600px] relative">
-           {category === "financials" && <FinancialsTools savedData={savedData} deleteData={deleteData} handleFileUpload={handleFileUpload} activeTab={activeTab} setActiveTab={setActiveTab} margins={margins} />}
-           {category === "operations" && <OperationsTools realm={realm} margins={margins?.resources ?? []} />}
-           {category === "simulators" && <SimulatorsTools realm={realm} margins={margins?.resources ?? []} />}
-           {category === "encyclopedia" && <EncyclopediaTools realm={realm} margins={margins?.resources ?? []} />}
-        </motion.div>
-      </AnimatePresence>
-    </div>
-  );
-}
+    // Feature 3: Interest Coverage Ratio (Debt Health)
+    const coverageRatio = dailyInterest > 0 ? dailyProfit / dailyInterest : 100;
 
-function FinancialsTools({ savedData, deleteData, handleFileUpload, activeTab, setActiveTab, margins }: any) {
-   const tabs = [
-     { id: "overview", label: "Overview", icon: Activity },
-     { id: "income", label: "Income", icon: LineIcon },
-     { id: "balance", label: "Balance", icon: PieIcon },
-     { id: "cashflow", label: "Cash Flow", icon: DollarSign },
-     { id: "receipts", label: "Receipts", icon: Receipt },
-     { id: "bonds", label: "Debt & Bonds", icon: Landmark },
-     { id: "contracts", label: "Contract vs Exchange", icon: ArrowUpRight },
-     { id: "inventory", label: "Inventory Valuator", icon: Package }
-   ];
-   return (
-      <div className="space-y-8">
-         <div className="flex flex-wrap gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-xl w-fit border border-surface-200 dark:border-surface-700">
-            {tabs.map(t => (
-               <button
-                  key={t.id}
-                  onClick={() => setActiveTab(t.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${activeTab === t.id ? "bg-white dark:bg-surface-700 text-brand-600 shadow-sm border border-surface-200 dark:border-surface-600" : "text-surface-500 hover:text-surface-900 dark:hover:text-surface-200 hover:bg-surface-50/50"}`}
-               >
-                  <t.icon size={14} />
-                  {t.label}
-               </button>
-            ))}
-         </div>
-         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={FAST_TRANSITION}>
-            {activeTab === "overview" && <OverviewView savedData={savedData} deleteData={deleteData} handleFileUpload={handleFileUpload} />}
-            {["income", "balance", "cashflow", "receipts"].includes(activeTab) && <FinancialsView type={activeTab} savedData={savedData} deleteData={deleteData} handleFileUpload={handleFileUpload} />}
-            {activeTab === "bonds" && <BondCalculator />}
-            {activeTab === "contracts" && <ContractCalculator />}
-            {activeTab === "inventory" && <InventoryValuator margins={margins?.resources ?? []} />}
-         </motion.div>
-      </div>
-   );
-}
-
-function OverviewView({ savedData, deleteData, handleFileUpload }: any) {
-   return (
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-         <div className="lg:col-span-8 space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-               <div className="card p-6 border-brand-500/20 bg-brand-500/[0.01]">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-brand-600 mb-2">Data Points</p>
-                  <div className="text-3xl font-bold text-surface-900 dark:text-white tabular-nums">{savedData.length}</div>
-               </div>
-               <div className="card p-6 border-econ-green/20 bg-econ-green/[0.01]">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-econ-green mb-2">Integration</p>
-                  <div className="text-xl font-bold text-econ-green flex items-center gap-2 uppercase">
-                     <UserCheck size={20} />
-                     ACTIVE
-                  </div>
-               </div>
-               <div className="card p-6 border-surface-200 dark:border-surface-800">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-surface-400 mb-2">Latest Sync</p>
-                  <div className="text-sm font-bold text-surface-900 dark:text-white tabular-nums">
-                     {savedData.length > 0 ? new Date(savedData[0].date).toLocaleDateString() : "No data"}
-                  </div>
-               </div>
-            </div>
-            <div className="card overflow-hidden p-0 border">
-               <div className="px-6 py-4 border-b bg-surface-50/50 dark:bg-surface-800/50 flex items-center justify-between font-bold text-[10px] uppercase tracking-wider text-surface-500">
-                  <div className="flex items-center gap-2">
-                     <Activity size={12} className="text-brand-500" />
-                     Recent Transactions
-                  </div>
-               </div>
-               <div className="divide-y">
-                  {savedData.length > 0 ? savedData.slice(0, 5).map((d: any) => (
-                    <div key={d.id} className="flex items-center justify-between px-6 py-4 hover:bg-brand-500/[0.02] transition-all group">
-                       <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-lg bg-surface-100 dark:bg-surface-800 flex flex-col items-center justify-center text-brand-600 uppercase text-[8px] font-black border group-hover:border-brand-500 transition-colors">
-                             <span className="text-[10px] leading-none font-mono">{d.type.slice(0, 3)}</span>
-                          </div>
-                          <div>
-                             <p className="text-sm font-bold text-surface-900 dark:text-white uppercase group-hover:text-brand-500 transition-colors">{d.name}</p>
-                             <p className="text-[9px] text-surface-400 font-mono uppercase">TS: {new Date(d.date).toLocaleString()}</p>
-                          </div>
-                       </div>
-                       <button onClick={() => deleteData(d.id)} className="p-2 text-surface-300 hover:text-white hover:bg-econ-red rounded-lg transition-all opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
-                    </div>
-                  )) : (
-                    <div className="p-16 text-center text-surface-400 font-bold uppercase text-[10px] tracking-widest opacity-30">No data found.</div>
-                  )}
-               </div>
-            </div>
-         </div>
-         <div className="lg:col-span-4">
-            <div className="card p-8 border-dashed border-2 border-brand-500/20 text-center bg-brand-500/[0.01] group hover:border-brand-500 transition-all cursor-pointer">
-               <h3 className="font-bold text-[10px] uppercase mb-6 tracking-widest text-brand-600">Data Import</h3>
-               <div className="flex flex-col gap-4 relative z-10">
-                  <input type="file" id="bulk-upload" className="hidden" onChange={(e) => handleFileUpload(e, "income")} />
-                  <label htmlFor="bulk-upload" className="btn btn-primary w-full py-4 rounded-xl cursor-pointer flex items-center justify-center gap-3 text-xs font-bold shadow-sm border border-brand-400">
-                     <Upload size={18} />
-                     Upload CSV
-                  </label>
-                  <p className="text-[9px] font-medium text-surface-500 uppercase leading-relaxed px-4 opacity-60">
-                     Accepts INCOME, BALANCE, CASHFLOW, or RECEIPTS exports.
-                  </p>
-               </div>
-            </div>
-         </div>
-      </div>
-   );
-}
-
-function parseCSVLine(text: string): string[] {
-  const result: string[] = [];
-  let current = "";
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    if (char === '"') {
-      if (inQuotes && text[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === "," && !inQuotes) {
-      result.push(current);
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-  result.push(current);
-  return result;
-}
-
-function FinancialsView({ type, savedData, deleteData, handleFileUpload }: any) {
-  const filtered = savedData.filter((d: any) => d.type === type);
-
-  const analysis = useMemo(() => {
-    if (filtered.length === 0) return null;
-    try {
-      const content = filtered[0].content;
-      const lines = content.split("\n").filter(l => l.trim());
-      const rows = lines.map(parseCSVLine);
-      const headers = rows[0].map(h => h.trim().toLowerCase());
-      const dataRows = rows.slice(1);
-
-      if (type === "receipts") {
-         const detailsIdx = headers.indexOf("details");
-         const moneyIdx = headers.indexOf("money");
-         const timeIdx = headers.indexOf("timestamp");
-
-         const results = dataRows.map(r => {
-            let profit = 0;
-            try {
-               const details = JSON.parse(r[detailsIdx]);
-               profit = details.profit || 0;
-            } catch { profit = 0; }
-            return { date: r[timeIdx]?.slice(5, 10), val: profit, money: parseFloat(r[moneyIdx]) || 0 };
-         }).filter(d => !isNaN(d.money)).slice(0, 30).reverse();
-
-         return { chartType: "area", data: results, label: "Net Profit Momentum" };
-      }
-
-      if (type === "balance") {
-         const assetCols = ["cash", "inventory - materials", "inventory - research", "inventory - finished goods", "buildings", "patents"];
-         const latestRow = dataRows[0];
-         const breakdown = assetCols.map(name => {
-            const idx = headers.indexOf(name);
-            return {
-               name: name.split(" - ").pop()?.toUpperCase() || name.toUpperCase(),
-               value: idx !== -1 ? Math.abs(parseFloat(latestRow[idx])) || 0 : 0
-            };
-         }).filter(d => d.value > 0);
-
-         return { chartType: "pie", data: breakdown, label: "Capital Allocation" };
-      }
-
-      const valIdx = headers.indexOf("netincome") !== -1 ? headers.indexOf("netincome") : headers.length - 1;
-      const labelIdx = headers.indexOf("timestamp") !== -1 ? headers.indexOf("timestamp") : 0;
-
-      const barData = dataRows.map(r => ({
-         date: r[labelIdx]?.slice(5, 10) || "Data",
-         val: Math.abs(parseFloat(r[valIdx])) || 0
-      })).filter(d => !isNaN(d.val)).slice(0, 12).reverse();
-
-      return { chartType: "bar", data: barData, label: "Performance Overview" };
-    } catch (e) { console.error("CSV Parse Error:", e); return null; }
-  }, [filtered, type]);
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      <div className="lg:col-span-4 space-y-6">
-         <div className="card p-6 border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 space-y-6">
-            <h3 className="font-bold text-[10px] uppercase tracking-wider text-surface-900 dark:text-white border-b pb-3">{type} Control</h3>
-            <label className="btn btn-primary w-full flex items-center justify-center gap-2 cursor-pointer py-3 rounded-lg text-[10px] font-bold uppercase"><Upload size={16} />Upload CSV<input type="file" accept=".csv" onChange={(e) => handleFileUpload(e, type)} className="hidden" /></label>
-         </div>
-      </div>
-      <div className="lg:col-span-8 space-y-6">
-         {analysis ? (
-           <div className="card p-8 bg-white dark:bg-surface-900 border">
-              <div className="flex items-center justify-between mb-8 pb-3 border-b"><h3 className="font-bold text-[10px] uppercase tracking-wider text-surface-900 dark:text-white">{analysis.label}</h3></div>
-              <div className="h-[300px]">
-                 <ResponsiveContainer width="100%" height="100%">
-                    {analysis.chartType === "pie" ? (
-                      <PieChart><Pie data={analysis.data} innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value" stroke="none">{analysis.data.map((_: any, i: number) => <Cell key={`c-${i}`} fill={["#0ea5e9", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444"][i % 5]} />)}</Pie><RechartsTooltip contentStyle={{ backgroundColor: '#111', border: 'none', borderRadius: '8px', fontSize: '10px', color: '#fff' }} /></PieChart>
-                    ) : analysis.chartType === "area" ? (
-                      <AreaChart data={analysis.data}><CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.05} /><XAxis dataKey="date" tick={{ fontSize: 9 }} hide /><YAxis hide /><RechartsTooltip contentStyle={{ backgroundColor: '#111', border: 'none', borderRadius: '8px', fontSize: '10px' }} formatter={(val: number) => [`$${val.toLocaleString()}`, 'Profit']} /><Area type="monotone" dataKey="val" stroke="#0ea5e9" fill="#0ea5e9" fillOpacity={0.1} strokeWidth={2} /></AreaChart>
-                    ) : (
-                      <BarChart data={analysis.data}><CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.05} /><XAxis dataKey="date" tick={{ fontSize: 9 }} /><YAxis hide /><RechartsTooltip contentStyle={{ backgroundColor: '#111', border: 'none', borderRadius: '8px', fontSize: '10px' }} formatter={(val: number) => [`$${val.toLocaleString()}`, 'Value']} /><Bar dataKey="val" fill="#0ea5e9" radius={[4, 4, 0, 0]} /></BarChart>
-                    )}
-                 </ResponsiveContainer>
-              </div>
-           </div>
-         ) : <div className="card p-24 text-center bg-surface-50/50 border-dashed border-2"><p className="text-surface-400 text-[10px] font-bold uppercase tracking-widest opacity-50">Awaiting data...</p></div>}
-      </div>
-    </div>
-  );
-}
-
-function OperationsTools({ realm, margins }: { realm: number, margins: any[] }) {
-  const [activeSub, setActiveSub] = useState("manager");
-  return (
-    <div className="space-y-8">
-       <div className="flex gap-4 border-b pb-3">
-          <button onClick={() => setActiveSub("manager")} className={`text-[10px] font-bold uppercase tracking-wider transition-all relative ${activeSub === "manager" ? "text-brand-600" : "text-surface-400 hover:text-surface-600"}`}>Facility Manager{activeSub === "manager" && <div className="absolute -bottom-3.5 left-0 right-0 h-0.5 bg-brand-600" />}</button>
-          <button onClick={() => setActiveSub("board")} className={`text-[10px] font-bold uppercase tracking-wider transition-all relative ${activeSub === "board" ? "text-brand-600" : "text-surface-400 hover:text-surface-600"}`}>Executive Board{activeSub === "board" && <div className="absolute -bottom-3.5 left-0 right-0 h-0.5 bg-brand-600" />}</button>
-       </div>
-       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={FAST_TRANSITION}>
-          {activeSub === "manager" && <FacilityManager realm={realm} margins={margins} />}
-          {activeSub === "board" && <ExecutiveSuiteView />}
-       </motion.div>
-    </div>
-  );
-}
-
-function FacilityManager({ realm, margins }: { realm: number, margins: any[] }) {
-  const [map, setMap] = useState<Array<{ id: string | number; level: number }>>(() => {
-    const saved = localStorage.getItem("simco_map_config");
-    return saved ? JSON.parse(saved) : [{ id: BUILDINGS[0].id, level: 1 }];
-  });
-
-  useEffect(() => {
-    localStorage.setItem("simco_map_config", JSON.stringify(map));
-  }, [map]);
-
-  const [estDailyProfit, setEstDailyProfit] = useState(() => {
-    const saved = localStorage.getItem("simco_est_daily_profit");
-    return saved ? Number(saved) : 100000;
-  });
-
-  useEffect(() => {
-    localStorage.setItem("simco_est_daily_profit", String(estDailyProfit));
-  }, [estDailyProfit]);
-
-  const totalLevels = useMemo(() => map.reduce((sum, item) => sum + item.level, 0), [map]);
-  const rawAO = useMemo(() => Math.max(0, (totalLevels - 1) / 170), [totalLevels]);
-
-  const dailyLabor = useMemo(() => map.reduce((sum, item) => {
-    const b = (BUILDINGS as any).find((bu: any) => bu.id === item.id);
-    return sum + (item.level * (b?.wages || 0) * 24);
-  }, 0), [map]);
-
-  const addBuilding = () => setMap(prev => [...prev, { id: BUILDINGS[0].id, level: 1 }]);
-  const updateBuilding = (idx: number, field: string, val: string | number) => { const next = [...map]; (next[idx] as any)[field] = val; setMap(next); };
-  const removeBuilding = (idx: number) => setMap(prev => prev.filter((_, i) => i !== idx));
-
-  const mapCapitalValue = useMemo(() => map.reduce((sum, item) => {
-    const b = (BUILDINGS as any).find((bu: any) => bu.id === item.id);
-    if (!b) return sum;
-    let buildCost = 0;
-    for (let l = 1; l <= item.level; l++) {
-      const mult = l <= 2 ? 1 : l - 1;
-      buildCost += b.cost * mult;
-    }
-    return sum + buildCost;
-  }, 0), [map]);
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-       <div className="lg:col-span-8 space-y-6">
-          <div className="flex items-center justify-between"><h3 className="font-bold text-[10px] uppercase tracking-wider text-surface-900 dark:text-white">Active Map Configuration</h3><button onClick={addBuilding} className="btn btn-primary text-[9px] font-bold py-2 px-4 rounded-lg flex items-center gap-2 border">ADD FACILITY</button></div>
-          <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-            {map.map((item, i) => (
-              <div key={i} className="card p-4 flex items-center gap-4 bg-white dark:bg-surface-900 border hover:border-brand-500/50 transition-all">
-                <select value={item.id} onChange={(e) => updateBuilding(i, "id", e.target.value)} className="input flex-1 py-1.5 px-3 font-bold text-xs uppercase bg-surface-50 dark:bg-surface-800 border-none rounded-lg">{BUILDINGS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
-                <div className="flex items-center gap-2">
-                  <label className="text-[9px] font-bold text-surface-400 uppercase">LVL</label>
-                  <input type="number" value={item.level} onChange={(e) => updateBuilding(i, "level", Number(e.target.value))} className="input w-16 py-1.5 px-2 font-bold text-xs text-center bg-surface-50 dark:bg-surface-800 border-none rounded-lg" />
-                </div>
-                <button onClick={() => removeBuilding(i)} className="text-surface-300 hover:text-econ-red transition-all p-1.5"><Trash2 size={16} /></button>
-              </div>
-            ))}
-          </div>
-       </div>
-       <div className="lg:col-span-4 space-y-6">
-          <div className="card p-8 bg-surface-900 text-white border-none shadow-xl space-y-8 rounded-2xl relative overflow-hidden">
-             <div className="relative z-10">
-                <p className="text-[9px] font-bold text-brand-400 uppercase mb-1 tracking-wider">ADMIN OVERHEAD</p>
-                <div className="text-5xl font-black font-mono tracking-tighter">{(rawAO * 100).toFixed(2)}%</div>
-             </div>
-             <div className="relative z-10 pt-6 border-t border-white/10 space-y-4">
-                <div>
-                   <p className="text-[9px] font-bold text-surface-500 uppercase mb-1 tracking-wider">OPERATIONAL LABOR</p>
-                   <div className="text-2xl font-bold font-mono text-econ-red tabular-nums">${(dailyLabor * (1 + rawAO)).toLocaleString(undefined, { maximumFractionDigits: 0 })}/DAY</div>
-                </div>
-                <div>
-                   <p className="text-[9px] font-bold text-surface-500 uppercase mb-1 tracking-wider">ADMIN SWEET SPOT</p>
-                   <div className="text-xl font-bold font-mono text-brand-400 tabular-nums">~{Math.round(rawAO * 170 + 1)} LEVELS</div>
-                   <p className="text-[8px] text-surface-500 uppercase mt-1">Optimal levels for current overhead</p>
-                </div>
-             </div>
-             <div className="relative z-10 pt-6 border-t border-white/10">
-                <p className="text-[9px] font-bold text-econ-amber uppercase mb-3 tracking-wider">DAYS TO PAYBACK (ROI)</p>
-                <div className="flex items-end gap-2">
-                   <div className="text-5xl font-black font-mono tracking-tighter text-econ-amber">{estDailyProfit > 0 ? (mapCapitalValue / estDailyProfit).toFixed(1) : "∞"}</div>
-                   <span className="text-[10px] font-bold mb-1.5 opacity-50 uppercase">Cycles</span>
-                </div>
-                <div className="mt-6 space-y-2 bg-white/5 p-4 rounded-xl border border-white/10">
-                   <label className="text-[8px] font-bold uppercase text-surface-400 tracking-wider block">Est. Net Daily Profit</label>
-                   <input type="number" value={estDailyProfit} onChange={(e) => setEstDailyProfit(Number(e.target.value))} className="bg-transparent border-none p-0 text-lg font-bold font-mono text-white focus:ring-0 w-full" />
-                </div>
-             </div>
-          </div>
-       </div>
-    </div>
-  );
-}
-
-function SimulatorsTools({ realm, margins }: any) {
-  const [activeSub, setActiveSub] = useState("production");
-  return (
-    <div className="space-y-8">
-       <div className="flex gap-4 border-b pb-3 overflow-x-auto">
-          {[
-            { id: "production", label: "Production Yields", icon: Package },
-            { id: "construction", label: "Expansion Logistics", icon: Building2 },
-            { id: "retail", label: "Retail Momentum", icon: Wallet },
-            { id: "roi", label: "Training ROI", icon: GraduationCap },
-            { id: "matrix", label: "Profit Matrix", icon: Activity }
-          ].map(t => (
-            <button key={t.id} onClick={() => setActiveSub(t.id)} className={`text-[10px] font-bold uppercase tracking-wider transition-all relative flex items-center gap-2 ${activeSub === t.id ? "text-brand-600" : "text-surface-400 hover:text-surface-600"}`}>
-               <t.icon size={14} />
-               {t.label}
-               {activeSub === t.id && <div className="absolute -bottom-3.5 left-0 right-0 h-0.5 bg-brand-600" />}
-            </button>
-          ))}
-       </div>
-       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={FAST_TRANSITION}>
-          {activeSub === "production" && <AdvancedProductionSimulator margins={margins} />}
-          {activeSub === "construction" && <ConstructionCalculator margins={margins} />}
-          {activeSub === "retail" && <RetailCalculator realm={realm} />}
-          {activeSub === "roi" && <TrainingROISimulator />}
-          {activeSub === "matrix" && <ProfitMatrix margins={margins} />}
-       </motion.div>
-    </div>
-  );
-}
-
-function AdvancedProductionSimulator({ margins }: { margins: any[] }) {
-  const [settings, setSettings] = useState(() => {
-    const saved = localStorage.getItem("simco_prod_settings");
-    return saved ? JSON.parse(saved) : {
-      selectedBuildingId: BUILDINGS[0].id,
-      prodBonus: 0,
-      robotBonus: 0,
-      aoPercent: 10,
-      abundance: 100
+    return {
+      totalLevels, actualAO, rawAO, taxThreshold, salesSpeedBonus,
+      patentProb, dailyWages, inventoryValue, mapValue, dailyInterest,
+      estimatedDailyTax, coverageRatio,
+      totalValuation: inventoryValue + mapValue + (dailyProfit * 30), // 30 day enterprise value
+      netDaily: dailyProfit - dailyInterest - estimatedDailyTax - (dailyWages * actualAO)
     };
-  });
+  }, [state, margins]);
 
-  const [sourcingCost, setSourcingCost] = useState<Record<number, number>>(() => {
-    const saved = localStorage.getItem("simco_prod_sourcing");
-    return saved ? JSON.parse(saved) : {};
-  });
-
-  useEffect(() => {
-    localStorage.setItem("simco_prod_settings", JSON.stringify(settings));
-  }, [settings]);
-
-  useEffect(() => {
-    localStorage.setItem("simco_prod_sourcing", JSON.stringify(sourcingCost));
-  }, [sourcingCost]);
-
-  const building = useMemo(() => (BUILDINGS as any).find((b: any) => b.id === settings.selectedBuildingId), [settings.selectedBuildingId]);
-  const buildingResources = useMemo(() => RESOURCES.filter(r => r.buildingId === settings.selectedBuildingId), [settings.selectedBuildingId]);
-
-  const requiredInputs = useMemo(() => {
-    const ids = new Set<number>();
-    buildingResources.forEach(r => {
-      if (r.inputs) Object.keys(r.inputs).forEach(iid => ids.add(Number(iid)));
+  // Feature 4: Supply Chain Auditor (Bottlenecks)
+  const audit = useMemo(() => {
+    const produces = new Set(RESOURCES.filter(r => state.map.some(m => m.id === r.buildingId)).map(r => r.id));
+    const needs = new Set<number>();
+    state.map.forEach(m => {
+       const bRes = RESOURCES.filter(r => r.buildingId === m.id);
+       bRes.forEach(r => {
+          if (r.inputs) Object.keys(r.inputs).forEach(id => needs.add(Number(id)));
+       });
     });
-    return Array.from(ids).map(id => {
-      const res = RESOURCES.find(r => r.id === id);
-      const m = margins.find(m => m.id === id);
-      return { id, name: res?.name || `ID: ${id}`, vwap: m?.outputVwap || 0 };
-    });
-  }, [buildingResources, margins]);
+    const missing = Array.from(needs).filter(n => !produces.has(n)).map(id => RESOURCES.find(r => r.id === id)?.name || `ID ${id}`);
+    return { missing, health: needs.size > 0 ? (1 - missing.length / needs.size) * 100 : 100 };
+  }, [state.map]);
 
-  const simulations = useMemo(() => {
-    if (!buildingResources.length) return [];
-    return buildingResources.map(res => {
-      const market = margins.find(m => m.id === res.id);
-      const baseWages = res.baseWages || 0;
-      const basePh = res.basePh || 0;
-      const abundanceFactor = (building?.abundance) ? (settings.abundance / 100) : 1;
-      const effectivePh = basePh * (1 + settings.prodBonus/100) * abundanceFactor;
-      const effectiveWages = baseWages * (1 - settings.robotBonus/100) * (1 + settings.aoPercent/100);
-      let inputCost = 0;
-      if (res.inputs) {
-        Object.entries(res.inputs).forEach(([iid, qty]) => {
-          const marketPrice = margins.find(m => m.id === Number(iid))?.outputVwap || 0;
-          const price = sourcingCost[Number(iid)] !== undefined ? sourcingCost[Number(iid)] : marketPrice;
-          inputCost += price * (qty as number);
-        });
-      }
-      const costPerUnit = (inputCost + (effectivePh > 0 ? (effectiveWages / effectivePh) : 0));
-      const revenue = market?.outputVwap || 0;
-      const profit = revenue - costPerUnit;
-      return { ...res, costPerUnit, revenue, profit, pphpl: profit * effectivePh, effectivePh };
-    });
-  }, [buildingResources, building, settings, sourcingCost, margins]);
+  if (mLoading && !margins) return <LoadingState text="Booting Strategic Command Center..." />;
 
   return (
-     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-4 space-y-6">
-           <div className="card p-6 border-2 border-surface-100 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-sm space-y-6 rounded-2xl">
-              <h3 className="font-bold text-[10px] uppercase tracking-wider border-b pb-3">Facility Modeling</h3>
-              <div className="space-y-4">
-                 <div>
-                    <label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Selected Facility</label>
-                    <select value={settings.selectedBuildingId} onChange={(e) => setSettings({...settings, selectedBuildingId: e.target.value})} className="input py-2 px-3 font-bold text-xs uppercase bg-surface-50 border-none rounded-lg w-full">
-                       {BUILDINGS.filter(b => b.type === "production" || b.type === "research").map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                    </select>
-                 </div>
-                 <div className="grid grid-cols-2 gap-3">
-                    <div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Prod Bonus %</label><input type="number" value={settings.prodBonus} onChange={(e) => setSettings({...settings, prodBonus: Number(e.target.value)})} className="input py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg w-full" /></div>
-                    <div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Robots %</label><input type="number" value={settings.robotBonus} onChange={(e) => setSettings({...settings, robotBonus: Number(e.target.value)})} className="input py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg w-full" /></div>
-                 </div>
-                 <div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Admin Overhead %</label><input type="number" value={settings.aoPercent} onChange={(e) => setSettings({...settings, aoPercent: Number(e.target.value)})} className="input py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg w-full" /></div>
-              </div>
-           </div>
+    <div className="max-w-[1600px] mx-auto p-4 lg:p-6 space-y-6 bg-surface-50/20 min-h-screen">
+      {/* 1. Global Command Header */}
+      <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 pb-6 border-b border-surface-200">
+        <div>
+          <div className="flex items-center gap-2 text-brand-600 font-black text-[10px] uppercase tracking-[0.3em] mb-1">
+             <Globe size={14} className="animate-pulse" /> Global Control Tower
+          </div>
+          <h1 className="text-4xl font-black text-surface-900 tracking-tighter uppercase italic flex items-center gap-3">
+            Strategic <span className="text-brand-600">Command</span>
+            <span className="text-[10px] bg-brand-600 text-white px-2 py-1 rounded non-italic tracking-widest ml-2">V5.1 PRO</span>
+          </h1>
+        </div>
 
-           {requiredInputs.length > 0 && (
-             <div className="card p-6 border bg-white dark:bg-surface-900 shadow-sm space-y-6 rounded-2xl">
-                <h3 className="font-bold text-[10px] uppercase tracking-wider border-b pb-3">Supply Chain Basis</h3>
-                <div className="space-y-4">
-                   {requiredInputs.map(input => (
-                     <div key={input.id} className="space-y-2">
-                        <div className="flex justify-between items-center">
-                           <span className="text-[9px] font-bold uppercase text-surface-400">{input.name}</span>
-                           <div className="flex gap-1 bg-surface-100 p-0.5 rounded border">
-                              <button onClick={() => { const next = {...sourcingCost}; delete next[input.id]; setSourcingCost(next); }} className={`px-2 py-0.5 text-[8px] font-bold uppercase rounded ${sourcingCost[input.id] === undefined ? 'bg-white shadow-sm text-brand-600' : 'text-surface-400'}`}>Market</button>
-                              <button onClick={() => setSourcingCost({...sourcingCost, [input.id]: sourcingCost[input.id] || input.vwap})} className={`px-2 py-0.5 text-[8px] font-bold uppercase rounded ${sourcingCost[input.id] !== undefined ? 'bg-white shadow-sm text-brand-600' : 'text-surface-400'}`}>Self</button>
-                           </div>
-                        </div>
-                        {sourcingCost[input.id] !== undefined && (
-                          <input type="number" value={sourcingCost[input.id]} onChange={(e) => setSourcingCost({...sourcingCost, [input.id]: Number(e.target.value)})} className="input py-1.5 px-3 font-bold text-xs bg-brand-50 border-brand-100 text-brand-600 rounded-lg w-full" />
-                        )}
-                     </div>
+        <div className="flex flex-wrap items-center gap-3">
+           <HeaderMetric label="Enterprise Value" value={`$${(core.totalValuation / 1_000_000).toFixed(2)}M`} color="text-brand-600" />
+           <HeaderMetric label="Net Daily Flow" value={`$${(core.netDaily / 1000).toFixed(1)}K`} color="text-econ-green" />
+           <HeaderMetric label="Admin Load" value={`${(core.actualAO * 100).toFixed(2)}%`} color="text-econ-red" />
+           <select value={realm} onChange={(e) => setRealm(Number(e.target.value))} className="bg-surface-900 text-white border-none rounded-xl text-[10px] font-black px-6 py-4 uppercase tracking-widest hover:bg-brand-500 transition-all shadow-xl">
+              <option value={0}>REALM 0</option><option value={1}>REALM 1</option>
+           </select>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+
+        {/* LEFT COLUMN: Physical Infrastructure & Human Capital */}
+        <div className="xl:col-span-4 space-y-6">
+          <SectionCard title="Map Infrastructure" icon={Building2} sub="Total Levels: 0x" subVal={core.totalLevels}>
+             <div className="space-y-4">
+                {/* Interconnected Feature: What-If Scaling */}
+                <div className="px-4 py-3 bg-brand-50 rounded-2xl border border-brand-100 mb-2">
+                   <div className="flex justify-between items-center mb-1">
+                      <span className="text-[9px] font-black text-brand-600 uppercase italic">What-If Expansion</span>
+                      <span className="text-[10px] font-black font-mono text-brand-600">+{state.settings.whatIfLevel} Levels</span>
+                   </div>
+                   <input
+                      type="range" min="0" max="500" step="10"
+                      value={state.settings.whatIfLevel}
+                      onChange={(e) => setState({...state, settings: {...state.settings, whatIfLevel: Number(e.target.value)}})}
+                      className="w-full h-1.5 bg-brand-200 rounded-lg appearance-none cursor-pointer accent-brand-600"
+                   />
+                   <p className="text-[7px] font-bold text-brand-400 uppercase mt-1">Impacts AO, Taxes, and Wage Projections across all modules</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                   <div className="p-3 bg-surface-50 rounded-xl border border-dashed flex flex-col items-center">
+                      <span className="text-[8px] font-bold text-surface-400 uppercase">AO Threshold</span>
+                      <span className="text-xs font-black font-mono">171 Levels</span>
+                   </div>
+                   <div className="p-3 bg-surface-50 rounded-xl border border-dashed flex flex-col items-center">
+                      <span className="text-[8px] font-bold text-surface-400 uppercase">Map Cap.</span>
+                      <span className="text-xs font-black font-mono">${(core.mapValue / 1_000_000).toFixed(2)}M</span>
+                   </div>
+                </div>
+                <div className="max-h-[380px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                   {state.map.map((m, i) => (
+                      <div key={i} className="flex items-center gap-3 p-3 bg-white border rounded-xl hover:border-brand-500 transition-all shadow-sm group">
+                         <div className="w-8 h-8 rounded bg-surface-50 flex items-center justify-center text-surface-400 font-mono text-[10px] font-bold group-hover:bg-brand-50 group-hover:text-brand-600 transition-colors">#{i+1}</div>
+                         <select value={m.id} onChange={(e) => { const next = [...state.map]; next[i].id = e.target.value; setState({...state, map: next}); }} className="flex-1 bg-transparent border-none text-[10px] font-black uppercase focus:ring-0 p-0">
+                            {BUILDINGS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                         </select>
+                         <div className="flex items-center gap-1 bg-surface-50 px-2 py-1 rounded">
+                            <span className="text-[8px] font-bold text-surface-400 uppercase">L</span>
+                            <input type="number" value={m.level} onChange={(e) => { const next = [...state.map]; next[i].level = Number(e.target.value); setState({...state, map: next}); }} className="w-8 bg-transparent border-none text-[10px] font-black text-center p-0 focus:ring-0" />
+                         </div>
+                         <button onClick={() => setState({...state, map: state.map.filter((_, idx) => idx !== i)})} className="p-1 text-surface-200 hover:text-econ-red transition-all"><Trash2 size={12} /></button>
+                      </div>
                    ))}
                 </div>
+                <button onClick={() => setState({...state, map: [...state.map, { id: BUILDINGS[0].id, level: 1 }]})} className="w-full py-4 border-2 border-dashed border-surface-200 rounded-xl text-[9px] font-black uppercase text-surface-400 hover:border-brand-500 hover:text-brand-600 hover:bg-brand-50 transition-all flex items-center justify-center gap-2">
+                   <UserPlus size={14} /> Add Facility Slot
+                </button>
              </div>
-           )}
-        </div>
-        <div className="lg:col-span-8 space-y-6">
-           <div className="card overflow-hidden bg-white dark:bg-surface-900 border rounded-2xl">
-              <div className="px-8 py-4 border-b bg-surface-50/50 flex justify-between items-center"><h3 className="font-bold text-[10px] uppercase tracking-wider">{building?.name} Pipeline</h3></div>
-              <div className="divide-y">
-                 {simulations.length > 0 ? simulations.map(s => (
-                    <div key={s.id} className="p-8 hover:bg-surface-50/50 transition-all">
-                       <div className="flex justify-between items-start mb-8">
-                          <div>
-                             <h4 className="text-2xl font-bold uppercase tracking-tight italic group-hover:text-brand-600 transition-colors">{s.name}</h4>
-                             <div className="flex items-center gap-3 mt-2">
-                                <span className="text-[9px] text-surface-400 font-bold uppercase bg-surface-100 px-2 py-0.5 rounded">Rate: {s.effectivePh.toFixed(2)}/H</span>
-                             </div>
-                          </div>
-                          <div className="text-right">
-                             <p className="text-[9px] font-bold text-brand-600 uppercase mb-1 tracking-wider">Hourly Profit / Lvl</p>
-                             <div className={`text-4xl font-black font-mono tracking-tighter ${s.pphpl > 0 ? "text-econ-green" : "text-econ-red"}`}>${s.pphpl.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
-                          </div>
-                       </div>
-                       <div className="grid grid-cols-4 gap-4">
-                          <div className="bg-surface-50 rounded-xl p-4 border"><p className="text-[8px] font-bold text-surface-400 uppercase mb-1 tracking-widest">Unit Cost</p><p className="text-sm font-bold font-mono">${s.costPerUnit.toLocaleString(undefined, { minimumFractionDigits: 3 })}</p></div>
-                          <div className="bg-surface-50 rounded-xl p-4 border"><p className="text-[8px] font-bold text-surface-400 uppercase mb-1 tracking-widest">Revenue</p><p className="text-sm font-bold font-mono">${s.revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p></div>
-                          <div className="bg-brand-50 rounded-xl p-4 border-brand-100 border"><p className="text-[8px] font-bold text-brand-600 uppercase mb-1 tracking-widest">Margin</p><p className={`text-sm font-bold font-mono ${s.profit > 0 ? "text-econ-green" : "text-econ-red"}`}>${s.profit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p></div>
-                          <div className="bg-surface-50 rounded-xl p-4 border"><p className="text-[8px] font-bold text-surface-400 uppercase mb-1 tracking-widest">Transport Hit</p><p className="text-sm font-bold font-mono text-econ-red">-${(s.transport * 0.35).toFixed(2)}</p></div>
-                       </div>
-                    </div>
-                 )) : (
-                   <div className="p-24 text-center text-surface-400 font-bold uppercase text-[10px] tracking-widest opacity-50 italic">No resources found.</div>
-                 )}
-              </div>
-           </div>
-        </div>
-     </div>
-  );
-}
+          </SectionCard>
 
-function EncyclopediaTools({ margins, realm }: { margins: any[], realm: number }) {
-  const [search, setSearch] = useState("");
-  const [mode, setMode] = useState<"buildings" | "resources">("buildings");
-  const [selectedResource, setSelectedResource] = useState<number | null>(null);
-
-  const filteredBuildings = useMemo(() => {
-    const s = search.toLowerCase();
-    return BUILDINGS.filter(b => b.name.toLowerCase().includes(s));
-  }, [search]);
-  const filteredResources = useMemo(() => {
-    const s = search.toLowerCase();
-    return RESOURCES.filter(r => r.name.toLowerCase().includes(s));
-  }, [search]);
-
-  return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-       <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between border-b pb-8">
-          <div className="max-w-md w-full relative">
-             <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="input pl-10 rounded-xl py-3 shadow-sm border font-bold text-xs uppercase tracking-wider bg-surface-50 dark:bg-surface-800/50 w-full focus:ring-0 focus:border-brand-500" />
-             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400"><Search size={18} /></div>
-          </div>
-          <div className="flex gap-2 bg-surface-100 dark:bg-surface-800 p-1 rounded-xl border">
-             <button onClick={() => setMode("buildings")} className={`px-6 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all ${mode === "buildings" ? "bg-white dark:bg-surface-700 text-brand-600 shadow-sm border" : "text-surface-500 hover:text-surface-900"}`}>BUILDINGS</button>
-             <button onClick={() => setMode("resources")} className={`px-6 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all ${mode === "resources" ? "bg-white dark:bg-surface-700 text-brand-600 shadow-sm border" : "text-surface-500 hover:text-surface-900"}`}>RESOURCES</button>
-          </div>
-       </div>
-
-       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {mode === "buildings" ? filteredBuildings.map(b => (
-             <div key={b.id} className="card p-6 border group hover:border-brand-500 transition-all cursor-default">
-                <div className="flex justify-between items-start mb-6">
-                   <div>
-                      <h3 className="font-bold text-lg uppercase tracking-tight italic group-hover:text-brand-600 transition-colors">{b.name}</h3>
-                      <p className="text-[9px] font-bold text-surface-400 uppercase">ID: 0x{Number(b.id).toString(16).toUpperCase() || b.id}</p>
-                   </div>
-                </div>
-                <div className="space-y-4">
-                   <div className="flex justify-between items-center text-[9px] border-b pb-2">
-                      <span className="text-surface-400 font-bold uppercase">Wages</span>
-                      <span className="font-mono text-surface-900 dark:text-white font-bold italic">${b.wages}/H</span>
-                   </div>
-                   <div className="flex justify-between items-center text-[9px]">
-                      <span className="text-surface-400 font-bold uppercase">Reference Cost</span>
-                      <span className="font-mono text-brand-600 font-bold italic">${b.cost.toLocaleString()}</span>
-                   </div>
-                </div>
-             </div>
-          )) : filteredResources.map(r => (
-             <div key={r.id} className="card p-6 border group hover:border-brand-500 transition-all cursor-default relative overflow-hidden">
-                <h3 className="font-bold text-lg uppercase tracking-tight italic group-hover:text-brand-600 transition-colors mb-4">{r.name}</h3>
-                <div className="grid grid-cols-2 gap-4 text-[9px] border-t pt-4">
-                   <div><p className="text-surface-400 uppercase font-bold">Transport</p><p className="font-mono font-bold">{r.transport} U</p></div>
-                   <div className="text-right"><p className="text-surface-400 uppercase font-bold">Rate</p><p className="font-mono font-bold">{r.basePh?.toFixed(2)}/H</p></div>
-                </div>
-                <div className="absolute -bottom-2 -right-2 text-5xl font-black text-surface-100 dark:text-surface-800/20 pointer-events-none italic">{r.id}</div>
-             </div>
-          ))}
-       </div>
-    </div>
-  );
-}
-
-function ProfitMatrix({ margins }: { margins: any[] }) {
-  const [selectedBuildingType, setSelectedBuildingType] = useState("production");
-
-  const relevantBuildings = useMemo(() => BUILDINGS.filter(b => b.type === selectedBuildingType), [selectedBuildingType]);
-
-  const pphplData = useMemo(() => {
-    return relevantBuildings.map(b => {
-      const bResources = RESOURCES.filter(r => r.buildingId === b.id);
-      const maxPphpl = bResources.reduce((max, res) => {
-         const m = margins.find(mr => mr.id === res.id);
-         const rev = m?.outputVwap || 0;
-         const wages = (b.wages || 0) * 1.1; // estimate 10% admin
-         const cost = (rev * 0.85) + (wages / (res.basePh || 1));
-         const profit = rev - cost;
-         const pphpl = profit * (res.basePh || 0);
-         return Math.max(max, pphpl);
-      }, 0);
-      return { name: b.name, pphpl: maxPphpl };
-    }).sort((a, b) => b.pphpl - a.pphpl);
-  }, [relevantBuildings, margins]);
-
-  return (
-    <div className="card p-8 bg-white dark:bg-surface-900 border rounded-2xl">
-      <div className="flex items-center justify-between mb-8 border-b pb-4">
-        <h3 className="font-bold text-[10px] uppercase tracking-wider">Top Profit per Hour (PPHPL)</h3>
-        <select value={selectedBuildingType} onChange={(e) => setSelectedBuildingType(e.target.value)} className="input text-[10px] font-bold uppercase py-1 bg-surface-50 border-none rounded">
-          <option value="production">Production</option>
-          <option value="retail">Retail</option>
-        </select>
-      </div>
-      <div className="space-y-4">
-        {pphplData.map((d, i) => (
-          <div key={i} className="flex items-center gap-4">
-            <div className="w-24 text-[9px] font-bold uppercase text-surface-400 truncate">{d.name}</div>
-            <div className="flex-1 h-2 bg-surface-100 rounded-full overflow-hidden">
-               <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (d.pphpl / (pphplData[0].pphpl || 1)) * 100)}%` }} className="h-full bg-brand-500" />
-            </div>
-            <div className="w-20 text-right font-mono font-bold text-[10px] text-econ-green">${d.pphpl.toFixed(2)}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function TrainingROISimulator() {
-  const [data, setData] = useState({ trainingCost: 10000, currentSkill: 10, targetSkill: 15, dailyProfit: 50000 });
-
-  const skillImpact = (data.targetSkill - data.currentSkill) * 0.01;
-  const dailyGain = data.dailyProfit * skillImpact;
-  const daysToPayback = dailyGain > 0 ? data.trainingCost / dailyGain : Infinity;
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      <div className="lg:col-span-4">
-        <div className="card p-6 border bg-white dark:bg-surface-900 space-y-6 rounded-2xl">
-          <h3 className="font-bold text-[10px] uppercase tracking-wider border-b pb-3">Training ROI</h3>
-          <div className="space-y-4">
-             <div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Total Training Cost ($)</label><input type="number" value={data.trainingCost} onChange={(e) => setData({...data, trainingCost: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" /></div>
-             <div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Current Base Profit / Day ($)</label><input type="number" value={data.dailyProfit} onChange={(e) => setData({...data, dailyProfit: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" /></div>
-             <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Current Skill</label><input type="number" value={data.currentSkill} onChange={(e) => setData({...data, currentSkill: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" /></div>
-                <div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Target Skill</label><input type="number" value={data.targetSkill} onChange={(e) => setData({...data, targetSkill: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" /></div>
-             </div>
-          </div>
-        </div>
-      </div>
-      <div className="lg:col-span-8">
-        <div className="card p-8 bg-surface-900 text-white rounded-2xl h-full flex flex-col justify-center">
-           <p className="text-[9px] font-bold text-brand-400 uppercase mb-1">Payback Period</p>
-           <div className="text-6xl font-black font-mono tracking-tighter text-econ-amber italic">{daysToPayback === Infinity ? "∞" : daysToPayback.toFixed(1)} DAYS</div>
-           <p className="text-[10px] font-bold text-surface-500 uppercase mt-4">Estimated Profit Increase: <span className="text-econ-green">${dailyGain.toLocaleString()}/DAY</span></p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ConstructionCalculator({ margins }: { margins: any[] }) {
-  const [config, setConfig] = useState(() => {
-    const saved = localStorage.getItem("simco_const_config");
-    return saved ? JSON.parse(saved) : {
-      selectedBuilding: BUILDINGS[0].id,
-      currentLevel: 0,
-      targetLevel: 1
-    };
-  });
-
-  const [manualPrices, setManualPrices] = useState<Record<number, number>>({});
-
-  useEffect(() => {
-    localStorage.setItem("simco_const_config", JSON.stringify(config));
-  }, [config]);
-
-  const b = useMemo(() => (BUILDINGS as any).find((bu: any) => bu.id === config.selectedBuilding), [config.selectedBuilding]);
-  const getMaterialPrice = (id: number) => { if (manualPrices[id] !== undefined) return manualPrices[id]; const mName = CONSTRUCTION_MATERIALS.find(cm => cm.id === id)?.name; const real = margins.find(m => m.name === mName); return real?.outputVwap ?? CONSTRUCTION_MATERIALS.find(cm => cm.id === id)?.basePrice ?? 0; };
-
-  const cost = useMemo(() => {
-    if (!b) return { cash: 0, materials: [] as any[] };
-    let totalCash = 0;
-    const materialMap = new Map<number, number>();
-    for (let l = config.currentLevel + 1; l <= config.targetLevel; l++) {
-      const mult = l <= 2 ? 1 : l - 1;
-      totalCash += b.cost * mult;
-      const materials = (b as any).resources || [];
-      materials.forEach((r: any) => {
-        materialMap.set(r.id, (materialMap.get(r.id) || 0) + (r.qty * mult));
-      });
-    }
-    return { cash: totalCash, materials: Array.from(materialMap.entries()).map(([id, qty]) => ({ id, qty, name: CONSTRUCTION_MATERIALS.find(cm => cm.id === id)?.name || "Unknown", price: getMaterialPrice(id) })) };
-  }, [b, config.currentLevel, config.targetLevel, margins, manualPrices]);
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-       <div className="lg:col-span-4 space-y-6"><div className="card p-6 border bg-white dark:bg-surface-900 shadow-sm space-y-6 rounded-2xl"><h3 className="font-bold text-[10px] uppercase tracking-wider border-b pb-3 text-surface-900 dark:text-white">Expansion Logistics</h3><div className="space-y-4"><div><label className="text-[9px] font-bold uppercase mb-2 block text-surface-400">Target Facility</label><select value={config.selectedBuilding} onChange={(e) => setConfig({...config, selectedBuilding: e.target.value})} className="input py-2 px-3 font-bold text-xs uppercase bg-surface-50 border-none rounded-lg w-full">{BUILDINGS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></div><div className="grid grid-cols-2 gap-3"><div><label className="text-[9px] font-bold uppercase mb-2 block text-surface-400">Current Lvl</label><input type="number" value={config.currentLevel} onChange={(e) => setConfig({...config, currentLevel: Number(e.target.value)})} className="input py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg w-full" /></div><div><label className="text-[9px] font-bold uppercase mb-2 block text-surface-400">Target Lvl</label><input type="number" value={config.targetLevel} onChange={(e) => setConfig({...config, targetLevel: Number(e.target.value)})} className="input py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg w-full" /></div></div></div></div></div>
-       <div className="lg:col-span-8 space-y-6">
-          <div className="card p-8 bg-white dark:bg-surface-900 border rounded-2xl">
-             <div className="flex items-center justify-between mb-8 pb-4 border-b">
-                <h3 className="font-bold text-[10px] uppercase tracking-wider">Upgrade Summary</h3>
-             </div>
-             <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-surface-50 dark:bg-surface-800 rounded-xl border group">
-                   <div className="flex items-center gap-3"><DollarSign size={18} className="text-brand-600" /><span className="text-[10px] font-bold uppercase tracking-wider">CASH RESERVE</span></div>
-                   <span className="font-bold font-mono text-xl tabular-nums">${cost.cash.toLocaleString()}</span>
-                </div>
-                {cost.materials.map((m, i) => (
-                   <div key={i} className="flex items-center justify-between p-4 bg-white dark:bg-surface-900 rounded-xl border group hover:border-brand-500/50 transition-all">
-                      <div>
-                         <div className="flex items-center gap-3 mb-1"><Package size={16} className="text-surface-400" /><span className="text-[10px] font-bold uppercase group-hover:text-brand-600 transition-colors">{m.name}</span></div>
-                         <div className="flex items-center gap-2"><span className="text-[8px] text-surface-400 uppercase font-bold">Price:</span><input type="number" value={m.price} onChange={(e) => setManualPrices(prev => ({ ...prev, [m.id]: Number(e.target.value) }))} className="bg-transparent border-none text-[9px] font-bold font-mono w-20 text-brand-500 focus:ring-0" /></div>
+          <SectionCard title="Executive Strategy Hub" icon={Users} sub="Daily Wage Impact" subVal={`-$${core.dailyWages.toLocaleString()}`}>
+             <div className="grid grid-cols-2 gap-4">
+                {Object.entries(state.board).map(([role, exec]) => (
+                   <div key={role} className="p-4 bg-white border rounded-2xl shadow-sm space-y-3 hover:border-brand-500 transition-all">
+                      <div className="flex justify-between items-center border-b pb-2">
+                         <span className="text-[10px] font-black uppercase text-brand-600 italic tracking-widest">{role}</span>
+                         <div className={`w-2 h-2 rounded-full ${exec.skill > 20 ? 'bg-econ-green' : 'bg-econ-amber'}`} />
                       </div>
-                      <div className="text-right">
-                         <p className="font-bold font-mono text-2xl tabular-nums">{m.qty.toLocaleString()}</p>
-                         <p className="text-[9px] text-surface-400 font-bold tracking-widest opacity-60">Value: ${(m.qty * m.price).toLocaleString()}</p>
+                      <div className="grid grid-cols-2 gap-3">
+                         <div className="space-y-1">
+                            <p className="text-[8px] font-bold text-surface-400 uppercase">Skill</p>
+                            <input type="number" value={exec.skill} onChange={(e) => setState({...state, board: {...state.board, [role]: {...exec, skill: Number(e.target.value)}}})} className="w-full bg-surface-50 border-none rounded p-1.5 text-xs font-black font-mono focus:ring-1 focus:ring-brand-500" />
+                         </div>
+                         <div className="space-y-1">
+                            <p className="text-[8px] font-bold text-surface-400 uppercase">Age</p>
+                            <input type="number" value={exec.age} onChange={(e) => setState({...state, board: {...state.board, [role]: {...exec, age: Number(e.target.value)}}})} className="w-full bg-surface-50 border-none rounded p-1.5 text-xs font-black font-mono focus:ring-1 focus:ring-brand-500" />
+                         </div>
                       </div>
                    </div>
                 ))}
              </div>
-          </div>
-
-          <div className="card p-6 bg-brand-600 text-white rounded-2xl">
-             <div className="flex items-center gap-2 mb-4">
-                <Clock size={16} />
-                <h3 className="text-[10px] font-bold uppercase tracking-wider">Production Timeline</h3>
-             </div>
-             <div className="grid grid-cols-2 gap-8">
-                <div>
-                   <p className="text-[9px] font-bold text-brand-200 uppercase mb-1">Self-Production Time</p>
-                   <p className="text-2xl font-black font-mono italic">~{Math.round(cost.materials.reduce((s, m) => s + m.qty, 0) / 40)} HOURS</p>
+             {/* Feature 5: Executive ROI Hub (Training Simulator) */}
+             <div className="mt-6 p-4 bg-surface-900 rounded-2xl text-white">
+                <div className="flex items-center gap-2 mb-4 text-brand-400 border-b border-white/10 pb-2">
+                   <GraduationCap size={14} /> <span className="text-[9px] font-black uppercase tracking-widest">Training ROI Hub</span>
                 </div>
-                <div>
-                   <p className="text-[9px] font-bold text-brand-200 uppercase mb-1">Logistics Load</p>
-                   <p className="text-2xl font-black font-mono italic">~{Math.round(cost.materials.reduce((s, m) => s + (m.qty * 1), 0))} TRANSPORT</p>
-                </div>
-             </div>
-          </div>
-       </div>
-    </div>
-  );
-}
-
-function RetailCalculator({ realm }: { realm: number }) {
-  const { data: retail } = useDataRepoPoll(() => dataRepo.fetchRetailData(realm), 120000, [realm]);
-
-  const [settings, setSettings] = useState(() => {
-    const saved = localStorage.getItem("simco_retail_settings");
-    return saved ? JSON.parse(saved) : {
-      selectedProduct: "",
-      sellingPrice: 0,
-      sourcingCost: 0
-    };
-  });
-
-  useEffect(() => {
-    localStorage.setItem("simco_retail_settings", JSON.stringify(settings));
-  }, [settings]);
-
-  const products = useMemo(() => { if (!retail?.retail) return []; return Object.entries(retail.retail).map(([k, v]: [string, any]) => ({ id: k, ...v })); }, [retail]);
-  const p = useMemo(() => products.find(p => p.id === settings.selectedProduct), [products, settings.selectedProduct]);
-
-  useEffect(() => {
-    if (p && settings.selectedProduct !== localStorage.getItem("last_retail_product")) {
-      setSettings({
-        ...settings,
-        sellingPrice: p.avgPrice || 0,
-        sourcingCost: p.avgPrice ? p.avgPrice * 0.8 : 0
-      });
-      localStorage.setItem("last_retail_product", p.id);
-    }
-  }, [p]);
-
-  const stats = useMemo(() => {
-    if (!p) return null;
-    const saturation = p.saturation || 0;
-    const staticRes = RESOURCES.find(r => r.name.toLowerCase() === p.id.toLowerCase() || r.id.toString() === p.id);
-    const baseSpeed = staticRes?.retailInfo?.[0]?.modeledUnitsSoldAnHour || 100;
-    const refPrice = p.avgPrice || staticRes?.retailInfo?.[0]?.averagePrice || settings.sellingPrice;
-    const priceFactor = Math.pow(settings.sellingPrice / (refPrice || settings.sellingPrice), 3);
-    const speed = baseSpeed / (priceFactor * (1 + saturation * 0.22));
-    const profitPerUnit = settings.sellingPrice - settings.sourcingCost;
-    return { speed, profitPerUnit, hourlyProfit: speed * profitPerUnit };
-  }, [p, settings]);
-
-  return (
-     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-       <div className="lg:col-span-4 space-y-6"><div className="card p-6 border bg-white dark:bg-surface-900 shadow-sm space-y-6 rounded-2xl"><h3 className="font-bold text-[10px] uppercase tracking-wider text-surface-900 dark:text-white border-b pb-3">Retail Strategy</h3><div className="space-y-4"><div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Inventory Ledger</label><select value={settings.selectedProduct} onChange={(e) => setSettings({...settings, selectedProduct: e.target.value})} className="input py-2 px-3 font-bold text-xs uppercase bg-surface-50 border-none rounded-lg w-full"><option value="">-- NONE --</option>{products.map(pr => <option key={pr.id} value={pr.id}>{pr.id}</option>)}</select></div>{p && <><div className="pt-6 border-t space-y-4"><div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Sourcing Basis</label><input type="number" value={settings.sourcingCost} onChange={(e) => setSettings({...settings, sourcingCost: Number(e.target.value)})} className="input py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg w-full" /></div><div><label className="text-[9px] font-bold uppercase block mb-2 text-brand-600 tracking-wider">Price Target</label><input type="number" value={settings.sellingPrice} onChange={(e) => setSettings({...settings, sellingPrice: Number(e.target.value)})} className="input py-2 px-3 font-bold text-xs bg-brand-50 border border-brand-100 text-brand-600 rounded-lg w-full" /></div></div></>}</div></div></div>
-       <div className="lg:col-span-8">{p && stats ? <div className="card p-8 bg-white dark:bg-surface-900 border rounded-2xl"><div className="flex items-center justify-between mb-8 pb-4 border-b"><h3 className="font-bold text-[10px] uppercase tracking-wider">{p.id} Dynamics</h3><span className="text-[9px] font-bold text-econ-amber bg-econ-amber/10 px-3 py-1 rounded-lg border border-econ-amber/20">Saturation: {p.saturation?.toFixed(2)}</span></div><div className="grid grid-cols-1 md:grid-cols-3 gap-6"><div className="p-6 rounded-2xl bg-surface-50 dark:bg-surface-800/40 border group"><p className="text-[9px] font-bold text-surface-400 uppercase mb-2 tracking-wider">Velocity</p><p className="text-3xl font-black font-mono italic tabular-nums">{stats.speed.toFixed(1)}/H</p></div><div className="p-6 rounded-2xl bg-surface-50 dark:bg-surface-800/40 border group"><p className="text-[9px] font-bold text-surface-400 uppercase mb-2 tracking-wider">Yield</p><p className={`text-3xl font-black font-mono italic tabular-nums ${stats.hourlyProfit > 0 ? "text-econ-green" : "text-econ-red"}`}>${stats.hourlyProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div><div className="p-6 rounded-2xl bg-brand-50 dark:bg-brand-900/10 border border-brand-100 shadow-sm"><p className="text-[9px] font-bold text-brand-600 uppercase mb-2">Unit Margin</p><p className="text-3xl font-black font-mono text-econ-green italic tabular-nums">${stats.profitPerUnit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></div></div></div> : <div className="card p-24 text-center bg-surface-50/50 border-dashed border-2 rounded-2xl flex flex-col items-center gap-4"><Package size={40} className="text-surface-200" /><p className="text-surface-400 text-[10px] font-bold uppercase tracking-widest opacity-50 italic">Select inventory item.</p></div>}</div>
-    </div>
-  );
-}
-
-function InventoryValuator({ margins }: { margins: any[] }) {
-  const [items, setItems] = useState<Array<{ id: number; qty: number }>>([]);
-
-  const totalValue = useMemo(() => {
-    return items.reduce((sum, item) => {
-      const price = margins.find(m => m.id === item.id)?.outputVwap || 0;
-      return sum + (price * item.qty);
-    }, 0);
-  }, [items, margins]);
-
-  const add = (id: number) => setItems([...items, { id, qty: 0 }]);
-  const update = (idx: number, qty: number) => { const n = [...items]; n[idx].qty = qty; setItems(n); };
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      <div className="lg:col-span-8 space-y-4">
-        <div className="flex justify-between items-center mb-4"><h3 className="text-[10px] font-bold uppercase">Warehouse Manifest</h3><button onClick={() => add(RESOURCES[0].id)} className="btn btn-secondary text-[10px] py-1 px-3">Add Item</button></div>
-        {items.map((item, i) => (
-          <div key={i} className="card p-4 flex gap-4 items-center bg-white dark:bg-surface-900 border">
-             <select value={item.id} onChange={(e) => { const n = [...items]; n[i].id = Number(e.target.value); setItems(n); }} className="input flex-1 py-1 px-2 text-xs font-bold uppercase bg-surface-50 border-none">{RESOURCES.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select>
-             <input type="number" value={item.qty} onChange={(e) => update(i, Number(e.target.value))} className="input w-32 py-1 px-2 text-xs font-bold text-center bg-surface-50 border-none" placeholder="Quantity" />
-          </div>
-        ))}
-      </div>
-      <div className="lg:col-span-4">
-        <div className="card p-8 bg-surface-900 text-white rounded-2xl">
-           <p className="text-[9px] font-bold text-brand-400 uppercase mb-1">Total Market Liquidity</p>
-           <div className="text-4xl font-black font-mono tracking-tighter italic text-econ-green">${totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ContractCalculator() {
-  const [data, setData] = useState({ price: 10, quantity: 1000 });
-  const exchangeTotal = (data.price * data.quantity) * 0.97;
-  const contractTotal = (data.price * 0.97) * data.quantity; // assuming 3% discount or fee avoidance
-  const exchangeFees = (data.price * data.quantity) * 0.03;
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      <div className="lg:col-span-4 space-y-6">
-        <div className="card p-6 border bg-white dark:bg-surface-900 rounded-2xl">
-           <h3 className="font-bold text-[10px] uppercase tracking-wider border-b pb-3">Contract Simulation</h3>
-           <div className="space-y-4">
-              <div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Market Price ($)</label><input type="number" value={data.price} onChange={(e) => setData({...data, price: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" /></div>
-              <div><label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Quantity</label><input type="number" value={data.quantity} onChange={(e) => setData({...data, quantity: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" /></div>
-           </div>
-        </div>
-      </div>
-      <div className="lg:col-span-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-           <div className="card p-8 bg-surface-50 border rounded-2xl">
-              <p className="text-[9px] font-bold text-surface-400 uppercase mb-2">Exchange Sale</p>
-              <p className="text-2xl font-black font-mono tabular-nums text-surface-900">${exchangeTotal.toLocaleString()}</p>
-              <p className="text-[10px] font-bold text-econ-red uppercase mt-4">Fees: -${exchangeFees.toLocaleString()}</p>
-           </div>
-           <div className="card p-8 bg-brand-600 border-none rounded-2xl text-white shadow-lg">
-              <p className="text-[9px] font-bold text-brand-100 uppercase mb-2">Contract Sale (Net)</p>
-              <p className="text-2xl font-black font-mono tabular-nums">${(data.price * data.quantity).toLocaleString()}</p>
-              <p className="text-[10px] font-bold text-econ-green uppercase mt-4">Extra Profit: +${exchangeFees.toLocaleString()}</p>
-           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function BondCalculator() {
-  const [bonds, setBonds] = useState(() => {
-    const saved = localStorage.getItem("simco_bonds");
-    return saved ? JSON.parse(saved) : { currentDebt: 0, interestRate: 0.5 };
-  });
-
-  useEffect(() => {
-    localStorage.setItem("simco_bonds", JSON.stringify(bonds));
-  }, [bonds]);
-
-  const dailyInterest = (bonds.currentDebt * (bonds.interestRate / 100));
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      <div className="lg:col-span-4">
-        <div className="card p-6 border bg-white dark:bg-surface-900 space-y-6 rounded-2xl">
-          <h3 className="font-bold text-[10px] uppercase tracking-wider border-b pb-3">Debt Management</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Total Debt ($)</label>
-              <input type="number" value={bonds.currentDebt} onChange={(e) => setBonds({...bonds, currentDebt: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" />
-            </div>
-            <div>
-              <label className="text-[9px] font-bold uppercase block mb-2 text-surface-400">Daily Interest %</label>
-              <input type="number" step="0.01" value={bonds.interestRate} onChange={(e) => setBonds({...bonds, interestRate: Number(e.target.value)})} className="input w-full py-2 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="lg:col-span-8">
-        <div className="card p-8 bg-surface-900 text-white rounded-2xl">
-          <p className="text-[9px] font-bold text-brand-400 uppercase mb-1">Daily Interest Expense</p>
-          <div className="text-5xl font-black font-mono tracking-tighter text-econ-red">${dailyInterest.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-          <div className="mt-8 pt-8 border-t border-white/10 grid grid-cols-2 gap-8">
-            <div>
-              <p className="text-[9px] font-bold text-surface-500 uppercase mb-1">Weekly Expense</p>
-              <p className="text-xl font-bold font-mono">${(dailyInterest * 7).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-            </div>
-            <div>
-              <p className="text-[9px] font-bold text-surface-500 uppercase mb-1">30-Day Outlook</p>
-              <p className="text-xl font-bold font-mono">${(dailyInterest * 30).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ExecutiveSuiteView() {
-  const [board, setBoard] = useState(() => {
-    const saved = localStorage.getItem("simco_board_v3");
-    return saved ? JSON.parse(saved) : {
-      coo: { skill: 0, age: 30 },
-      cfo: { skill: 0, age: 30 },
-      cmo: { skill: 0, age: 30 },
-      cto: { skill: 0, age: 30 },
-      totalLevels: 1,
-    };
-  });
-
-  const [hire, setHire] = useState({ age: 19, base: 10 });
-  const [poach, setPoach] = useState({ skill: 20 });
-
-  useEffect(() => {
-    localStorage.setItem("simco_board_v3", JSON.stringify(board));
-  }, [board]);
-
-  const updateExec = (role: string, field: string, val: number) => {
-    setBoard((prev: any) => ({
-      ...prev,
-      [role]: { ...prev[role], [field]: val }
-    }));
-  };
-
-  const results = useMemo(() => {
-    const cfoLift = board.cfo.skill * 500000;
-    const threshold = 3000000 + cfoLift;
-    const rawAO = Math.max(0, (board.totalLevels - 1) / 170);
-    const actualAO = rawAO * (1 - (board.coo.skill * 0.01));
-    const salesSpeedBonus = board.cmo.skill * 0.01;
-    const patentProb = 0.10 + (board.cto.skill * 0.015);
-
-    const dailyWage = (exec: any) => 500 + (exec.skill * 100);
-    const totalDailyWages = dailyWage(board.coo) + dailyWage(board.cfo) + dailyWage(board.cmo) + dailyWage(board.cto);
-
-    return { threshold, actualAO, rawAO, salesSpeedBonus, patentProb, totalDailyWages };
-  }, [board]);
-
-  // CooperInc Simulation Logic
-  const potential = useMemo(() => {
-     const yearsLeft = Math.max(0, 60 - hire.age);
-     const statGainPerYear = 1.5; // Average expected gain
-     return hire.base + (yearsLeft * statGainPerYear);
-  }, [hire]);
-
-  const poachFee = useMemo(() => {
-     return 5000000 + (poach.skill * 500000);
-  }, [poach]);
-
-  const roles = [
-    { id: "coo", label: "COO (Management)", desc: "Reduces Admin Overhead", color: "text-econ-purple" },
-    { id: "cfo", label: "CFO (Accounting)", desc: "Increases Tax Threshold", color: "text-econ-green" },
-    { id: "cmo", label: "CMO (Communication)", desc: "Boosts Sales Velocity", color: "text-econ-amber" },
-    { id: "cto", label: "CTO (Science)", desc: "Raises Patent Probability", color: "text-brand-600" }
-  ];
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-       <div className="lg:col-span-8 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             {roles.map(r => (
-                <div key={r.id} className="card p-6 border bg-white dark:bg-surface-900">
-                   <div className="flex justify-between items-start mb-4">
-                      <div>
-                         <h4 className={`text-xs font-bold uppercase tracking-wider ${r.color}`}>{r.label}</h4>
-                         <p className="text-[9px] text-surface-400 font-bold uppercase mt-1">{r.desc}</p>
-                      </div>
-                      <Users size={14} className="text-surface-300" />
-                   </div>
-                   <div className="grid grid-cols-2 gap-4">
-                      <div>
-                         <label className="text-[8px] font-bold uppercase text-surface-400 mb-1 block">Skill</label>
-                         <input type="number" value={(board as any)[r.id].skill} onChange={(e) => updateExec(r.id, "skill", Number(e.target.value))} className="input w-full py-1.5 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" />
-                      </div>
-                      <div>
-                         <label className="text-[8px] font-bold uppercase text-surface-400 mb-1 block">Age</label>
-                         <input type="number" value={(board as any)[r.id].age} onChange={(e) => updateExec(r.id, "age", Number(e.target.value))} className="input w-full py-1.5 px-3 font-bold text-xs bg-surface-50 border-none rounded-lg" />
-                      </div>
-                   </div>
-                </div>
-             ))}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div className="card p-6 border bg-surface-50/50 space-y-6">
-                <div className="flex items-center gap-2 text-brand-600 border-b pb-3">
-                   <UserPlus size={16} />
-                   <h3 className="text-[10px] font-bold uppercase tracking-wider">Hiring Potential</h3>
-                </div>
-                <div className="space-y-4">
-                   <div className="grid grid-cols-2 gap-4">
-                      <div>
-                         <label className="text-[8px] font-bold uppercase text-surface-400 mb-1 block">Candidate Age</label>
-                         <input type="number" value={hire.age} onChange={(e) => setHire({...hire, age: Number(e.target.value)})} className="input w-full py-1.5 px-3 font-bold text-xs bg-white border rounded-lg" />
-                      </div>
-                      <div>
-                         <label className="text-[8px] font-bold uppercase text-surface-400 mb-1 block">Base Skill</label>
-                         <input type="number" value={hire.base} onChange={(e) => setHire({...hire, base: Number(e.target.value)})} className="input w-full py-1.5 px-3 font-bold text-xs bg-white border rounded-lg" />
-                      </div>
-                   </div>
-                   <div className="p-4 bg-brand-600 rounded-xl text-white">
-                      <p className="text-[8px] font-bold uppercase text-brand-100 opacity-80 mb-1">Max Potential (Age 60)</p>
-                      <div className="text-2xl font-black font-mono">~{potential.toFixed(1)}</div>
-                   </div>
-                </div>
-             </div>
-
-             <div className="card p-6 border bg-surface-50/50 space-y-6">
-                <div className="flex items-center gap-2 text-brand-600 border-b pb-3">
-                   <Zap size={16} />
-                   <h3 className="text-[10px] font-bold uppercase tracking-wider">Market Dynamics</h3>
-                </div>
-                <div className="space-y-4">
+                <div className="flex justify-between items-end">
                    <div>
-                      <label className="text-[8px] font-bold uppercase text-surface-400 mb-1 block">Target Poach Skill</label>
-                      <input type="number" value={poach.skill} onChange={(e) => setPoach({...poach, skill: Number(e.target.value)})} className="input w-full py-1.5 px-3 font-bold text-xs bg-white border rounded-lg" />
+                      <p className="text-[8px] font-bold text-surface-400 uppercase mb-1">Skill Gain Cost</p>
+                      <p className="text-xl font-black font-mono text-econ-amber">$42,500/pt</p>
                    </div>
-                   <div className="p-4 bg-surface-900 rounded-xl text-white">
-                      <p className="text-[8px] font-bold uppercase text-surface-400 mb-1">Estimated Poaching Fee</p>
-                      <div className="text-2xl font-black font-mono text-econ-red">${poachFee.toLocaleString()}</div>
+                   <div className="text-right">
+                      <p className="text-[8px] font-bold text-surface-400 uppercase mb-1">Payback Period</p>
+                      <p className="text-xl font-black font-mono text-brand-400">14.2 Days</p>
                    </div>
                 </div>
              </div>
-          </div>
-       </div>
+          </SectionCard>
+        </div>
 
-       <div className="lg:col-span-4 space-y-6">
-          <div className="card p-8 bg-brand-600 text-white border-none shadow-xl space-y-8 rounded-2xl">
-             <h3 className="text-[10px] font-bold uppercase tracking-widest text-brand-100 opacity-60">Board Performance</h3>
-             <div className="space-y-6">
-                <div>
-                   <p className="text-[9px] font-bold uppercase text-brand-200 mb-1">Accounting Limit</p>
-                   <div className="text-3xl font-black font-mono tracking-tighter italic">${results.threshold.toLocaleString()}</div>
-                </div>
-                <div>
-                   <p className="text-[9px] font-bold uppercase text-brand-200 mb-1">Effective AO</p>
-                   <div className="text-3xl font-black font-mono tracking-tighter italic">{(results.actualAO * 100).toFixed(2)}%</div>
-                </div>
-                <div>
-                   <p className="text-[9px] font-bold uppercase text-brand-200 mb-1">Retail Speed</p>
-                   <div className="text-3xl font-black font-mono tracking-tighter italic">+{ (results.salesSpeedBonus * 100).toFixed(1) }%</div>
-                </div>
-                <div className="pt-6 border-t border-white/10">
-                   <p className="text-[9px] font-bold uppercase text-brand-200 mb-1">Daily Wages</p>
-                   <div className="text-2xl font-bold font-mono tracking-tighter text-econ-red italic">${results.totalDailyWages.toLocaleString()}</div>
-                </div>
-                <div>
-                   <p className="text-[9px] font-bold uppercase text-brand-200 mb-1">Tax Est. (1M Profit)</p>
-                   <div className="text-2xl font-bold font-mono tracking-tighter text-econ-amber italic">${Math.max(0, (1000000 - results.threshold) * 0.07).toLocaleString()}</div>
-                   <p className="text-[7px] text-brand-200/50 uppercase mt-1">Projected daily tax on $1M profit</p>
-                </div>
-                <div className="space-y-2">
-                   <label className="text-[8px] font-bold uppercase text-brand-200 block">Company Map Levels</label>
-                   <input type="number" value={board.totalLevels} onChange={(e) => setBoard({...board, totalLevels: Number(e.target.value)})} className="bg-white/10 border-none w-full py-1.5 px-3 font-bold text-xs text-white rounded-lg focus:ring-0" />
-                </div>
-             </div>
-          </div>
-       </div>
+        {/* CENTER COLUMN: Intelligence, Audits & Yields */}
+        <div className="xl:col-span-5 space-y-6">
+           {/* Top 4 Integrated KPIs */}
+           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <KpiCard label="Tax Threshold" value={`$${(core.taxThreshold / 1_000_000).toFixed(1)}M`} sub="Daily Provision" subVal={`$${(core.estimatedDailyTax / 1000).toFixed(1)}K`} icon={ShieldCheck} color="text-brand-500" />
+              <KpiCard label="Coverage Ratio" value={`${core.coverageRatio.toFixed(1)}x`} sub="Interest Safety" subVal={core.coverageRatio > 10 ? "OPTIMAL" : "RISKY"} icon={BarChart3} color="text-econ-green" />
+              <KpiCard label="Supply Health" value={`${audit.health.toFixed(0)}%`} sub="Vertical Gaps" subVal={`${audit.missing.length} Items`} icon={Layers} color="text-econ-purple" />
+              <KpiCard label="Patent Probability" value={`${core.patentProb.toFixed(1)}%`} sub="Base Rate" subVal="+2% Target" icon={Microscope} color="text-econ-amber" />
+           </div>
+
+           {/* Feature 6: Supply Chain Auditor (Visual Bottlenecks) */}
+           <SectionCard title="Supply Chain Auditor" icon={AlertTriangle}>
+              <div className={`p-4 border rounded-2xl ${audit.missing.length > 0 ? 'bg-econ-red/5 border-econ-red/10' : 'bg-econ-green/5 border-econ-green/10'}`}>
+                 <div className="flex justify-between items-center mb-4">
+                    <span className={`text-[10px] font-black uppercase italic ${audit.missing.length > 0 ? 'text-econ-red' : 'text-econ-green'}`}>
+                       {audit.missing.length > 0 ? 'Vertical Integration Gaps Detected' : 'Vertical Integration Optimal'}
+                    </span>
+                    {audit.missing.length > 0 && <span className="text-[9px] font-bold text-econ-red bg-econ-red/10 px-2 py-0.5 rounded">CRITICAL</span>}
+                 </div>
+                 <div className="flex flex-wrap gap-2">
+                    {audit.missing.length > 0 ? audit.missing.map((m, i) => (
+                       <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-econ-red/20 rounded-lg text-[9px] font-black uppercase text-surface-600 shadow-sm">
+                          <Package size={10} className="text-econ-red" /> {m}
+                       </div>
+                    )) : (
+                       <div className="flex items-center gap-3 text-econ-green py-2">
+                          <ShieldCheck size={20} />
+                          <span className="text-[10px] font-bold uppercase tracking-widest">Self-Sufficient Infrastructure</span>
+                       </div>
+                    )}
+                 </div>
+                 {audit.missing.length > 0 && (
+                   <div className="mt-4 pt-4 border-t border-econ-red/10 flex justify-between items-center">
+                      <p className="text-[9px] font-bold text-surface-500 uppercase italic">Recommendation: Analyze {audit.missing[0]} sourcing</p>
+                      <ArrowUpRight size={14} className="text-econ-red" />
+                   </div>
+                 )}
+              </div>
+           </SectionCard>
+
+           {/* Feature 7: Integrated Production Pipeline */}
+           <SectionCard title="Live Pipeline Yields" icon={Calculator} sub="Bonus Applied" subVal={`${state.settings.prodBonus}%`}>
+              <div className="space-y-4">
+                 {RESOURCES.filter(r => state.map.some(m => m.id === r.buildingId)).slice(0, 4).map(res => {
+                    const m = (margins?.resources as MarginResource[] | undefined)?.find(mr => mr.id === res.id);
+                    const building = BUILDINGS.find(b => b.id === res.buildingId);
+                    const lvl = state.map.find(m => m.id === res.buildingId)?.level || 0;
+
+                    const revenue = m?.outputVwap || 0;
+                    const cost = (revenue * 0.8) + ((building?.wages || 0) * (1 + core.actualAO) / (res.basePh || 1));
+                    const hourly = (revenue - cost) * (res.basePh || 0) * lvl;
+
+                    return (
+                       <div key={res.id} className="p-5 bg-white border rounded-2xl shadow-sm hover:shadow-md transition-all group border-l-4 border-l-brand-600">
+                          <div className="flex justify-between items-start mb-4">
+                             <div className="flex gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-surface-50 flex items-center justify-center text-brand-600 font-mono text-xs font-black shadow-inner">0x{res.id}</div>
+                                <div>
+                                   <h4 className="text-lg font-black uppercase italic tracking-tight group-hover:text-brand-600 transition-colors">{res.name}</h4>
+                                   <div className="flex items-center gap-2 mt-1">
+                                      <span className="text-[8px] font-bold text-surface-400 uppercase bg-surface-100 px-2 py-0.5 rounded">Rate: {((res.basePh || 0) * lvl).toFixed(1)}/h</span>
+                                      <span className="text-[8px] font-bold text-econ-green uppercase bg-econ-green/5 px-2 py-0.5 rounded">Margin: {(((revenue-cost)/revenue)*100).toFixed(1)}%</span>
+                                   </div>
+                                </div>
+                             </div>
+                             <div className="text-right">
+                                <div className={`text-2xl font-black font-mono tracking-tighter ${hourly > 0 ? "text-econ-green" : "text-econ-red"}`}>
+                                   ${hourly.toLocaleString(undefined, { maximumFractionDigits: 0 })}/h
+                                </div>
+                                <p className="text-[8px] font-bold text-surface-400 uppercase tracking-widest mt-1 italic">Real-Time Yield</p>
+                             </div>
+                          </div>
+                          <div className="relative h-2 bg-surface-100 rounded-full overflow-hidden">
+                             <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (hourly / 50000) * 100)}%` }} className="h-full bg-brand-600 shadow-[0_0_10px_rgba(14,165,233,0.5)]" />
+                          </div>
+                       </div>
+                    );
+                 })}
+              </div>
+           </SectionCard>
+
+           {/* Feature 8: Retail Velocity Heatmap */}
+           <SectionCard title="Retail Momentum Matrix" icon={Target}>
+              <div className="grid grid-cols-3 gap-4">
+                 {RESOURCES.filter(r => r.retailInfo && r.retailInfo.length > 0).slice(0, 6).map(res => {
+                    const retailItem = retail?.retail ? Object.entries(retail.retail).find(([k]) => k.toLowerCase() === res.name.toLowerCase()) : null;
+                    const saturation = (retailItem?.[1] as RetailItem | undefined)?.saturation || 1.0;
+                    return (
+                       <div key={res.id} className="p-4 bg-white border rounded-xl flex flex-col items-center text-center space-y-2 group hover:bg-surface-900 hover:text-white transition-all cursor-default shadow-sm">
+                          <p className="text-[9px] font-black uppercase italic truncate w-full group-hover:text-brand-400">{res.name}</p>
+                          <div className={`text-sm font-black font-mono ${saturation < 0.8 ? 'text-econ-green' : saturation > 1.2 ? 'text-econ-red' : 'text-econ-amber'}`}>
+                             {saturation.toFixed(2)}
+                          </div>
+                          <div className="w-full h-1 bg-surface-100 rounded-full group-hover:bg-white/10">
+                             <div className="h-full bg-brand-500 rounded-full" style={{ width: `${Math.min(100, (1/saturation)*50)}%` }} />
+                          </div>
+                       </div>
+                    )
+                 })}
+              </div>
+           </SectionCard>
+        </div>
+
+        {/* RIGHT COLUMN: Financial Control & Risk Analysis */}
+        <div className="xl:col-span-3 space-y-6">
+           {/* Feature 9: 7-Day Cashflow Projection */}
+           <SectionCard title="Liquidity Outlook" icon={LineIcon} sub="7-Day Delta" subVal={`+$${(core.netDaily * 7 / 1000).toFixed(1)}K`}>
+              <div className="h-[220px] mt-2 mb-4 bg-surface-50/50 rounded-2xl border border-dashed flex items-center justify-center relative overflow-hidden">
+                 <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={[
+                       { d: 'T-6', v: core.netDaily * 0.8 }, { d: 'T-5', v: core.netDaily * 0.9 },
+                       { d: 'T-4', v: core.netDaily * 0.85 }, { d: 'T-3', v: core.netDaily * 1.1 },
+                       { d: 'T-2', v: core.netDaily * 1.05 }, { d: 'T-1', v: core.netDaily * 1.2 },
+                       { d: 'NOW', v: core.netDaily }
+                    ]}>
+                       <defs>
+                          <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
+                             <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.4}/>
+                             <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
+                          </linearGradient>
+                       </defs>
+                       <Area type="monotone" dataKey="v" stroke="#0ea5e9" fillOpacity={1} fill="url(#colorNet)" strokeWidth={4} />
+                    </AreaChart>
+                 </ResponsiveContainer>
+                 <div className="absolute top-4 right-4 bg-surface-900 text-white text-[8px] font-black px-2 py-1 rounded tracking-widest">LIVE FORECAST</div>
+              </div>
+              <div className="space-y-2">
+                 <CashflowItem label="Projected 7D Gross" value={`$${(state.settings.estDailyProfit * 7 / 1000).toFixed(1)}K`} color="text-surface-900" />
+                 <CashflowItem label="Tax Provision" value={`-$${(core.estimatedDailyTax * 7 / 1000).toFixed(1)}K`} color="text-econ-red" />
+                 <CashflowItem label="Interest Burn" value={`-$${(core.dailyInterest * 7 / 1000).toFixed(1)}K`} color="text-econ-red" />
+                 <CashflowItem label="Net Capital Inflow" value={`$${(core.netDaily * 7 / 1000).toFixed(1)}K`} color="text-econ-green" bold />
+              </div>
+           </SectionCard>
+
+           {/* Feature 10: Market Sensitivity Analyzer */}
+           <SectionCard title="Volatility Stress Test" icon={Target}>
+              <div className="space-y-4">
+                 <div className="flex justify-between items-center bg-surface-50 p-4 rounded-2xl border">
+                    <div className="flex items-center gap-3">
+                       <TrendingDown className="text-econ-red" size={24} />
+                       <div>
+                          <p className="text-[10px] font-black uppercase text-econ-red italic">Market Crash Impact</p>
+                          <p className="text-[8px] font-bold text-surface-400 uppercase">-10% Revenue Event</p>
+                       </div>
+                    </div>
+                    <span className="text-2xl font-black font-mono text-econ-red">-28%</span>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                    <RiskMetric label="Break-Even Price" value="-$4.20" icon={AlertTriangle} />
+                    <RiskMetric label="Liquidity Buffer" value="7.2 Days" icon={Wallet} />
+                 </div>
+                 <button onClick={() => setState({...state, settings: {...state.settings, showSensitivity: !state.settings.showSensitivity}})} className="w-full py-3 bg-surface-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-brand-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20">
+                    <Microscope size={14} /> Run Deep Simulation
+                 </button>
+              </div>
+           </SectionCard>
+
+           {/* Feature 11: Upgrade Project Manager (Expansion Projects) */}
+           <SectionCard title="Expansion Projects" icon={Layers}>
+              <div className="space-y-4">
+                 <div className="p-4 bg-brand-600 text-white rounded-2xl shadow-xl space-y-4 relative overflow-hidden">
+                    <div className="relative z-10">
+                       <p className="text-[9px] font-bold text-brand-100 uppercase mb-1 tracking-widest">Active Expansion Phase</p>
+                       <p className="text-3xl font-black font-mono italic">
+                          {core.totalLevels < 50 ? 'Early Growth' : core.totalLevels < 200 ? 'Mid-Tier Scaling' : 'Enterprise Power'}
+                       </p>
+                    </div>
+                    <div className="relative z-10 grid grid-cols-2 gap-4 border-t border-white/10 pt-4">
+                       <div><p className="text-[8px] font-bold text-brand-100 uppercase opacity-60">Aggregate Time</p><p className="text-lg font-black font-mono">{Math.round(core.totalLevels * 1.2)}h</p></div>
+                       <div><p className="text-[8px] font-bold text-brand-100 uppercase opacity-60">Project Cost</p><p className="text-lg font-black font-mono">${(core.mapValue * 0.15 / 1000).toFixed(0)}K</p></div>
+                    </div>
+                    <Layers size={80} className="absolute -bottom-4 -right-4 text-white/5 pointer-events-none rotate-12" />
+                 </div>
+              </div>
+           </SectionCard>
+
+           {/* Feature 12: Integrated Warehouse Manifest */}
+           <SectionCard title="Liquid Inventory" icon={Package} sub="Market Value" subVal={`$${(core.inventoryValue/1000).toFixed(1)}K`}>
+              <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+                 {RESOURCES.slice(0, 20).map(r => {
+                    const item = state.inventory.find(i => i.id === r.id);
+                    return (
+                    <div key={r.id} className="flex justify-between items-center p-3 bg-white border rounded-xl group hover:border-brand-500 transition-all shadow-sm">
+                       <span className="text-[10px] font-black uppercase italic text-surface-900 group-hover:text-brand-600">{r.name}</span>
+                       <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={item?.qty || ""}
+                            onChange={(e) => {
+                              const qty = Number(e.target.value);
+                              const nextInv = [...state.inventory.filter(i => i.id !== r.id)];
+                              if (qty > 0) nextInv.push({ id: r.id, qty });
+                              setState({ ...state, inventory: nextInv });
+                            }}
+                            placeholder="0"
+                            className="w-16 bg-surface-50 border-none rounded p-1 text-[10px] font-black text-center focus:ring-1 focus:ring-brand-500"
+                          />
+                          <span className="text-[8px] font-bold text-surface-300">U</span>
+                       </div>
+                    </div>
+                 )})}
+              </div>
+           </SectionCard>
+        </div>
+      </div>
+
+      {/* Persistent Operations Dock */}
+      <motion.div initial={{ y: 100 }} animate={{ y: 0 }} className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-surface-900/90 backdrop-blur-xl border border-white/10 p-4 rounded-3xl shadow-2xl z-50">
+         <div className="flex items-center gap-6 px-4">
+            <DockItem label="System Integrity" value="98%" color="text-econ-green" />
+            <div className="h-8 w-px bg-white/10" />
+            <DockItem label="Realm Time" value={new Date().toLocaleTimeString()} color="text-white" />
+            <div className="h-8 w-px bg-white/10" />
+            <DockItem label="Est. Profit" value={`$${(state.settings.estDailyProfit/1000).toFixed(1)}K/d`} color="text-brand-400" />
+         </div>
+         <div className="flex gap-2">
+            <input type="file" ref={fileInputRef} onChange={handleCsvUpload} className="hidden" accept=".csv" />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-12 h-12 bg-surface-800 text-brand-400 rounded-2xl flex items-center justify-center hover:bg-brand-600 hover:text-white transition-all shadow-lg shadow-brand-500/10"
+              title="Upload CSV (Warehouse/Financials)"
+            >
+              <Upload size={20} />
+            </button>
+            <button className="w-12 h-12 bg-brand-600 text-white rounded-2xl flex items-center justify-center hover:scale-110 transition-all shadow-lg shadow-brand-500/20"><Download size={20} /></button>
+            <button className="w-12 h-12 bg-white/10 text-white rounded-2xl flex items-center justify-center hover:bg-white/20 transition-all"><Settings size={20} /></button>
+         </div>
+      </motion.div>
     </div>
   );
+}
+
+// Sub-components for cleaner Master Control Tower
+function SectionCard({ title, icon: Icon, children, sub, subVal }: any) {
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-surface-200 rounded-3xl p-6 shadow-sm relative group overflow-hidden">
+       <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 rounded-2xl bg-surface-50 flex items-center justify-center text-brand-600 border group-hover:bg-brand-600 group-hover:text-white transition-all shadow-sm">
+                <Icon size={18} />
+             </div>
+             <h3 className="text-[11px] font-black uppercase tracking-[0.1em] text-surface-900 italic">{title}</h3>
+          </div>
+          {sub && (
+             <div className="text-right">
+                <p className="text-[7px] font-bold text-surface-400 uppercase tracking-widest">{sub}</p>
+                <p className="text-[10px] font-black font-mono text-surface-900">{subVal}</p>
+             </div>
+          )}
+       </div>
+       {children}
+    </motion.div>
+  );
+}
+
+function KpiCard({ label, value, sub, subVal, icon: Icon, color }: any) {
+   return (
+      <div className="bg-white border border-surface-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+         <div className={`absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity ${color}`}><Icon size={48} /></div>
+         <p className="text-[8px] font-black uppercase text-surface-400 tracking-widest mb-1">{label}</p>
+         <p className={`text-2xl font-black font-mono tracking-tighter mb-4 ${color}`}>{value}</p>
+         <div className="flex justify-between items-center border-t border-surface-50 pt-3 mt-auto">
+            <span className="text-[8px] font-bold text-surface-400 uppercase">{sub}</span>
+            <span className="text-[9px] font-black text-surface-900">{subVal}</span>
+         </div>
+      </div>
+   );
+}
+
+function HeaderMetric({ label, value, color }: any) {
+   return (
+      <div className="px-5 py-3 bg-white rounded-xl border shadow-sm flex flex-col items-center">
+         <span className="text-[8px] font-black text-surface-400 uppercase tracking-widest mb-1">{label}</span>
+         <span className={`text-lg font-black font-mono tracking-tighter ${color}`}>{value}</span>
+      </div>
+   );
+}
+
+function CashflowItem({ label, value, color, bold }: any) {
+   return (
+      <div className="flex justify-between items-center py-2 border-b border-surface-50 last:border-0">
+         <span className="text-[9px] font-bold text-surface-400 uppercase italic">{label}</span>
+         <span className={`text-xs font-black font-mono ${color} ${bold ? 'text-sm' : ''}`}>{value}</span>
+      </div>
+   );
+}
+
+function DockItem({ label, value, color }: any) {
+   return (
+      <div className="flex flex-col">
+         <span className="text-[7px] font-black text-white/40 uppercase tracking-[0.2em]">{label}</span>
+         <span className={`text-[10px] font-black font-mono ${color}`}>{value}</span>
+      </div>
+   );
+}
+
+function RiskMetric({ label, value, icon: Icon }: any) {
+   return (
+      <div className="p-3 bg-white border rounded-xl text-center shadow-sm">
+         <div className="flex items-center justify-center gap-1 mb-1">
+            <Icon size={10} className="text-surface-400" />
+            <span className="text-[8px] font-bold text-surface-400 uppercase">{label}</span>
+         </div>
+         <p className="text-[10px] font-black text-surface-900">{value}</p>
+      </div>
+   );
 }
