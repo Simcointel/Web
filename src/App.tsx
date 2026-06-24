@@ -11,18 +11,18 @@ import { VWAPInflationPage } from "./pages/VWAPInflation";
 import { ProfitMarginsPage } from "./pages/ProfitMargins";
 import { WidgetPage } from "./pages/WidgetRenderer";
 import { NotFoundPage } from "./pages/NotFound";
-import { CompanyToolsPage } from "./pages/CompanyTools";
+import { CorporateSuitePage } from "./pages/CorporateSuite";
 import React from "react";
 
 export function AppShell({ path }: { path: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isWidget = path.startsWith("/widgets");
-  const isCompanyTools = path === "/company-tools";
+  const isCompanyTools = path === "/corporate-suite";
 
   const page = path === "/" ? <HomePage />
     : path === "/macro" ? <MacroPage />
     : path === "/alerts" ? <AlertsPage />
-    : path === "/company-tools" ? <CompanyToolsPage />
+    : path === "/corporate-suite" ? <CorporateSuitePage />
     : path === "/vwap-inflation" ? <VWAPInflationPage />
     : path === "/profit-margins" ? <ProfitMarginsPage />
     : path === "/about" ? <AboutPage />
@@ -51,7 +51,7 @@ export function AppShell({ path }: { path: string }) {
               </div>
            </div>
            <div className="flex items-center gap-4">
-              <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white text-xs font-black shadow-lg shadow-brand-500/20">SI</div>
+              <Link to="/corporate-suite" className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white text-xs font-black shadow-lg shadow-brand-500/20">SI</Link>
               <span className="font-bold text-sm dark:text-white uppercase tracking-widest">SimcoIntel Suite</span>
            </div>
            <div className="flex items-center gap-6">
