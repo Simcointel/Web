@@ -3,12 +3,13 @@ import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { Section } from "../components/Layout";
 import { LoadingState, ErrorState } from "../components/States";
+import { useSharedRealm } from "../hooks/useSharedRealm";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine,
 } from "recharts";
 
 export function VWAPInflationPage() {
-  const [realm, setRealm] = useState(0);
+  const [realm, setRealm] = useSharedRealm();
   const [vwapTab, setVwapTab] = useState<"overall" | "quality" | "product" | "both">("overall");
   const [selectedProduct, setSelectedProduct] = useState("");
   const [selectedQualities, setSelectedQualities] = useState("0,1,2,3,4,5,6,7,8,9,10,11,12");

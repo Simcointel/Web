@@ -3,7 +3,9 @@ import * as dataRepo from "../services/dataRepo";
 import { StatCard } from "../components/StatCard";
 import { Section, CardGrid } from "../components/Layout";
 import { LoadingState, ErrorState } from "../components/States";
+import { useSharedRealm } from "../hooks/useSharedRealm";
 import { useState, useMemo } from "react";
+import { AlertCircle } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine, AreaChart, Area
 } from "recharts";
@@ -16,7 +18,7 @@ interface PhaseRecord {
 }
 
 export function MacroPage() {
-  const [realm, setRealm] = useState(0);
+  const [realm, setRealm] = useSharedRealm();
   const { data: latest, loading: lLoading, error: lError, refresh: lRefresh } = useDataRepoPoll(() => dataRepo.fetchMacroLatest(realm), 60000, [realm]);
   const { data: history, loading: hLoading } = useDataRepoPoll(() => dataRepo.fetchMacroHistory(realm, 120), 120000, [realm]);
   const { data: indexes, loading: iLoading } = useDataRepoPoll(() => dataRepo.fetchMacroIndexes(realm, 200), 120000, [realm]);
@@ -55,8 +57,32 @@ export function MacroPage() {
 
   const latestH = latest?.latestHistory;
 
+  // Feature: Phase Transition Analysis
+  const phaseStats = useMemo(() => {
+    if (!phases?.phases) return null;
+    const current = phases.phases[phases.phases.length - 1];
+    const prev = phases.phases[phases.phases.length - 2];
+    return {
+      current: current?.phase,
+      duration: current?.days,
+      previous: prev?.phase,
+      isChanging: current?.days < 3,
+    };
+  }, [phases]);
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+       {/* Feature: Macro Alert Ribbon */}
+       {phaseStats?.isChanging && (
+         <div className="bg-econ-amber/10 border border-econ-amber/20 p-4 rounded-2xl flex items-center gap-4 text-econ-amber">
+            <AlertCircle size={20} />
+            <div className="flex-1">
+               <p className="text-xs font-black uppercase tracking-widest">Recent Regime Shift Detected</p>
+               <p className="text-[10px] opacity-80 font-medium">Economy transitioned to {phaseStats.current} {phaseStats.duration} days ago. Monitor price volatility.</p>
+            </div>
+         </div>
+       )}
+
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400 mb-2 inline-block">
