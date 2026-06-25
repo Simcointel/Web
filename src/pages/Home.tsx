@@ -65,7 +65,7 @@ export function HomePage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        <Link to="/company-tools" className="group">
+        <Link to="/corporate-suite" className="group">
           <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 rounded-lg hover:border-brand-500 transition-all cursor-pointer h-full">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-1.5 bg-brand-50 dark:bg-brand-900/20 rounded-md text-brand-600">
@@ -76,7 +76,7 @@ export function HomePage() {
             <p className="text-[9px] text-surface-500 dark:text-surface-400 leading-tight">Statement analysis & cashflow tracking</p>
           </div>
         </Link>
-        <Link to="/company-tools" className="group">
+        <Link to="/corporate-suite" className="group">
           <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 rounded-lg hover:border-brand-500 transition-all cursor-pointer h-full">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-1.5 bg-econ-green/10 rounded-md text-econ-green">
@@ -87,7 +87,7 @@ export function HomePage() {
             <p className="text-[9px] text-surface-500 dark:text-surface-400 leading-tight">Sourcing costs & pipeline optimization</p>
           </div>
         </Link>
-        <Link to="/company-tools" className="group">
+        <Link to="/corporate-suite" className="group">
           <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 rounded-lg hover:border-brand-500 transition-all cursor-pointer h-full">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-1.5 bg-econ-purple/10 rounded-md text-econ-purple">
@@ -98,7 +98,7 @@ export function HomePage() {
             <p className="text-[9px] text-surface-500 dark:text-surface-400 leading-tight">Sales velocity & revenue projection</p>
           </div>
         </Link>
-        <Link to="/company-tools" className="group">
+        <Link to="/corporate-suite" className="group">
           <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 rounded-lg hover:border-brand-500 transition-all cursor-pointer h-full">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-1.5 bg-econ-amber/10 rounded-md text-econ-amber">
@@ -109,7 +109,7 @@ export function HomePage() {
             <p className="text-[9px] text-surface-500 dark:text-surface-400 leading-tight">Building costs & expansion ROI</p>
           </div>
         </Link>
-        <Link to="/company-tools" className="group">
+        <Link to="/corporate-suite" className="group">
           <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 rounded-lg hover:border-brand-500 transition-all cursor-pointer h-full">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-1.5 bg-econ-red/10 rounded-md text-econ-red">
