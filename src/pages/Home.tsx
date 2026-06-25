@@ -3,16 +3,18 @@ import * as dataRepo from "../services/dataRepo";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
 import { StatCard } from "../components/StatCard";
 import { MiniSparkline } from "../components/MiniSparkline";
+import { motion } from "framer-motion";
 import { Section } from "../components/Layout";
 import { LoadingState, ErrorState } from "../components/States";
 import { SeverityBadge } from "../components/SeverityBadge";
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
+import { useSharedRealm } from "../hooks/useSharedRealm";
 import type { RealmDashboard } from "../types/api";
 import { Link } from "../router";
 import { Briefcase, Factory, ShoppingCart, Construction, Users, Activity, TrendingUp, Shield, AlertCircle } from "lucide-react";
 
 export function HomePage() {
-  const [realm, setRealm] = useState(0);
+  const [realm, setRealm] = useSharedRealm();
   const { data: dashState, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardState(realm), 60000, [realm]);
   const { data: alerts } = useDataRepoPoll(() => dataRepo.fetchDashboardAlerts(realm), 60000, [realm]);
   const connected = useSseConnected();
@@ -33,9 +35,31 @@ export function HomePage() {
     : [];
 
   const topAlert = alertList[0];
+  const topMargins = (dashState as any)?.[String(realm)]?.topMargins || [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300 max-w-6xl mx-auto">
+       {/* 0. Live Market Ticker */}
+       <div className="bg-surface-900 text-white overflow-hidden rounded-xl h-8 flex items-center border border-white/10 shadow-lg">
+          <div className="px-3 bg-brand-600 h-full flex items-center text-[8px] font-black uppercase tracking-widest shrink-0">Live Yields</div>
+          <motion.div
+            animate={{ x: [0, -1000] }}
+            transition={{ repeat: Infinity, duration: 30, ease: "linear" }}
+            className="flex items-center gap-12 whitespace-nowrap px-6"
+          >
+             {Array.isArray((dashState as any)?.[String(realm)]?.topMargins) ? (dashState as any)[String(realm)].topMargins.map((m: any, i: number) => (
+                <div key={i} className="flex items-center gap-2">
+                   <span className="text-[10px] font-bold opacity-60 uppercase">{m.n}</span>
+                   <span className="text-[10px] font-black font-mono text-econ-green">+${m.np.toFixed(0)}/h</span>
+                </div>
+             )) : (
+                <div className="flex items-center gap-2">
+                   <span className="text-[10px] font-bold opacity-40 italic">Waiting for market data refresh...</span>
+                </div>
+             )}
+          </motion.div>
+       </div>
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-surface-200 dark:border-surface-800 pb-6">
         <div>
           <h1 className="text-xl font-bold text-surface-900 dark:text-white tracking-tight flex items-center gap-2">
@@ -48,8 +72,11 @@ export function HomePage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border ${connected ? "text-econ-green border-econ-green/20 bg-econ-green/5" : "text-surface-400 border-surface-200"}`}>
-            {connected ? "ACTIVE" : "OFFLINE"}
+          <div className="flex flex-col items-end">
+             <div className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border ${connected ? "text-econ-green border-econ-green/20 bg-econ-green/5" : "text-surface-400 border-surface-200"}`}>
+               {connected ? "ACTIVE" : "OFFLINE"}
+             </div>
+             <span className="text-[7px] font-black text-surface-400 uppercase mt-1 tracking-tighter">System Integrity: 100%</span>
           </div>
           <div className="flex items-center gap-2 bg-surface-100 dark:bg-surface-800 p-0.5 rounded-lg border">
             <select

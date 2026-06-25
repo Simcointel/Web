@@ -4,15 +4,18 @@ import * as dataRepo from "../services/dataRepo";
 import { StatCard } from "../components/StatCard";
 import { Section, CardGrid } from "../components/Layout";
 import { LoadingState, ErrorState, EmptyState } from "../components/States";
+import { useSharedRealm } from "../hooks/useSharedRealm";
+import { RESOURCES } from "../data/simco_static";
 
 export function ProfitMarginsPage() {
-  const [realm, setRealm] = useState(0);
+  const [realm, setRealm] = useSharedRealm();
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"mg" | "np" | "rv" | "vw">("mg");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const { data, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 60000, [realm]);
 
+  const [selectedResId, setSelectedResId] = useState<number | null>(null);
   const resources = data?.resources ?? [];
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -133,7 +136,7 @@ export function ProfitMarginsPage() {
 
           <button
             onClick={exportCSV}
-            className="btn btn-secondary gap-2"
+            className="px-4 py-2 bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 text-surface-700 dark:text-surface-200 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
             Export CSV
@@ -163,7 +166,11 @@ export function ProfitMarginsPage() {
             </thead>
             <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
               {filtered.map((r: any) => (
-                <tr key={r.id} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/30 transition-colors group">
+                <tr
+                  key={r.id}
+                  className={`hover:bg-surface-50/50 dark:hover:bg-surface-800/30 transition-colors group cursor-pointer ${selectedResId === r.id ? 'bg-brand-50/50 dark:bg-brand-900/10' : ''}`}
+                  onClick={() => setSelectedResId(r.id)}
+                >
                   <td className="px-6 py-4 font-bold text-surface-900 dark:text-white">{r.name}</td>
                   <td className="px-6 py-4 text-surface-500 dark:text-surface-400">{r.categoryName}</td>
                   <td className="px-6 py-4 text-right">
@@ -194,6 +201,49 @@ export function ProfitMarginsPage() {
           )}
         </div>
       </div>
+
+      {/* Feature: Sourcing Intelligence */}
+      {selectedResId && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+           <div className="card p-6">
+              <h3 className="font-bold text-surface-900 dark:text-white mb-4 uppercase text-xs tracking-widest">Sourcing Dependency</h3>
+              <div className="space-y-3">
+                 {(() => {
+                    const res = RESOURCES.find(r => r.id === selectedResId);
+                    if (!res || !res.inputs) return <p className="text-sm text-surface-400 italic">No primary inputs required for this resource.</p>;
+                    return Object.entries(res.inputs).map(([id, qty]) => {
+                       const input = RESOURCES.find(r => r.id === Number(id));
+                       const inputMargin = resources.find((r: any) => r.id === Number(id));
+                       return (
+                          <div key={id} className="flex justify-between items-center p-3 bg-surface-50 dark:bg-surface-800/50 rounded-xl">
+                             <div className="flex flex-col">
+                                <span className="text-xs font-bold text-surface-900 dark:text-white">{input?.name || `ID ${id}`}</span>
+                                <span className="text-[10px] text-surface-400 uppercase">Req: {qty} units</span>
+                             </div>
+                             <div className="text-right">
+                                <span className={`text-xs font-black font-mono ${inputMargin?.marginPct > 0 ? 'text-econ-green' : 'text-econ-red'}`}>
+                                   {inputMargin ? `${inputMargin.marginPct.toFixed(1)}%` : '??'}
+                                </span>
+                                <p className="text-[8px] font-bold text-surface-400 uppercase">Input Margin</p>
+                             </div>
+                          </div>
+                       )
+                    });
+                 })()}
+              </div>
+           </div>
+           <div className="card p-6 flex flex-col justify-center items-center text-center bg-brand-600 text-white">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-60">Production Advice</p>
+              <p className="text-lg font-black italic mb-2">
+                 {resources.find((r: any) => r.id === selectedResId)?.marginPct > 10 ? 'STRATEGIC EXPANSION RECOMMENDED' : 'OPTIMIZE INPUT SOURCING'}
+              </p>
+              <p className="text-xs opacity-80 leading-relaxed max-w-xs">
+                 Current market conditions favor {RESOURCES.find(r => r.id === selectedResId)?.name} {resources.find((r: any) => r.id === selectedResId)?.marginPct > 0 ? 'production' : 'outsourcing'}.
+                 Analyze input margins to find vertical integration opportunities.
+              </p>
+           </div>
+        </div>
+      )}
     </div>
   );
 }

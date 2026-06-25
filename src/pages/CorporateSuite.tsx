@@ -14,6 +14,7 @@ import { BUILDINGS, RESOURCES } from "../data/simco_static";
 import * as dataRepo from "../services/dataRepo";
 import { LoadingState } from "../components/States";
 import { useNavigate } from "../router";
+import { useSharedRealm } from "../hooks/useSharedRealm";
 
 // --- Types & Defaults ---
 interface Executive { skill: number; age: number; }
@@ -22,7 +23,7 @@ interface InventoryItem { id: number; qty: number; }
 
 interface SuiteStateV6 {
   activeTab: 'command' | 'ops' | 'exec' | 'finance' | 'logistics' | 'risk';
-  globalSync: boolean; // Interconnection toggle
+  globalSync: boolean;
   map: MapItem[];
   board: { coo: Executive; cfo: Executive; cmo: Executive; cto: Executive; };
   inventory: InventoryItem[];
@@ -55,7 +56,7 @@ const DEFAULT_STATE: SuiteStateV6 = {
 };
 
 export function CorporateSuitePage() {
-  const [realm, setRealm] = useState(0);
+  const [realm, setRealm] = useSharedRealm();
   const navigate = useNavigate();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { data: margins, loading: mLoading } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 60000, [realm]);
@@ -68,9 +69,7 @@ export function CorporateSuitePage() {
 
   useEffect(() => { localStorage.setItem("simco_suite_v6", JSON.stringify(state)); }, [state]);
 
-  // --- Core Interconnected Engine ---
   const core = useMemo(() => {
-    // Determine effective inputs based on "Detachment" logic
     const effMap = state.moduleSettings.opsLinked ? state.map : DEFAULT_STATE.map;
     const effBoard = state.moduleSettings.execLinked ? state.board : DEFAULT_STATE.board;
     const effProfit = state.moduleSettings.financeLinked ? state.settings.estDailyProfit : DEFAULT_STATE.settings.estDailyProfit;
@@ -114,21 +113,58 @@ export function CorporateSuitePage() {
     };
   }, [state, margins]);
 
-  // --- Sub-Screen Renderers ---
+  const audit = useMemo(() => {
+    const produces = new Set(RESOURCES.filter(r => state.map.some(m => m.id === r.buildingId)).map(r => r.id));
+    const needs = new Set<number>();
+    state.map.forEach(m => {
+       RESOURCES.filter(r => r.buildingId === m.id).forEach(r => {
+          if (r.inputs) Object.keys(r.inputs).forEach(id => needs.add(Number(id)));
+       });
+    });
+    const missing = Array.from(needs).filter(n => !produces.has(n)).map(id => RESOURCES.find(r => r.id === id)?.name || `ID ${id}`);
+    return { missing, health: needs.size > 0 ? (1 - missing.length / needs.size) * 100 : 100 };
+  }, [state.map]);
+
+  const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split('\n').map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+      if (lines.length < 2) return;
+      const headers = lines[0].map(h => h.toLowerCase());
+      if (headers.includes('resource') && headers.includes('quantity')) {
+        const qtyIdx = headers.indexOf('quantity');
+        const nameIdx = headers.indexOf('resource');
+        const nextInv: InventoryItem[] = [];
+        lines.slice(1).forEach(row => {
+          if (!row[nameIdx]) return;
+          const res = RESOURCES.find(r => r.name.toLowerCase() === row[nameIdx].toLowerCase());
+          const qty = parseInt(row[qtyIdx]);
+          if (res && !isNaN(qty)) nextInv.push({ id: res.id, qty });
+        });
+        if (nextInv.length > 0) setState(prev => ({ ...prev, inventory: nextInv }));
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const renderTab = () => {
     switch(state.activeTab) {
       case 'command': return <CommandView state={state} core={core} setState={setState} />;
       case 'ops': return <OperationsView state={state} core={core} setState={setState} />;
       case 'exec': return <ExecutiveView state={state} core={core} setState={setState} />;
       case 'finance': return <FinanceView state={state} core={core} setState={setState} />;
-      case 'logistics': return <LogisticsView state={state} core={core} setState={setState} margins={margins} />;
+      case 'logistics': return <LogisticsView state={state} core={core} setState={setState} margins={margins} audit={audit} fileInputRef={fileInputRef} />;
       case 'risk': return <RiskView state={state} core={core} setState={setState} retail={retail} />;
     }
   };
 
+  if (mLoading && !margins) return <LoadingState text="Booting Terminal..." />;
+
   return (
     <div className="max-w-[1600px] mx-auto p-4 lg:p-6 bg-surface-50/20 min-h-screen">
-      {/* 1. Header & Global Controls */}
       <header className="flex justify-between items-center pb-6 border-b border-surface-200 mb-6">
         <div className="flex items-center gap-6">
            <div>
@@ -151,82 +187,108 @@ export function CorporateSuitePage() {
         </div>
 
         <div className="flex items-center gap-4">
-           <HeaderMetric label="Global Integrity" value="98%" color="text-econ-green" />
+           <HeaderMetric label="Admin Load" value={`${(core.actualAO*100).toFixed(2)}%`} color={core.actualAO > 0.15 ? "text-econ-red" : "text-econ-green"} />
            <HeaderMetric label="Net Cashflow" value={`$${(core.netDaily/1000).toFixed(1)}K/d`} color="text-brand-600" />
            <div className="h-10 w-px bg-surface-200" />
            <button onClick={() => navigate('/')} className="p-3 text-surface-400 hover:text-surface-900 transition-colors"><ArrowLeft size={20} /></button>
         </div>
       </header>
 
-      {/* 2. Main Content Area */}
       <main className="min-h-[700px]">
          <AnimatePresence mode="wait">
-            <motion.div
-               key={state.activeTab}
-               initial={{ opacity: 0, x: 10 }}
-               animate={{ opacity: 1, x: 0 }}
-               exit={{ opacity: 0, x: -10 }}
-               transition={{ duration: 0.15 }}
-            >
+            <motion.div key={state.activeTab} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }}>
                {renderTab()}
             </motion.div>
          </AnimatePresence>
       </main>
 
-      {/* 3. Persistent Dock */}
       <footer className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface-900/90 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-white/10 flex items-center gap-8 z-50">
+         <input type="file" ref={fileInputRef} onChange={handleCsvUpload} className="hidden" accept=".csv" />
          <div className="flex items-center gap-6 px-4 border-r border-white/10">
             <DockToggle label="Global Sync" active={state.globalSync} onClick={() => setState({...state, globalSync: !state.globalSync})} />
             <DockMetric label="Realm" value={`R${realm}`} />
             <DockMetric label="Enterprise" value={`$${(core.totalValuation/1_000_000).toFixed(2)}M`} />
          </div>
          <div className="flex items-center gap-2">
-            <button className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center hover:scale-105 transition-all"><Settings size={18} /></button>
-            <button className="w-10 h-10 rounded-xl bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all"><History size={18} /></button>
+            <button onClick={() => fileInputRef.current?.click()} className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center hover:scale-105 transition-all"><Upload size={18} /></button>
+            <button onClick={() => { const data = JSON.stringify(state); const blob = new Blob([data], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'simco_suite_v6.json'; a.click(); }} className="w-10 h-10 rounded-xl bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all"><Download size={18} /></button>
          </div>
       </footer>
     </div>
   );
 }
 
-// --- View Components ---
-
 function CommandView({ state, core }: any) {
+  const categories = useMemo(() => {
+    const counts: Record<string, number> = {};
+    state.map.forEach((m: any) => {
+      const b = BUILDINGS.find(bu => bu.id === m.id);
+      if (b) counts[(b as any).category || 'Other'] = (counts[(b as any).category || 'Other'] || 0) + m.level;
+    });
+    return Object.entries(counts).sort((a,b) => b[1] - a[1]);
+  }, [state.map]);
+
   return (
     <div className="grid grid-cols-12 gap-6">
        <div className="col-span-8 space-y-6">
           <Section title="Strategic Overview" icon={Eye}>
              <div className="grid grid-cols-3 gap-6">
-                <Kpi label="Enterprise Value" value={`$${(core.totalValuation/1_000_000).toFixed(2)}M`} sub="Target: +5% WoW" icon={TrendingUp} color="text-brand-600" />
+                <Kpi label="Enterprise Value" value={`$${(core.totalValuation/1_000_000).toFixed(2)}M`} sub={`Liquid: $${(core.inventoryValue/1000).toFixed(1)}K`} icon={TrendingUp} color="text-brand-600" />
                 <Kpi label="Daily Net Flow" value={`$${(core.netDaily/1000).toFixed(1)}K`} sub="Post-Tax/AO" icon={DollarSign} color="text-econ-green" />
                 <Kpi label="Admin Overhead" value={`${(core.actualAO*100).toFixed(2)}%`} sub={`${core.totalLevels} Active Levels`} icon={BarChart3} color="text-econ-red" />
              </div>
           </Section>
           <div className="grid grid-cols-2 gap-6">
-             <Section title="Active Projects" icon={Calculator}>
-                <div className="space-y-4">
-                   <div className="p-4 bg-brand-50 border border-brand-100 rounded-2xl">
-                      <p className="text-[10px] font-black uppercase text-brand-600 mb-1 tracking-widest">Ongoing Scaling</p>
-                      <p className="text-xl font-black text-surface-900 italic">PHASE 2: VERTICAL INTEGRATION</p>
-                      <div className="mt-4 flex justify-between items-end">
-                         <span className="text-[8px] font-bold text-surface-400 uppercase">Est. Completion: 14h</span>
-                         <span className="text-[8px] font-bold text-surface-400 uppercase">Cost: $420K</span>
+             <Section title="Asset Allocation" icon={PieIcon}>
+                <div className="space-y-3">
+                   {categories.length > 0 ? categories.slice(0, 4).map(([cat, lvls]) => (
+                      <div key={cat} className="space-y-1">
+                         <div className="flex justify-between text-[10px] font-bold uppercase">
+                            <span className="text-surface-500">{cat}</span>
+                            <span className="text-surface-900">{lvls} Lvls</span>
+                         </div>
+                         <div className="h-1.5 bg-surface-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-brand-500" style={{ width: `${(lvls / core.totalLevels) * 100}%` }} />
+                         </div>
                       </div>
-                   </div>
+                   )) : (
+                      <div className="py-10 text-center text-surface-300 text-[10px] font-black uppercase italic">No Infrastructure Data</div>
+                   )}
                 </div>
              </Section>
-             <Section title="Recent Intelligence" icon={Microscope}>
-                <div className="space-y-2">
-                   <AlertItem type="positive" label="Margin Expansion" desc="Food sector yields increased by 1.2% globally." />
-                   <AlertItem type="negative" label="Tax Warning" desc="Accounting thresholds nearing daily limit." />
+             <Section title="Financial Projections" icon={LineIcon}>
+                <div className="space-y-4">
+                   <div className="flex justify-between items-center py-2 border-b border-surface-50">
+                      <span className="text-[9px] font-bold text-surface-400 uppercase">7D Growth Est.</span>
+                      <span className="text-xs font-black font-mono text-econ-green">+$${(core.netDaily * 7 / 1000).toFixed(1)}K</span>
+                   </div>
+                   <div className="flex justify-between items-center py-2 border-b border-surface-50">
+                      <span className="text-[9px] font-bold text-surface-400 uppercase">30D Forecast</span>
+                      <span className="text-xs font-black font-mono text-brand-600">+$${(core.netDaily * 30 / 1_000_000).toFixed(2)}M</span>
+                   </div>
                 </div>
              </Section>
           </div>
        </div>
        <div className="col-span-4 space-y-6">
-          <Section title="Resource Summary" icon={Package}>
-             <div className="h-[400px] bg-surface-50 rounded-2xl border border-dashed flex items-center justify-center text-surface-400 text-[10px] font-black uppercase">
-                Inventory Visualization Data
+          <Section title="Facility Project Pipeline" icon={Calculator}>
+             <div className="space-y-4">
+                {state.map.slice(0, 4).map((m: any, i: number) => {
+                   const b = BUILDINGS.find(bu => bu.id === m.id);
+                   return (
+                      <div key={i} className="p-4 bg-surface-50 border border-dashed rounded-2xl">
+                         <div className="flex justify-between items-start mb-2">
+                            <p className="text-[10px] font-black uppercase text-brand-600 truncate max-w-[120px]">{b?.name || 'Building'}</p>
+                            <span className="text-[8px] font-black bg-white px-2 py-0.5 rounded border">LVL {m.level}</span>
+                         </div>
+                         <div className="flex justify-between items-end">
+                            <span className="text-[8px] font-bold text-surface-400 uppercase">Daily Wages: $${(m.level * (b?.wages || 0) * 24 / 1000).toFixed(1)}K</span>
+                            <span className="text-[8px] font-bold text-surface-400 uppercase">AO Contrib: ${((m.level / 170) * 100).toFixed(2)}%</span>
+                         </div>
+                      </div>
+                   );
+                })}
+                {state.map.length === 0 && <div className="py-20 text-center text-surface-300 text-[10px] font-black uppercase italic">Add facilities in Operations</div>}
              </div>
           </Section>
        </div>
@@ -248,7 +310,7 @@ function OperationsView({ state, setState, core }: any) {
                    <div className="h-8 w-px bg-surface-200" />
                    <div className="text-center flex-1">
                       <p className="text-[8px] font-bold text-surface-400 uppercase">Daily Wages</p>
-                      <p className="text-lg font-black font-mono text-econ-red">${(core.dailyWages/1000).toFixed(1)}K</p>
+                      <p className="text-lg font-black font-mono text-econ-red">$${(core.dailyWages/1000).toFixed(1)}K</p>
                    </div>
                 </div>
                 <div className="max-h-[500px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
@@ -295,7 +357,7 @@ function OperationsView({ state, setState, core }: any) {
   );
 }
 
-function ExecutiveView({ state, setState, core }: any) {
+function ExecutiveView({ state, setState }: any) {
   return (
     <div className="grid grid-cols-12 gap-6">
        <div className="col-span-8 grid grid-cols-2 gap-6">
@@ -324,15 +386,18 @@ function ExecutiveView({ state, setState, core }: any) {
           <Section title="Human Capital Analysis" icon={GraduationCap}>
              <div className="space-y-4">
                 <div className="p-4 bg-surface-50 rounded-2xl border border-dashed text-center">
-                   <p className="text-[8px] font-bold text-surface-400 uppercase">Collective Skill Impact</p>
-                   <p className="text-3xl font-black text-brand-600">{Object.values(state.board).reduce((s: number, e: any) => s + e.skill, 0)} Pts</p>
+                   <p className="text-[8px] font-bold text-surface-400 uppercase">Collective Skill Points</p>
+                   <p className="text-3xl font-black text-brand-600">{Object.values(state.board).reduce((s: number, e: any) => s + (e.skill || 0), 0)} Pts</p>
                 </div>
                 <div className="p-4 bg-surface-900 text-white rounded-2xl">
                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-[8px] font-black uppercase text-brand-400">Poaching Risk</span>
-                      <span className="text-[8px] font-bold uppercase text-econ-red">High</span>
+                      <span className="text-[8px] font-black uppercase text-brand-400">Executive Longevity</span>
+                      <span className="text-[8px] font-bold uppercase text-econ-green">Stable</span>
                    </div>
-                   <p className="text-[10px] leading-relaxed opacity-60">Board average age is 35. High probability of retirement in 15+ years. Poaching fees estimated at $2.4M.</p>
+                   <p className="text-[10px] leading-relaxed opacity-60 italic">
+                      Based on average board age of {Math.round(Object.values(state.board).reduce((s: number, e: any) => s + (e.age || 0), 0) / 4)},
+                      retirement is projected in {65 - Math.round(Object.values(state.board).reduce((s: number, e: any) => s + (e.age || 0), 0) / 4)} years.
+                   </p>
                 </div>
              </div>
           </Section>
@@ -370,7 +435,7 @@ function FinanceView({ state, setState, core }: any) {
                 </div>
                 <div className="bg-surface-50 rounded-2xl border border-dashed flex flex-col items-center justify-center">
                    <p className="text-[8px] font-black text-surface-400 uppercase mb-2">Accounting Safety</p>
-                   <p className="text-2xl font-black font-mono text-econ-green">${(core.taxThreshold/1_000_000).toFixed(1)}M</p>
+                   <p className="text-2xl font-black font-mono text-econ-green">$${(core.taxThreshold/1_000_000).toFixed(1)}M</p>
                    <p className="text-[8px] font-bold text-surface-300 uppercase mt-1">Daily Exemption Remaining</p>
                 </div>
              </div>
@@ -380,11 +445,15 @@ function FinanceView({ state, setState, core }: any) {
   );
 }
 
-function LogisticsView({ state, setState, core, margins }: any) {
+function LogisticsView({ state, setState, core, audit, fileInputRef }: any) {
   return (
     <div className="grid grid-cols-12 gap-6">
        <div className="col-span-4 space-y-6">
           <Section title="Warehouse Manifest" icon={Package} action={<ModuleLink active={state.moduleSettings.logisticsLinked} onClick={() => setState({...state, moduleSettings: {...state.moduleSettings, logisticsLinked: !state.moduleSettings.logisticsLinked}})} />}>
+             <div className="flex gap-2 mb-4">
+                <button onClick={() => setState({...state, inventory: []})} className="flex-1 py-2 bg-surface-50 hover:bg-econ-red/10 hover:text-econ-red border rounded-xl text-[8px] font-black uppercase transition-all">Clear All</button>
+                <button onClick={() => fileInputRef.current?.click()} className="flex-1 py-2 bg-brand-600 text-white rounded-xl text-[8px] font-black uppercase hover:bg-brand-500 transition-all">Import CSV</button>
+             </div>
              <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                 {RESOURCES.slice(0, 30).map(r => {
                    const item = state.inventory.find(i => i.id === r.id);
@@ -414,15 +483,15 @@ function LogisticsView({ state, setState, core, margins }: any) {
              <div className="p-8 bg-surface-900 text-white rounded-3xl relative overflow-hidden">
                 <div className="relative z-10">
                    <p className="text-[10px] font-black text-brand-400 uppercase tracking-widest mb-2">Liquid Asset Valuation</p>
-                   <p className="text-5xl font-black font-mono italic tracking-tighter">${(core.inventoryValue/1000).toFixed(1)}K</p>
+                   <p className="text-5xl font-black font-mono italic tracking-tighter">$${(core.inventoryValue/1000).toFixed(1)}K</p>
                    <div className="mt-8 flex gap-4">
                       <div className="flex-1 p-4 bg-white/5 border border-white/10 rounded-2xl">
-                         <p className="text-[8px] font-bold uppercase opacity-40 mb-1">Vertical Integration</p>
-                         <p className="text-lg font-black font-mono text-econ-green">94%</p>
+                         <p className="text-[8px] font-bold uppercase opacity-40 mb-1">Vertical Health</p>
+                         <p className="text-lg font-black font-mono text-econ-green">{audit.health.toFixed(1)}%</p>
                       </div>
                       <div className="flex-1 p-4 bg-white/5 border border-white/10 rounded-2xl">
-                         <p className="text-[8px] font-bold uppercase opacity-40 mb-1">Storage Burn</p>
-                         <p className="text-lg font-black font-mono text-econ-amber">$1,240/d</p>
+                         <p className="text-[8px] font-bold uppercase opacity-40 mb-1">Storage Burn (Est)</p>
+                         <p className="text-lg font-black font-mono text-econ-amber">-${(state.inventory.length * 12.5).toFixed(0)}/d</p>
                       </div>
                    </div>
                 </div>
@@ -434,27 +503,36 @@ function LogisticsView({ state, setState, core, margins }: any) {
   );
 }
 
-function RiskView({ state, setState, core, retail }: any) {
+function RiskView({ state, core }: any) {
+  const beta = useMemo(() => {
+    const totalLevels = core.totalLevels || 1;
+    return (totalLevels / 100) + 0.5;
+  }, [core.totalLevels]);
+
   return (
     <div className="grid grid-cols-12 gap-6">
        <div className="col-span-8 space-y-6">
-          <Section title="Market Momentum Matrix" icon={Target} action={<ModuleLink active={state.moduleSettings.riskLinked} onClick={() => setState({...state, moduleSettings: {...state.moduleSettings, riskLinked: !state.moduleSettings.riskLinked}})} />}>
-             <div className="grid grid-cols-4 gap-4">
-                {RESOURCES.filter(r => r.retailInfo && r.retailInfo.length > 0).slice(0, 12).map(res => {
-                   const retailItem: any = retail?.retail ? Object.entries(retail.retail).find(([k]) => k.toLowerCase() === res.name.toLowerCase()) : null;
-                   const saturation = retailItem?.[1]?.saturation || 1.0;
-                   return (
-                      <div key={res.id} className="p-4 bg-white border rounded-xl flex flex-col items-center text-center space-y-2 group hover:bg-surface-900 hover:text-white transition-all shadow-sm">
-                         <p className="text-[9px] font-black uppercase italic truncate w-full group-hover:text-brand-400">{res.name}</p>
-                         <div className={`text-sm font-black font-mono ${saturation < 0.8 ? 'text-econ-green' : saturation > 1.2 ? 'text-econ-red' : 'text-econ-amber'}`}>
-                            {saturation.toFixed(2)}
-                         </div>
-                         <div className="w-full h-1 bg-surface-100 rounded-full">
-                            <div className="h-full bg-brand-500 rounded-full" style={{ width: `${Math.min(100, (1/saturation)*50)}%` }} />
-                         </div>
-                      </div>
-                   )
-                })}
+          <Section title="Portfolio Analysis" icon={Target}>
+             <div className="p-8 bg-surface-50 rounded-3xl border border-dashed text-center">
+                <p className="text-sm font-black text-surface-400 uppercase italic">Enterprise Risk Modeling</p>
+                <div className="mt-8 grid grid-cols-3 gap-6">
+                   <div className="p-6 bg-white border rounded-2xl">
+                      <p className="text-[8px] font-bold text-surface-400 uppercase mb-2">Beta Score</p>
+                      <p className="text-2xl font-black font-mono">{beta.toFixed(2)}</p>
+                   </div>
+                   <div className="p-6 bg-white border rounded-2xl">
+                      <p className="text-[8px] font-bold text-surface-400 uppercase mb-2">Market Sensitivity</p>
+                      <p className={`text-2xl font-black font-mono ${beta > 1.5 ? 'text-econ-red' : 'text-econ-amber'}`}>
+                         {beta > 1.5 ? 'HIGH' : 'MODERATE'}
+                      </p>
+                   </div>
+                   <div className="p-6 bg-white border rounded-2xl">
+                      <p className="text-[8px] font-bold text-surface-400 uppercase mb-2">Resilience Index</p>
+                      <p className={`text-2xl font-black font-mono ${core.coverageRatio > 20 ? 'text-econ-green' : 'text-econ-amber'}`}>
+                         {core.coverageRatio > 20 ? 'STRONG' : 'STABLE'}
+                      </p>
+                   </div>
+                </div>
              </div>
           </Section>
        </div>
@@ -463,18 +541,24 @@ function RiskView({ state, setState, core, retail }: any) {
              <div className="space-y-4">
                 <div className="p-6 bg-econ-red/5 border border-econ-red/10 rounded-2xl text-center">
                    <TrendingDown className="text-econ-red mx-auto mb-4" size={32} />
-                   <p className="text-[10px] font-black uppercase text-econ-red italic">Simulated Crash Impact</p>
-                   <p className="text-4xl font-black font-mono text-econ-red mt-2">-28%</p>
-                   <p className="text-[8px] font-bold text-surface-400 uppercase mt-4">Calculated for -10% market shift</p>
+                   <p className="text-[10px] font-black uppercase text-econ-red italic">Portfolio Beta Impact</p>
+                   <p className="text-4xl font-black font-mono text-econ-red mt-2">
+                      {core.totalLevels > 0 ? (-(core.totalLevels / 100) * 12.5).toFixed(0) : 0}%
+                   </p>
+                   <p className="text-[8px] font-bold text-surface-400 uppercase mt-4">Simulated for -10% Market Correction</p>
                 </div>
                 <div className="space-y-2">
                    <div className="flex justify-between p-3 bg-white border rounded-xl">
                       <span className="text-[9px] font-bold text-surface-400 uppercase">Liquidity Buffer</span>
-                      <span className="text-[9px] font-black">7.2 Days</span>
+                      <span className="text-[9px] font-black">
+                         {core.netDaily > 0 ? (core.totalValuation / core.netDaily).toFixed(1) : '∞'} Days
+                      </span>
                    </div>
                    <div className="flex justify-between p-3 bg-white border rounded-xl">
-                      <span className="text-[9px] font-bold text-surface-400 uppercase">Leverage Risk</span>
-                      <span className="text-[9px] font-black text-econ-amber">MEDIUM</span>
+                      <span className="text-[9px] font-bold text-surface-400 uppercase">Leverage Health</span>
+                      <span className={`text-[9px] font-black ${core.coverageRatio > 10 ? 'text-econ-green' : 'text-econ-amber'}`}>
+                         {core.coverageRatio > 10 ? 'OPTIMAL' : 'MONITOR'}
+                      </span>
                    </div>
                 </div>
              </div>
@@ -483,8 +567,6 @@ function RiskView({ state, setState, core, retail }: any) {
     </div>
   );
 }
-
-// --- Shared Internal Components ---
 
 function TabBtn({ active, onClick, icon: Icon, label }: any) {
   return (
@@ -546,7 +628,7 @@ function DockToggle({ label, active, onClick }: any) {
     <button onClick={onClick} className="flex flex-col items-start group">
        <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">{label}</span>
        <div className="flex items-center gap-2 mt-0.5">
-          {active ? <Link2Off size={12} className="text-brand-400" /> : <Link size={12} className="text-econ-red" />}
+          {!active ? <Link2Off size={12} className="text-econ-red" /> : <Link size={12} className="text-brand-400" />}
           <span className={`text-[10px] font-black font-mono ${active ? 'text-brand-400' : 'text-econ-red'}`}>{active ? 'CONNECTED' : 'DE-ATTACHED'}</span>
        </div>
     </button>
@@ -567,19 +649,6 @@ function CashItem({ label, value, type, bold }: any) {
     <div className="flex justify-between items-center py-2 border-b border-surface-50 last:border-0">
        <span className="text-[9px] font-bold text-surface-400 uppercase italic">{label}</span>
        <span className={`font-mono font-black ${color} ${bold ? 'text-lg' : 'text-xs'}`}>{value}</span>
-    </div>
-  );
-}
-
-function AlertItem({ type, label, desc }: any) {
-  const color = type === 'positive' ? 'text-econ-green' : 'text-econ-red';
-  return (
-    <div className="flex gap-3 p-3 bg-surface-50 rounded-xl border border-dashed">
-       <div className={`mt-1 w-1.5 h-1.5 rounded-full ${type === 'positive' ? 'bg-econ-green' : 'bg-econ-red'}`} />
-       <div>
-          <p className={`text-[9px] font-black uppercase ${color}`}>{label}</p>
-          <p className="text-[8px] font-medium leading-tight opacity-60 mt-1">{desc}</p>
-       </div>
     </div>
   );
 }
