@@ -30,6 +30,20 @@ export function VWAPInflationPage() {
     return list;
   }, [data]);
 
+  const volatilityInsights = useMemo(() => {
+    if (!data?.vwapInflation || data.vwapInflation.length < 2) return null;
+    const latest = data.vwapInflation[data.vwapInflation.length - 1];
+    const prev = data.vwapInflation[data.vwapInflation.length - 2];
+
+    const delta = latest.overall?.vw && prev.overall?.vw ? ((latest.overall.vw - prev.overall.vw) / prev.overall.vw) * 100 : 0;
+
+    return {
+       delta,
+       nodeCount: Object.keys(latest.product || {}).length,
+       highVolatility: Object.entries(latest.quality || {}).sort((a: any, b: any) => Math.abs(b[1].vw - (prev.quality?.[a[0]]?.vw || 0)) - Math.abs(a[1].vw - (prev.quality?.[a[0]]?.vw || 0))).slice(0, 3)
+    };
+  }, [data]);
+
   if (loading && !data) return <LoadingState text="Calculating price variations..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
 
@@ -57,6 +71,34 @@ export function VWAPInflationPage() {
             <option value={1}>Realm 1</option>
           </select>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+         <div className="card p-6 border-t-2 border-t-brand-600">
+            <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Overall Trend</p>
+            <div className="flex items-center gap-2">
+               <span className={`text-2xl font-black font-mono ${volatilityInsights && volatilityInsights.delta >= 0 ? 'text-econ-green' : 'text-econ-red'}`}>
+                  {volatilityInsights ? (volatilityInsights.delta >= 0 ? '+' : '') + volatilityInsights.delta.toFixed(2) : '--'}%
+               </span>
+               <span className="text-[10px] font-bold text-surface-400 uppercase italic">Daily Velocity</span>
+            </div>
+         </div>
+         <div className="card p-6 border-t-2 border-t-econ-purple">
+            <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Market Coverage</p>
+            <div className="flex items-center gap-2">
+               <span className="text-2xl font-black font-mono text-surface-900 dark:text-white">
+                  {volatilityInsights?.nodeCount || '--'}
+               </span>
+               <span className="text-[10px] font-bold text-surface-400 uppercase italic">Monitored Assets</span>
+            </div>
+         </div>
+         <div className="card p-6 border-t-2 border-t-econ-amber">
+            <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">System Integrity</p>
+            <div className="flex items-center gap-2">
+               <span className="text-2xl font-black font-mono text-econ-green">NOMINAL</span>
+               <span className="text-[10px] font-bold text-surface-400 uppercase italic">Price Feeds</span>
+            </div>
+         </div>
       </div>
 
       <div className="card overflow-hidden">

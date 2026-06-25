@@ -5,9 +5,10 @@ import { useSseConnected, useSseEvent } from "../hooks/useSse";
 import { Section } from "../components/Layout";
 import { LoadingState, ErrorState, EmptyState } from "../components/States";
 import { SeverityBadge } from "../components/SeverityBadge";
+import { useSharedRealm } from "../hooks/useSharedRealm";
 
 export function AlertsPage() {
-  const [realm, setRealm] = useState(0);
+  const [realm, setRealm] = useSharedRealm();
   const { data: eventsData, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardEvents(realm, 200), 60000, [realm]);
   const [severity, setSeverity] = useState<string>("all");
   const [category, setCategory] = useState<string>("all");
