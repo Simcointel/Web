@@ -76,7 +76,9 @@ export function HomePage() {
              <div className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border ${connected ? "text-econ-green border-econ-green/20 bg-econ-green/5" : "text-surface-400 border-surface-200"}`}>
                {connected ? "ACTIVE" : "OFFLINE"}
              </div>
-             <span className="text-[7px] font-black text-surface-400 uppercase mt-1 tracking-tighter">System Integrity: 100%</span>
+             <span className={`text-[7px] font-black uppercase mt-1 tracking-tighter ${connected ? 'text-econ-green' : 'text-econ-amber'}`}>
+               Node Integrity: {connected ? '100%' : '80%'}
+             </span>
           </div>
           <div className="flex items-center gap-2 bg-surface-100 dark:bg-surface-800 p-0.5 rounded-lg border">
             <select

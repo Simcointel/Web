@@ -125,15 +125,31 @@ export function CorporateSuitePage() {
     return { missing, health: needs.size > 0 ? (1 - missing.length / needs.size) * 100 : 100 };
   }, [state.map]);
 
-  const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const lines = text.split('\n').map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+      const content = e.target?.result as string;
+
+      // Handle JSON (Platform Sync)
+      if (file.name.endsWith('.json')) {
+        try {
+          const parsed = JSON.parse(content);
+          if (parsed.activeTab) {
+             setState(parsed);
+             return;
+          }
+        } catch (err) { console.error("JSON parse failed"); }
+      }
+
+      // Handle CSV (Game Exports)
+      const lines = content.split('\n').map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
       if (lines.length < 2) return;
       const headers = lines[0].map(h => h.toLowerCase());
+
+      // Case 1: Warehouse Export
       if (headers.includes('resource') && headers.includes('quantity')) {
         const qtyIdx = headers.indexOf('quantity');
         const nameIdx = headers.indexOf('resource');
@@ -145,6 +161,15 @@ export function CorporateSuitePage() {
           if (res && !isNaN(qty)) nextInv.push({ id: res.id, qty });
         });
         if (nextInv.length > 0) setState(prev => ({ ...prev, inventory: nextInv }));
+      }
+
+      // Case 2: Income Statement
+      if (headers.includes('profit/loss') || headers.includes('revenue')) {
+        const profitIdx = headers.findIndex(h => h.includes('profit'));
+        if (profitIdx !== -1) {
+           const val = parseFloat(lines[1][profitIdx]);
+           if (!isNaN(val)) setState(prev => ({ ...prev, settings: { ...prev.settings, estDailyProfit: Math.abs(val) } }));
+        }
       }
     };
     reader.readAsText(file);
@@ -203,7 +228,7 @@ export function CorporateSuitePage() {
       </main>
 
       <footer className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface-900/90 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-white/10 flex items-center gap-8 z-50">
-         <input type="file" ref={fileInputRef} onChange={handleCsvUpload} className="hidden" accept=".csv" />
+         <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".csv,.json" />
          <div className="flex items-center gap-6 px-4 border-r border-white/10">
             <DockToggle label="Global Sync" active={state.globalSync} onClick={() => setState({...state, globalSync: !state.globalSync})} />
             <DockMetric label="Realm" value={`R${realm}`} />
@@ -446,13 +471,22 @@ function FinanceView({ state, setState, core }: any) {
 }
 
 function LogisticsView({ state, setState, core, audit, fileInputRef }: any) {
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
   return (
     <div className="grid grid-cols-12 gap-6">
        <div className="col-span-4 space-y-6">
           <Section title="Warehouse Manifest" icon={Package} action={<ModuleLink active={state.moduleSettings.logisticsLinked} onClick={() => setState({...state, moduleSettings: {...state.moduleSettings, logisticsLinked: !state.moduleSettings.logisticsLinked}})} />}>
-             <div className="flex gap-2 mb-4">
-                <button onClick={() => setState({...state, inventory: []})} className="flex-1 py-2 bg-surface-50 hover:bg-econ-red/10 hover:text-econ-red border rounded-xl text-[8px] font-black uppercase transition-all">Clear All</button>
-                <button onClick={() => fileInputRef.current?.click()} className="flex-1 py-2 bg-brand-600 text-white rounded-xl text-[8px] font-black uppercase hover:bg-brand-500 transition-all">Import CSV</button>
+             <div className="flex gap-2 mb-4 relative">
+                {!showClearConfirm ? (
+                   <button onClick={() => setShowClearConfirm(true)} className="flex-1 py-2 bg-surface-50 hover:bg-econ-red/10 hover:text-econ-red border rounded-xl text-[8px] font-black uppercase transition-all">Clear All</button>
+                ) : (
+                   <div className="flex-1 flex gap-1">
+                      <button onClick={() => { setState({...state, inventory: []}); setShowClearConfirm(false); }} className="flex-1 py-2 bg-econ-red text-white rounded-xl text-[8px] font-black uppercase">Confirm</button>
+                      <button onClick={() => setShowClearConfirm(false)} className="px-2 py-2 bg-surface-200 text-surface-600 rounded-xl text-[8px] font-black uppercase">X</button>
+                   </div>
+                )}
+                <button onClick={() => fileInputRef.current?.click()} className="flex-1 py-2 bg-brand-600 text-white rounded-xl text-[8px] font-black uppercase hover:bg-brand-500 transition-all shadow-lg shadow-brand-500/20">Import Data</button>
              </div>
              <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                 {RESOURCES.slice(0, 30).map(r => {

@@ -52,14 +52,9 @@ export function MacroPage() {
     return result;
   }, [phases]);
 
-  if (lLoading && !latest) return <LoadingState text="Loading macro data..." />;
-  if (lError) return <ErrorState message={lError} onRetry={lRefresh} />;
-
-  const latestH = latest?.latestHistory;
-
   // Feature: Phase Transition Analysis
   const phaseStats = useMemo(() => {
-    if (!phases?.phases) return null;
+    if (!phases?.phases || phases.phases.length < 1) return null;
     const current = phases.phases[phases.phases.length - 1];
     const prev = phases.phases[phases.phases.length - 2];
     return {
@@ -69,6 +64,11 @@ export function MacroPage() {
       isChanging: current?.days < 3,
     };
   }, [phases]);
+
+  if (lLoading && !latest) return <LoadingState text="Loading macro data..." />;
+  if (lError) return <ErrorState message={lError} onRetry={lRefresh} />;
+
+  const latestH = latest?.latestHistory;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
