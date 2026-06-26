@@ -35,33 +35,8 @@ export function AppShell({ path }: { path: string }) {
 
   if (isCompanyTools) {
     return (
-      <div className="flex flex-col h-screen bg-surface-50 dark:bg-surface-950 overflow-hidden">
-        <header className="h-16 bg-white dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800 flex items-center px-8 shrink-0 justify-between z-30">
-           <div className="flex items-center gap-6">
-              <Link to="/" className="text-surface-500 hover:text-surface-900 dark:hover:text-white flex items-center gap-2 text-sm font-bold transition-colors">
-                 <ArrowLeft size={16} />
-                 Exit to Dashboard
-              </Link>
-              <div className="h-6 w-px bg-surface-200 dark:bg-surface-800 hidden md:block" />
-              <div className="hidden md:flex flex-col">
-                 <span className="text-[10px] font-bold text-econ-green uppercase tracking-widest flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-econ-green" />
-                    System Operational
-                 </span>
-              </div>
-           </div>
-           <div className="flex items-center gap-4">
-              <Link to="/corporate-suite" className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white text-xs font-black shadow-lg shadow-brand-500/20">SI</Link>
-              <span className="font-bold text-sm dark:text-white uppercase tracking-widest">SimcoIntel Suite</span>
-           </div>
-           <div className="flex items-center gap-6">
-              <div className="hidden lg:flex flex-col text-right">
-                 <span className="text-[10px] font-black text-surface-400 uppercase tracking-[0.2em]">LOCAL_TIME</span>
-                 <span className="text-xs font-black dark:text-white tabular-nums uppercase">{new Date().toLocaleTimeString()}</span>
-              </div>
-           </div>
-        </header>
-        <main className="flex-1 overflow-y-auto custom-scrollbar bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-surface-50 to-surface-100 dark:from-surface-950 dark:to-surface-900">
+      <div className="flex flex-col h-screen bg-surface-950 overflow-hidden">
+        <main className="flex-1 overflow-y-auto custom-scrollbar">
           {page}
         </main>
       </div>
