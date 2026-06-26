@@ -71,7 +71,7 @@ export function MacroPage() {
   const latestH = latest?.latestHistory;
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
        {/* Feature: Macro Alert Ribbon */}
        {phaseStats?.isChanging && (
          <div className="bg-econ-amber/10 border border-econ-amber/20 p-4 rounded-2xl flex items-center gap-4 text-econ-amber">
@@ -116,7 +116,7 @@ export function MacroPage() {
         </CardGrid>
       </Section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         {history?.history && history.history.length > 0 && (
           <div className="card p-6">
             <h3 className="font-bold text-surface-900 dark:text-white mb-6">Valuation & Output</h3>
@@ -132,7 +132,7 @@ export function MacroPage() {
                       <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-surface-200 dark:stroke-surface-800" />
                   <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
@@ -151,7 +151,7 @@ export function MacroPage() {
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={history.history.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() }))}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-surface-200 dark:stroke-surface-800" />
                   <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
@@ -165,14 +165,14 @@ export function MacroPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         {indexes?.indexes && indexes.indexes.length > 0 && (
           <div className="card p-6">
             <h3 className="font-bold text-surface-900 dark:text-white mb-6">Price Indexes</h3>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={indexes.indexes.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() }))}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-surface-200 dark:stroke-surface-800" />
                   <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
@@ -191,12 +191,12 @@ export function MacroPage() {
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={inflation.inflation.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() }))}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-surface-200 dark:stroke-surface-800" />
                   <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
                   <Legend iconType="circle" />
-                  <ReferenceLine y={0} stroke="#94a3b8" />
+                  <ReferenceLine y={0} className="stroke-surface-400 dark:stroke-surface-600" />
                   <Line type="monotone" dataKey="cpiRate" stroke="#0ea5e9" strokeWidth={2} dot={false} name="CPI Rate" />
                   <Line type="monotone" dataKey="coreCpiRate" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Core CPI Rate" />
                 </LineChart>

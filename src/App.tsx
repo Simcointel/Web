@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTheme } from "./hooks/useTheme";
 import { Link } from "./router";
 import { Sidebar } from "./components/Sidebar";
 import { Footer } from "./components/Footer";
@@ -15,6 +16,7 @@ import { CorporateSuitePage } from "./pages/CorporateSuite";
 import React from "react";
 
 export function AppShell({ path }: { path: string }) {
+  const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isWidget = path.startsWith("/widgets");
   const isCompanyTools = path === "/corporate-suite";
@@ -36,7 +38,7 @@ export function AppShell({ path }: { path: string }) {
   if (isCompanyTools) {
     return (
       <div className="flex flex-col h-screen bg-surface-950 overflow-hidden">
-        <main className="flex-1 overflow-y-auto custom-scrollbar">
+        <main className="flex-1 overflow-y-auto custom-scrollbar bg-surface-50 dark:bg-surface-950">
           {page}
         </main>
       </div>

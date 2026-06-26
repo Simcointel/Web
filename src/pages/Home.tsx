@@ -38,9 +38,9 @@ export function HomePage() {
   const topMargins = (dashState as any)?.[String(realm)]?.topMargins || [];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300 max-w-6xl mx-auto">
+    <div className="space-y-12 animate-in fade-in duration-300 max-w-6xl mx-auto">
        {/* 0. Live Market Ticker */}
-       <div className="bg-surface-900 text-white overflow-hidden rounded-xl h-8 flex items-center border border-white/10 shadow-lg">
+       <div className="bg-surface-900 dark:bg-surface-950 text-white overflow-hidden rounded-xl h-8 flex items-center border border-white/10 shadow-lg">
           <div className="px-3 bg-brand-600 h-full flex items-center text-[8px] font-black uppercase tracking-widest shrink-0">Live Yields</div>
           <motion.div
             animate={{ x: [0, -1000] }}
@@ -60,7 +60,7 @@ export function HomePage() {
           </motion.div>
        </div>
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-surface-200 dark:border-surface-800 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 border-b border-surface-200 dark:border-surface-800 pb-6">
         <div>
           <h1 className="text-xl font-bold text-surface-900 dark:text-white tracking-tight flex items-center gap-2">
             <div className="w-6 h-6 bg-brand-600 rounded flex items-center justify-center text-white text-[10px]">SI</div>
@@ -71,7 +71,7 @@ export function HomePage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <div className="flex flex-col items-end">
              <div className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border ${connected ? "text-econ-green border-econ-green/20 bg-econ-green/5" : "text-surface-400 border-surface-200"}`}>
                {connected ? "ACTIVE" : "OFFLINE"}
@@ -93,10 +93,10 @@ export function HomePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Link to="/corporate-suite" className="group">
           <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 rounded-lg hover:border-brand-500 transition-all cursor-pointer h-full">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-4 mb-2">
               <div className="p-1.5 bg-brand-50 dark:bg-brand-900/20 rounded-md text-brand-600">
                 <Briefcase size={14} />
               </div>
@@ -107,7 +107,7 @@ export function HomePage() {
         </Link>
         <Link to="/corporate-suite" className="group">
           <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 rounded-lg hover:border-brand-500 transition-all cursor-pointer h-full">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-4 mb-2">
               <div className="p-1.5 bg-econ-green/10 rounded-md text-econ-green">
                 <Factory size={14} />
               </div>
@@ -118,7 +118,7 @@ export function HomePage() {
         </Link>
         <Link to="/corporate-suite" className="group">
           <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 rounded-lg hover:border-brand-500 transition-all cursor-pointer h-full">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-4 mb-2">
               <div className="p-1.5 bg-econ-purple/10 rounded-md text-econ-purple">
                 <ShoppingCart size={14} />
               </div>
@@ -129,7 +129,7 @@ export function HomePage() {
         </Link>
         <Link to="/corporate-suite" className="group">
           <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 rounded-lg hover:border-brand-500 transition-all cursor-pointer h-full">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-4 mb-2">
               <div className="p-1.5 bg-econ-amber/10 rounded-md text-econ-amber">
                 <Construction size={14} />
               </div>
@@ -140,7 +140,7 @@ export function HomePage() {
         </Link>
         <Link to="/corporate-suite" className="group">
           <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 rounded-lg hover:border-brand-500 transition-all cursor-pointer h-full">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-4 mb-2">
               <div className="p-1.5 bg-econ-red/10 rounded-md text-econ-red">
                 <Users size={14} />
               </div>
@@ -151,10 +151,10 @@ export function HomePage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           <Section title="Market Indicators">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard title="Health" value={scores?.eh ?? "-"} color="border-l-brand-500" icon={<Activity size={12} />} />
               <StatCard title="Sentiment" value={scores?.ms ?? "-"} color="border-l-econ-purple" icon={<TrendingUp size={12} />} />
               <StatCard title="Stability" value={scores?.st ?? "-"} color="border-l-econ-green" icon={<Shield size={12} />} />
