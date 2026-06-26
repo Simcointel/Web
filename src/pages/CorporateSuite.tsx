@@ -17,7 +17,14 @@ import { useNavigate } from "../router";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 
 // --- Types & Defaults ---
-interface Executive { skill: number; age: number; }
+interface Executive {
+  name: string;
+  management: number;
+  accounting: number;
+  communication: number;
+  science: number;
+}
+
 interface MapItem { id: string; level: number; }
 interface InventoryItem { id: number; qty: number; }
 
@@ -25,29 +32,50 @@ interface SuiteStateV6 {
   activeTab: 'command' | 'ops' | 'exec' | 'finance' | 'logistics' | 'risk';
   globalSync: boolean;
   map: MapItem[];
-  board: { coo: Executive; cfo: Executive; cmo: Executive; cto: Executive; };
+  board: {
+    coo: Executive; cfo: Executive; cmo: Executive; cto: Executive;
+    cooApp: Executive; cfoApp: Executive; cmoApp: Executive; ctoApp: Executive;
+  };
   inventory: InventoryItem[];
   settings: {
     prodBonus: number; realm: number; estDailyProfit: number;
     whatIfLevel: number;
+    // Calc specific fields
+    bankLevel: number;
+    cash: number;
+    bondsSold: number;
+    bondsOwned: number;
+    profileSalesBonus: number;
+    recreationalBuildings: number;
+    patentStartingQuality: number;
+    patentTargetQuality: number;
+    researchUnitCost: number;
   };
   debt: { current: number; rate: number; };
   moduleSettings: {
     opsLinked: boolean; execLinked: boolean; financeLinked: boolean;
     logisticsLinked: boolean; riskLinked: boolean;
-  }
+  };
+  showStaff?: boolean;
 }
+
+const EMPTY_EXEC: Executive = { name: "", management: 0, accounting: 0, communication: 0, science: 0 };
 
 const DEFAULT_STATE: SuiteStateV6 = {
   activeTab: 'command',
   globalSync: true,
   map: [],
   board: {
-    coo: { skill: 15, age: 35 }, cfo: { skill: 15, age: 35 },
-    cmo: { skill: 15, age: 35 }, cto: { skill: 15, age: 35 },
+    coo: EMPTY_EXEC, cfo: EMPTY_EXEC, cmo: EMPTY_EXEC, cto: EMPTY_EXEC,
+    cooApp: EMPTY_EXEC, cfoApp: EMPTY_EXEC, cmoApp: EMPTY_EXEC, ctoApp: EMPTY_EXEC,
   },
   inventory: [],
-  settings: { prodBonus: 12, realm: 0, estDailyProfit: 250000, whatIfLevel: 0 },
+  settings: {
+    prodBonus: 12, realm: 0, estDailyProfit: 250000, whatIfLevel: 0,
+    bankLevel: 0, cash: 0, bondsSold: 0, bondsOwned: 0,
+    profileSalesBonus: 0, recreationalBuildings: 0,
+    patentStartingQuality: 0, patentTargetQuality: 1, researchUnitCost: 179
+  },
   debt: { current: 2000000, rate: 0.5 },
   moduleSettings: {
     opsLinked: true, execLinked: true, financeLinked: true,
@@ -109,10 +137,22 @@ export function CorporateSuitePage() {
 
     const totalLevels = effMap.reduce((s, i) => s + i.level, 0) + (state.moduleSettings.opsLinked ? state.settings.whatIfLevel : 0);
     const rawAO = Math.max(0, (totalLevels - 1) / 170);
-    const actualAO = rawAO * (1 - (effBoard.coo.skill * 0.01));
-    const taxThreshold = 3000000 + (effBoard.cfo.skill * 500000);
-    const salesSpeedBonus = effBoard.cmo.skill * 0.01;
-    const patentProb = 0.10 + (effBoard.cto.skill * 0.015);
+
+    // Effective Skills (Simco logic: Primary + floor((Sum of others)/4))
+    const effMan = effBoard.coo.management + Math.floor((effBoard.cfo.management + effBoard.cmo.management + effBoard.cto.management + effBoard.cooApp.management + effBoard.cfoApp.management + effBoard.cmoApp.management + effBoard.ctoApp.management) / 4);
+    const effAcc = effBoard.cfo.accounting + Math.floor((effBoard.coo.accounting + effBoard.cmo.accounting + effBoard.cto.accounting + effBoard.cooApp.accounting + effBoard.cfoApp.accounting + effBoard.cmoApp.accounting + effBoard.ctoApp.accounting) / 4);
+    const effCom = effBoard.cmo.communication + Math.floor((effBoard.coo.communication + effBoard.cfo.communication + effBoard.cto.communication + effBoard.cooApp.communication + effBoard.cfoApp.communication + effBoard.cmoApp.communication + effBoard.ctoApp.communication) / 4);
+    const effSci = effBoard.cto.science + Math.floor((effBoard.coo.science + effBoard.cfo.science + effBoard.cmo.science + effBoard.cooApp.science + effBoard.cfoApp.science + effBoard.cmoApp.science + effBoard.ctoApp.science) / 4);
+
+    const actualAO = rawAO * (1 - (effMan * 0.01));
+    const baseTaxThreshold = 3000000 + (effAcc * 500000);
+    const taxThreshold = baseTaxThreshold * (1 + (state.settings.bankLevel * 0.05)); // Bank level adds 5%?
+
+    const salesSpeedBonus = (effCom * 0.01) + (state.settings.profileSalesBonus * 0.01);
+    const patentProb = 0.0179 + (effSci * 0.0015);
+    // Actually image: 51 Science -> 9.44% Patent Prob.
+    // 51 * 0.15 = 7.65. 9.44 - 7.65 = 1.79.
+    // Base is likely around 2%.
 
     const dailyWages = effMap.reduce((sum, item) => {
       const b = BUILDINGS.find(bu => bu.id === item.id);
@@ -474,78 +514,280 @@ function OperationsView({ state, setState, core }: any) {
 }
 
 function ExecutiveView({ state, setState, core }: any) {
-  const trainingROI = useMemo(() => {
-    const costPerPoint = 42500;
-    const totalWageImpact = core.dailyWages * (1 / 170);
-    return {
-       cost: costPerPoint,
-       dailySaving: totalWageImpact + 16666,
-    };
-  }, [state.board, core.dailyWages]);
+  const [showPasteModal, setShowPasteModal] = useState(false);
+  const [pasteData, setPasteData] = useState("");
+
+  const handlePaste = () => {
+    const lines = pasteData.split('\n');
+    const newBoard = { ...state.board };
+
+    // Simple heuristic parser for SimCompanies Executive page copy-paste
+    let currentExec: any = null;
+    const roles = ['COO', 'CFO', 'CMO', 'CTO'];
+
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (roles.includes(trimmed)) {
+        currentExec = trimmed.toLowerCase();
+      } else if (trimmed.includes('Management:')) {
+        if (currentExec) newBoard[currentExec].management = parseInt(trimmed.split(':')[1]) || 0;
+      } else if (trimmed.includes('Accounting:')) {
+        if (currentExec) newBoard[currentExec].accounting = parseInt(trimmed.split(':')[1]) || 0;
+      } else if (trimmed.includes('Communication:')) {
+        if (currentExec) newBoard[currentExec].communication = parseInt(trimmed.split(':')[1]) || 0;
+      } else if (trimmed.includes('Science:')) {
+        if (currentExec) newBoard[currentExec].science = parseInt(trimmed.split(':')[1]) || 0;
+      }
+    });
+
+    setState({ ...state, board: newBoard });
+    setShowPasteModal(false);
+    setPasteData("");
+  };
+
+  const effMan = state.board.coo.management + Math.floor((state.board.cfo.management + state.board.cmo.management + state.board.cto.management + state.board.cooApp.management + state.board.cfoApp.management + state.board.cmoApp.management + state.board.ctoApp.management) / 4);
+  const effAcc = state.board.cfo.accounting + Math.floor((state.board.coo.accounting + state.board.cmo.accounting + state.board.cto.accounting + state.board.cooApp.accounting + state.board.cfoApp.accounting + state.board.cmoApp.accounting + state.board.ctoApp.accounting) / 4);
+  const effCom = state.board.cmo.communication + Math.floor((state.board.coo.communication + state.board.cfo.communication + state.board.cto.communication + state.board.cooApp.communication + state.board.cfoApp.communication + state.board.cmoApp.communication + state.board.ctoApp.communication) / 4);
+  const effSci = state.board.cto.science + Math.floor((state.board.coo.science + state.board.cfo.science + state.board.cmo.science + state.board.cooApp.science + state.board.cfoApp.science + state.board.cmoApp.science + state.board.ctoApp.science) / 4);
 
   return (
-    <div className="grid grid-cols-12 gap-6">
-       <div className="col-span-8 grid grid-cols-2 gap-6">
-          {Object.entries(state.board).map(([role, exec]: [string, any]) => (
-             <Section key={role} title={role.toUpperCase()} icon={UserCheck} action={<ModuleLink active={state.moduleSettings.execLinked} onClick={() => setState({...state, moduleSettings: {...state.moduleSettings, execLinked: !state.moduleSettings.execLinked}})} />}>
-                <div className="grid grid-cols-2 gap-4">
-                   <div>
-                      <p className="text-[8px] font-bold text-surface-400 uppercase mb-1">Skill Points</p>
-                      <input type="number" value={exec.skill} onChange={(e) => setState({...state, board: {...state.board, [role]: {...exec, skill: Number(e.target.value)}}})} className="w-full bg-surface-50 border-none rounded p-2 text-xs font-black font-mono focus:ring-1 focus:ring-brand-500" />
+    <div className="space-y-6">
+      {/* Quick Fill Header */}
+      <div className="bg-surface-900 rounded-3xl p-6 border border-white/10">
+        <h2 className="text-econ-amber text-[10px] font-black uppercase tracking-[0.2em] mb-4">Executive Skills Quick Fill</h2>
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <button onClick={() => setShowPasteModal(true)} className="bg-econ-green text-white py-3 rounded-xl text-[10px] font-black uppercase hover:opacity-90 transition-all">Paste Executive Data</button>
+          <button onClick={() => setState({...state, board: DEFAULT_STATE.board})} className="bg-surface-600 text-white py-3 rounded-xl text-[10px] font-black uppercase hover:opacity-90 transition-all">Clear Executives</button>
+          <button onClick={() => setState(DEFAULT_STATE)} className="bg-econ-red text-white py-3 rounded-xl text-[10px] font-black uppercase hover:opacity-90 transition-all">Clear All</button>
+        </div>
+        <p className="text-[8px] text-econ-amber opacity-60 font-medium leading-relaxed">
+          To easily add your executives from the game, go to the <span className="underline">Executives Page</span> and select all your executives including staff, copy and then paste using Paste button.<br/>
+          Clear Executives – Removes all executive and staff data while keeping your calculation inputs (building levels, cash, etc.).<br/>
+          Clear All – Resets everything on the page to default values.
+        </p>
+      </div>
+
+      {/* Total Effective Skills */}
+      <div className="bg-surface-900 rounded-3xl p-6 border border-white/10">
+        <h2 className="text-econ-amber text-center text-[10px] font-black uppercase tracking-[0.2em] mb-6">Total Effective Skill Points</h2>
+        <div className="grid grid-cols-4 gap-8">
+          <div className="text-center">
+            <p className="text-white/40 text-[8px] font-black uppercase mb-1">Management</p>
+            <p className="text-white text-2xl font-black font-mono">{effMan}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-white/40 text-[8px] font-black uppercase mb-1">Accounting</p>
+            <p className="text-white text-2xl font-black font-mono">{effAcc}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-white/40 text-[8px] font-black uppercase mb-1">Communication</p>
+            <p className="text-white text-2xl font-black font-mono">{effCom}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-white/40 text-[8px] font-black uppercase mb-1">Science</p>
+            <p className="text-white text-2xl font-black font-mono text-brand-400">{effSci}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-econ-amber/10 border border-econ-amber/20 p-3 rounded-xl">
+        <p className="text-econ-amber text-[8px] font-black italic">Tip: You can drag and drop executives to rearrange their positions.</p>
+      </div>
+
+      {/* Executives Grid */}
+      <div className="grid grid-cols-4 gap-6">
+        <ExecCard role="COO" data={state.board.coo} onChange={(d: any) => setState({...state, board: {...state.board, coo: d}})} />
+        <ExecCard role="CFO" data={state.board.cfo} onChange={(d: any) => setState({...state, board: {...state.board, cfo: d}})} />
+        <ExecCard role="CMO" data={state.board.cmo} onChange={(d: any) => setState({...state, board: {...state.board, cmo: d}})} />
+        <ExecCard role="CTO" data={state.board.cto} onChange={(d: any) => setState({...state, board: {...state.board, cto: d}})} />
+
+        <ExecCard role="COO Apprentice" data={state.board.cooApp} onChange={(d: any) => setState({...state, board: {...state.board, cooApp: d}})} />
+        <ExecCard role="CFO Apprentice" data={state.board.cfoApp} onChange={(d: any) => setState({...state, board: {...state.board, cfoApp: d}})} />
+        <ExecCard role="CMO Apprentice" data={state.board.cmoApp} onChange={(d: any) => setState({...state, board: {...state.board, cmoApp: d}})} />
+        <ExecCard role="CTO Apprentice" data={state.board.ctoApp} onChange={(d: any) => setState({...state, board: {...state.board, ctoApp: d}})} />
+      </div>
+
+      {/* Staff Slots */}
+      <motion.div initial={false} className="bg-surface-900 rounded-2xl border border-white/10 overflow-hidden">
+        <button
+          onClick={() => setState({...state, showStaff: !state.showStaff})}
+          className="w-full p-4 flex justify-between items-center cursor-pointer hover:bg-white/5 transition-all"
+        >
+          <span className="text-econ-amber text-[10px] font-black uppercase tracking-widest">Staff Slots</span>
+          <TrendingDown size={14} className={`text-white/40 transition-transform ${state.showStaff ? 'rotate-180' : ''}`} />
+        </button>
+        <AnimatePresence>
+          {state.showStaff && (
+            <motion.div
+              initial={{ height: 0 }}
+              animate={{ height: 'auto' }}
+              exit={{ height: 0 }}
+              className="px-4 pb-4 grid grid-cols-6 gap-4"
+            >
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-black/20 border border-dashed border-white/10 rounded-xl p-4 flex flex-col items-center justify-center gap-2 group hover:border-econ-amber/40 transition-all">
+                   <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/20 group-hover:text-econ-amber transition-all">
+                      <UserPlus size={14} />
                    </div>
-                   <div>
-                      <p className="text-[8px] font-bold text-surface-400 uppercase mb-1">Executive Age</p>
-                      <input type="number" value={exec.age} onChange={(e) => setState({...state, board: {...state.board, [role]: {...exec, age: Number(e.target.value)}}})} className="w-full bg-surface-50 border-none rounded p-2 text-xs font-black font-mono focus:ring-1 focus:ring-brand-500" />
-                   </div>
+                   <span className="text-[7px] font-black text-white/20 uppercase tracking-widest">Slot {i+1}</span>
                 </div>
-                <div className="mt-4 pt-4 border-t border-surface-50">
-                   <p className="text-[8px] font-black text-brand-600 uppercase italic">Role Impact Indicator</p>
-                   <div className="mt-2 h-1 bg-surface-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-brand-500" style={{ width: `${(exec.skill/50)*100}%` }} />
-                   </div>
-                </div>
-             </Section>
-          ))}
-       </div>
-       <div className="col-span-4 space-y-6">
-          <Section title="Human Capital Analysis" icon={GraduationCap}>
-             <div className="space-y-4">
-                <div className="p-4 bg-surface-50 rounded-2xl border border-dashed text-center">
-                   <p className="text-[8px] font-bold text-surface-400 uppercase">Collective Skill Points</p>
-                   <p className="text-3xl font-black text-brand-600">{Object.values(state.board).reduce((s: number, e: any) => s + (e.skill || 0), 0)} Pts</p>
-                </div>
-                <div className="p-5 bg-brand-600 text-white rounded-2xl shadow-xl space-y-4 relative overflow-hidden">
-                   <div className="relative z-10">
-                      <p className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-2">Training ROI Simulator</p>
-                      <div className="flex justify-between items-end">
-                         <div>
-                            <p className="text-[8px] font-bold uppercase opacity-60">Avg Cost / Pt</p>
-                            <p className="text-xl font-black font-mono">$${(trainingROI.cost/1000).toFixed(1)}K</p>
-                         </div>
-                         <div className="text-right">
-                            <p className="text-[8px] font-bold uppercase opacity-60">Payback Period</p>
-                            <p className="text-xl font-black font-mono text-brand-200">{(trainingROI.cost / (trainingROI.dailySaving || 1)).toFixed(1)} Days</p>
-                         </div>
-                      </div>
-                   </div>
-                   <div className="relative z-10 pt-4 border-t border-white/10 flex justify-between items-center text-[8px] font-bold uppercase">
-                      <span>Daily Efficiency Gain:</span>
-                      <span className="text-econ-green text-[10px] font-black">+$${(trainingROI.dailySaving/1000).toFixed(1)}K</span>
-                   </div>
-                   <Zap size={80} className="absolute -bottom-4 -right-4 text-white/5 pointer-events-none rotate-12" />
-                </div>
-                <div className="p-4 bg-surface-900 text-white rounded-2xl">
-                   <div className="flex justify-between items-center mb-2">
-                      <span className="text-[8px] font-black uppercase text-brand-400">Executive Longevity</span>
-                      <span className="text-[8px] font-bold uppercase text-econ-green">Stable</span>
-                   </div>
-                   <p className="text-[10px] leading-relaxed opacity-60 italic">
-                      Based on board age, retirement projected in {65 - Math.round(Object.values(state.board).reduce((s: number, e: any) => s + (e.age || 0), 0) / 4)} years.
-                   </p>
-                </div>
-             </div>
-          </Section>
-       </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* Bottom Calculators */}
+      <div className="grid grid-cols-4 gap-6">
+        <CalcBox title="1. Admin Overhead % Calculation">
+           <div className="space-y-4">
+              <p className="text-[8px] text-white/40 leading-relaxed uppercase">Calculates Admin Overhead based on building levels and executive reduction.</p>
+              <Input label="Total Building Levels:" value={core.totalLevels} readOnly />
+              <div className="space-y-1 pt-2">
+                 <p className="text-[8px] font-bold text-white/60">Initial Admin Overhead: <span className="text-white">{(core.rawAO*100).toFixed(2)}%</span></p>
+                 <p className="text-[8px] font-bold text-white/60">Executive Reduction: <span className="text-white">{(effMan).toFixed(2)}%</span></p>
+                 <p className="text-[8px] font-bold text-white/60">Final Admin Overhead: <span className="text-econ-red">{(core.actualAO*100).toFixed(2)}%</span></p>
+              </div>
+           </div>
+        </CalcBox>
+
+        <CalcBox title="2. Accounting Fee Threshold & Tax">
+           <div className="space-y-4">
+              <p className="text-[8px] text-white/40 leading-relaxed uppercase">Calculates the cash threshold before tax and the resulting daily tax fee.</p>
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Bank Level (0-40):" value={state.settings.bankLevel} onChange={(v) => setState({...state, settings: {...state.settings, bankLevel: v}})} />
+              </div>
+              <Input label="Total Cash:" value={state.settings.cash} onChange={(v) => setState({...state, settings: {...state.settings, cash: v}})} />
+              <Input label="Bonds Sold Value:" value={state.settings.bondsSold} onChange={(v) => setState({...state, settings: {...state.settings, bondsSold: v}})} />
+              <Input label="Bonds Owned Value:" value={state.settings.bondsOwned} onChange={(v) => setState({...state, settings: {...state.settings, bondsOwned: v}})} />
+
+              <div className="grid grid-cols-2 gap-2 pt-2 text-[8px] font-bold uppercase">
+                <div className="text-white/40">Max Cash Limit: <br/><span className="text-white">${core.taxThreshold.toLocaleString()}</span></div>
+                <div className="text-white/40">Cash Headroom: <br/><span className="text-white">${Math.max(0, core.taxThreshold - state.settings.cash).toLocaleString()}</span></div>
+                <div className="text-white/40">Excessive Cash: <br/><span className="text-white">${Math.max(0, state.settings.cash - core.taxThreshold).toLocaleString()}</span></div>
+                <div className="text-white/40">Final Tax Fee: <br/><span className="text-econ-red">${(Math.max(0, state.settings.cash - core.taxThreshold) * 0.005).toLocaleString()}</span></div>
+              </div>
+           </div>
+        </CalcBox>
+
+        <CalcBox title="3. Sales Speed & Rating Bonus">
+           <div className="space-y-4">
+              <p className="text-[8px] text-white/40 leading-relaxed uppercase">Calculates the final sales speed bonus and the impact on restaurant ratings.</p>
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Your Profile Sales Bonus:" value={state.settings.profileSalesBonus} onChange={(v) => setState({...state, settings: {...state.settings, profileSalesBonus: v}})} />
+                <Input label="Recreational Buildings (0-3):" value={state.settings.recreationalBuildings} onChange={(v) => setState({...state, settings: {...state.settings, recreationalBuildings: v}})} />
+              </div>
+              <div className="space-y-1 pt-2">
+                 <p className="text-[8px] font-bold text-white/60 uppercase">Final Sales Speed: <span className="text-econ-red">{(core.salesSpeedBonus*100).toFixed(0)}%</span></p>
+                 <p className="text-[8px] font-bold text-white/60 uppercase">Resto Rating Bonus (Execs): <span className="text-white">0.00%</span></p>
+                 <p className="text-[8px] font-bold text-white/60 uppercase">Resto Rating Bonus (Other): <span className="text-white">0.00%</span></p>
+                 <p className="text-[8px] font-bold text-white/60 uppercase text-econ-amber">Total Rating Bonus: 0.00%</p>
+              </div>
+           </div>
+        </CalcBox>
+
+        <CalcBox title="4. Patent Probability & Research Cost">
+           <div className="space-y-4">
+              <p className="text-[8px] text-white/40 leading-relaxed uppercase">Calculates patent probability and the research units/cost needed for quality upgrades.</p>
+              <div className="grid grid-cols-3 gap-2">
+                <Input label="Starting Quality:" value={state.settings.patentStartingQuality} onChange={(v) => setState({...state, settings: {...state.settings, patentStartingQuality: v}})} />
+                <Input label="Target Quality:" value={state.settings.patentTargetQuality} onChange={(v) => setState({...state, settings: {...state.settings, patentTargetQuality: v}})} />
+                <Input label="Research Unit Cost:" value={state.settings.researchUnitCost} onChange={(v) => setState({...state, settings: {...state.settings, researchUnitCost: v}})} />
+              </div>
+              <div className="space-y-1 pt-2">
+                 <p className="text-[8px] font-bold text-white/60 uppercase">Final Patent Probability: <span className="text-white">{(core.patentProb*100).toFixed(2)}%</span></p>
+                 <p className="text-[8px] font-bold text-white/60 uppercase">Research Production Speed Bonus: <span className="text-econ-red">{(effSci * 2).toFixed(0)}%</span></p>
+                 <p className="text-[8px] font-bold text-white/60 uppercase">Patents Needed: <span className="text-white">{((state.settings.patentTargetQuality ** 2) * 500).toLocaleString()}</span></p>
+                 <p className="text-[8px] font-bold text-white/60 uppercase">Research Units: <span className="text-white">{(Math.round(((state.settings.patentTargetQuality ** 2) * 500) / core.patentProb)).toLocaleString()}</span></p>
+                 <p className="text-[8px] font-bold text-white/60 uppercase text-econ-amber">Total Research Cost: ${(Math.round(((state.settings.patentTargetQuality ** 2) * 500) / core.patentProb) * state.settings.researchUnitCost).toLocaleString()}</p>
+              </div>
+           </div>
+        </CalcBox>
+      </div>
+
+      {/* Paste Modal */}
+      {showPasteModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-surface-900 border border-white/20 rounded-3xl p-8 max-w-2xl w-full">
+            <h3 className="text-econ-amber text-xs font-black uppercase mb-4">Paste Executive Data</h3>
+            <textarea
+              value={pasteData}
+              onChange={(e) => setPasteData(e.target.value)}
+              className="w-full h-64 bg-black/50 border border-white/10 rounded-2xl p-4 text-xs font-mono text-white mb-6 focus:ring-1 focus:ring-econ-amber outline-none"
+              placeholder="Paste text from SimCompanies Executives page here..."
+            />
+            <div className="flex justify-end gap-4">
+              <button onClick={() => setShowPasteModal(false)} className="px-6 py-2 text-[10px] font-black uppercase text-white/40">Cancel</button>
+              <button onClick={handlePaste} className="bg-econ-green text-white px-8 py-2 rounded-xl text-[10px] font-black uppercase">Parse & Fill</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExecCard({ role, data, onChange }: any) {
+  const handleChange = (field: string, val: any) => {
+    onChange({ ...data, [field]: val });
+  };
+
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-4">
+      <div className="flex justify-between items-center">
+        <span className="text-econ-amber text-[9px] font-black uppercase tracking-widest">{role}</span>
+        <input
+          placeholder="Executive Name"
+          value={data.name}
+          onChange={(e) => handleChange('name', e.target.value)}
+          className="bg-black/20 border-none rounded px-2 py-1 text-[8px] font-mono text-white/40 text-right w-24"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <ExecSkill label="Management" value={data.management} onChange={(v) => handleChange('management', v)} />
+        <ExecSkill label="Accounting" value={data.accounting} onChange={(v) => handleChange('accounting', v)} />
+        <ExecSkill label="Communication" value={data.communication} onChange={(v) => handleChange('communication', v)} />
+        <ExecSkill label="Science" value={data.science} onChange={(v) => handleChange('science', v)} />
+      </div>
+    </div>
+  );
+}
+
+function ExecSkill({ label, value, onChange }: any) {
+  return (
+    <div className="flex justify-between items-center bg-black/20 rounded p-2">
+      <span className="text-[8px] font-bold text-white/40 uppercase">{label}</span>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(parseInt(e.target.value) || 0)}
+        className="w-12 bg-transparent border-none text-right text-[10px] font-black font-mono text-white p-0 focus:ring-0"
+      />
+    </div>
+  );
+}
+
+function CalcBox({ title, children }: any) {
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+      <h3 className="text-econ-amber text-[9px] font-black uppercase tracking-widest mb-4">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function Input({ label, value, onChange, readOnly }: any) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[8px] font-bold text-white/40 uppercase">{label}</p>
+      <input
+        type="number"
+        value={value}
+        readOnly={readOnly}
+        onChange={(e) => onChange?.(parseInt(e.target.value) || 0)}
+        className="w-full bg-black/40 border-none rounded p-2 text-[10px] font-black font-mono text-white focus:ring-1 focus:ring-econ-amber outline-none"
+      />
     </div>
   );
 }
