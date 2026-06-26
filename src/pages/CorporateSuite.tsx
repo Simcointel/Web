@@ -144,18 +144,22 @@ export function CorporateSuitePage() {
   };
 
   const core = useMemo(() => {
+    const n = (v: any) => (typeof v === 'number' && !isNaN(v) ? v : 0);
+
     const effMap = state.moduleSettings.opsLinked ? state.map : DEFAULT_STATE.map;
     const effBoard = state.moduleSettings.execLinked ? state.board : DEFAULT_STATE.board;
-    const effProfit = state.moduleSettings.financeLinked ? state.settings.estDailyProfit : DEFAULT_STATE.settings.estDailyProfit;
+    const effProfit = n(state.moduleSettings.financeLinked ? state.settings.estDailyProfit : DEFAULT_STATE.settings.estDailyProfit);
 
-    const totalLevels = effMap.reduce((s, i) => s + i.level, 0) + (state.moduleSettings.opsLinked ? state.settings.whatIfLevel : 0);
+    const totalLevels = effMap.reduce((s, i) => s + n(i.level), 0) + n(state.moduleSettings.opsLinked ? state.settings.whatIfLevel : 0);
     const rawAO = Math.max(0, (totalLevels - 1) / 170);
 
     // Effective Skills (Simco logic: Primary + floor((Sum of others)/4))
-    const effMan = effBoard.coo.management + Math.floor((effBoard.cfo.management + effBoard.cmo.management + effBoard.cto.management + effBoard.cooApp.management + effBoard.cfoApp.management + effBoard.cmoApp.management + effBoard.ctoApp.management) / 4);
-    const effAcc = effBoard.cfo.accounting + Math.floor((effBoard.coo.accounting + effBoard.cmo.accounting + effBoard.cto.accounting + effBoard.cooApp.accounting + effBoard.cfoApp.accounting + effBoard.cmoApp.accounting + effBoard.ctoApp.accounting) / 4);
-    const effCom = effBoard.cmo.communication + Math.floor((effBoard.coo.communication + effBoard.cfo.communication + effBoard.cto.communication + effBoard.cooApp.communication + effBoard.cfoApp.communication + effBoard.cmoApp.communication + effBoard.ctoApp.communication) / 4);
-    const effSci = effBoard.cto.science + Math.floor((effBoard.coo.science + effBoard.cfo.science + effBoard.cmo.science + effBoard.cooApp.science + effBoard.cfoApp.science + effBoard.cmoApp.science + effBoard.ctoApp.science) / 4);
+    const getEff = (primary: number, others: number[]) => n(primary) + Math.floor(others.reduce((s, v) => s + n(v), 0) / 4);
+
+    const effMan = getEff(effBoard.coo.management, [effBoard.cfo.management, effBoard.cmo.management, effBoard.cto.management, effBoard.cooApp.management, effBoard.cfoApp.management, effBoard.cmoApp.management, effBoard.ctoApp.management]);
+    const effAcc = getEff(effBoard.cfo.accounting, [effBoard.coo.accounting, effBoard.cmo.accounting, effBoard.cto.accounting, effBoard.cooApp.accounting, effBoard.cfoApp.accounting, effBoard.cmoApp.accounting, effBoard.ctoApp.accounting]);
+    const effCom = getEff(effBoard.cmo.communication, [effBoard.coo.communication, effBoard.cfo.communication, effBoard.cto.communication, effBoard.cooApp.communication, effBoard.cfoApp.communication, effBoard.cmoApp.communication, effBoard.ctoApp.communication]);
+    const effSci = getEff(effBoard.cto.science, [effBoard.coo.science, effBoard.cfo.science, effBoard.cmo.science, effBoard.cooApp.science, effBoard.cfoApp.science, effBoard.cmoApp.science, effBoard.ctoApp.science]);
 
     const actualAO = rawAO * (1 - (effMan * 0.01));
     const baseTaxThreshold = 3000000 + (effAcc * 500000);
@@ -273,7 +277,7 @@ export function CorporateSuitePage() {
   if (mLoading && !margins) return <LoadingState text="Booting Terminal..." />;
 
   return (
-    <div className="max-w-[1600px] mx-auto p-4 lg:p-6 bg-surface-50/20 min-h-screen relative">
+    <div className="mx-auto p-4 lg:p-6 bg-surface-950 min-h-screen relative">
       <AnimatePresence>
          {notification && (
             <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -50, opacity: 0 }} className="fixed top-8 left-1/2 -translate-x-1/2 z-[100]">
@@ -285,18 +289,18 @@ export function CorporateSuitePage() {
          )}
       </AnimatePresence>
 
-      <header className="flex justify-between items-center pb-6 border-b border-surface-200 mb-6">
+      <header className="flex justify-between items-center pb-6 border-b border-white/10 mb-6">
         <div className="flex items-center gap-6">
            <div>
-              <div className="flex items-center gap-2 text-brand-600 font-black text-[10px] uppercase tracking-[0.3em] mb-1">
+              <div className="flex items-center gap-2 text-brand-500 font-black text-[10px] uppercase tracking-[0.3em] mb-1">
                  <Globe size={14} /> Corporate Command
               </div>
-              <h1 className="text-3xl font-black text-surface-900 uppercase tracking-tighter italic">
-                Simco<span className="text-brand-600">Terminal</span> <span className="text-[10px] font-mono non-italic opacity-40">V6.0</span>
+              <h1 className="text-3xl font-black text-white uppercase tracking-tighter italic">
+                Simco<span className="text-brand-500">Terminal</span> <span className="text-[10px] font-mono non-italic opacity-40">V6.0</span>
               </h1>
            </div>
 
-           <nav className="flex items-center bg-white border rounded-2xl p-1 gap-1 shadow-sm ml-8">
+           <nav className="flex items-center bg-surface-900 border border-white/10 rounded-2xl p-1 gap-1 shadow-sm ml-8">
               <TabBtn active={state.activeTab === 'command'} onClick={() => setState({...state, activeTab: 'command'})} icon={LayoutDashboard} label="Command" />
               <TabBtn active={state.activeTab === 'ops'} onClick={() => setState({...state, activeTab: 'ops'})} icon={HardHat} label="Operations" />
               <TabBtn active={state.activeTab === 'exec'} onClick={() => setState({...state, activeTab: 'exec'})} icon={Users} label="Executive" />
@@ -316,9 +320,9 @@ export function CorporateSuitePage() {
               </div>
            )}
            <HeaderMetric label="Admin Load" value={`${(core.actualAO*100).toFixed(2)}%`} color={core.actualAO > 0.15 ? "text-econ-red" : "text-econ-green"} />
-           <HeaderMetric label="Net Cashflow" value={`$${(core.netDaily/1000).toFixed(1)}K/d`} color="text-brand-600" />
-           <div className="h-10 w-px bg-surface-200" />
-           <button onClick={() => navigate('/')} className="p-3 text-surface-400 hover:text-surface-900 transition-colors"><ArrowLeft size={20} /></button>
+           <HeaderMetric label="Net Cashflow" value={`$${(core.netDaily/1000).toFixed(1)}K/d`} color="text-brand-500" />
+           <div className="h-10 w-px bg-white/10" />
+           <button onClick={() => navigate('/')} className="p-3 text-white/40 hover:text-white transition-colors"><ArrowLeft size={20} /></button>
         </div>
       </header>
 
@@ -359,30 +363,30 @@ function CommandView({ state, core, phase, setState, fileInputRef }: any) {
   if (state.map.length === 0) {
      return (
         <div className="flex flex-col items-center justify-center py-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-           <div className="w-20 h-20 rounded-3xl bg-brand-50 flex items-center justify-center text-brand-600 mb-8 border border-brand-100 shadow-xl shadow-brand-500/10">
+           <div className="w-20 h-20 rounded-3xl bg-brand-500/10 flex items-center justify-center text-brand-500 mb-8 border border-brand-500/20 shadow-xl shadow-brand-500/10">
               <Building2 size={40} />
            </div>
-           <h2 className="text-4xl font-black text-surface-900 uppercase italic tracking-tighter mb-4">Initialize Terminal</h2>
-           <p className="text-surface-500 max-w-md text-center leading-relaxed font-medium mb-12">
+           <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter mb-4">Initialize Terminal</h2>
+           <p className="text-white/40 max-w-md text-center leading-relaxed font-medium mb-12">
               Your corporate workspace is currently empty. To begin economic analysis, upload your game data or manually add facilities.
            </p>
            <div className="grid grid-cols-2 gap-6 w-full max-w-xl">
-              <button onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-4 p-8 bg-white border border-surface-200 rounded-3xl hover:border-brand-600 hover:shadow-2xl transition-all group">
-                 <div className="p-4 bg-surface-50 rounded-2xl text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-colors">
+              <button onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-4 p-8 bg-surface-900 border border-white/10 rounded-3xl hover:border-brand-500 hover:shadow-2xl transition-all group">
+                 <div className="p-4 bg-white/5 rounded-2xl text-brand-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <Upload size={24} />
                  </div>
                  <div className="text-center">
-                    <p className="text-xs font-black uppercase tracking-widest text-surface-900">Import Data</p>
-                    <p className="text-[10px] text-surface-400 mt-1 uppercase font-bold">CSV/JSON Exports</p>
+                    <p className="text-xs font-black uppercase tracking-widest text-white">Import Data</p>
+                    <p className="text-[10px] text-white/20 mt-1 uppercase font-bold">CSV/JSON Exports</p>
                  </div>
               </button>
-              <button onClick={() => setState({...state, activeTab: 'ops'})} className="flex flex-col items-center gap-4 p-8 bg-white border border-surface-200 rounded-3xl hover:border-brand-600 hover:shadow-2xl transition-all group">
-                 <div className="p-4 bg-surface-50 rounded-2xl text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-colors">
+              <button onClick={() => setState({...state, activeTab: 'ops'})} className="flex flex-col items-center gap-4 p-8 bg-surface-900 border border-white/10 rounded-3xl hover:border-brand-500 hover:shadow-2xl transition-all group">
+                 <div className="p-4 bg-white/5 rounded-2xl text-brand-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <UserPlus size={24} />
                  </div>
                  <div className="text-center">
-                    <p className="text-xs font-black uppercase tracking-widest text-surface-900">Manual Entry</p>
-                    <p className="text-[10px] text-surface-400 mt-1 uppercase font-bold">Build from scratch</p>
+                    <p className="text-xs font-black uppercase tracking-widest text-white">Manual Entry</p>
+                    <p className="text-[10px] text-white/20 mt-1 uppercase font-bold">Build from scratch</p>
                  </div>
               </button>
            </div>
@@ -395,14 +399,14 @@ function CommandView({ state, core, phase, setState, fileInputRef }: any) {
        <div className="col-span-8 space-y-6">
           <Section title="Strategic Overview" icon={Eye}>
              <div className="grid grid-cols-3 gap-6">
-                <Kpi label="Enterprise Value" value={`$${(core.totalValuation/1_000_000).toFixed(2)}M`} sub={`Liquid: $${(core.inventoryValue/1000).toFixed(1)}K`} icon={TrendingUp} color="text-brand-600" />
+                <Kpi label="Enterprise Value" value={`$${(core.totalValuation/1_000_000).toFixed(2)}M`} sub={`Liquid: $${(core.inventoryValue/1000).toFixed(1)}K`} icon={TrendingUp} color="text-brand-500" />
                 <Kpi label="Daily Net Flow" value={`$${(core.netDaily/1000).toFixed(1)}K`} sub="Post-Tax/AO" icon={DollarSign} color="text-econ-green" />
                 <Kpi label="Admin Overhead" value={`${(core.actualAO*100).toFixed(2)}%`} sub={`${core.totalLevels} Active Levels`} icon={BarChart3} color="text-econ-red" />
              </div>
-             <div className="mt-6 flex items-center gap-3 bg-surface-50 p-4 rounded-2xl border border-dashed text-surface-400">
+             <div className="mt-6 flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-dashed border-white/10 text-white/40">
                 <PhaseDot phase={phase} />
                 <div>
-                   <p className="text-[10px] font-black uppercase text-surface-900 tracking-widest">Regime Awareness: {phase}</p>
+                   <p className="text-[10px] font-black uppercase text-white tracking-widest">Regime Awareness: {phase}</p>
                    <p className="text-[8px] font-bold uppercase mt-0.5">Global modeling adjusted for current market phase.</p>
                 </div>
              </div>
@@ -413,51 +417,51 @@ function CommandView({ state, core, phase, setState, fileInputRef }: any) {
                    {categories.length > 0 ? categories.slice(0, 4).map(([cat, lvls]) => (
                       <div key={cat} className="space-y-1">
                          <div className="flex justify-between text-[10px] font-bold uppercase">
-                            <span className="text-surface-500">{cat}</span>
-                            <span className="text-surface-900">{lvls} Lvls</span>
+                         <span className="text-white/40">{cat}</span>
+                         <span className="text-white">{lvls} Lvls</span>
                          </div>
-                         <div className="h-1.5 bg-surface-100 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
                             <div className="h-full bg-brand-500" style={{ width: `${(lvls / (core.totalLevels || 1)) * 100}%` }} />
                          </div>
                       </div>
                    )) : (
-                      <div className="py-10 text-center text-surface-300 text-[10px] font-black uppercase italic">No Infrastructure Data</div>
+                   <div className="py-10 text-center text-white/10 text-[10px] font-black uppercase italic">No Infrastructure Data</div>
                    )}
                 </div>
              </Section>
-             <Section title="Financial Projections" icon={LineIcon} action={<button onClick={() => setState({...state, activeTab: 'finance'})} className="text-[8px] font-black uppercase text-brand-600 hover:text-brand-500">View All</button>}>
+          <Section title="Financial Projections" icon={LineIcon} action={<button onClick={() => setState({...state, activeTab: 'finance'})} className="text-[8px] font-black uppercase text-brand-500 hover:text-brand-400">View All</button>}>
                 <div className="space-y-4">
-                   <div className="flex justify-between items-center py-2 border-b border-surface-50">
-                      <span className="text-[9px] font-bold text-surface-400 uppercase">7D Growth Est.</span>
+                <div className="flex justify-between items-center py-2 border-b border-white/5">
+                   <span className="text-[9px] font-bold text-white/40 uppercase">7D Growth Est.</span>
                       <span className="text-xs font-black font-mono text-econ-green">+$${(core.netDaily * 7 / 1000).toFixed(1)}K</span>
                    </div>
-                   <div className="flex justify-between items-center py-2 border-b border-surface-50">
-                      <span className="text-[9px] font-bold text-surface-400 uppercase">30D Forecast</span>
-                      <span className="text-xs font-black font-mono text-brand-600">+$${(core.netDaily * 30 / 1_000_000).toFixed(2)}M</span>
+                <div className="flex justify-between items-center py-2 border-b border-white/5">
+                   <span className="text-[9px] font-bold text-white/40 uppercase">30D Forecast</span>
+                   <span className="text-xs font-black font-mono text-brand-500">+$${(core.netDaily * 30 / 1_000_000).toFixed(2)}M</span>
                    </div>
                 </div>
              </Section>
           </div>
        </div>
        <div className="col-span-4 space-y-6">
-          <Section title="Facility Project Pipeline" icon={Calculator} action={<button onClick={() => setState({...state, activeTab: 'ops'})} className="text-[8px] font-black uppercase text-brand-600 hover:text-brand-500">View All</button>}>
+          <Section title="Facility Project Pipeline" icon={Calculator} action={<button onClick={() => setState({...state, activeTab: 'ops'})} className="text-[8px] font-black uppercase text-brand-500 hover:text-brand-400">View All</button>}>
              <div className="space-y-4">
                 {state.map.slice(0, 4).map((m: any, i: number) => {
                    const b = BUILDINGS.find(bu => bu.id === m.id);
                    return (
-                      <div key={i} className="p-4 bg-surface-50 border border-dashed rounded-2xl">
+                      <div key={i} className="p-4 bg-white/5 border border-dashed border-white/10 rounded-2xl">
                          <div className="flex justify-between items-start mb-2">
-                            <p className="text-[10px] font-black uppercase text-brand-600 truncate max-w-[120px]">{b?.name || 'Building'}</p>
-                            <span className="text-[8px] font-black bg-white px-2 py-0.5 rounded border">LVL {m.level}</span>
+                            <p className="text-[10px] font-black uppercase text-brand-500 truncate max-w-[120px]">{b?.name || 'Building'}</p>
+                            <span className="text-[8px] font-black bg-white/5 text-white/40 px-2 py-0.5 rounded border border-white/5">LVL {m.level}</span>
                          </div>
                          <div className="flex justify-between items-end">
-                            <span className="text-[8px] font-bold text-surface-400 uppercase">Daily Wages: $${(m.level * (b?.wages || 0) * 24 / 1000).toFixed(1)}K</span>
-                            <span className="text-[8px] font-bold text-surface-400 uppercase">AO Contrib: ${((m.level / 170) * 100).toFixed(2)}%</span>
+                            <span className="text-[8px] font-bold text-white/20 uppercase">Daily Wages: $${(m.level * (b?.wages || 0) * 24 / 1000).toFixed(1)}K</span>
+                            <span className="text-[8px] font-bold text-white/20 uppercase">AO Contrib: ${((m.level / 170) * 100).toFixed(2)}%</span>
                          </div>
                       </div>
                    );
                 })}
-                {state.map.length === 0 && <div className="py-20 text-center text-surface-300 text-[10px] font-black uppercase italic">Add facilities in Operations</div>}
+                {state.map.length === 0 && <div className="py-20 text-center text-white/10 text-[10px] font-black uppercase italic">Add facilities in Operations</div>}
              </div>
           </Section>
        </div>
@@ -471,30 +475,30 @@ function OperationsView({ state, setState, core }: any) {
        <div className="col-span-4 space-y-6">
           <Section title="Facility Management" icon={Building2} action={<ModuleLink active={state.moduleSettings.opsLinked} onClick={() => setState({...state, moduleSettings: {...state.moduleSettings, opsLinked: !state.moduleSettings.opsLinked}})} />}>
              <div className="space-y-4">
-                <div className="flex justify-between items-center bg-surface-50 p-4 rounded-xl border border-dashed">
+                <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl border border-dashed border-white/10">
                    <div className="text-center flex-1">
-                      <p className="text-[8px] font-bold text-surface-400 uppercase">Total Levels</p>
-                      <p className="text-lg font-black font-mono">{core.totalLevels}</p>
+                      <p className="text-[8px] font-bold text-white/40 uppercase">Total Levels</p>
+                      <p className="text-lg font-black font-mono text-white">{core.totalLevels}</p>
                    </div>
-                   <div className="h-8 w-px bg-surface-200" />
+                   <div className="h-8 w-px bg-white/10" />
                    <div className="text-center flex-1">
-                      <p className="text-[8px] font-bold text-surface-400 uppercase">Daily Wages</p>
+                      <p className="text-[8px] font-bold text-white/40 uppercase">Daily Wages</p>
                       <p className="text-lg font-black font-mono text-econ-red">$${(core.dailyWages/1000).toFixed(1)}K</p>
                    </div>
                 </div>
                 <div className="max-h-[500px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                    {state.map.map((m: any, i: number) => (
-                      <div key={i} className="flex items-center gap-3 p-3 bg-white border rounded-xl hover:border-brand-500 transition-all shadow-sm group">
-                         <div className="w-8 h-8 rounded bg-surface-50 flex items-center justify-center text-surface-400 font-mono text-[10px] font-bold">#{i+1}</div>
-                         <select value={m.id} onChange={(e) => { const next = [...state.map]; next[i].id = e.target.value; setState({...state, map: next}); }} className="flex-1 bg-transparent border-none text-[10px] font-black uppercase focus:ring-0 p-0">
-                            {BUILDINGS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      <div key={i} className="flex items-center gap-3 p-3 bg-black/40 border border-white/5 rounded-xl hover:border-brand-500 transition-all shadow-sm group">
+                         <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-white/20 font-mono text-[10px] font-bold">#{i+1}</div>
+                         <select value={m.id} onChange={(e) => { const next = [...state.map]; next[i].id = e.target.value; setState({...state, map: next}); }} className="flex-1 bg-transparent border-none text-[10px] font-black uppercase text-white focus:ring-0 p-0">
+                            {BUILDINGS.map(b => <option key={b.id} value={b.id} className="bg-surface-900">{b.name}</option>)}
                          </select>
-                         <input type="number" value={m.level} onChange={(e) => { const next = [...state.map]; next[i].level = Number(e.target.value); setState({...state, map: next}); }} className="w-12 bg-surface-50 border-none rounded p-1 text-[10px] font-black text-center focus:ring-1 focus:ring-brand-500" />
-                         <button onClick={() => setState({...state, map: state.map.filter((_: any, idx: number) => idx !== i)})} className="p-1 text-surface-200 hover:text-econ-red transition-all"><Trash2 size={12} /></button>
+                         <input type="number" value={m.level} onChange={(e) => { const next = [...state.map]; next[i].level = Number(e.target.value); setState({...state, map: next}); }} className="w-12 bg-white/5 border-none rounded p-1 text-[10px] font-black text-center text-white focus:ring-1 focus:ring-brand-500" />
+                         <button onClick={() => setState({...state, map: state.map.filter((_: any, idx: number) => idx !== i)})} className="p-1 text-white/10 hover:text-econ-red transition-all"><Trash2 size={12} /></button>
                       </div>
                    ))}
                 </div>
-                <button onClick={() => setState({...state, map: [...state.map, { id: BUILDINGS[0].id, level: 1 }]})} className="w-full py-4 border-2 border-dashed border-surface-200 rounded-xl text-[9px] font-black uppercase text-surface-400 hover:border-brand-500 hover:text-brand-600 transition-all flex items-center justify-center gap-2">
+                <button onClick={() => setState({...state, map: [...state.map, { id: BUILDINGS[0].id, level: 1 }]})} className="w-full py-4 border-2 border-dashed border-white/10 rounded-xl text-[9px] font-black uppercase text-white/40 hover:border-brand-500 hover:text-brand-500 transition-all flex items-center justify-center gap-2">
                    <UserPlus size={14} /> Add Facility
                 </button>
              </div>
@@ -502,14 +506,14 @@ function OperationsView({ state, setState, core }: any) {
        </div>
        <div className="col-span-8 space-y-6">
           <Section title="What-If Expansion Simulator" icon={Layers}>
-             <div className="p-6 bg-brand-50 border border-brand-100 rounded-2xl">
+             <div className="p-6 bg-brand-500/5 border border-brand-500/10 rounded-2xl">
                 <div className="flex justify-between items-end mb-6">
                    <div>
-                      <p className="text-[10px] font-black text-brand-600 uppercase italic">Projected Scaling Impact</p>
-                      <p className="text-3xl font-black text-surface-900">+{state.settings.whatIfLevel} Levels</p>
+                      <p className="text-[10px] font-black text-brand-500 uppercase italic">Projected Scaling Impact</p>
+                      <p className="text-3xl font-black text-white">+{state.settings.whatIfLevel} Levels</p>
                    </div>
                    <div className="text-right">
-                      <p className="text-[8px] font-bold text-surface-400 uppercase">Effective Admin Overhead</p>
+                      <p className="text-[8px] font-bold text-white/40 uppercase">Effective Admin Overhead</p>
                       <p className="text-2xl font-black font-mono text-econ-red">{(core.actualAO*100).toFixed(2)}%</p>
                    </div>
                 </div>
@@ -517,7 +521,7 @@ function OperationsView({ state, setState, core }: any) {
                    type="range" min="0" max="500" step="10"
                    value={state.settings.whatIfLevel}
                    onChange={(e) => setState({...state, settings: {...state.settings, whatIfLevel: Number(e.target.value)}})}
-                   className="w-full h-2 bg-brand-200 rounded-lg appearance-none cursor-pointer accent-brand-600"
+                   className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-500"
                 />
              </div>
           </Section>
@@ -529,6 +533,7 @@ function OperationsView({ state, setState, core }: any) {
 function ExecutiveView({ state, setState, core }: any) {
   const [showPasteModal, setShowPasteModal] = useState(false);
   const [pasteData, setPasteData] = useState("");
+  const n = (v: any) => (typeof v === 'number' && !isNaN(v) ? v : 0);
 
   const handlePaste = () => {
     const lines = pasteData.split('\n');
@@ -558,15 +563,17 @@ function ExecutiveView({ state, setState, core }: any) {
     setPasteData("");
   };
 
-  const effMan = state.board.coo.management + Math.floor((state.board.cfo.management + state.board.cmo.management + state.board.cto.management + state.board.cooApp.management + state.board.cfoApp.management + state.board.cmoApp.management + state.board.ctoApp.management) / 4);
-  const effAcc = state.board.cfo.accounting + Math.floor((state.board.coo.accounting + state.board.cmo.accounting + state.board.cto.accounting + state.board.cooApp.accounting + state.board.cfoApp.accounting + state.board.cmoApp.accounting + state.board.ctoApp.accounting) / 4);
-  const effCom = state.board.cmo.communication + Math.floor((state.board.coo.communication + state.board.cfo.communication + state.board.cto.communication + state.board.cooApp.communication + state.board.cfoApp.communication + state.board.cmoApp.communication + state.board.ctoApp.communication) / 4);
-  const effSci = state.board.cto.science + Math.floor((state.board.coo.science + state.board.cfo.science + state.board.cmo.science + state.board.cooApp.science + state.board.cfoApp.science + state.board.cmoApp.science + state.board.ctoApp.science) / 4);
+  const getEff = (primary: number, others: number[]) => n(primary) + Math.floor(others.reduce((s, v) => s + n(v), 0) / 4);
+
+  const effMan = getEff(state.board.coo.management, [state.board.cfo.management, state.board.cmo.management, state.board.cto.management, state.board.cooApp.management, state.board.cfoApp.management, state.board.cmoApp.management, state.board.ctoApp.management]);
+  const effAcc = getEff(state.board.cfo.accounting, [state.board.coo.accounting, state.board.cmo.accounting, state.board.cto.accounting, state.board.cooApp.accounting, state.board.cfoApp.accounting, state.board.cmoApp.accounting, state.board.ctoApp.accounting]);
+  const effCom = getEff(state.board.cmo.communication, [state.board.coo.communication, state.board.cfo.communication, state.board.cto.communication, state.board.cooApp.communication, state.board.cfoApp.communication, state.board.cmoApp.communication, state.board.ctoApp.communication]);
+  const effSci = getEff(state.board.cto.science, [state.board.coo.science, state.board.cfo.science, state.board.cmo.science, state.board.cooApp.science, state.board.cfoApp.science, state.board.cmoApp.science, state.board.ctoApp.science]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       {/* Quick Fill Header */}
-      <div className="bg-surface-900 rounded-3xl p-6 border border-white/10">
+      <div className="bg-surface-900 rounded-3xl p-6 border border-white/5">
         <h2 className="text-econ-amber text-[10px] font-black uppercase tracking-[0.2em] mb-4">Executive Skills Quick Fill</h2>
         <div className="grid grid-cols-3 gap-4 mb-4">
           <button onClick={() => setShowPasteModal(true)} className="bg-econ-green text-white py-3 rounded-xl text-[10px] font-black uppercase hover:opacity-90 transition-all">Paste Executive Data</button>
@@ -581,7 +588,7 @@ function ExecutiveView({ state, setState, core }: any) {
       </div>
 
       {/* Total Effective Skills */}
-      <div className="bg-surface-900 rounded-3xl p-6 border border-white/10">
+      <div className="bg-surface-900 rounded-3xl p-6 border border-white/5">
         <h2 className="text-econ-amber text-center text-[10px] font-black uppercase tracking-[0.2em] mb-6">Total Effective Skill Points</h2>
         <div className="grid grid-cols-4 gap-8">
           <div className="text-center">
@@ -621,10 +628,10 @@ function ExecutiveView({ state, setState, core }: any) {
       </div>
 
       {/* Staff Slots */}
-      <motion.div initial={false} className="bg-surface-900 rounded-2xl border border-white/10 overflow-hidden">
+      <motion.div initial={false} className="bg-surface-900 rounded-2xl border border-white/5 overflow-hidden">
         <button
           onClick={() => setState({...state, showStaff: !state.showStaff})}
-          className="w-full p-4 flex justify-between items-center cursor-pointer hover:bg-white/5 transition-all"
+          className="w-full p-4 flex justify-between items-center cursor-pointer hover:bg-white/5 transition-all border-b border-white/5"
         >
           <span className="text-econ-amber text-[10px] font-black uppercase tracking-widest">Staff Slots</span>
           <TrendingDown size={14} className={`text-white/40 transition-transform ${state.showStaff ? 'rotate-180' : ''}`} />
@@ -746,14 +753,14 @@ function ExecCard({ role, data, onChange }: any) {
   };
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-4">
+    <div className="bg-surface-900 border border-white/5 rounded-2xl p-4 space-y-4">
       <div className="flex justify-between items-center">
         <span className="text-econ-amber text-[9px] font-black uppercase tracking-widest">{role}</span>
         <input
           placeholder="Executive Name"
           value={data.name}
           onChange={(e) => handleChange('name', e.target.value)}
-          className="bg-black/20 border-none rounded px-2 py-1 text-[8px] font-mono text-white/40 text-right w-24"
+          className="bg-black/20 border-none rounded px-2 py-1 text-[8px] font-mono text-white/40 text-right w-24 outline-none focus:text-white transition-colors"
         />
       </div>
 
@@ -773,8 +780,11 @@ function ExecSkill({ label, value, onChange }: any) {
       <span className="text-[8px] font-bold text-white/40 uppercase">{label}</span>
       <input
         type="number"
-        value={value}
-        onChange={(e) => onChange(parseInt(e.target.value) || 0)}
+        value={value ?? 0}
+        onChange={(e) => {
+           const val = parseInt(e.target.value);
+           onChange(isNaN(val) ? 0 : val);
+        }}
         className="w-12 bg-transparent border-none text-right text-[10px] font-black font-mono text-white p-0 focus:ring-0"
       />
     </div>
@@ -783,7 +793,7 @@ function ExecSkill({ label, value, onChange }: any) {
 
 function CalcBox({ title, children }: any) {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+    <div className="bg-surface-900 border border-white/5 rounded-2xl p-6">
       <h3 className="text-econ-amber text-[9px] font-black uppercase tracking-widest mb-4">{title}</h3>
       {children}
     </div>
@@ -796,10 +806,13 @@ function Input({ label, value, onChange, readOnly }: any) {
       <p className="text-[8px] font-bold text-white/40 uppercase">{label}</p>
       <input
         type="number"
-        value={value}
+        value={value ?? 0}
         readOnly={readOnly}
-        onChange={(e) => onChange?.(parseInt(e.target.value) || 0)}
-        className="w-full bg-black/40 border-none rounded p-2 text-[10px] font-black font-mono text-white focus:ring-1 focus:ring-econ-amber outline-none"
+        onChange={(e) => {
+           const val = parseInt(e.target.value);
+           onChange?.(isNaN(val) ? 0 : val);
+        }}
+        className="w-full bg-surface-950/40 border border-white/5 rounded p-2 text-[10px] font-black font-mono text-white focus:ring-1 focus:ring-brand-500 outline-none"
       />
     </div>
   );
@@ -812,12 +825,12 @@ function FinanceView({ state, setState, core }: any) {
           <Section title="Balance Sheet Settings" icon={Wallet} action={<ModuleLink active={state.moduleSettings.financeLinked} onClick={() => setState({...state, moduleSettings: {...state.moduleSettings, financeLinked: !state.moduleSettings.financeLinked}})} />}>
              <div className="space-y-4">
                 <div>
-                   <p className="text-[8px] font-bold text-surface-400 uppercase mb-1">Estimated Daily Profit</p>
-                   <input type="number" value={state.settings.estDailyProfit} onChange={(e) => setState({...state, settings: {...state.settings, estDailyProfit: Number(e.target.value)}})} className="w-full bg-surface-50 border-none rounded p-3 text-lg font-black font-mono focus:ring-1 focus:ring-brand-500" />
+                   <p className="text-[8px] font-bold text-white/40 uppercase mb-1">Estimated Daily Profit</p>
+                   <input type="number" value={state.settings.estDailyProfit} onChange={(e) => setState({...state, settings: {...state.settings, estDailyProfit: Number(e.target.value)}})} className="w-full bg-white/5 border border-white/5 rounded p-3 text-lg font-black font-mono text-white focus:ring-1 focus:ring-brand-500 outline-none" />
                 </div>
                 <div>
-                   <p className="text-[8px] font-bold text-surface-400 uppercase mb-1">Current Corporate Debt</p>
-                   <input type="number" value={state.debt.current} onChange={(e) => setState({...state, debt: {...state.debt, current: Number(e.target.value)}})} className="w-full bg-surface-50 border-none rounded p-3 text-lg font-black font-mono focus:ring-1 focus:ring-brand-500" />
+                   <p className="text-[8px] font-bold text-white/40 uppercase mb-1">Current Corporate Debt</p>
+                   <input type="number" value={state.debt.current} onChange={(e) => setState({...state, debt: {...state.debt, current: Number(e.target.value)}})} className="w-full bg-white/5 border border-white/5 rounded p-3 text-lg font-black font-mono text-white focus:ring-1 focus:ring-brand-500 outline-none" />
                 </div>
              </div>
           </Section>
@@ -829,13 +842,13 @@ function FinanceView({ state, setState, core }: any) {
                    <CashItem label="Projected Gross Revenue" value={`$${(state.settings.estDailyProfit/1000).toFixed(1)}K`} type="neutral" />
                    <CashItem label="Executive Salaries" value={`-$${(core.dailyWages/1000).toFixed(1)}K`} type="negative" />
                    <CashItem label="Admin Overhead Drag" value={`-${(core.actualAO*100).toFixed(1)}%`} type="negative" />
-                   <div className="h-px bg-surface-100 my-4" />
+                   <div className="h-px bg-white/5 my-4" />
                    <CashItem label="Daily Net Flow" value={`$${(core.netDaily/1000).toFixed(1)}K`} type="positive" bold />
                 </div>
-                <div className="bg-surface-50 rounded-2xl border border-dashed flex flex-col items-center justify-center">
-                   <p className="text-[8px] font-black text-surface-400 uppercase mb-2">Accounting Safety</p>
+                <div className="bg-white/5 rounded-2xl border border-dashed border-white/10 flex flex-col items-center justify-center">
+                   <p className="text-[8px] font-black text-white/40 uppercase mb-2">Accounting Safety</p>
                    <p className="text-2xl font-black font-mono text-econ-green">$${(core.taxThreshold/1_000_000).toFixed(1)}M</p>
-                   <p className="text-[8px] font-bold text-surface-300 uppercase mt-1">Daily Exemption Remaining</p>
+                   <p className="text-[8px] font-bold text-white/20 uppercase mt-1">Daily Exemption Remaining</p>
                 </div>
              </div>
           </Section>
@@ -852,11 +865,11 @@ function LogisticsView({ state, setState, core, audit, fileInputRef }: any) {
           <Section title="Warehouse Manifest" icon={Package} action={<ModuleLink active={state.moduleSettings.logisticsLinked} onClick={() => setState({...state, moduleSettings: {...state.moduleSettings, logisticsLinked: !state.moduleSettings.logisticsLinked}})} />}>
              <div className="flex gap-2 mb-4 relative">
                 {!showClearConfirm ? (
-                   <button onClick={() => setShowClearConfirm(true)} className="flex-1 py-2 bg-surface-50 hover:bg-econ-red/10 hover:text-econ-red border rounded-xl text-[8px] font-black uppercase transition-all">Clear All</button>
+                   <button onClick={() => setShowClearConfirm(true)} className="flex-1 py-2 bg-white/5 hover:bg-econ-red/10 hover:text-econ-red border border-white/10 text-white/40 rounded-xl text-[8px] font-black uppercase transition-all">Clear All</button>
                 ) : (
                    <div className="flex-1 flex gap-1 animate-in slide-in-from-top-1 duration-200">
                       <button onClick={() => { setState({...state, inventory: []}); setShowClearConfirm(false); }} className="flex-1 py-2 bg-econ-red text-white rounded-xl text-[8px] font-black uppercase">Confirm</button>
-                      <button onClick={() => setShowClearConfirm(false)} className="px-2 py-2 bg-surface-200 text-surface-600 rounded-xl text-[8px] font-black uppercase">X</button>
+                      <button onClick={() => setShowClearConfirm(false)} className="px-2 py-2 bg-white/20 text-white rounded-xl text-[8px] font-black uppercase">X</button>
                    </div>
                 )}
                 <button onClick={() => fileInputRef.current?.click()} className="flex-1 py-2 bg-brand-600 text-white rounded-xl text-[8px] font-black uppercase hover:bg-brand-500 transition-all shadow-lg shadow-brand-500/20">Import Data</button>
@@ -865,9 +878,9 @@ function LogisticsView({ state, setState, core, audit, fileInputRef }: any) {
                 {RESOURCES.slice(0, 30).map(r => {
                    const item = state.inventory.find(i => i.id === r.id);
                    return (
-                      <div key={r.id} className="flex justify-between items-center p-3 bg-white border rounded-xl group hover:border-brand-500 transition-all shadow-sm">
-                         <span className="text-[10px] font-black uppercase italic text-surface-900">{r.name}</span>
-                         <input type="number" value={item?.qty || ""} onChange={(e) => { const qty = Number(e.target.value); const nextInv = [...state.inventory.filter(i => i.id !== r.id)]; if (qty > 0) nextInv.push({ id: r.id, qty }); setState({ ...state, inventory: nextInv }); }} placeholder="0" className="w-20 bg-surface-50 border-none rounded p-1 text-[10px] font-black text-center focus:ring-1 focus:ring-brand-500" />
+                      <div key={r.id} className="flex justify-between items-center p-3 bg-black/40 border border-white/5 rounded-xl group hover:border-brand-500 transition-all shadow-sm">
+                         <span className="text-[10px] font-black uppercase italic text-white">{r.name}</span>
+                         <input type="number" value={item?.qty || ""} onChange={(e) => { const qty = Number(e.target.value); const nextInv = [...state.inventory.filter(i => i.id !== r.id)]; if (qty > 0) nextInv.push({ id: r.id, qty }); setState({ ...state, inventory: nextInv }); }} placeholder="0" className="w-20 bg-white/5 border-none rounded p-1 text-[10px] font-black text-center text-white focus:ring-1 focus:ring-brand-500" />
                       </div>
                    )
                 })}
@@ -876,7 +889,7 @@ function LogisticsView({ state, setState, core, audit, fileInputRef }: any) {
        </div>
        <div className="col-span-8 space-y-6">
           <Section title="Supply Chain Auditor" icon={AlertTriangle}>
-             <div className="p-8 bg-surface-900 text-white rounded-3xl relative overflow-hidden">
+             <div className="p-8 bg-surface-950 text-white rounded-3xl relative overflow-hidden border border-white/5">
                 <div className="relative z-10">
                    <p className="text-[10px] font-black text-brand-400 uppercase tracking-widest mb-2">Liquid Asset Valuation</p>
                    <p className="text-5xl font-black font-mono italic tracking-tighter">$${(core.inventoryValue/1000).toFixed(1)}K</p>
@@ -920,15 +933,15 @@ function RiskView({ state, core, phase, retail }: any) {
                    const effSat = phase === 'Boom' ? baseSat * 0.8 : phase === 'Recession' ? baseSat * 1.2 : baseSat;
 
                    return (
-                      <div key={res.id} className="p-4 bg-white border rounded-xl flex flex-col items-center text-center space-y-2 group hover:bg-surface-900 hover:text-white transition-all shadow-sm">
-                         <p className="text-[9px] font-black uppercase italic truncate w-full group-hover:text-brand-400">{res.name}</p>
+                      <div key={res.id} className="p-4 bg-black/40 border border-white/5 rounded-xl flex flex-col items-center text-center space-y-2 group hover:bg-brand-600 hover:text-white transition-all shadow-sm">
+                         <p className="text-[9px] font-black uppercase italic truncate w-full text-white group-hover:text-white">{res.name}</p>
                          <div className={`text-sm font-black font-mono ${effSat < 0.8 ? 'text-econ-green' : effSat > 1.2 ? 'text-econ-red' : 'text-econ-amber'}`}>
                             {effSat.toFixed(2)}
                          </div>
-                         <div className="w-full h-1 bg-surface-100 rounded-full">
+                         <div className="w-full h-1 bg-white/10 rounded-full">
                             <div className="h-full bg-brand-500 rounded-full" style={{ width: `${Math.min(100, (1/effSat)*50)}%` }} />
                          </div>
-                         <span className="text-[7px] font-bold uppercase opacity-40">Eff. Saturation</span>
+                         <span className="text-[7px] font-bold uppercase text-white/20">Eff. Saturation</span>
                       </div>
                    )
                 })}
@@ -944,24 +957,24 @@ function RiskView({ state, core, phase, retail }: any) {
                    <p className="text-4xl font-black font-mono text-econ-red mt-2">
                       {core.totalLevels > 0 ? (-(core.totalLevels / 100) * 12.5).toFixed(0) : 0}%
                    </p>
-                   <p className="text-[8px] font-bold text-surface-400 uppercase mt-4">Simulated for -10% Market Correction</p>
+                   <p className="text-[8px] font-bold text-white/40 uppercase mt-4">Simulated for -10% Market Correction</p>
                 </div>
                 <div className="space-y-2">
-                   <div className="flex justify-between p-3 bg-white border rounded-xl">
-                      <span className="text-[9px] font-bold text-surface-400 uppercase">Liquidity Buffer</span>
-                      <span className="text-[9px] font-black">
+                   <div className="flex justify-between p-3 bg-white/5 border border-white/5 rounded-xl">
+                      <span className="text-[9px] font-bold text-white/40 uppercase">Liquidity Buffer</span>
+                      <span className="text-[9px] font-black text-white">
                          {core.netDaily > 0 ? (core.totalValuation / core.netDaily).toFixed(1) : '∞'} Days
                       </span>
                    </div>
-                   <div className="flex justify-between p-3 bg-white border rounded-xl">
-                      <span className="text-[9px] font-bold text-surface-400 uppercase">Leverage Health</span>
+                   <div className="flex justify-between p-3 bg-white/5 border border-white/5 rounded-xl">
+                      <span className="text-[9px] font-bold text-white/40 uppercase">Leverage Health</span>
                       <span className={`text-[9px] font-black ${core.coverageRatio > 10 ? 'text-econ-green' : 'text-econ-amber'}`}>
                          {core.coverageRatio > 10 ? 'OPTIMAL' : 'MONITOR'}
                       </span>
                    </div>
-                   <div className="p-3 bg-surface-50 border border-dashed rounded-xl">
-                      <p className="text-[8px] font-bold text-surface-400 uppercase mb-1 text-center">Phase Multiplier</p>
-                      <p className="text-xs font-black text-center font-mono text-brand-600">x{beta > 1 ? beta.toFixed(2) : '1.00'}</p>
+                   <div className="p-3 bg-white/5 border border-dashed border-white/10 rounded-xl">
+                      <p className="text-[8px] font-bold text-white/40 uppercase mb-1 text-center">Phase Multiplier</p>
+                      <p className="text-xs font-black text-center font-mono text-brand-500">x{beta > 1 ? beta.toFixed(2) : '1.00'}</p>
                    </div>
                 </div>
              </div>
@@ -973,7 +986,7 @@ function RiskView({ state, core, phase, retail }: any) {
 
 function TabBtn({ active, onClick, icon: Icon, label }: any) {
   return (
-    <button onClick={onClick} className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative overflow-hidden ${active ? 'bg-brand-600 text-white shadow-lg scale-105' : 'text-surface-400 hover:text-surface-900 hover:bg-surface-50'}`}>
+    <button onClick={onClick} className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative overflow-hidden ${active ? 'bg-brand-600 text-white shadow-lg scale-105' : 'text-white/40 hover:text-white hover:bg-white/5'}`}>
        <Icon size={14} /> {label}
        {active && <motion.div layoutId="tab-highlight" className="absolute inset-0 bg-white/10" />}
     </button>
@@ -982,15 +995,15 @@ function TabBtn({ active, onClick, icon: Icon, label }: any) {
 
 function Section({ title, icon: Icon, children, action, sub, subVal }: any) {
   return (
-    <div className="bg-white border border-surface-200 rounded-3xl p-6 shadow-sm flex flex-col relative overflow-hidden group hover:shadow-xl hover:border-brand-500/20 transition-all">
+    <div className="bg-surface-900 border border-white/5 rounded-3xl p-6 shadow-sm flex flex-col relative overflow-hidden group hover:shadow-xl hover:border-brand-500/20 transition-all">
        <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
-             <div className="w-10 h-10 rounded-xl bg-surface-50 flex items-center justify-center text-brand-600 border group-hover:bg-brand-600 group-hover:text-white transition-all">
+             <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-brand-500 border border-white/5 group-hover:bg-brand-600 group-hover:text-white transition-all">
                 <Icon size={18} />
              </div>
              <div>
-                <h3 className="text-[11px] font-black uppercase tracking-[0.1em] text-surface-900 italic">{title}</h3>
-                {sub && <p className="text-[7px] font-bold text-surface-400 uppercase tracking-widest mt-0.5">{sub}: {subVal}</p>}
+                <h3 className="text-[11px] font-black uppercase tracking-[0.1em] text-white italic">{title}</h3>
+                {sub && <p className="text-[7px] font-bold text-white/40 uppercase tracking-widest mt-0.5">{sub}: {subVal}</p>}
              </div>
           </div>
           {action}
@@ -1002,19 +1015,19 @@ function Section({ title, icon: Icon, children, action, sub, subVal }: any) {
 
 function Kpi({ label, value, sub, icon: Icon, color }: any) {
   return (
-    <div className="p-6 bg-white border border-surface-200 rounded-2xl shadow-sm relative overflow-hidden group hover:border-brand-500 transition-all">
+    <div className="p-6 bg-surface-900 border border-white/5 rounded-2xl shadow-sm relative overflow-hidden group hover:border-brand-500 transition-all">
        <Icon size={48} className={`absolute -right-4 -top-4 opacity-5 ${color} group-hover:opacity-10 transition-opacity`} />
-       <p className="text-[8px] font-black uppercase text-surface-400 tracking-widest mb-1">{label}</p>
+       <p className="text-[8px] font-black uppercase text-white/40 tracking-widest mb-1">{label}</p>
        <p className={`text-2xl font-black font-mono tracking-tighter ${color}`}>{value}</p>
-       <p className="text-[8px] font-bold text-surface-300 uppercase mt-4">{sub}</p>
+       <p className="text-[8px] font-bold text-white/20 uppercase mt-4">{sub}</p>
     </div>
   );
 }
 
 function HeaderMetric({ label, value, color }: any) {
   return (
-    <div className="px-5 py-3 bg-white rounded-xl border flex flex-col items-center">
-       <span className="text-[8px] font-black text-surface-400 uppercase tracking-widest mb-1">{label}</span>
+    <div className="px-5 py-3 bg-surface-900 rounded-xl border border-white/5 flex flex-col items-center">
+       <span className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1">{label}</span>
        <span className={`text-lg font-black font-mono tracking-tighter ${color}`}>{value}</span>
     </div>
   );
@@ -1043,17 +1056,17 @@ function DockToggle({ label, active, onClick }: any) {
 
 function ModuleLink({ active, onClick }: any) {
   return (
-    <button onClick={onClick} className={`p-2 rounded-lg transition-all ${active ? 'text-brand-600 bg-brand-50 hover:bg-brand-100' : 'text-surface-300 hover:text-econ-red hover:bg-econ-red/5'}`} title={active ? "Linked to Global Calculations" : "Detached from Global Calculations"}>
+    <button onClick={onClick} className={`p-2 rounded-lg transition-all ${active ? 'text-brand-500 bg-brand-500/10 hover:bg-brand-500/20' : 'text-white/20 hover:text-econ-red hover:bg-econ-red/10'}`} title={active ? "Linked to Global Calculations" : "Detached from Global Calculations"}>
        {active ? <Link size={16} /> : <Link2Off size={16} />}
     </button>
   );
 }
 
 function CashItem({ label, value, type, bold }: any) {
-  const color = type === 'positive' ? 'text-econ-green' : type === 'negative' ? 'text-econ-red' : 'text-surface-900';
+  const color = type === 'positive' ? 'text-econ-green' : type === 'negative' ? 'text-econ-red' : 'text-white';
   return (
-    <div className="flex justify-between items-center py-2 border-b border-surface-50 last:border-0">
-       <span className="text-[9px] font-bold text-surface-400 uppercase italic">{label}</span>
+    <div className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
+       <span className="text-[9px] font-bold text-white/40 uppercase italic">{label}</span>
        <span className={`font-mono font-black ${color} ${bold ? 'text-lg' : 'text-xs'}`}>{value}</span>
     </div>
   );
@@ -1067,5 +1080,5 @@ function PhaseDot({ phase }: { phase: string }) {
     Recovery: "bg-brand-500",
     Volatile: "bg-econ-purple"
   };
-  return <span className={`w-2 h-2 rounded-full ring-4 ring-offset-0 ${colors[phase] ?? "bg-surface-400"} ${colors[phase]?.replace('bg-', 'ring-')}/20`} />;
+  return <span className={`w-2 h-2 rounded-full ring-4 ring-offset-0 ${colors[phase] ?? "bg-white/20"} ${colors[phase]?.replace('bg-', 'ring-')}/20`} />;
 }
