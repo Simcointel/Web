@@ -95,7 +95,20 @@ export function CorporateSuitePage() {
 
   const [state, setState] = useState<SuiteStateV6>(() => {
     const saved = localStorage.getItem("simco_suite_v6");
-    return saved ? JSON.parse(saved) : DEFAULT_STATE;
+    if (!saved) return DEFAULT_STATE;
+    try {
+      const parsed = JSON.parse(saved);
+      // Deep merge with DEFAULT_STATE to handle migrations/missing fields
+      return {
+        ...DEFAULT_STATE,
+        ...parsed,
+        board: { ...DEFAULT_STATE.board, ...parsed.board },
+        settings: { ...DEFAULT_STATE.settings, ...parsed.settings },
+        moduleSettings: { ...DEFAULT_STATE.moduleSettings, ...parsed.moduleSettings }
+      };
+    } catch (e) {
+      return DEFAULT_STATE;
+    }
   });
 
   useEffect(() => { localStorage.setItem("simco_suite_v6", JSON.stringify(state)); }, [state]);
