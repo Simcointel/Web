@@ -1,16 +1,28 @@
 import React from "react";
+import { ChevronRight } from "lucide-react";
 
-export function Section({ title, subtitle, children, actions }: { title: string; subtitle?: string; children: React.ReactNode; actions?: React.ReactNode }) {
+export function Section({ title, subtitle, children, actions, icon: Icon }: { title: string; subtitle?: string; children: React.ReactNode; actions?: React.ReactNode; icon?: React.ElementType }) {
   return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between border-b border-surface-200 dark:border-surface-800 pb-2">
-        <div>
-          <h2 className="text-xs font-black text-surface-900 dark:text-white uppercase tracking-widest">{title}</h2>
-          {subtitle && <p className="text-[10px] text-surface-500 dark:text-surface-600 font-mono mt-0.5">{subtitle}</p>}
+    <section className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {Icon && (
+            <div className="p-2 bg-brand-50 dark:bg-brand-900/20 rounded-xl text-brand-600 dark:text-brand-400">
+               <Icon size={20} />
+            </div>
+          )}
+          <div>
+            <h2 className="text-lg font-black text-surface-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
+               {title}
+            </h2>
+            {subtitle && <p className="text-xs text-surface-500 font-semibold tracking-wide mt-0.5">{subtitle}</p>}
+          </div>
         </div>
-        {actions && <div className="flex gap-2">{actions}</div>}
+        {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
-      {children}
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+        {children}
+      </div>
     </section>
   );
 }
@@ -24,15 +36,16 @@ export function CardGrid({ children, cols = 3 }: { children: React.ReactNode; co
     5: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5",
   }[cols as 1|2|3|4|5] || "grid-cols-1 md:grid-cols-3";
 
-  return <div className={`grid ${gridCols} gap-4`}>{children}</div>;
+  return <div className={`grid ${gridCols} gap-6`}>{children}</div>;
 }
 
 export function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
   return (
     <div className="group relative inline-block">
       {children}
-      <div className="pointer-events-none absolute bottom-full left-1/2 mb-2 w-48 -translate-x-1/2 border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-950 px-3 py-2 text-center text-[10px] font-bold text-surface-900 dark:text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 z-50 uppercase tracking-tighter">
+      <div className="pointer-events-none absolute bottom-full left-1/2 mb-3 w-48 -translate-x-1/2 bg-surface-900 dark:bg-white px-3 py-2 text-center text-[10px] font-black text-white dark:text-surface-900 rounded-xl opacity-0 shadow-xl transition-all duration-200 group-hover:opacity-100 group-hover:-translate-y-1 z-50 uppercase tracking-widest scale-95 group-hover:scale-100">
         {text}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-surface-900 dark:border-t-white" />
       </div>
     </div>
   );

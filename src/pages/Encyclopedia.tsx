@@ -3,7 +3,7 @@ import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { RESOURCES, BUILDINGS } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
-import { Search, Info, Factory, ShoppingCart, TrendingUp } from "lucide-react";
+import { Search, Info, Factory, ShoppingCart, TrendingUp, ChevronRight, BookOpen, Layers } from "lucide-react";
 import { LoadingState } from "../components/States";
 
 export function EncyclopediaPage() {
@@ -27,77 +27,91 @@ export function EncyclopediaPage() {
     margins?.resources?.find((r: any) => r.id === selectedId),
   [margins, selectedId]);
 
-  if (loading && !margins) return <LoadingState text="SYNC_DATABASE..." />;
+  if (loading && !margins) return <LoadingState text="Syncing Resource Database..." />;
 
   return (
-    <div className="grid grid-cols-12 gap-6 font-mono text-[10px] animate-in fade-in duration-300">
-      <div className="col-span-12 lg:col-span-4 space-y-4">
-         <div className="border border-surface-200 dark:border-surface-800">
-            <div className="p-2 bg-surface-50 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800 flex items-center gap-2">
-               <Search size={14} className="opacity-40" />
-               <input
-                 type="text"
-                 placeholder="SEARCH_DB..."
-                 value={search}
-                 onChange={(e) => setSearch(e.target.value)}
-                 className="bg-transparent border-none outline-none w-full uppercase font-black"
-               />
+    <div className="grid grid-cols-12 gap-8 animate-in fade-in duration-700">
+      <div className="col-span-12 lg:col-span-4 space-y-6">
+         <div className="card h-[80vh] flex flex-col overflow-hidden">
+            <div className="p-6 border-b border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/50">
+               <div className="relative">
+                  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400" />
+                  <input
+                    type="text"
+                    placeholder="Search Encyclopedia..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="input !pl-12 !py-2.5 !bg-white dark:!bg-surface-900"
+                  />
+               </div>
             </div>
-            <div className="max-h-[70vh] overflow-y-auto divide-y divide-surface-100 dark:divide-surface-900">
+            <div className="flex-1 overflow-y-auto divide-y divide-surface-50 dark:divide-surface-800 scrollbar-hide">
                {filtered.map(r => (
                   <button
                     key={r.id}
                     onClick={() => setSelectedId(r.id)}
-                    className={`w-full text-left px-4 py-2 hover:bg-surface-50 dark:hover:bg-surface-900 transition-colors flex justify-between items-center ${selectedId === r.id ? 'bg-surface-100 dark:bg-surface-800' : ''}`}
+                    className={`w-full text-left p-4 hover:bg-brand-50 dark:hover:bg-brand-900/10 transition-all flex justify-between items-center group ${selectedId === r.id ? 'bg-brand-50 dark:bg-brand-900/20 border-r-4 border-brand-500' : ''}`}
                   >
-                     <span className="uppercase font-bold">{r.name}</span>
-                     <span className="opacity-30">ID_{r.id}</span>
+                     <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-xl bg-surface-50 dark:bg-surface-800 flex items-center justify-center text-surface-400 group-hover:text-brand-600 transition-colors ${selectedId === r.id ? 'text-brand-600' : ''}`}>
+                           <Layers size={18} />
+                        </div>
+                        <span className={`text-sm font-black uppercase italic tracking-tighter ${selectedId === r.id ? 'text-brand-700 dark:text-brand-400' : 'text-surface-700 dark:text-surface-300'}`}>{r.name}</span>
+                     </div>
+                     <ChevronRight size={14} className={`text-surface-300 transition-transform ${selectedId === r.id ? 'translate-x-1 text-brand-500' : ''}`} />
                   </button>
                ))}
             </div>
          </div>
       </div>
 
-      <div className="col-span-12 lg:col-span-8 space-y-6">
+      <div className="col-span-12 lg:col-span-8">
          {selected ? (
-            <div className="space-y-6 animate-in slide-in-from-right-2 duration-200">
-               <div className="border border-surface-200 dark:border-surface-800 p-6 flex justify-between items-start">
-                  <div>
-                     <h1 className="text-3xl font-black uppercase tracking-tighter mb-1">{selected.name}</h1>
-                     <div className="flex gap-4 opacity-40 uppercase font-bold text-[9px]">
-                        <span>RESOURCE_ID: {selected.id}</span>
-                        <span>TRANSPORT_REQ: {selected.transport}</span>
+            <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
+               <div className="card p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-8 relative overflow-hidden group">
+                  <div className="absolute -right-8 -top-8 text-brand-500/5 group-hover:scale-110 transition-transform duration-1000">
+                     <BookOpen size={240} />
+                  </div>
+                  <div className="relative z-10">
+                     <div className="flex items-center gap-4 mb-4">
+                        <div className="px-3 py-1 bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-brand-100 dark:border-brand-800">Resource Registry</div>
+                        <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">ID: {selected.id}</span>
                      </div>
+                     <h1 className="text-5xl font-black uppercase tracking-tighter italic text-surface-900 dark:text-white">{selected.name}</h1>
                   </div>
                   {selectedMargin && (
-                     <div className="text-right">
-                        <span className="block text-[8px] opacity-40 uppercase font-black mb-1">VWAP_PRICE</span>
-                        <span className="text-2xl font-black tabular-nums">${selectedMargin.outputVwap.toFixed(2)}</span>
+                     <div className="relative z-10 text-right">
+                        <span className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Market Benchmark</span>
+                        <span className="text-4xl font-black italic tracking-tighter tabular-nums text-brand-600">${selectedMargin.outputVwap.toFixed(2)}</span>
                      </div>
                   )}
                </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="border border-surface-200 dark:border-surface-800">
-                     <div className="p-2 bg-surface-50 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800 flex items-center gap-2">
-                        <Factory size={14} className="opacity-40" />
-                        <span className="font-black uppercase">Production_Chain</span>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="card h-full flex flex-col">
+                     <div className="p-6 border-b border-surface-100 dark:border-surface-800 flex items-center gap-4">
+                        <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400"><Factory size={20} /></div>
+                        <h3 className="text-sm font-black uppercase tracking-widest">Industrial Pipeline</h3>
                      </div>
-                     <div className="p-4 space-y-4">
+                     <div className="p-8 space-y-8">
                         <div>
-                           <span className="block text-[8px] opacity-40 uppercase font-black mb-2">Facility</span>
-                           <div className="flex items-center gap-3 p-2 bg-surface-50 dark:bg-surface-900/50 border border-surface-200 dark:border-surface-900">
-                              <span className="font-bold uppercase">{BUILDINGS.find(b => b.id === (selected as any).buildingId)?.name || 'UNKNOWN'}</span>
+                           <label className="text-[10px] font-black uppercase text-surface-400 tracking-widest block mb-4 italic">Primary Facility</label>
+                           <div className="card !bg-surface-50 dark:!bg-surface-800/50 p-6 flex items-center justify-between group-hover:border-brand-500 transition-all border-dashed">
+                              <span className="text-lg font-black uppercase italic tracking-tighter">{BUILDINGS.find(b => b.id === (selected as any).buildingId)?.name || 'Extraction Site'}</span>
+                              <ChevronRight className="text-surface-300" />
                            </div>
                         </div>
                         {selected.inputs && (
                            <div>
-                              <span className="block text-[8px] opacity-40 uppercase font-black mb-2">Primary_Inputs</span>
-                              <div className="space-y-1">
+                              <label className="text-[10px] font-black uppercase text-surface-400 tracking-widest block mb-4 italic">Constituent Inputs</label>
+                              <div className="grid grid-cols-1 gap-3">
                                  {Object.entries(selected.inputs).map(([id, qty]) => (
-                                    <div key={id} className="flex justify-between py-1 border-b border-surface-100 dark:border-surface-900 last:border-0 opacity-80">
-                                       <span className="uppercase font-bold">{RESOURCES.find(r => r.id === Number(id))?.name || `ID_${id}`}</span>
-                                       <span>{qty}U</span>
+                                    <div key={id} className="flex justify-between items-center p-4 bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 shadow-sm hover:border-brand-500 transition-all">
+                                       <span className="text-sm font-bold uppercase tracking-tight italic">{RESOURCES.find(r => r.id === Number(id))?.name || `Resource_${id}`}</span>
+                                       <div className="flex items-center gap-3">
+                                          <span className="text-sm font-black tabular-nums">{qty}</span>
+                                          <span className="text-[10px] font-black text-surface-400">Units</span>
+                                       </div>
                                     </div>
                                  ))}
                               </div>
@@ -106,50 +120,54 @@ export function EncyclopediaPage() {
                      </div>
                   </div>
 
-                  <div className="border border-surface-200 dark:border-surface-800">
-                     <div className="p-2 bg-surface-50 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800 flex items-center gap-2">
-                        <ShoppingCart size={14} className="opacity-40" />
-                        <span className="font-black uppercase">Retail_Profile</span>
+                  <div className="card h-full flex flex-col">
+                     <div className="p-6 border-b border-surface-100 dark:border-surface-800 flex items-center gap-4">
+                        <div className="p-2.5 bg-rose-50 dark:bg-rose-900/20 rounded-xl text-rose-600 dark:text-rose-400"><ShoppingCart size={20} /></div>
+                        <h3 className="text-sm font-black uppercase tracking-widest">Retail Mechanics</h3>
                      </div>
-                     <div className="p-4">
+                     <div className="p-8">
                         {selected.retailInfo && selected.retailInfo.length > 0 ? (
-                           <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                 <div className="p-3 bg-surface-50 dark:bg-surface-900/50 border border-surface-200 dark:border-surface-900 text-center">
-                                    <span className="block text-[8px] opacity-40 uppercase mb-1">Base_Demand</span>
-                                    <span className="text-sm font-black">HIGH</span>
+                           <div className="space-y-8">
+                              <div className="grid grid-cols-2 gap-6">
+                                 <div className="card p-6 text-center border-l-4 border-l-emerald-500">
+                                    <span className="block text-[10px] font-black uppercase text-surface-400 mb-2 italic">Demand Profile</span>
+                                    <span className="text-2xl font-black italic tracking-tighter">VOLATILE</span>
                                  </div>
-                                 <div className="p-3 bg-surface-50 dark:bg-surface-900/50 border border-surface-200 dark:border-surface-900 text-center">
-                                    <span className="block text-[8px] opacity-40 uppercase mb-1">Volatility</span>
-                                    <span className="text-sm font-black">MED</span>
+                                 <div className="card p-6 text-center border-l-4 border-l-amber-500">
+                                    <span className="block text-[10px] font-black uppercase text-surface-400 mb-2 italic">Sat. Weight</span>
+                                    <span className="text-2xl font-black italic tracking-tighter">0.22</span>
                                  </div>
                               </div>
-                              <p className="opacity-60 leading-relaxed uppercase">Consumer good primary found in major retail chains. Price heavily influenced by regime cycles.</p>
+                              <div className="p-6 bg-surface-50 dark:bg-surface-800/50 rounded-[1.5rem] border border-surface-100 dark:border-surface-700">
+                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-600 mb-3">Consumer Insights</h4>
+                                 <p className="text-xs font-semibold text-surface-500 leading-relaxed uppercase">
+                                    This asset is a high-velocity consumer good. Retail margins are optimized in Expansion regimes with saturation values below 0.85.
+                                 </p>
+                              </div>
                            </div>
                         ) : (
-                           <div className="py-10 text-center opacity-30 italic uppercase">NON_RETAIL_ASSET</div>
+                           <div className="py-20 text-center flex flex-col items-center justify-center opacity-30">
+                              <Layers size={64} className="mb-6" />
+                              <h3 className="text-lg font-black uppercase italic tracking-tighter">Industrial Asset Only</h3>
+                              <p className="text-xs font-bold mt-2 uppercase">Requires further refinement into consumer products.</p>
+                           </div>
                         )}
                      </div>
                   </div>
                </div>
             </div>
          ) : (
-            <div className="h-full border border-dashed border-surface-200 dark:border-surface-800 flex flex-col items-center justify-center text-center p-20 opacity-20">
-               <BookOpen size={48} className="mb-4" />
-               <h2 className="text-xl font-black uppercase tracking-widest">Select_Entity_To_Inspect</h2>
-               <p className="mt-2 font-bold">Comprehensive data on production and retail dynamics.</p>
+            <div className="h-full card border-dashed flex flex-col items-center justify-center text-center p-20 group">
+               <div className="w-24 h-24 rounded-[2.5rem] bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center text-brand-600 dark:text-brand-400 mb-8 shadow-2xl group-hover:scale-110 transition-transform duration-500">
+                  <BookOpen size={48} />
+               </div>
+               <h2 className="text-3xl font-black uppercase italic tracking-tighter text-surface-900 dark:text-white">Knowledge.Base</h2>
+               <p className="mt-4 font-bold text-surface-500 max-w-sm uppercase tracking-tight text-sm leading-relaxed">
+                  Select an industrial or retail entity from the registry to inspect its constituent components and market profile.
+               </p>
             </div>
          )}
       </div>
     </div>
   );
-}
-
-function BookOpen({ size, className }: any) {
-   return (
-      <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-      </svg>
-   );
 }
