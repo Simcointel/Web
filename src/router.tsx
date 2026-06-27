@@ -21,10 +21,10 @@ export function useSearchParams(): SearchParams {
   return { get: (k: string) => params.get(k), has: (k: string) => params.has(k) };
 }
 
-export function Link({ to, children, className }: { to: string; children: React.ReactNode; className?: string }) {
+export function Link({ to, children, className, onClick, style }: { to: string; children: React.ReactNode; className?: string; onClick?: () => void; style?: React.CSSProperties }) {
   const nav = useNavigate();
   return (
-    <a href={to} onClick={(e) => { e.preventDefault(); nav(to); }} className={className}>
+    <a href={to} style={style} onClick={(e) => { e.preventDefault(); onClick?.(); nav(to); }} className={className}>
       {children}
     </a>
   );
