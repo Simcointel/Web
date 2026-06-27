@@ -1,15 +1,15 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Building2, Package, DollarSign, ArrowLeft,
   Search, Target, TrendingDown, Ship,
-  LayoutDashboard, HardHat, Link, Link2Off, Trash2, Upload, Download, CheckCircle2,
-  Users, UserPlus, AlertCircle, Clock, Zap, Calculator, Wallet, BarChart3, PieChart,
-  Briefcase, AlertTriangle, Globe, Layers
+  LayoutDashboard, HardHat, Trash2, Upload, Download, CheckCircle2,
+  Users, AlertCircle, Clock, Zap, Calculator, Wallet, BarChart3,
+  Briefcase, AlertTriangle, Globe, Layers, Microscope
 } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
-import { BUILDINGS, RESOURCES } from "../data/simco_static";
+import { BUILDINGS, RESOURCES, CONSTRUCTION_MATERIALS } from "../data/simco_static";
 import * as dataRepo from "../services/dataRepo";
 import { LoadingState } from "../components/States";
 import { useNavigate } from "../router";
@@ -88,7 +88,7 @@ const n = (v: any) => (typeof v === 'number' && !isNaN(v) ? v : 0);
 
 export function CorporateSuitePage() {
   const { theme } = useTheme();
-  const [realm, setRealm] = useSharedRealm();
+  const [realm] = useSharedRealm();
   const navigate = useNavigate();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [notification, setNotification] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
@@ -126,18 +126,18 @@ export function CorporateSuitePage() {
   const economyPhase = (dash as any)?.[String(realm)]?.regime?.na || 'Normal';
 
   const core = useMemo(() => {
-    const effMap = state.moduleSettings.opsLinked ? state.map : DEFAULT_STATE.map;
-    const effBoard = state.moduleSettings.execLinked ? state.board : DEFAULT_STATE.board;
-    const effProfit = n(state.moduleSettings.financeLinked ? state.settings.estDailyProfit : DEFAULT_STATE.settings.estDailyProfit);
+    const effMap = state.map;
+    const effBoard = state.board;
+    const effProfit = n(state.settings.estDailyProfit);
 
-    const totalLevels = effMap.reduce((s, i) => s + n(i.level), 0) + n(state.moduleSettings.opsLinked ? state.settings.whatIfLevel : 0);
+    const totalLevels = effMap.reduce((s, i) => s + n(i.level), 0) + n(state.settings.whatIfLevel);
     const rawAO = Math.max(0, (totalLevels - 1) / 170);
 
     const getEff = (primary: number, others: number[]) => n(primary) + Math.floor(others.reduce((s, v) => s + n(v), 0) / 4);
 
     const effMan = getEff(effBoard.coo.management, [effBoard.cfo.management, effBoard.cmo.management, effBoard.cto.management, effBoard.cooApp.management, effBoard.cfoApp.management, effBoard.cmoApp.management, effBoard.ctoApp.management]);
-    const effAcc = getEff(effBoard.cfo.accounting, [effBoard.coo.accounting, effBoard.cmo.accounting, effBoard.cto.accounting, effBoard.cooApp.accounting, effBoard.cfoApp.accounting, effBoard.cmoApp.accounting, effBoard.ctoApp.accounting]);
-    const effCom = getEff(effBoard.cmo.communication, [effBoard.coo.communication, effBoard.cfo.communication, effBoard.cto.communication, effBoard.cooApp.communication, effBoard.cfoApp.communication, effBoard.cmo.communication, effBoard.cto.communication, effBoard.cooApp.communication, effBoard.cfoApp.communication, effBoard.cmoApp.communication, effBoard.cto.communication]);
+    const effAcc = getEff(effBoard.cfo.accounting, [effBoard.coo.accounting, effBoard.cmo.accounting, effBoard.cto.accounting, effBoard.cooApp.accounting, effBoard.cfoApp.accounting, effBoard.cmoApp.accounting, effBoard.cto.accounting]);
+    const effCom = getEff(effBoard.cmo.communication, [effBoard.coo.communication, effBoard.cfo.communication, effBoard.cto.communication, effBoard.cooApp.communication, effBoard.cfoApp.communication, effBoard.cmoApp.communication, effBoard.ctoApp.communication]);
     const effSci = getEff(effBoard.cto.science, [effBoard.coo.science, effBoard.cfo.science, effBoard.cmo.science, effBoard.cooApp.science, effBoard.cfoApp.science, effBoard.cmo.science, effBoard.cto.science]);
 
     const actualAO = rawAO * (1 - (effMan * 0.01));
@@ -145,6 +145,7 @@ export function CorporateSuitePage() {
     const taxThreshold = baseTaxThreshold * (1 + (state.settings.bankLevel * 0.05));
 
     const salesSpeedBonus = (effCom * 0.01) + (state.settings.profileSalesBonus * 0.01);
+    const patentProb = 0.0179 + (effSci * 0.0015);
 
     const dailyWages = effMap.reduce((sum, item) => {
       const b = BUILDINGS.find(bu => bu.id === item.id);
@@ -170,25 +171,13 @@ export function CorporateSuitePage() {
     const coverageRatio = dailyInterest > 0 ? effProfit / dailyInterest : 100;
 
     return {
-      totalLevels, actualAO, rawAO, taxThreshold, salesSpeedBonus,
-      dailyWages, inventoryValue, mapValue, dailyInterest,
+      totalLevels, actualAO, rawAO, taxThreshold, salesSpeedBonus, patentProb,
+      dailyWages, inventoryValue, mapValue, dailyInterest, effMan, effAcc, effCom, effSci,
       estimatedDailyTax, coverageRatio,
       totalValuation: inventoryValue + mapValue + (effProfit * 30),
       netDaily: effProfit - dailyInterest - estimatedDailyTax - (dailyWages * actualAO)
     };
   }, [state, margins]);
-
-  const audit = useMemo(() => {
-    const produces = new Set(RESOURCES.filter(r => state.map.some(m => m.id === r.buildingId)).map(r => r.id));
-    const needs = new Set<number>();
-    state.map.forEach(m => {
-       RESOURCES.filter(r => r.buildingId === m.id).forEach(r => {
-          if (r.inputs) Object.keys(r.inputs).forEach(id => needs.add(Number(id)));
-       });
-    });
-    const missing = Array.from(needs).filter(n => !produces.has(n)).map(id => RESOURCES.find(r => r.id === id)?.name || `ID ${id}`);
-    return { missing, health: needs.size > 0 ? (1 - missing.length / needs.size) * 100 : 100 };
-  }, [state.map]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -196,83 +185,74 @@ export function CorporateSuitePage() {
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
-      if (file.name.endsWith('.json')) {
-        try {
-          const parsed = JSON.parse(content);
-          if (parsed.activeTab) { setState(parsed); setNotification({ msg: "State Synchronized", type: "success" }); return; }
-        } catch (err) { setNotification({ msg: "Parse Failed", type: "error" }); }
-      }
+      try {
+        const parsed = JSON.parse(content);
+        if (parsed.activeTab) { setState(parsed); setNotification({ msg: "System Sync Complete", type: "success" }); return; }
+      } catch (err) { setNotification({ msg: "Restore Failed", type: "error" }); }
     };
     reader.readAsText(file);
   };
 
   const renderTab = () => {
     switch(state.activeTab) {
-      case 'command': return <CommandView state={state} core={core} phase={economyPhase} setState={setState} margins={margins} dash={dash} realm={realm} />;
+      case 'command': return <CommandView state={state} core={core} phase={economyPhase} margins={margins} />;
       case 'ops': return <OperationsView state={state} core={core} setState={setState} />;
       case 'exec': return <ExecutiveView state={state} core={core} setState={setState} />;
       case 'finance': return <FinanceView state={state} core={core} setState={setState} />;
-      case 'logistics': return <LogisticsView state={state} core={core} setState={setState} audit={audit} fileInputRef={fileInputRef} />;
+      case 'logistics': return <LogisticsView state={state} core={core} setState={setState} />;
       case 'retail': return <RetailView state={state} core={core} setState={setState} retail={retail} />;
-      case 'risk': return <RiskView state={state} core={core} phase={economyPhase} retail={retail} />;
+      case 'risk': return <RiskView core={core} phase={economyPhase} retail={retail} />;
     }
   };
 
-  if (mLoading && !margins) return <LoadingState text="Initializing Suite..." />;
+  if (mLoading && !margins) return <LoadingState text="Booting Enterprise Suite..." />;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-       <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-8 border-b border-surface-200 dark:border-surface-800">
-          <div className="flex items-center gap-6">
-             <div className="w-16 h-16 gradient-brand rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-brand-500/30">
-                <Briefcase size={32} />
+    <div className="space-y-8 animate-in fade-in duration-500 max-w-[1600px] mx-auto pb-24">
+       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex items-center gap-5">
+             <div className="w-14 h-14 bg-surface-900 dark:bg-white rounded-2xl flex items-center justify-center text-white dark:text-surface-900 shadow-xl">
+                <Briefcase size={28} />
              </div>
              <div>
-                <h1 className="text-3xl font-black text-surface-900 dark:text-white uppercase italic tracking-tighter">
-                   Corporate<span className="text-brand-600">.Workstation</span>
-                </h1>
-                <div className="flex items-center gap-4 mt-1">
-                   <span className="text-xs font-black uppercase text-surface-400 tracking-widest">Enterprise OS v6.5</span>
-                   <div className="flex items-center gap-1.5 px-3 py-0.5 bg-brand-50 dark:bg-brand-900/20 rounded-full border border-brand-100 dark:border-brand-800">
-                      <div className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse" />
-                      <span className="text-[10px] font-black uppercase text-brand-600 dark:text-brand-400">Live Link</span>
-                   </div>
+                <h1 className="text-3xl font-black uppercase tracking-tight italic">Workstation.<span className="text-brand-600">Enterprise</span></h1>
+                <div className="flex items-center gap-3 mt-1">
+                   <span className="text-[10px] font-black uppercase text-surface-400 tracking-widest">OS v6.80</span>
+                   <div className="px-2 py-0.5 bg-brand-50 dark:bg-brand-900/20 rounded text-[10px] font-black text-brand-600 dark:text-brand-400 uppercase border border-brand-100 dark:border-brand-800">Operational</div>
                 </div>
              </div>
           </div>
 
-          <nav className="flex flex-wrap items-center gap-1.5 bg-white dark:bg-surface-900 p-1.5 rounded-[1.5rem] shadow-soft border border-surface-200/50 dark:border-surface-800">
-             <SuiteTab active={state.activeTab === 'command'} onClick={() => setState({...state, activeTab: 'command'})} label="Command" icon={LayoutDashboard} />
-             <SuiteTab active={state.activeTab === 'ops'} onClick={() => setState({...state, activeTab: 'ops'})} label="Operations" icon={HardHat} color="text-blue-500" />
-             <SuiteTab active={state.activeTab === 'exec'} onClick={() => setState({...state, activeTab: 'exec'})} label="Executive" icon={Users} color="text-amber-500" />
-             <SuiteTab active={state.activeTab === 'finance'} onClick={() => setState({...state, activeTab: 'finance'})} label="Finance" icon={DollarSign} color="text-emerald-500" />
-             <SuiteTab active={state.activeTab === 'logistics'} onClick={() => setState({...state, activeTab: 'logistics'})} label="Logistics" icon={Ship} color="text-indigo-500" />
-             <SuiteTab active={state.activeTab === 'retail'} onClick={() => setState({...state, activeTab: 'retail'})} label="Retail" icon={Target} color="text-rose-500" />
-             <SuiteTab active={state.activeTab === 'risk'} onClick={() => setState({...state, activeTab: 'risk'})} label="Risk" icon={TrendingDown} color="text-purple-500" />
+          <nav className="flex bg-white dark:bg-surface-900 p-1 rounded-xl shadow-sm border border-surface-200 dark:border-surface-800">
+             <WorkstationTab active={state.activeTab === 'command'} onClick={() => setState({...state, activeTab: 'command'})} label="CMD" icon={LayoutDashboard} />
+             <WorkstationTab active={state.activeTab === 'ops'} onClick={() => setState({...state, activeTab: 'ops'})} label="OPS" icon={HardHat} />
+             <WorkstationTab active={state.activeTab === 'exec'} onClick={() => setState({...state, activeTab: 'exec'})} label="EXEC" icon={Users} />
+             <WorkstationTab active={state.activeTab === 'finance'} onClick={() => setState({...state, activeTab: 'finance'})} label="FIN" icon={DollarSign} />
+             <WorkstationTab active={state.activeTab === 'logistics'} onClick={() => setState({...state, activeTab: 'logistics'})} label="LOG" icon={Ship} />
+             <WorkstationTab active={state.activeTab === 'retail'} onClick={() => setState({...state, activeTab: 'retail'})} label="RET" icon={Target} />
+             <WorkstationTab active={state.activeTab === 'risk'} onClick={() => setState({...state, activeTab: 'risk'})} label="RSK" icon={TrendingDown} />
           </nav>
-       </header>
+       </div>
 
-       <main className="min-h-[600px]">
+       <main className="min-h-[60vh]">
           {renderTab()}
        </main>
 
-       <footer className="sticky bottom-6 mx-auto max-w-4xl bg-white/90 dark:bg-surface-900/90 backdrop-blur-xl p-4 rounded-[2rem] shadow-2xl border border-surface-200 dark:border-surface-800 flex items-center justify-between z-50 animate-in slide-in-from-bottom-8 duration-700">
-          <div className="flex items-center gap-8 px-6 border-r border-surface-200 dark:border-surface-800">
-             <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase text-surface-400 tracking-widest">Enterprise Valuation</span>
-                <span className="text-xl font-black italic tracking-tighter text-surface-900 dark:text-white tabular-nums">${(core.totalValuation/1_000_000).toFixed(2)}M</span>
+       {/* Control Bar */}
+       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4 z-[90]">
+          <div className="bg-surface-900/95 dark:bg-white/95 text-white dark:text-surface-900 backdrop-blur-lg p-5 rounded-[2rem] shadow-2xl flex items-center justify-between border border-white/10 dark:border-surface-200">
+             <div className="flex gap-10 px-6 border-r border-white/10 dark:border-surface-200">
+                <GlobalMetric label="Market Value" value={`$${(core.totalValuation/1_000_000).toFixed(2)}M`} />
+                <GlobalMetric label="Daily Yield" value={`$${(core.netDaily/1000).toFixed(1)}K/d`} />
+                <GlobalMetric label="Efficiency" value={`${((1 - core.actualAO)*100).toFixed(1)}%`} />
              </div>
-             <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase text-surface-400 tracking-widest">Daily Burn</span>
-                <span className="text-xl font-black italic tracking-tighter text-red-500 tabular-nums">-${(core.dailyWages/1000).toFixed(1)}K</span>
+             <div className="flex items-center gap-4 px-6">
+                <button onClick={() => fileInputRef.current?.click()} className="btn btn-secondary !bg-transparent !text-current border-current !py-2"><Upload size={16} className="mr-2"/> Sync</button>
+                <button onClick={() => { const data = JSON.stringify(state); const blob = new Blob([data], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'simco_intel_backup.json'; a.click(); }} className="btn btn-primary !bg-current !text-surface-900 dark:!text-white !py-2"><Download size={16} className="mr-2"/> Backup</button>
+                <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".json" />
              </div>
           </div>
-          <div className="flex items-center gap-4 px-6">
-             <button onClick={() => fileInputRef.current?.click()} className="btn btn-secondary !px-4 !py-2"><Upload size={16} className="mr-2" /> Sync</button>
-             <button onClick={() => { const data = JSON.stringify(state); const blob = new Blob([data], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'simcointel_suite.json'; a.click(); }} className="btn btn-primary !px-4 !py-2"><Download size={16} className="mr-2" /> Backup</button>
-             <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".json" />
-          </div>
-       </footer>
+       </div>
 
        {notification && (
          <div className="fixed top-24 right-8 z-[100] animate-in slide-in-from-right duration-300">
@@ -286,197 +266,151 @@ export function CorporateSuitePage() {
   );
 }
 
-function CommandView({ state, core, phase, setState, margins, dash, realm }: any) {
-  const categories = useMemo(() => {
-    const counts: Record<string, number> = {};
-    state.map.forEach((m: any) => {
-      const b = BUILDINGS.find(bu => bu.id === m.id);
-      if (b) counts[(b as any).type || 'Other'] = (counts[(b as any).type || 'Other'] || 0) + m.level;
-    });
-    return Object.entries(counts).sort((a,b) => b[1] - a[1]);
-  }, [state.map]);
-
+function CommandView({ core, phase, margins }: any) {
   const marketAlerts = useMemo(() => {
     if (!margins?.resources) return [];
-    return (margins.resources as any[])
-      .filter(r => Math.abs(r.marginDelta || 0) > 5)
-      .slice(0, 5)
-      .map(r => ({ name: r.name, delta: r.marginDelta, price: r.outputVwap }));
+    return (margins.resources as any[]).filter(r => Math.abs(r.marginDelta || 0) > 5).slice(0, 4);
   }, [margins]);
 
-  const dashboardAlerts = (dash as any)?.[String(realm)]?.alerts || 0;
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-       <div className="lg:col-span-8 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-             <CommandKpi label="Daily Cashflow" value={`$${(core.netDaily/1000).toFixed(1)}K`} sub="Post-Tax/AO Estimate" icon={Wallet} color="bg-emerald-500" />
-             <CommandKpi label="Admin Burden" value={`${(core.actualAO*100).toFixed(2)}%`} sub={`${core.totalLevels} Active Facilities`} icon={BarChart3} color="bg-rose-500" />
-             <CommandKpi label="Market Phase" value={phase.toUpperCase()} sub="Global Logic Multiplier" icon={Globe} color="bg-brand-500" />
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+       <div className="md:col-span-8 space-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+             <KPICard label="Liquid Stock" value={`$${(core.inventoryValue/1000).toFixed(1)}K`} sub="Current Warehouse" icon={Package} />
+             <KPICard label="Fixed Assets" value={`$${(core.mapValue/1_000_000).toFixed(2)}M`} sub={`${core.totalLevels} Active Lvls`} icon={Building2} />
+             <KPICard label="Market Regime" value={phase.toUpperCase()} sub="Global Modifier" icon={Globe} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-             <div className="card p-8 space-y-6">
-                <div className="flex items-center justify-between">
-                   <h3 className="text-sm font-black uppercase tracking-[0.2em] text-surface-400">Infrastructure</h3>
-                   <button onClick={() => setState({...state, activeTab: 'ops'})} className="text-xs font-black text-brand-600 uppercase hover:underline">Manage</button>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+             <div className="card">
+                <div className="px-6 py-4 border-b border-surface-50 dark:border-surface-800 flex items-center justify-between">
+                   <span className="text-[10px] font-black uppercase tracking-widest text-surface-400 italic">Volatility Stream</span>
                 </div>
-                <div className="space-y-4">
-                   {categories.map(([cat, lvls]) => (
-                      <div key={cat} className="space-y-2">
-                         <div className="flex justify-between text-xs font-black uppercase italic tracking-tighter">
-                            <span className="text-surface-600">{cat}</span>
-                            <span>{lvls} Lvls</span>
-                         </div>
-                         <div className="h-2 bg-surface-50 dark:bg-surface-800 rounded-full overflow-hidden border border-surface-100 dark:border-surface-700">
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(lvls / (core.totalLevels || 1)) * 100}%` }} className="h-full gradient-brand" />
-                         </div>
-                      </div>
-                   ))}
-                   {categories.length === 0 && <div className="py-12 text-center opacity-30 italic font-bold">No facilities established.</div>}
-                </div>
-             </div>
-
-             <div className="card p-8 space-y-6">
-                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-surface-400">Volatility Feed</h3>
-                <div className="space-y-1">
-                   {marketAlerts.map((a, i) => (
-                      <div key={i} className="flex justify-between items-center p-3 hover:bg-surface-50 dark:hover:bg-surface-800/50 rounded-xl transition-colors border-b border-surface-50 dark:border-surface-800 last:border-0">
-                         <span className="text-xs font-black uppercase italic tracking-tighter">{a.name}</span>
-                         <div className="flex gap-4 items-center tabular-nums">
-                            <span className="text-[10px] font-bold text-surface-400">${a.price.toFixed(2)}</span>
-                            <span className={`text-xs font-black ${a.delta > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                               {a.delta > 0 ? '▲' : '▼'}{Math.abs(a.delta).toFixed(1)}%
+                <div className="p-4 space-y-1">
+                   {marketAlerts.map((r: any, i: number) => (
+                      <div key={i} className="flex justify-between items-center p-3 hover:bg-surface-50 dark:hover:bg-surface-800 rounded-xl transition-all border-b border-surface-50 dark:border-surface-800 last:border-0">
+                         <span className="text-xs font-black uppercase tracking-tight">{r.name}</span>
+                         <div className="flex gap-6 items-center">
+                            <span className="text-[10px] font-mono font-bold text-surface-400">${r.outputVwap.toFixed(2)}</span>
+                            <span className={`text-xs font-black tabular-nums ${r.marginDelta > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                               {r.marginDelta > 0 ? '▲' : '▼'}{Math.abs(r.marginDelta).toFixed(1)}%
                             </span>
                          </div>
                       </div>
                    ))}
-                   {marketAlerts.length === 0 && <div className="py-12 text-center opacity-20 uppercase font-black tracking-widest text-[10px]">Market Stability High</div>}
+                </div>
+             </div>
+             <div className="card p-10 flex flex-col justify-center space-y-8">
+                <div className="flex justify-between items-end border-b border-surface-50 dark:border-surface-800 pb-6">
+                   <span className="text-[10px] font-black text-surface-400 uppercase tracking-widest">30-Day Growth</span>
+                   <span className="text-3xl font-black italic tracking-tighter text-brand-600">+$${(core.netDaily * 30 / 1_000_000).toFixed(2)}M</span>
+                </div>
+                <div className="flex justify-between items-end">
+                   <span className="text-[10px] font-black text-surface-400 uppercase tracking-widest">7-Day Delta</span>
+                   <span className="text-2xl font-black italic tracking-tighter text-emerald-500">+$${(core.netDaily * 7 / 1000).toFixed(1)}K</span>
                 </div>
              </div>
           </div>
        </div>
 
-       <div className="lg:col-span-4 space-y-8">
-          <div className="card p-8 bg-surface-900 text-white relative overflow-hidden group">
-             <div className="absolute -right-8 -top-8 text-white/5 group-hover:scale-110 transition-transform duration-700">
-                <Target size={180} />
-             </div>
-             <div className="relative z-10 space-y-8">
-                <div>
-                   <h3 className="text-xs font-black uppercase tracking-[0.3em] text-brand-400 mb-6 italic">Strategic Vector</h3>
-                   <div className="flex items-start gap-4">
-                      <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md border border-white/10"><Clock size={20} className="text-brand-400" /></div>
-                      <div>
-                         <p className="text-lg font-black uppercase italic leading-tight tracking-tighter">Cycle Estimation</p>
-                         <p className="text-xs text-white/60 font-semibold mt-1">Next shift possible in 2.4 days.</p>
-                      </div>
-                   </div>
-                </div>
-
-                <div className="space-y-3 pt-4 border-t border-white/10">
-                   <CheckItem label="C-Suite Staffed" active={Object.values(state.board).some((e: any) => e.management > 0)} light />
-                   <CheckItem label="Inventory Valued" active={state.inventory.length > 0} light />
-                   <CheckItem label="Debt Structured" active={state.debt.current > 0} light />
-                   <CheckItem label="Node Synchronized" active={state.globalSync} light />
-                </div>
+       <div className="md:col-span-4 space-y-8">
+          <div className="card bg-surface-900 text-white p-8 relative overflow-hidden group shadow-2xl">
+             <Target size={160} className="absolute -right-10 -top-10 opacity-10 group-hover:scale-110 transition-transform duration-1000" />
+             <h3 className="text-xs font-black uppercase tracking-[0.3em] text-brand-400 mb-10 italic">Strategic Checklist</h3>
+             <div className="space-y-5">
+                <CheckItem label="C-Suite Personnel" active={core.effMan > 0} light />
+                <CheckItem label="Warehouse Valued" active={core.inventoryValue > 0} light />
+                <CheckItem label="Debt Managed" active={core.dailyInterest > 0} light />
+                <CheckItem label="Economic Linkage" active={true} light />
              </div>
           </div>
-          {dashboardAlerts > 0 && (
-             <div className="card p-6 bg-red-600/5 border-2 border-red-600/20 text-red-600 animate-pulse">
-                <div className="flex items-center gap-3">
-                   <AlertCircle size={20} />
-                   <span className="font-black uppercase tracking-widest text-xs">{dashboardAlerts} Active Node Anomalies</span>
-                </div>
+          <div className="card p-8">
+             <div className="flex items-center gap-3 mb-6">
+                <Clock size={20} className="text-brand-500" />
+                <h3 className="text-xs font-black uppercase tracking-widest italic">Cycle Projection</h3>
              </div>
-          )}
+             <p className="text-xs font-bold text-surface-500 leading-relaxed uppercase tracking-tight">
+                Current regime stability at 84%. Next transition forecast within 2.4 days. Monitor consumer saturation metrics.
+             </p>
+          </div>
        </div>
     </div>
   );
 }
 
 function OperationsView({ state, setState, core }: any) {
+  const constructionTotals = useMemo(() => {
+    const totals: Record<number, number> = { 101: 0, 102: 0, 108: 0, 111: 0, 110: 0, 0: 0 };
+    state.map.forEach((m: any) => {
+      const b = BUILDINGS.find(bu => bu.id === m.id);
+      if (!b) return;
+      totals[0] += b.cost * (m.level <= 1 ? 1 : m.level);
+      b.resources.forEach((r: any) => {
+         if (r.id !== 109) totals[r.id] = (totals[r.id] || 0) + (r.qty * (m.level || 1));
+      });
+    });
+    return totals;
+  }, [state.map]);
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-       <div className="lg:col-span-5 space-y-8">
-          <Section title="Asset Management" icon={HardHat} subtitle="Facility configuration and scaling.">
-             <div className="space-y-4">
-                <button onClick={() => setState({...state, map: [...state.map, { id: BUILDINGS[0].id, level: 1 }]})} className="w-full btn btn-primary !rounded-2xl !py-4 shadow-xl"><UserPlus size={18} className="mr-2" /> Add New Facility</button>
-                <div className="max-h-[600px] overflow-y-auto space-y-3 pr-2 scrollbar-hide">
-                   {state.map.map((m: any, i: number) => {
-                      const b = BUILDINGS.find(bu => bu.id === m.id);
-                      return (
-                        <div key={i} className="card p-4 flex items-center gap-4 group hover:shadow-xl hover:-translate-y-0.5 border-l-4 border-l-blue-500 transition-all">
-                           <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400 font-black text-xs">#{i+1}</div>
-                           <div className="flex-1">
-                              <select
-                                value={m.id}
-                                onChange={(e) => { const n = [...state.map]; n[i].id = e.target.value; setState({...state, map: n}); }}
-                                className="bg-transparent border-none p-0 text-sm font-black uppercase focus:ring-0 w-full"
-                              >
-                                 {BUILDINGS.map(b => <option key={b.id} value={b.id} className="bg-white dark:bg-surface-950">{b.name}</option>)}
-                              </select>
-                              <p className="text-[10px] font-bold text-surface-400 uppercase mt-0.5 tracking-widest">{b?.type}</p>
-                           </div>
-                           <div className="flex items-center gap-3 bg-surface-50 dark:bg-surface-800 rounded-xl px-4 py-2 border border-surface-100 dark:border-surface-700">
-                              <span className="text-[10px] font-black text-surface-400 uppercase tracking-widest">Lvl</span>
-                              <input
-                                type="number"
-                                value={m.level}
-                                onChange={(e) => { const n = [...state.map]; n[i].level = Number(e.target.value); setState({...state, map: n}); }}
-                                className="w-10 bg-transparent border-none p-0 text-sm text-center font-black outline-none focus:ring-0"
-                              />
-                           </div>
-                           <button onClick={() => setState({...state, map: state.map.filter((_: any, idx: number) => idx !== i)})} className="p-2 text-surface-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                        </div>
-                      )
-                   })}
-                   {state.map.length === 0 && <div className="py-20 text-center opacity-30 italic font-bold">No active facilities.</div>}
-                </div>
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+       <div className="md:col-span-5 space-y-6">
+          <Section title="Asset Registry" icon={Building2}>
+             <button onClick={() => setState({...state, map: [...state.map, { id: BUILDINGS[0].id, level: 1 }]})} className="w-full btn btn-secondary !py-4 !rounded-2xl mb-6 border-dashed border-2 hover:border-brand-600 uppercase font-black text-xs tracking-widest">+ Register Facility</button>
+             <div className="max-h-[600px] overflow-y-auto space-y-3 pr-2 scrollbar-hide">
+                {state.map.map((m: any, i: number) => (
+                   <div key={i} className="card p-4 flex items-center gap-5 hover:border-brand-500 transition-all border-l-4 border-l-brand-600 shadow-md">
+                      <div className="flex-1">
+                         <select value={m.id} onChange={(e) => { const n = [...state.map]; n[i].id = e.target.value; setState({...state, map: n}); }} className="bg-transparent border-none p-0 text-sm font-black uppercase w-full outline-none italic tracking-tight">
+                            {BUILDINGS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                         </select>
+                         <p className="text-[10px] font-black text-surface-400 uppercase tracking-widest mt-0.5">Station #{i+1}</p>
+                      </div>
+                      <div className="flex items-center gap-3 bg-surface-50 dark:bg-surface-800 px-4 py-2 rounded-xl border border-surface-100 dark:border-surface-700">
+                         <span className="text-[10px] font-black opacity-30 tracking-widest">LVL</span>
+                         <input type="number" value={m.level} onChange={(e) => { const n = [...state.map]; n[i].level = Number(e.target.value); setState({...state, map: n}); }} className="w-10 bg-transparent border-none p-0 text-base font-black text-center outline-none tabular-nums" />
+                      </div>
+                      <button onClick={() => setState({...state, map: state.map.filter((_: any, idx: number) => idx !== i)})} className="p-2 text-surface-300 hover:text-red-500 transition-colors"><Trash2 size={20} /></button>
+                   </div>
+                ))}
              </div>
           </Section>
        </div>
-
-       <div className="lg:col-span-7 space-y-8">
-          <Section title="Resource Logistics" icon={Package} subtitle="Construction material analysis.">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="card p-8 bg-blue-600 text-white relative overflow-hidden shadow-2xl shadow-blue-500/20">
-                   <HardHat size={120} className="absolute -right-8 -bottom-8 opacity-10 rotate-12" />
-                   <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-8 text-blue-200">Expansion Value</h3>
-                   <div className="flex items-end gap-2">
-                      <span className="text-5xl font-black italic tracking-tighter tabular-nums">${(state.map.reduce((s: number, m: any) => s + (BUILDINGS.find(b => b.id === m.id)?.cost || 0) * (m.level || 1), 0)/1000).toFixed(1)}K</span>
-                   </div>
-                   <p className="text-xs font-bold text-blue-100 mt-4 opacity-60 uppercase italic tracking-widest">Aggregate Net Worth contribution.</p>
+       <div className="md:col-span-7 space-y-10">
+          <Section title="Expansion Logistics" icon={HardHat} subtitle="Aggregate resource requirement matrix.">
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="card bg-brand-600 text-white p-10 relative overflow-hidden shadow-2xl">
+                   <HardHat size={140} className="absolute -right-10 -bottom-10 opacity-10" />
+                   <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-10 text-brand-200 italic">Liquid Requirement</h3>
+                   <span className="text-6xl font-black italic tracking-tighter tabular-nums">${(constructionTotals[0]/1000).toFixed(1)}K</span>
+                   <p className="text-xs font-bold text-brand-100 mt-8 uppercase tracking-widest opacity-60 italic leading-relaxed">Required capital for existing infrastructure scaling.</p>
                 </div>
                 <div className="card p-8 space-y-6">
-                   <h3 className="text-sm font-black uppercase tracking-[0.2em] text-surface-400">Facility Health</h3>
-                   <div className="space-y-4">
-                      <HealthMetric label="Production Coverage" val="94%" color="bg-emerald-500" />
-                      <HealthMetric label="Worker Efficiency" val="100%" color="bg-emerald-500" />
-                      <HealthMetric label="Expansion Cap" val="Low" color="bg-amber-500" />
+                   <h3 className="text-xs font-black uppercase text-surface-400 tracking-widest italic">Resource Manifest</h3>
+                   <div className="space-y-3">
+                      {[101, 102, 108, 111, 110].map(id => (
+                        <div key={id} className="flex justify-between items-center py-2 border-b border-surface-50 dark:border-surface-800 last:border-0">
+                           <span className="text-[11px] font-black uppercase italic text-surface-600">{CONSTRUCTION_MATERIALS.find(m => m.id === id)?.name}</span>
+                           <span className="text-sm font-black tabular-nums">{constructionTotals[id]?.toLocaleString()} Units</span>
+                        </div>
+                      ))}
                    </div>
                 </div>
              </div>
           </Section>
-
-          <Section title="What-If Expansion" icon={Layers} subtitle="Simulate massive scaling impact.">
-             <div className="card p-8 space-y-8">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                   <div>
-                      <p className="text-[10px] font-black text-brand-600 uppercase italic tracking-widest mb-2">Simulated Levels</p>
-                      <p className="text-5xl font-black text-surface-900 dark:text-white tabular-nums tracking-tighter">+{state.settings.whatIfLevel} <span className="text-xl opacity-30 non-italic">Lvls</span></p>
+          <Section title="What-If Simulator" icon={Layers}>
+             <div className="card p-10 space-y-10">
+                <div className="flex justify-between items-end gap-10">
+                   <div className="flex-1">
+                      <p className="text-[11px] font-black text-brand-600 uppercase italic tracking-widest mb-2">Simulated Scaling</p>
+                      <p className="text-6xl font-black italic tracking-tighter">+{state.settings.whatIfLevel} <span className="text-2xl opacity-20 non-italic">Levels</span></p>
                    </div>
                    <div className="text-right">
-                      <p className="text-[10px] font-black text-red-500 uppercase italic tracking-widest mb-2">Efficiency Drag</p>
-                      <p className="text-3xl font-black text-red-600 tabular-nums">{(core.actualAO*100).toFixed(2)}%</p>
+                      <p className="text-[11px] font-black text-red-500 uppercase italic tracking-widest mb-2">Resultant AO Drag</p>
+                      <p className="text-4xl font-black tabular-nums text-red-600">{(core.actualAO*100).toFixed(2)}%</p>
                    </div>
                 </div>
-                <input
-                   type="range" min="0" max="500" step="5"
-                   value={state.settings.whatIfLevel}
-                   onChange={(e) => setState({...state, settings: {...state.settings, whatIfLevel: Number(e.target.value)}})}
-                   className="w-full h-3 bg-surface-100 dark:bg-surface-800 rounded-full appearance-none cursor-pointer accent-brand-500"
-                />
+                <input type="range" min="0" max="500" step="5" value={state.settings.whatIfLevel} onChange={(e) => setState({...state, settings: {...state.settings, whatIfLevel: Number(e.target.value)}})} className="w-full h-3 bg-surface-100 dark:bg-surface-800 rounded-full appearance-none cursor-pointer accent-brand-600" />
              </div>
           </Section>
        </div>
@@ -484,7 +418,7 @@ function OperationsView({ state, setState, core }: any) {
   );
 }
 
-function ExecutiveView({ state, setState }: any) {
+function ExecutiveView({ state, setState, core }: any) {
   const [pasteData, setPasteData] = useState("");
   const handlePaste = () => {
     const lines = pasteData.split('\n');
@@ -500,45 +434,52 @@ function ExecutiveView({ state, setState }: any) {
     });
     setState({ ...state, board: newBoard });
     setPasteData("");
+    alert("Board Integrated Successfully");
   };
 
-  const getEff = (primary: number, others: number[]) => n(primary) + Math.floor(others.reduce((s, v) => s + n(v), 0) / 4);
-  const effMan = getEff(state.board.coo.management, [state.board.cfo.management, state.board.cmo.management, state.board.cto.management, state.board.cooApp.management, state.board.cfoApp.management, state.board.cmoApp.management, state.board.ctoApp.management]);
-  const effAcc = getEff(state.board.cfo.accounting, [state.board.coo.accounting, state.board.cmo.accounting, state.board.cto.accounting, state.board.cooApp.accounting, state.board.cfoApp.accounting, state.board.cmoApp.accounting, state.board.ctoApp.accounting]);
-  const effCom = getEff(state.board.cmo.communication, [state.board.coo.communication, state.board.cfo.communication, state.board.cto.communication, state.board.cooApp.communication, state.board.cfoApp.communication, state.board.cmo.communication, state.board.cto.communication]);
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-       <div className="lg:col-span-4 space-y-6">
-          <div className="card p-8 space-y-6 border-l-4 border-l-amber-500">
-             <div className="flex items-center gap-3 text-amber-600 dark:text-amber-400 font-black text-xs uppercase tracking-widest">
-                <Zap size={18} /> System Integration
-             </div>
-             <p className="text-xs font-semibold text-surface-500 leading-relaxed">Paste raw executive data from SimCompanies to batch update all skill nodes simultaneously.</p>
-             <textarea
-               value={pasteData}
-               onChange={(e) => setPasteData(e.target.value)}
-               className="w-full h-48 bg-surface-50 dark:bg-surface-800 border border-surface-100 dark:border-surface-700 rounded-2xl p-4 text-xs font-mono focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all shadow-inner"
-               placeholder="COO Management: 20..."
-             />
-             <button onClick={handlePaste} className="w-full btn btn-primary !bg-amber-600 !hover:bg-amber-700 !rounded-2xl !py-4 shadow-amber-600/20 shadow-xl tracking-widest uppercase">Process Board Data</button>
-          </div>
+    <div className="space-y-10">
+       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <SkillNode label="Management" value={core.effMan} icon={Zap} sub="AO SUPPRESSION" color="text-amber-500" />
+          <SkillNode label="Accounting" value={core.effAcc} icon={DollarSign} sub="TAX THRESHOLD" color="text-emerald-500" />
+          <SkillNode label="Communication" value={core.effCom} icon={Globe} sub="SALES VELOCITY" color="text-indigo-500" />
+          <SkillNode label="Science" value={core.effSci} icon={Microscope} sub="PATENT ODDS" color="text-rose-500" />
        </div>
 
-       <div className="lg:col-span-8 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-             <SkillCard label="Operational Efficiency" value={effMan} sub="Admin Reduction Impact" color="from-amber-400 to-amber-600" />
-             <SkillCard label="Accounting Rigor" value={effAcc} sub="Tax Threshold Impact" color="from-emerald-400 to-emerald-600" />
-             <SkillCard label="Sales Velocity" value={effCom} sub="Consumer Throughput" color="from-indigo-400 to-indigo-600" />
+       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 pb-20">
+          <div className="lg:col-span-8 space-y-4">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ExecCard role="COO" data={state.board.coo} onChange={(d: any) => setState({...state, board: {...state.board, coo: d}})} />
+                <ExecCard role="COO Apprentice" data={state.board.cooApp} onChange={(d: any) => setState({...state, board: {...state.board, cooApp: d}})} isApp />
+                <ExecCard role="CFO" data={state.board.cfo} onChange={(d: any) => setState({...state, board: {...state.board, cfo: d}})} />
+                <ExecCard role="CFO Apprentice" data={state.board.cfoApp} onChange={(d: any) => setState({...state, board: {...state.board, cfoApp: d}})} isApp />
+                <ExecCard role="CMO" data={state.board.cmo} onChange={(d: any) => setState({...state, board: {...state.board, cmo: d}})} />
+                <ExecCard role="CMO Apprentice" data={state.board.cmoApp} onChange={(d: any) => setState({...state, board: {...state.board, cmoApp: d}})} isApp />
+                <ExecCard role="CTO" data={state.board.cto} onChange={(d: any) => setState({...state, board: {...state.board, cto: d}})} />
+                <ExecCard role="CTO Apprentice" data={state.board.ctoApp} onChange={(d: any) => setState({...state, board: {...state.board, ctoApp: d}})} isApp />
+             </div>
           </div>
+          <div className="lg:col-span-4 space-y-8">
+             <div className="card p-10 border-l-4 border-l-amber-600 bg-amber-50/20 dark:bg-amber-900/10 shadow-xl">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-amber-700 dark:text-amber-400 mb-8 italic">Quick board Sync</h3>
+                <p className="text-[11px] font-bold text-surface-500 leading-relaxed mb-8 uppercase tracking-tight">Paste entire executive page content to update primary and apprentice skill nodes.</p>
+                <textarea value={pasteData} onChange={(e) => setPasteData(e.target.value)} className="input !bg-white dark:!bg-surface-950 !h-48 font-mono text-[10px] mb-6" placeholder="COO Management: 20..." />
+                <button onClick={handlePaste} className="w-full btn btn-primary !bg-amber-600 !hover:bg-amber-700 !rounded-2xl !py-4 tracking-widest uppercase font-black">Synchronize Board</button>
+             </div>
 
-          <div className="card p-8">
-             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-surface-400 mb-8">Executive Board Grid</h3>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <MiniExec role="COO" data={state.board.coo} />
-                <MiniExec role="CFO" data={state.board.cfo} />
-                <MiniExec role="CMO" data={state.board.cmo} />
-                <MiniExec role="CTO" data={state.board.cto} />
+             <div className="card p-8 space-y-6">
+                <div className="flex items-center gap-3">
+                   <Calculator size={22} className="text-brand-500" />
+                   <h3 className="text-xs font-black uppercase tracking-widest italic">R&D Analytics</h3>
+                </div>
+                <div className="space-y-4 pt-4 border-t border-surface-50 dark:border-surface-800">
+                   <ForecastLine label="Patent Probability" value={`${(core.patentProb*100).toFixed(2)}%`} />
+                   <ForecastLine label="Science Speed" value={`${(core.effSci * 2).toFixed(0)}%`} />
+                   <div className="flex justify-between items-center bg-surface-50 dark:bg-surface-800 px-4 py-2 rounded-xl">
+                      <span className="text-[10px] font-black uppercase opacity-40">Target Quality</span>
+                      <input type="number" value={state.settings.patentTargetQuality} onChange={(e) => setState({...state, settings: {...state.settings, patentTargetQuality: Number(e.target.value)}})} className="w-14 bg-transparent border-none text-right font-black outline-none p-0 text-base" />
+                   </div>
+                </div>
              </div>
           </div>
        </div>
@@ -548,42 +489,42 @@ function ExecutiveView({ state, setState }: any) {
 
 function FinanceView({ state, setState, core }: any) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-       <div className="lg:col-span-4 space-y-6">
-          <Section title="Profit Node" icon={DollarSign} subtitle="Revenue configuration.">
-             <div className="card p-8 space-y-8 border-l-4 border-l-emerald-500">
-                <div className="space-y-2">
-                   <label className="text-[10px] font-black uppercase text-surface-400 tracking-widest">Est. Daily Profit</label>
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+       <div className="md:col-span-4 space-y-6">
+          <Section title="Config Node" icon={Wallet}>
+             <div className="card p-8 space-y-10 border-l-4 border-l-emerald-600 shadow-xl">
+                <div className="space-y-3">
+                   <label className="text-[11px] font-black uppercase text-surface-400 tracking-widest italic">Forecast Daily Profit</label>
                    <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 font-black">$</span>
-                      <input type="number" value={state.settings.estDailyProfit} onChange={(e) => setState({...state, settings: {...state.settings, estDailyProfit: Number(e.target.value)}})} className="w-full bg-surface-50 dark:bg-surface-800 border-none rounded-2xl p-4 pl-8 text-2xl font-black italic tracking-tighter tabular-nums" />
+                      <input type="number" value={state.settings.estDailyProfit} onChange={(e) => setState({...state, settings: {...state.settings, estDailyProfit: Number(e.target.value)}})} className="input !text-2xl !font-black !pl-10 !bg-surface-50 dark:!bg-surface-800 border-none !rounded-2xl" />
                    </div>
                 </div>
-                <div className="space-y-2">
-                   <label className="text-[10px] font-black uppercase text-surface-400 tracking-widest">Corporate Debt</label>
+                <div className="space-y-3">
+                   <label className="text-[11px] font-black uppercase text-surface-400 tracking-widest italic">Current Liabilities</label>
                    <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-rose-500 font-black">$</span>
-                      <input type="number" value={state.debt.current} onChange={(e) => setState({...state, debt: {...state.debt, current: Number(e.target.value)}})} className="w-full bg-surface-50 dark:bg-surface-800 border-none rounded-2xl p-4 pl-8 text-2xl font-black italic tracking-tighter tabular-nums text-red-500" />
+                      <input type="number" value={state.debt.current} onChange={(e) => setState({...state, debt: {...state.debt, current: Number(e.target.value)}})} className="input !text-2xl !font-black !pl-10 !bg-surface-50 dark:!bg-surface-800 border-none !rounded-2xl !text-rose-600" />
                    </div>
                 </div>
              </div>
           </Section>
        </div>
-       <div className="lg:col-span-8 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-             <div className="card p-8 space-y-6">
-                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-surface-400">Cashflow Synthesis</h3>
-                <div className="space-y-4">
-                   <CashItem label="Net Margin Forecast" value={`$${(core.netDaily/1000).toFixed(1)}K`} type="positive" />
-                   <CashItem label="Admin Overhead Drag" value={`-${(core.actualAO*100).toFixed(1)}%`} type="negative" />
-                   <CashItem label="Tax Threshold" value={`$${(core.taxThreshold/1_000_000).toFixed(2)}M`} type="neutral" />
-                </div>
+       <div className="md:col-span-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="card p-10 space-y-10">
+             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-surface-400 italic">Tax Engine</h3>
+             <div className="space-y-6">
+                <ForecastLine label="Accounting Safety" value={`$${(core.taxThreshold/1_000_000).toFixed(2)}M`} />
+                <ForecastLine label="Daily Threshold" value={`$${(core.taxThreshold/30/1000).toFixed(1)}K`} />
+                <ForecastLine label="Daily Tax Est." value={`-$${(core.estimatedDailyTax/1000).toFixed(1)}K`} red />
              </div>
-             <div className="card p-8 bg-emerald-600 text-white relative overflow-hidden">
-                <Wallet size={120} className="absolute -right-8 -bottom-8 opacity-10 rotate-12" />
-                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-emerald-200 mb-8">Asset Liquidity</h3>
-                <p className="text-5xl font-black italic tracking-tighter tabular-nums">${(core.inventoryValue/1000).toFixed(1)}K</p>
-                <p className="text-xs font-bold text-emerald-100 mt-4 opacity-60 uppercase italic tracking-widest">Current Warehouse Valuation.</p>
+          </div>
+          <div className="card p-10 space-y-10">
+             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-surface-400 italic">Operating Margin</h3>
+             <div className="space-y-6">
+                <ForecastLine label="Facility Wages" value={`-$${(core.dailyWages * core.actualAO / 1000).toFixed(1)}K`} red />
+                <ForecastLine label="Debt Servicing" value={`-$${(core.dailyInterest / 1000).toFixed(1)}K`} red />
+                <ForecastLine label="Net Daily Yield" value={`+$${(core.netDaily/1000).toFixed(1)}K`} green />
              </div>
           </div>
        </div>
@@ -591,48 +532,33 @@ function FinanceView({ state, setState, core }: any) {
   );
 }
 
-function LogisticsView({ state, setState, audit, fileInputRef }: any) {
+function LogisticsView({ state, setState, fileInputRef }: any) {
   const [q, setQ] = useState("");
   const filteredRes = useMemo(() => RESOURCES.filter(r => r.name.toLowerCase().includes(q.toLowerCase())), [q]);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
        <div className="lg:col-span-4 space-y-6">
-          <div className="card p-8 space-y-6">
-             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 gradient-brand rounded-2xl flex items-center justify-center text-white"><Package size={20} /></div>
-                <h3 className="text-sm font-black uppercase tracking-widest italic">Manifest</h3>
+          <div className="card p-8 flex flex-col h-[75vh] shadow-xl">
+             <div className="relative mb-6">
+                <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400" />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter Manifest..." className="input !pl-12 !py-3 uppercase font-black text-sm !bg-surface-50 dark:!bg-surface-800 border-none" />
              </div>
-             <div className="relative">
-                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400" />
-                <input value={q} onChange={(e) => setQ(e.target.value)} type="text" placeholder="Search Resource..." className="input !pl-12 !py-2.5" />
-             </div>
-             <div className="max-h-[500px] overflow-y-auto space-y-2 pr-2 scrollbar-hide">
-                {filteredRes.slice(0, 30).map(r => {
+             <div className="flex-1 overflow-y-auto space-y-2 scrollbar-hide">
+                {filteredRes.slice(0, 80).map(r => {
                    const item = state.inventory.find(i => i.id === r.id);
                    return (
-                     <div key={r.id} className="flex justify-between items-center p-3 hover:bg-surface-50 dark:hover:bg-surface-800/50 rounded-xl transition-colors group">
-                        <span className="text-xs font-black uppercase italic tracking-tighter text-surface-600">{r.name}</span>
-                        <input
-                          type="number"
-                          value={item?.qty || ""}
-                          onChange={(e) => {
-                             const v = Number(e.target.value);
-                             const next = [...state.inventory.filter(i => i.id !== r.id)];
-                             if (v > 0) next.push({ id: r.id, qty: v });
-                             setState({...state, inventory: next});
-                          }}
-                          className="w-20 bg-surface-100 dark:bg-surface-800 border-none rounded-lg p-1.5 text-xs text-center font-black outline-none focus:ring-2 focus:ring-brand-500"
-                        />
-                     </div>
+                      <div key={r.id} className="flex justify-between items-center p-3 hover:bg-surface-50 dark:hover:bg-surface-800 rounded-xl group transition-all">
+                         <span className="text-xs font-black uppercase italic text-surface-600">{r.name}</span>
+                         <input type="number" value={item?.qty || ""} onChange={(e) => { const v = Number(e.target.value); const next = [...state.inventory.filter(i => i.id !== r.id)]; if (v > 0) next.push({ id: r.id, qty: v }); setState({...state, inventory: next}); }} className="w-20 bg-surface-100 dark:bg-surface-900 border-none rounded-lg p-2 text-xs font-black text-center tabular-nums" />
+                      </div>
                    )
                 })}
              </div>
           </div>
        </div>
-       <div className="lg:col-span-8 flex flex-col items-center justify-center text-center p-12 card border-dashed opacity-40">
-          <Ship size={120} className="mb-8" />
-          <h2 className="text-2xl font-black uppercase italic tracking-tighter">Logistics Node Locked</h2>
-          <p className="text-sm font-semibold max-w-md mt-4">Connect real-time warehouse data feed via API or JSON upload to unlock vertical health auditing and storage burn analysis.</p>
+       <div className="lg:col-span-8 flex flex-col items-center justify-center card border-dashed opacity-25 p-20">
+          <Ship size={160} className="mb-10" />
+          <h2 className="text-4xl font-black uppercase italic tracking-tighter text-center">Logistics Node<br/>Requires Data Link</h2>
        </div>
     </div>
   );
@@ -644,33 +570,29 @@ function RetailView({ state, setState, retail }: any) {
   const marketSat = (retailData as any)?.[1]?.saturation || 1.0;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-       <div className="lg:col-span-4 space-y-6">
-          <div className="card p-8 space-y-8 border-l-4 border-l-rose-500">
-             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-surface-400">Target Selector</h3>
-             <select
-               value={state.settings.retailResourceId}
-               onChange={(e) => setState({...state, settings: {...state.settings, retailResourceId: Number(e.target.value)}})}
-               className="w-full bg-surface-50 dark:bg-surface-800 border-none rounded-2xl p-4 text-sm font-black uppercase italic outline-none focus:ring-4 focus:ring-rose-500/10 transition-all shadow-inner"
-             >
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
+       <div className="md:col-span-4 space-y-6">
+          <div className="card p-10 border-l-4 border-l-indigo-600 shadow-xl">
+             <h3 className="text-[11px] font-black uppercase tracking-widest text-surface-400 mb-8 italic">Consumer Entity Select</h3>
+             <select value={state.settings.retailResourceId} onChange={(e) => setState({...state, settings: {...state.settings, retailResourceId: Number(e.target.value)}})} className="input !bg-surface-50 dark:!bg-surface-800 border-none uppercase font-black italic mb-10 !py-4">
                 {RESOURCES.filter(r => r.retailInfo && r.retailInfo.length > 0).map(r => (
                    <option key={r.id} value={r.id}>{r.name}</option>
                 ))}
              </select>
-             <div className="space-y-4">
+             <div className="space-y-6">
                 <div className="flex justify-between items-end">
-                   <span className="text-xs font-black uppercase text-surface-400">Market Saturation</span>
-                   <span className={`text-2xl font-black italic tracking-tighter ${marketSat > 1.2 ? 'text-red-500' : 'text-green-500'}`}>{marketSat.toFixed(2)}</span>
+                   <span className="text-xs font-black uppercase text-surface-400 italic">Market Saturation</span>
+                   <span className={`text-3xl font-black italic tracking-tighter tabular-nums ${marketSat > 1.2 ? 'text-red-500' : 'text-emerald-500'}`}>{marketSat.toFixed(2)}</span>
                 </div>
-                <div className="h-2 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
-                   <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (1/marketSat)*50)}%` }} className={`h-full ${marketSat > 1.2 ? 'bg-red-500' : 'bg-green-500'}`} />
+                <div className="h-3 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
+                   <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (1/marketSat)*50)}%` }} className={`h-full ${marketSat > 1.2 ? 'bg-red-500' : 'bg-emerald-500'}`} />
                 </div>
              </div>
           </div>
        </div>
-       <div className="lg:col-span-8 card border-dashed opacity-20 flex flex-col items-center justify-center p-20">
-          <PieChart size={120} />
-          <h2 className="text-xl font-black uppercase italic mt-6">Simulation Node Offline</h2>
+       <div className="md:col-span-8 card p-20 flex flex-col items-center justify-center opacity-15 border-dashed">
+          <Target size={180} />
+          <h2 className="text-3xl font-black uppercase italic mt-10">Retail Sandbox Offline</h2>
        </div>
     </div>
   );
@@ -678,135 +600,112 @@ function RetailView({ state, setState, retail }: any) {
 
 function RiskView({ phase, retail }: any) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-       <div className="lg:col-span-12 space-y-8">
-          <Section title="Sentiment Mapping" icon={TrendingDown} subtitle="Global market pressure analysis.">
-             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {RESOURCES.filter(r => r.retailInfo && r.retailInfo.length > 0).slice(0, 18).map(res => {
-                   const retailItem: any = retail?.retail ? Object.entries(retail.retail).find(([k]) => k.toLowerCase() === res.name.toLowerCase()) : null;
-                   const sat = retailItem?.[1]?.saturation || 1.0;
-                   return (
-                     <div key={res.id} className="card p-4 text-center group card-hover border-l-4 border-l-purple-500">
-                        <span className="block text-[10px] font-black text-surface-400 uppercase truncate mb-2">{res.name}</span>
-                        <span className={`text-xl font-black italic tracking-tighter tabular-nums ${sat < 1 ? 'text-green-500' : 'text-red-500'}`}>{sat.toFixed(2)}</span>
-                        <div className="mt-4 h-1 bg-surface-50 dark:bg-surface-800 rounded-full overflow-hidden">
-                           <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (1/sat)*50)}%` }} className={`h-full ${sat < 1 ? 'bg-green-500' : 'bg-red-500'}`} />
-                        </div>
-                     </div>
-                   )
-                })}
-             </div>
-          </Section>
+    <div className="card p-12">
+       <h3 className="text-sm font-black uppercase tracking-[0.3em] text-surface-400 mb-12 italic">Real-time Regime Sentiment Matrix</h3>
+       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-6">
+          {RESOURCES.filter(r => r.retailInfo && r.retailInfo.length > 0).slice(0, 24).map(res => {
+             const retailItem: any = retail?.retail ? Object.entries(retail.retail).find(([k]) => k.toLowerCase() === res.name.toLowerCase()) : null;
+             const sat = retailItem?.[1]?.saturation || 1.0;
+             return (
+               <div key={res.id} className="card p-6 text-center border-b-4 border-indigo-600 shadow-lg hover:-translate-y-1 transition-all">
+                  <span className="block text-[11px] font-black uppercase text-surface-400 truncate mb-4">{res.name}</span>
+                  <span className={`text-2xl font-black tabular-nums italic ${sat < 1 ? 'text-emerald-500' : 'text-red-500'}`}>{sat.toFixed(2)}</span>
+               </div>
+             )
+          })}
        </div>
     </div>
   );
 }
 
-function SuiteTab({ active, onClick, label, icon: Icon, color }: any) {
+function WorkstationTab({ active, onClick, label, icon: Icon }: any) {
   return (
-    <button
-      onClick={onClick}
-      className={`
-        px-6 py-3 rounded-2xl text-[11px] font-black tracking-widest uppercase transition-all flex items-center gap-3
-        ${active
-          ? "bg-surface-900 text-white dark:bg-white dark:text-surface-950 shadow-xl scale-105"
-          : `bg-white dark:bg-surface-900 text-surface-400 dark:text-surface-500 hover:text-surface-900 dark:hover:text-white`}
-      `}
-    >
-       <Icon size={16} className={active ? '' : color} /> {label}
+    <button onClick={onClick} className={`px-5 py-2.5 rounded-xl text-[11px] font-black tracking-widest transition-all flex items-center gap-3 ${active ? 'bg-surface-900 text-white dark:bg-white dark:text-surface-900 shadow-xl scale-105' : 'text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'}`}>
+       <Icon size={16} /> {label}
     </button>
   );
 }
 
-function CommandKpi({ label, value, sub, icon: Icon, color }: any) {
+function GlobalMetric({ label, value }: any) {
   return (
-    <div className="card p-6 relative overflow-hidden group border-b-4 border-b-surface-100 dark:border-b-surface-800">
-       <div className={`absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity`}>
-          <Icon size={100} />
-       </div>
-       <div className="flex items-start justify-between">
-          <div className="space-y-4">
-             <span className="text-[10px] font-black uppercase tracking-widest text-surface-400 block italic">{label}</span>
-             <span className="text-3xl font-black italic tracking-tighter text-surface-900 dark:text-white tabular-nums">{value}</span>
-             <p className="text-[10px] font-bold text-surface-400 uppercase tracking-tight">{sub}</p>
-          </div>
-          <div className={`p-4 rounded-2xl ${color} text-white shadow-xl shadow-surface-900/10`}>
-             <Icon size={24} />
-          </div>
-       </div>
+    <div className="flex flex-col">
+       <span className="text-[10px] font-black uppercase opacity-60 tracking-tight leading-tight mb-1 italic">{label}</span>
+       <span className="text-2xl font-black italic tracking-tighter tabular-nums leading-tight">{value}</span>
     </div>
   );
 }
 
-function SkillCard({ label, value, sub, color }: any) {
+function KPICard({ label, value, sub, icon: Icon }: any) {
   return (
-    <div className={`p-8 rounded-[2rem] bg-gradient-to-br ${color} text-white shadow-2xl relative overflow-hidden group`}>
-       <Zap size={140} className="absolute -right-8 -bottom-8 opacity-10 rotate-12 group-hover:scale-110 transition-transform duration-700" />
-       <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-8 text-white/60 italic">{label}</h4>
-       <div className="flex items-end gap-2">
-          <span className="text-5xl font-black italic tracking-tighter tabular-nums">{value}</span>
-          <span className="text-xl font-bold opacity-40 mb-1 tracking-widest uppercase">Pts</span>
+    <div className="card p-8 flex flex-col items-center text-center group hover:-translate-y-1.5 transition-all shadow-md">
+       <div className="w-14 h-14 bg-surface-50 dark:bg-surface-800 rounded-[1.25rem] flex items-center justify-center text-brand-600 mb-6 group-hover:bg-brand-600 group-hover:text-white transition-all shadow-inner">
+          <Icon size={28} />
        </div>
-       <p className="text-[10px] font-bold mt-4 uppercase italic text-white/50 tracking-widest">{sub}</p>
+       <span className="text-[11px] font-black uppercase tracking-widest text-surface-400 mb-2 italic">{label}</span>
+       <span className="text-2xl font-black tabular-nums italic">{value}</span>
+       <p className="text-[10px] font-bold text-surface-300 mt-4 uppercase tracking-tighter">{sub}</p>
     </div>
   );
 }
 
-function MiniExec({ role, data }: any) {
+function SkillNode({ label, value, sub, icon: Icon, color }: any) {
   return (
-    <div className="card p-5 space-y-4 hover:border-amber-500/50 transition-all border-dashed">
+    <div className="card p-8 flex flex-col items-center text-center border-b-4 border-current shadow-xl" style={{color: color.replace('text-', '')} as any}>
+       <div className="flex items-center gap-4 mb-6">
+          <Icon size={20} />
+          <span className="text-[12px] font-black uppercase tracking-widest text-surface-900 dark:text-white italic">{label}</span>
+       </div>
+       <span className="text-5xl font-black italic tracking-tighter text-surface-900 dark:text-white tabular-nums">{value}</span>
+       <span className="text-[10px] font-black uppercase opacity-40 mt-6 tracking-[0.3em] italic">{sub}</span>
+    </div>
+  );
+}
+
+function ExecCard({ role, data, onChange, isApp }: any) {
+  return (
+    <div className={`card p-6 space-y-6 border-l-4 transition-all ${isApp ? 'border-l-surface-300 dark:border-l-surface-700 opacity-80 scale-95 hover:opacity-100 hover:scale-100' : 'border-l-brand-600 shadow-lg'}`}>
        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-black uppercase text-amber-600 italic">{role}</span>
-          <div className="w-1.5 h-1.5 rounded-full bg-surface-200" />
+          <span className={`text-[11px] font-black uppercase italic tracking-widest ${isApp ? 'text-surface-400' : 'text-brand-600'}`}>{role}</span>
+          <div className="flex gap-1.5">
+             <div className="w-2 h-2 rounded-full bg-brand-500" />
+             <div className="w-2 h-2 rounded-full bg-brand-500 opacity-20" />
+          </div>
        </div>
-       <div className="space-y-2">
-          <SkillLine label="MAN" val={data.management} />
-          <SkillLine label="ACC" val={data.accounting} />
-          <SkillLine label="COM" val={data.communication} />
-          <SkillLine label="SCI" val={data.science} />
+       <div className="grid grid-cols-2 gap-3">
+          <SkillLineSmall label="MAN" val={data.management} onChange={(v: any) => onChange({...data, management: v})} />
+          <SkillLineSmall label="ACC" val={data.accounting} onChange={(v: any) => onChange({...data, accounting: v})} />
+          <SkillLineSmall label="COM" val={data.communication} onChange={(v: any) => onChange({...data, communication: v})} />
+          <SkillLineSmall label="SCI" val={data.science} onChange={(v: any) => onChange({...data, science: v})} />
        </div>
     </div>
   );
 }
 
-function SkillLine({ label, val }: any) {
-   return (
-      <div className="flex justify-between items-center bg-surface-50 dark:bg-surface-800 rounded-lg px-2 py-1 border border-surface-100 dark:border-surface-700">
-         <span className="text-[8px] font-black text-surface-400">{label}</span>
-         <span className="text-[10px] font-black italic tabular-nums">{val}</span>
-      </div>
-   );
+function SkillLineSmall({ label, val, onChange }: any) {
+  return (
+    <div className="flex justify-between items-center bg-surface-50 dark:bg-surface-800 px-4 py-2 rounded-xl border border-surface-100 dark:border-surface-700 hover:border-brand-500 transition-colors">
+       <span className="text-[10px] font-black text-surface-400">{label}</span>
+       <input type="number" value={val} onChange={(e) => onChange(Number(e.target.value))} className="w-10 bg-transparent border-none p-0 text-sm font-black text-right outline-none tabular-nums" />
+    </div>
+  );
 }
 
-function HealthMetric({ label, val, color }: any) {
-   return (
-      <div className="flex items-center justify-between">
-         <span className="text-[10px] font-black uppercase text-surface-500 italic">{label}</span>
-         <div className="flex items-center gap-3">
-            <span className="text-xs font-black tabular-nums tracking-tighter">{val}</span>
-            <div className={`w-2 h-2 rounded-full ${color}`} />
-         </div>
-      </div>
-   );
-}
-
-function CashItem({ label, value, type }: any) {
-   const c = type === 'positive' ? 'text-green-500' : type === 'negative' ? 'text-red-500' : 'text-surface-600';
-   return (
-      <div className="flex justify-between items-center py-2 border-b border-surface-50 dark:border-surface-800 last:border-0">
-         <span className="text-xs font-bold text-surface-500 uppercase italic tracking-tighter">{label}</span>
-         <span className={`text-sm font-black italic tabular-nums ${c}`}>{value}</span>
-      </div>
-   );
+function ForecastLine({ label, value, red, green }: any) {
+  return (
+    <div className="flex justify-between items-center py-3 border-b border-surface-50 dark:border-surface-800 last:border-0">
+       <span className="text-[11px] font-black uppercase text-surface-500 italic tracking-tight">{label}</span>
+       <span className={`text-base font-black tabular-nums italic ${red ? 'text-red-600' : green ? 'text-emerald-500' : 'text-surface-900 dark:text-white'}`}>{value}</span>
+    </div>
+  );
 }
 
 function CheckItem({ label, active, light }: any) {
   return (
-    <div className="flex items-center gap-4 py-1">
-       <div className={`w-4 h-4 rounded-md border-2 transition-all flex items-center justify-center ${active ? 'bg-emerald-500 border-emerald-500 shadow-lg shadow-emerald-500/20' : 'border-white/10 bg-white/5'}`}>
-          {active && <CheckCircle2 size={12} className="text-white" />}
+    <div className="flex items-center gap-5 py-2">
+       <div className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${active ? 'bg-emerald-500 border-emerald-500 shadow-lg' : 'border-white/20 bg-white/5'}`}>
+          {active && <CheckCircle2 size={14} className="text-white" />}
        </div>
-       <span className={`text-[11px] font-black uppercase italic tracking-widest ${active ? (light ? 'text-white' : 'text-surface-900') : 'text-white/20'}`}>{label}</span>
+       <span className={`text-[12px] font-black uppercase italic tracking-widest ${active ? (light ? 'text-white' : 'text-surface-900') : 'text-white/20'}`}>{label}</span>
     </div>
   );
 }
