@@ -9,8 +9,9 @@ import {
   Repeat, TrendingDown, Briefcase, Globe, BarChart2, Link, Link2Off, LayoutDashboard,
   HardHat, Ship, FileText, History, CheckCircle2
 } from "lucide-react";
+import { useTheme } from "../hooks/useTheme";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
-import { BUILDINGS, RESOURCES } from "../data/simco_static";
+import { BUILDINGS, RESOURCES, CONSTRUCTION_MATERIALS } from "../data/simco_static";
 import * as dataRepo from "../services/dataRepo";
 import { LoadingState } from "../components/States";
 import { useNavigate } from "../router";
@@ -29,7 +30,7 @@ interface MapItem { id: string; level: number; }
 interface InventoryItem { id: number; qty: number; }
 
 interface SuiteStateV6 {
-  activeTab: 'command' | 'ops' | 'exec' | 'finance' | 'logistics' | 'risk';
+  activeTab: 'command' | 'ops' | 'exec' | 'finance' | 'logistics' | 'risk' | 'retail';
   globalSync: boolean;
   map: MapItem[];
   board: {
@@ -50,6 +51,7 @@ interface SuiteStateV6 {
     patentStartingQuality: number;
     patentTargetQuality: number;
     researchUnitCost: number;
+    retailResourceId: number;
   };
   debt: { current: number; rate: number; };
   moduleSettings: {
@@ -57,6 +59,7 @@ interface SuiteStateV6 {
     logisticsLinked: boolean; riskLinked: boolean;
   };
   showStaff?: boolean;
+  // theme removed as we use useTheme hook
 }
 
 const EMPTY_EXEC: Executive = { name: "", management: 0, accounting: 0, communication: 0, science: 0 };
@@ -74,7 +77,8 @@ const DEFAULT_STATE: SuiteStateV6 = {
     prodBonus: 12, realm: 0, estDailyProfit: 250000, whatIfLevel: 0,
     bankLevel: 0, cash: 0, bondsSold: 0, bondsOwned: 0,
     profileSalesBonus: 0, recreationalBuildings: 0,
-    patentStartingQuality: 0, patentTargetQuality: 1, researchUnitCost: 179
+    patentStartingQuality: 0, patentTargetQuality: 1, researchUnitCost: 179,
+    retailResourceId: 24
   },
   debt: { current: 2000000, rate: 0.5 },
   moduleSettings: {
@@ -84,6 +88,7 @@ const DEFAULT_STATE: SuiteStateV6 = {
 };
 
 export function CorporateSuitePage() {
+  const { theme, toggleTheme } = useTheme();
   const [realm, setRealm] = useSharedRealm();
   const navigate = useNavigate();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -266,11 +271,12 @@ export function CorporateSuitePage() {
   const renderTab = () => {
     switch(state.activeTab) {
       case 'command': return <CommandView state={state} core={core} phase={economyPhase} setState={setState} fileInputRef={fileInputRef} />;
-      case 'ops': return <OperationsView state={state} core={core} setState={setState} />;
+      case 'ops': return <OperationsView state={state} core={core} setState={setState} theme={theme} />;
       case 'exec': return <ExecutiveView state={state} core={core} setState={setState} />;
       case 'finance': return <FinanceView state={state} core={core} setState={setState} />;
       case 'logistics': return <LogisticsView state={state} core={core} setState={setState} margins={margins} audit={audit} fileInputRef={fileInputRef} />;
-      case 'risk': return <RiskView state={state} core={core} phase={economyPhase} retail={retail} />;
+      case 'retail': return <RetailView state={state} core={core} setState={setState} retail={retail} theme={theme} />;
+      case 'risk': return <RiskView state={state} core={core} phase={economyPhase} retail={retail} theme={theme} />;
     }
   };
 
@@ -281,7 +287,7 @@ export function CorporateSuitePage() {
       <AnimatePresence>
          {notification && (
             <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -50, opacity: 0 }} className="fixed top-8 left-1/2 -translate-x-1/2 z-[100]">
-               <div className={`px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border ${notification.type === 'success' ? 'bg-econ-green text-white border-econ-green' : 'bg-econ-red text-white border-econ-red'}`}>
+               <div className={`px-6 py-3 rounded-[1.5rem] shadow-2xl flex items-center gap-3 border ${notification.type === 'success' ? 'bg-econ-green text-white border-econ-green' : 'bg-econ-red text-white border-econ-red'}`}>
                   {notification.type === 'success' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
                   <span className="text-xs font-black uppercase tracking-widest">{notification.msg}</span>
                </div>
@@ -300,7 +306,7 @@ export function CorporateSuitePage() {
               </h1>
            </div>
 
-           <nav className="flex items-center bg-surface-900 border border-white/10 rounded-2xl p-1 gap-1 shadow-sm ml-8">
+           <nav className="flex items-center bg-surface-900 border border-white/10 rounded-[1.5rem] p-1 gap-1 shadow-sm ml-8">
               <TabBtn active={state.activeTab === 'command'} onClick={() => setState({...state, activeTab: 'command'})} icon={LayoutDashboard} label="Command" />
               <TabBtn active={state.activeTab === 'ops'} onClick={() => setState({...state, activeTab: 'ops'})} icon={HardHat} label="Operations" />
               <TabBtn active={state.activeTab === 'exec'} onClick={() => setState({...state, activeTab: 'exec'})} icon={Users} label="Executive" />
@@ -334,7 +340,7 @@ export function CorporateSuitePage() {
          </AnimatePresence>
       </main>
 
-      <footer className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface-900/90 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-white/10 flex items-center gap-8 z-50">
+      <footer className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface-900/90 backdrop-blur-xl p-4 rounded-[2rem] shadow-2xl border border-white/10 flex items-center gap-8 z-50">
          <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".csv,.json" />
          <div className="flex items-center gap-6 px-4 border-r border-white/10">
             <DockToggle label="Global Sync" active={state.globalSync} onClick={() => setState({...state, globalSync: !state.globalSync})} />
@@ -363,7 +369,7 @@ function CommandView({ state, core, phase, setState, fileInputRef }: any) {
   if (state.map.length === 0) {
      return (
         <div className="flex flex-col items-center justify-center py-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-           <div className="w-20 h-20 rounded-3xl bg-brand-500/10 flex items-center justify-center text-brand-500 mb-8 border border-brand-500/20 shadow-xl shadow-brand-500/10">
+           <div className="w-20 h-20 rounded-[2rem] bg-gradient-to-br from-brand-500 to-brand-600/10 flex items-center justify-center text-brand-500 mb-8 border border-brand-500/20 shadow-xl shadow-brand-500/10">
               <Building2 size={40} />
            </div>
            <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter mb-4">Initialize Terminal</h2>
@@ -371,8 +377,8 @@ function CommandView({ state, core, phase, setState, fileInputRef }: any) {
               Your corporate workspace is currently empty. To begin economic analysis, upload your game data or manually add facilities.
            </p>
            <div className="grid grid-cols-2 gap-6 w-full max-w-xl">
-              <button onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-4 p-8 bg-surface-900 border border-white/10 rounded-3xl hover:border-brand-500 hover:shadow-2xl transition-all group">
-                 <div className="p-4 bg-white/5 rounded-2xl text-brand-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+              <button onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-4 p-8 bg-surface-900 border border-white/10 rounded-[2rem] hover:border-brand-500 hover:shadow-2xl transition-all group">
+                 <div className="p-4 bg-white/5 rounded-[1.5rem] text-brand-500 group-hover:bg-gradient-to-br from-brand-500 to-brand-600 group-hover:text-white transition-colors">
                     <Upload size={24} />
                  </div>
                  <div className="text-center">
@@ -380,8 +386,8 @@ function CommandView({ state, core, phase, setState, fileInputRef }: any) {
                     <p className="text-[10px] text-white/20 mt-1 uppercase font-bold">CSV/JSON Exports</p>
                  </div>
               </button>
-              <button onClick={() => setState({...state, activeTab: 'ops'})} className="flex flex-col items-center gap-4 p-8 bg-surface-900 border border-white/10 rounded-3xl hover:border-brand-500 hover:shadow-2xl transition-all group">
-                 <div className="p-4 bg-white/5 rounded-2xl text-brand-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+              <button onClick={() => setState({...state, activeTab: 'ops'})} className="flex flex-col items-center gap-4 p-8 bg-surface-900 border border-white/10 rounded-[2rem] hover:border-brand-500 hover:shadow-2xl transition-all group">
+                 <div className="p-4 bg-white/5 rounded-[1.5rem] text-brand-500 group-hover:bg-gradient-to-br from-brand-500 to-brand-600 group-hover:text-white transition-colors">
                     <UserPlus size={24} />
                  </div>
                  <div className="text-center">
@@ -403,7 +409,7 @@ function CommandView({ state, core, phase, setState, fileInputRef }: any) {
                 <Kpi label="Daily Net Flow" value={`$${(core.netDaily/1000).toFixed(1)}K`} sub="Post-Tax/AO" icon={DollarSign} color="text-econ-green" />
                 <Kpi label="Admin Overhead" value={`${(core.actualAO*100).toFixed(2)}%`} sub={`${core.totalLevels} Active Levels`} icon={BarChart3} color="text-econ-red" />
              </div>
-             <div className="mt-6 flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-dashed border-white/10 text-white/40">
+             <div className="mt-6 flex items-center gap-3 bg-white/5 p-4 rounded-[1.5rem] border border-dashed border-white/10 text-white/40">
                 <PhaseDot phase={phase} />
                 <div>
                    <p className="text-[10px] font-black uppercase text-white tracking-widest">Regime Awareness: {phase}</p>
@@ -421,7 +427,7 @@ function CommandView({ state, core, phase, setState, fileInputRef }: any) {
                          <span className="text-white">{lvls} Lvls</span>
                          </div>
                       <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full bg-brand-500" style={{ width: `${(lvls / (core.totalLevels || 1)) * 100}%` }} />
+                            <div className="h-full bg-gradient-to-br from-brand-500 to-brand-600" style={{ width: `${(lvls / (core.totalLevels || 1)) * 100}%` }} />
                          </div>
                       </div>
                    )) : (
@@ -449,7 +455,7 @@ function CommandView({ state, core, phase, setState, fileInputRef }: any) {
                 {state.map.slice(0, 4).map((m: any, i: number) => {
                    const b = BUILDINGS.find(bu => bu.id === m.id);
                    return (
-                      <div key={i} className="p-4 bg-white/5 border border-dashed border-white/10 rounded-2xl">
+                      <div key={i} className="p-4 bg-white/5 border border-dashed border-white/10 rounded-[1.5rem]">
                          <div className="flex justify-between items-start mb-2">
                             <p className="text-[10px] font-black uppercase text-brand-500 truncate max-w-[120px]">{b?.name || 'Building'}</p>
                             <span className="text-[8px] font-black bg-white/5 text-white/40 px-2 py-0.5 rounded border border-white/5">LVL {m.level}</span>
@@ -469,51 +475,131 @@ function CommandView({ state, core, phase, setState, fileInputRef }: any) {
   );
 }
 
-function OperationsView({ state, setState, core }: any) {
+function OperationsView({ state, setState, core, theme }: any) {
+  const [targetLevels, setTargetLevels] = React.useState<Record<number, number>>({});
+
+  const constructionTotals = useMemo(() => {
+    const totals: Record<number, number> = { 101: 0, 102: 0, 108: 0, 111: 0, 110: 0, 0: 0 }; // 0 for Cash
+
+    state.map.forEach((m: any) => {
+      const b = BUILDINGS.find(bu => bu.id === m.id);
+      if (!b) return;
+      const target = targetLevels[state.map.indexOf(m)] || m.level;
+      if (target <= m.level) return;
+
+      for (let l = m.level; l < target; l++) {
+        const multiplier = l === 0 ? 1 : l;
+        b.resources.forEach((r: any) => {
+          if (r.id !== 109) { // Remove Windows from logic as requested
+            totals[r.id] = (totals[r.id] || 0) + (r.qty * multiplier);
+          }
+        });
+        totals[0] += b.cost * (l <= 1 ? 1 : l); // Cash cost approx
+      }
+    });
+    return totals;
+  }, [state.map, targetLevels]);
+
+  const updateTarget = (idx: number, lvl: number) => {
+    setTargetLevels(prev => ({ ...prev, [idx]: Math.max(state.map[idx].level, lvl) }));
+  };
+
   return (
-    <div className="grid grid-cols-12 gap-6">
-       <div className="col-span-4 space-y-6">
-          <Section title="Facility Management" icon={Building2} action={<ModuleLink active={state.moduleSettings.opsLinked} onClick={() => setState({...state, moduleSettings: {...state.moduleSettings, opsLinked: !state.moduleSettings.opsLinked}})} />}>
-             <div className="space-y-4">
-                <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl border border-dashed border-white/10">
-                   <div className="text-center flex-1">
-                      <p className="text-[8px] font-bold text-white/40 uppercase">Total Levels</p>
-                      <p className="text-lg font-black font-mono text-white">{core.totalLevels}</p>
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
+       <div className="md:col-span-5 lg:col-span-4 space-y-8">
+          <Section title="Asset Registry" icon={Building2} action={<ModuleLink active={state.moduleSettings.opsLinked} onClick={() => setState({...state, moduleSettings: {...state.moduleSettings, opsLinked: !state.moduleSettings.opsLinked}})} theme={theme} />}>
+             <div className="space-y-6">
+                <div className={`flex justify-between items-center p-6 rounded-[1.5rem] border border-dashed ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-surface-50 border-surface-200'}`}>
+                   <div className="text-center flex-1 border-r border-dashed border-surface-200 dark:border-white/10">
+                      <p className={`text-[9px] font-bold uppercase mb-2 ${theme === 'dark' ? 'text-white/40' : 'text-surface-500'}`}>Cumulative Levels</p>
+                      <p className={`text-2xl font-black font-mono ${theme === 'dark' ? 'text-white' : 'text-surface-900'}`}>{core.totalLevels}</p>
                    </div>
-                   <div className="h-8 w-px bg-white/10" />
                    <div className="text-center flex-1">
-                      <p className="text-[8px] font-bold text-white/40 uppercase">Daily Wages</p>
-                      <p className="text-lg font-black font-mono text-econ-red">$${(core.dailyWages/1000).toFixed(1)}K</p>
+                      <p className={`text-[9px] font-bold uppercase mb-2 ${theme === 'dark' ? 'text-white/40' : 'text-surface-500'}`}>Daily Expenditure</p>
+                      <p className="text-2xl font-black font-mono text-econ-red">$${(core.dailyWages/1000).toFixed(1)}K</p>
                    </div>
                 </div>
-                <div className="max-h-[500px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                <div className="max-h-[600px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                    {state.map.map((m: any, i: number) => (
-                      <div key={i} className="flex items-center gap-3 p-3 bg-black/40 border border-white/5 rounded-xl hover:border-brand-500 transition-all shadow-sm group">
-                         <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-white/20 font-mono text-[10px] font-bold">#{i+1}</div>
-                         <select value={m.id} onChange={(e) => { const next = [...state.map]; next[i].id = e.target.value; setState({...state, map: next}); }} className="flex-1 bg-transparent border-none text-[10px] font-black uppercase text-white focus:ring-0 p-0">
-                            {BUILDINGS.map(b => <option key={b.id} value={b.id} className="bg-surface-900">{b.name}</option>)}
-                         </select>
-                         <input type="number" value={m.level} onChange={(e) => { const next = [...state.map]; next[i].level = Number(e.target.value); setState({...state, map: next}); }} className="w-12 bg-white/5 border-none rounded p-1 text-[10px] font-black text-center text-white focus:ring-1 focus:ring-brand-500" />
-                         <button onClick={() => setState({...state, map: state.map.filter((_: any, idx: number) => idx !== i)})} className="p-1 text-white/10 hover:text-econ-red transition-all"><Trash2 size={12} /></button>
+                      <div key={i} className={`flex flex-col gap-4 p-4 border rounded-[1.5rem] transition-all shadow-sm group ${theme === 'dark' ? 'bg-black/40 border-white/5 hover:border-brand-500' : 'bg-white border-surface-200 hover:border-brand-500'}`}>
+                         <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono text-xs font-bold ${theme === 'dark' ? 'bg-white/5 text-white/20' : 'bg-surface-100 text-surface-400'}`}>#{i+1}</div>
+                            <select value={m.id} onChange={(e) => { const next = [...state.map]; next[i].id = e.target.value; setState({...state, map: next}); }} className={`flex-1 bg-transparent border-none text-[11px] font-black uppercase focus:ring-0 p-0 ${theme === 'dark' ? 'text-white' : 'text-surface-900'}`}>
+                               {BUILDINGS.map(b => <option key={b.id} value={b.id} className={theme === 'dark' ? 'bg-surface-900 text-white' : 'bg-white text-surface-900'}>{b.name}</option>)}
+                            </select>
+                            <div className="flex items-center gap-2">
+                               <p className={`text-[8px] font-bold uppercase ${theme === 'dark' ? 'text-white/20' : 'text-surface-400'}`}>Lvl</p>
+                               <input type="number" value={m.level} onChange={(e) => { const next = [...state.map]; next[i].level = Number(e.target.value); setState({...state, map: next}); }} className={`w-14 h-10 border-none rounded-xl text-center text-xs font-black focus:ring-2 focus:ring-brand-500/50 ${theme === 'dark' ? 'bg-white/5 text-white' : 'bg-surface-100 text-surface-900'}`} />
+                            </div>
+                            <button onClick={() => setState({...state, map: state.map.filter((_: any, idx: number) => idx !== i)})} className={`p-2 transition-all rounded-lg ${theme === 'dark' ? 'text-white/10 hover:text-econ-red hover:bg-econ-red/10' : 'text-surface-300 hover:text-econ-red hover:bg-econ-red/10'}`}><Trash2 size={16} /></button>
+                         </div>
+                         <div className={`pt-3 border-t flex items-center justify-between ${theme === 'dark' ? 'border-white/5' : 'border-surface-50'}`}>
+                            <p className={`text-[9px] font-bold uppercase ${theme === 'dark' ? 'text-white/20' : 'text-surface-400'}`}>Construction Target</p>
+                            <div className="flex items-center gap-3">
+                               <button onClick={() => updateTarget(i, (targetLevels[i] || m.level) - 1)} className={`w-6 h-6 rounded-lg flex items-center justify-center border ${theme === 'dark' ? 'border-white/10 text-white/40' : 'border-surface-200 text-surface-400'}`}>-</button>
+                               <span className={`text-xs font-black font-mono ${theme === 'dark' ? 'text-white' : 'text-surface-900'}`}>{targetLevels[i] || m.level}</span>
+                               <button onClick={() => updateTarget(i, (targetLevels[i] || m.level) + 1)} className={`w-6 h-6 rounded-lg flex items-center justify-center border ${theme === 'dark' ? 'border-white/10 text-white/40' : 'border-surface-200 text-surface-400'}`}>+</button>
+                            </div>
+                         </div>
                       </div>
                    ))}
                 </div>
-                <button onClick={() => setState({...state, map: [...state.map, { id: BUILDINGS[0].id, level: 1 }]})} className="w-full py-4 border-2 border-dashed border-white/10 rounded-xl text-[9px] font-black uppercase text-white/40 hover:border-brand-500 hover:text-brand-500 transition-all flex items-center justify-center gap-2">
-                   <UserPlus size={14} /> Add Facility
+                <button onClick={() => setState({...state, map: [...state.map, { id: BUILDINGS[0].id, level: 1 }]})} className={`w-full py-5 border-2 border-dashed rounded-[1.5rem] text-[10px] font-black uppercase transition-all flex items-center justify-center gap-3 ${theme === 'dark' ? 'border-white/10 text-white/40 hover:border-brand-500 hover:text-brand-500 hover:bg-brand-500/5' : 'border-surface-200 text-surface-400 hover:border-brand-500 hover:text-brand-500 hover:bg-brand-500/5'}`}>
+                   <UserPlus size={18} /> Append New Infrastructure
                 </button>
              </div>
           </Section>
        </div>
-       <div className="col-span-8 space-y-6">
-          <Section title="What-If Expansion Simulator" icon={Layers}>
-             <div className="p-6 bg-brand-500/5 border border-brand-500/10 rounded-2xl">
-                <div className="flex justify-between items-end mb-6">
-                   <div>
-                      <p className="text-[10px] font-black text-brand-500 uppercase italic">Projected Scaling Impact</p>
-                      <p className="text-3xl font-black text-white">+{state.settings.whatIfLevel} Levels</p>
+       <div className="md:col-span-7 lg:col-span-8 space-y-10">
+          <Section title="Construction Logistics Hub" icon={HardHat}>
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                   <p className={`text-[10px] font-bold uppercase tracking-widest ${theme === 'dark' ? 'text-white/40' : 'text-surface-500'}`}>Aggregate Requirements for Upgrades</p>
+                   <div className="grid grid-cols-1 gap-3">
+                      {[101, 102, 108, 111, 110].map(id => {
+                        const qty = constructionTotals[id] || 0;
+                        const material = CONSTRUCTION_MATERIALS.find(m => m.id === id);
+                        return (
+                          <div key={id} className={`flex justify-between items-center p-5 border rounded-2xl ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-surface-50 border-surface-200'}`}>
+                             <div className="flex flex-col">
+                                <span className={`text-[11px] font-black uppercase tracking-wide ${theme === 'dark' ? 'text-white' : 'text-surface-900'}`}>{material?.name}</span>
+                                <span className={`text-[8px] font-bold uppercase ${theme === 'dark' ? 'text-white/20' : 'text-surface-400'}`}>Unit ID: {id}</span>
+                             </div>
+                             <div className="text-right">
+                                <span className={`text-xl font-black font-mono ${qty > 0 ? 'text-brand-500' : (theme === 'dark' ? 'text-white/10' : 'text-surface-200')}`}>{qty.toLocaleString()}</span>
+                                <p className={`text-[8px] font-bold uppercase ${theme === 'dark' ? 'text-white/20' : 'text-surface-400'}`}>Units Needed</p>
+                             </div>
+                          </div>
+                        )
+                      })}
                    </div>
-                   <div className="text-right">
-                      <p className="text-[8px] font-bold text-white/40 uppercase">Effective Admin Overhead</p>
+                </div>
+                <div className="space-y-8">
+                   <div className={`p-8 rounded-[2rem] border transition-all text-center ${theme === 'dark' ? 'bg-brand-500/5 border-brand-500/20' : 'bg-brand-50 border-brand-100'}`}>
+                      <p className="text-xs font-black text-brand-500 uppercase italic tracking-widest mb-4">Total Estimated Liquid Capital</p>
+                      <p className={`text-6xl font-black font-mono tracking-tighter ${theme === 'dark' ? 'text-white' : 'text-surface-900'}`}>$${(constructionTotals[0]/1000).toFixed(1)}<span className="text-2xl opacity-40 ml-1 text-brand-500">K</span></p>
+                      <p className={`text-[10px] font-bold uppercase mt-6 ${theme === 'dark' ? 'text-white/30' : 'text-surface-400'}`}>Based on standard reference values and 0% scrap return.</p>
+                   </div>
+                   <div className={`p-6 rounded-2xl border border-dashed ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-surface-50 border-surface-200'}`}>
+                      <h4 className={`text-[10px] font-black uppercase mb-4 tracking-widest ${theme === 'dark' ? 'text-white/60' : 'text-surface-600'}`}>Strategic Logistics Advice</h4>
+                      <p className={`text-[10px] leading-relaxed ${theme === 'dark' ? 'text-white/40' : 'text-surface-500'}`}>
+                         For massive expansions ({">"}50 levels), consider sourcing <span className="text-brand-500 font-bold">Construction Units</span> via contract to avoid exchange fees.
+                         Ensure your <span className="text-econ-amber font-bold">CFO</span> is at high level to minimize accounting fees when holding large quantities of building materials.
+                      </p>
+                   </div>
+                </div>
+             </div>
+          </Section>
+
+          <Section title="Expansion Scenario Simulator" icon={Layers}>
+             <div className={`p-10 rounded-[2rem] border transition-all ${theme === 'dark' ? 'bg-brand-500/5 border-brand-500/10' : 'bg-brand-50 border-brand-100'}`}>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-10 gap-6">
+                   <div>
+                      <p className="text-xs font-black text-brand-500 uppercase italic tracking-widest mb-2">Simulated Infrastructure Growth</p>
+                      <p className={`text-5xl font-black ${theme === 'dark' ? 'text-white' : 'text-surface-900'}`}>+{state.settings.whatIfLevel} <span className="text-2xl opacity-40">Lvls</span></p>
+                   </div>
+                   <div className="text-left sm:text-right">
+                      <p className={`text-[10px] font-bold uppercase mb-2 ${theme === 'dark' ? 'text-white/40' : 'text-surface-500'}`}>Resultant Efficiency Drag</p>
                       <p className="text-2xl font-black font-mono text-econ-red">{(core.actualAO*100).toFixed(2)}%</p>
                    </div>
                 </div>
@@ -573,7 +659,7 @@ function ExecutiveView({ state, setState, core }: any) {
   return (
     <div className="space-y-6 pb-20">
       {/* Quick Fill Header */}
-      <div className="bg-surface-900 rounded-3xl p-6 border border-white/5">
+      <div className="bg-surface-900 rounded-[2rem] p-6 border border-white/5">
         <h2 className="text-econ-amber text-[10px] font-black uppercase tracking-[0.2em] mb-4">Executive Skills Quick Fill</h2>
         <div className="grid grid-cols-3 gap-4 mb-4">
           <button onClick={() => setShowPasteModal(true)} className="bg-econ-green text-white py-3 rounded-xl text-[10px] font-black uppercase hover:opacity-90 transition-all">Paste Executive Data</button>
@@ -588,7 +674,7 @@ function ExecutiveView({ state, setState, core }: any) {
       </div>
 
       {/* Total Effective Skills */}
-      <div className="bg-surface-900 rounded-3xl p-6 border border-white/5">
+      <div className="bg-surface-900 rounded-[2rem] p-6 border border-white/5">
         <h2 className="text-econ-amber text-center text-[10px] font-black uppercase tracking-[0.2em] mb-6">Total Effective Skill Points</h2>
         <div className="grid grid-cols-4 gap-8">
           <div className="text-center">
@@ -628,7 +714,7 @@ function ExecutiveView({ state, setState, core }: any) {
       </div>
 
       {/* Staff Slots */}
-      <motion.div initial={false} className="bg-surface-900 rounded-2xl border border-white/5 overflow-hidden">
+      <motion.div initial={false} className="bg-surface-900 rounded-[1.5rem] border border-white/5 overflow-hidden">
         <button
           onClick={() => setState({...state, showStaff: !state.showStaff})}
           className="w-full p-4 flex justify-between items-center cursor-pointer hover:bg-white/5 transition-all border-b border-white/5"
@@ -728,12 +814,12 @@ function ExecutiveView({ state, setState, core }: any) {
       {/* Paste Modal */}
       {showPasteModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-surface-900 border border-white/20 rounded-3xl p-8 max-w-2xl w-full">
+          <div className="bg-surface-900 border border-white/20 rounded-[2rem] p-8 max-w-2xl w-full">
             <h3 className="text-econ-amber text-xs font-black uppercase mb-4">Paste Executive Data</h3>
             <textarea
               value={pasteData}
               onChange={(e) => setPasteData(e.target.value)}
-              className="w-full h-64 bg-black/50 border border-white/10 rounded-2xl p-4 text-xs font-mono text-white mb-6 focus:ring-1 focus:ring-econ-amber outline-none"
+              className="w-full h-64 bg-black/50 border border-white/10 rounded-[1.5rem] p-4 text-xs font-mono text-white mb-6 focus:ring-1 focus:ring-econ-amber outline-none"
               placeholder="Paste text from SimCompanies Executives page here..."
             />
             <div className="flex justify-end gap-4">
@@ -753,7 +839,7 @@ function ExecCard({ role, data, onChange }: any) {
   };
 
   return (
-    <div className="bg-surface-900 border border-white/5 rounded-2xl p-4 space-y-4">
+    <div className="bg-surface-900 border border-white/5 rounded-[1.5rem] p-4 space-y-4">
       <div className="flex justify-between items-center">
         <span className="text-econ-amber text-[9px] font-black uppercase tracking-widest">{role}</span>
         <input
@@ -793,7 +879,7 @@ function ExecSkill({ label, value, onChange }: any) {
 
 function CalcBox({ title, children }: any) {
   return (
-    <div className="bg-surface-900 border border-white/5 rounded-2xl p-6">
+    <div className="bg-surface-900 border border-white/5 rounded-[1.5rem] p-6">
       <h3 className="text-econ-amber text-[9px] font-black uppercase tracking-widest mb-4">{title}</h3>
       {children}
     </div>
@@ -845,7 +931,7 @@ function FinanceView({ state, setState, core }: any) {
                    <div className="h-px bg-white/5 my-4" />
                    <CashItem label="Daily Net Flow" value={`$${(core.netDaily/1000).toFixed(1)}K`} type="positive" bold />
                 </div>
-                <div className="bg-white/5 rounded-2xl border border-dashed border-white/10 flex flex-col items-center justify-center">
+                <div className="bg-white/5 rounded-[1.5rem] border border-dashed border-white/10 flex flex-col items-center justify-center">
                    <p className="text-[8px] font-black text-white/40 uppercase mb-2">Accounting Safety</p>
                    <p className="text-2xl font-black font-mono text-econ-green">$${(core.taxThreshold/1_000_000).toFixed(1)}M</p>
                    <p className="text-[8px] font-bold text-white/20 uppercase mt-1">Daily Exemption Remaining</p>
@@ -872,7 +958,7 @@ function LogisticsView({ state, setState, core, audit, fileInputRef }: any) {
                       <button onClick={() => setShowClearConfirm(false)} className="px-2 py-2 bg-white/20 text-white rounded-xl text-[8px] font-black uppercase">X</button>
                    </div>
                 )}
-                <button onClick={() => fileInputRef.current?.click()} className="flex-1 py-2 bg-brand-600 text-white rounded-xl text-[8px] font-black uppercase hover:bg-brand-500 transition-all shadow-lg shadow-brand-500/20">Import Data</button>
+                <button onClick={() => fileInputRef.current?.click()} className="flex-1 py-2 bg-brand-600 text-white rounded-xl text-[8px] font-black uppercase hover:bg-gradient-to-br from-brand-500 to-brand-600 transition-all shadow-lg shadow-brand-500/20">Import Data</button>
              </div>
              <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                 {RESOURCES.slice(0, 30).map(r => {
@@ -889,22 +975,124 @@ function LogisticsView({ state, setState, core, audit, fileInputRef }: any) {
        </div>
        <div className="col-span-8 space-y-6">
           <Section title="Supply Chain Auditor" icon={AlertTriangle}>
-             <div className="p-8 bg-surface-950 text-white rounded-3xl relative overflow-hidden border border-white/5">
+             <div className="p-8 bg-surface-950 text-white rounded-[2rem] relative overflow-hidden border border-white/5">
                 <div className="relative z-10">
                    <p className="text-[10px] font-black text-brand-400 uppercase tracking-widest mb-2">Liquid Asset Valuation</p>
                    <p className="text-5xl font-black font-mono italic tracking-tighter">$${(core.inventoryValue/1000).toFixed(1)}K</p>
                    <div className="mt-8 flex gap-4">
-                      <div className="flex-1 p-4 bg-white/5 border border-white/10 rounded-2xl">
+                      <div className="flex-1 p-4 bg-white/5 border border-white/10 rounded-[1.5rem]">
                          <p className="text-[8px] font-bold uppercase opacity-40 mb-1">Vertical Health</p>
                          <p className="text-lg font-black font-mono text-econ-green">{audit.health.toFixed(1)}%</p>
                       </div>
-                      <div className="flex-1 p-4 bg-white/5 border border-white/10 rounded-2xl">
+                      <div className="flex-1 p-4 bg-white/5 border border-white/10 rounded-[1.5rem]">
                          <p className="text-[8px] font-bold uppercase opacity-40 mb-1">Storage Burn (Est)</p>
                          <p className="text-lg font-black font-mono text-econ-amber">-${(state.inventory.length * 12.5).toFixed(0)}/d</p>
                       </div>
                    </div>
                 </div>
                 <Ship size={140} className="absolute -bottom-10 -right-10 text-white/5 rotate-12" />
+             </div>
+          </Section>
+       </div>
+    </div>
+  );
+}
+
+function RetailView({ state, setState, core, retail, theme }: any) {
+  const [calc, setCalc] = React.useState({
+    cost: 0,
+    price: 0,
+    quality: 0
+  });
+
+  const selectedRes = RESOURCES.find(r => r.id === state.settings.retailResourceId) || RESOURCES.find(r => r.id === 24);
+  const retailData = retail?.retail ? Object.entries(retail.retail).find(([k]) => k.toLowerCase() === selectedRes?.name.toLowerCase()) : null;
+  const marketSat = (retailData as any)?.[1]?.saturation || 1.0;
+  const marketPrice = (retailData as any)?.[1]?.price || 0;
+
+  // Simple Retail logic for simulator
+  // Profit = Price - Cost - (Wages / UnitsPerHour)
+  // Units/hr depends on Saturation and Bonus
+  // This is a simplified model for the UI
+  const unitsPerHourBase = 10; // Placeholder base
+  const unitsPerHour = unitsPerHourBase * (1 + core.salesSpeedBonus) / (marketSat || 1);
+  const hourlyProfit = (calc.price - calc.cost) * unitsPerHour - (100 / unitsPerHour); // 100 as placeholder wage
+
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+       <div className="xl:col-span-4 space-y-8">
+          <Section title="Product Selection" icon={Search}>
+             <div className="space-y-6">
+                <p className={`text-[10px] font-bold uppercase tracking-widest ${theme === 'dark' ? 'text-white/40' : 'text-surface-500'}`}>Target Consumer Good</p>
+                <select
+                  value={state.settings.retailResourceId}
+                  onChange={(e) => setState({...state, settings: {...state.settings, retailResourceId: Number(e.target.value)}})}
+                  className={`w-full h-14 border rounded-2xl px-6 text-sm font-black uppercase focus:ring-4 focus:ring-brand-500/20 outline-none appearance-none transition-all ${theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-surface-50 border-surface-200 text-surface-900'}`}
+                >
+                   {RESOURCES.filter(r => r.retailInfo && r.retailInfo.length > 0).map(r => (
+                      <option key={r.id} value={r.id} className={theme === 'dark' ? 'bg-surface-900' : 'bg-white'}>{r.name}</option>
+                   ))}
+                </select>
+                <div className={`p-6 rounded-2xl border border-dashed transition-all ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-surface-50 border-surface-200'}`}>
+                   <div className="flex justify-between items-center mb-4">
+                      <span className={`text-[10px] font-bold uppercase ${theme === 'dark' ? 'text-white/40' : 'text-surface-500'}`}>Market Saturation</span>
+                      <span className={`text-sm font-black font-mono ${marketSat > 1.2 ? 'text-econ-red' : 'text-econ-green'}`}>{marketSat.toFixed(2)}</span>
+                   </div>
+                   <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                      <div className="h-full bg-brand-500" style={{ width: `${Math.min(100, (1/marketSat)*50)}%` }} />
+                   </div>
+                </div>
+             </div>
+          </Section>
+
+          <Section title="Profitability Simulator" icon={Calculator}>
+             <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                      <p className={`text-[9px] font-bold uppercase ${theme === 'dark' ? 'text-white/40' : 'text-surface-500'}`}>Sourcing Cost</p>
+                      <input type="number" value={calc.cost} onChange={(e) => setCalc({...calc, cost: Number(e.target.value)})} className={`w-full h-12 border rounded-xl px-4 text-xs font-black font-mono outline-none ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-surface-50 border-surface-200 text-surface-900'}`} />
+                   </div>
+                   <div className="space-y-2">
+                      <p className={`text-[9px] font-bold uppercase ${theme === 'dark' ? 'text-white/40' : 'text-surface-500'}`}>Retail Price</p>
+                      <input type="number" value={calc.price} onChange={(e) => setCalc({...calc, price: Number(e.target.value)})} className={`w-full h-12 border rounded-xl px-4 text-xs font-black font-mono outline-none ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-surface-50 border-surface-200 text-surface-900'}`} />
+                   </div>
+                </div>
+                <div className={`p-6 rounded-2xl border transition-all ${theme === 'dark' ? 'bg-brand-500/5 border-brand-500/10' : 'bg-brand-50 border-brand-100'}`}>
+                   <p className="text-[10px] font-black text-brand-500 uppercase italic mb-4">Estimated PPHPL</p>
+                   <p className={`text-4xl font-black font-mono ${hourlyProfit > 0 ? 'text-econ-green' : 'text-econ-red'}`}>
+                      $${hourlyProfit.toFixed(2)}
+                   </p>
+                   <p className={`text-[9px] font-bold uppercase mt-4 ${theme === 'dark' ? 'text-white/20' : 'text-surface-400'}`}>Profit Per Hour Per Building Level</p>
+                </div>
+             </div>
+          </Section>
+       </div>
+
+       <div className="xl:col-span-8 space-y-8">
+          <Section title="Retail Market Intelligence" icon={TrendingUp}>
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Kpi label="Avg Market Price" value={`$${marketPrice.toFixed(2)}`} sub="Realm-wide average" icon={DollarSign} color="text-brand-500" theme={theme} />
+                <Kpi label="Effective Demand" value={`${(1/marketSat).toFixed(2)}x`} sub="Saturation Inverse" icon={Activity} color="text-econ-green" theme={theme} />
+                <Kpi label="Sales Speed Bonus" value={`${(core.salesSpeedBonus*100).toFixed(1)}%`} sub="From Execs & Recreational" icon={Zap} color="text-econ-amber" theme={theme} />
+             </div>
+
+             <div className={`mt-10 p-8 rounded-[2rem] border transition-all ${theme === 'dark' ? 'bg-surface-950 border-white/5' : 'bg-white border-surface-100 shadow-lg'}`}>
+                <h4 className={`text-xs font-black uppercase mb-8 tracking-widest ${theme === 'dark' ? 'text-white' : 'text-surface-900'}`}>Retail Expansion Guidance</h4>
+                <div className="space-y-4">
+                   {[
+                     { t: "Inventory Turnover", v: "High velocity detected in current regime.", c: "text-econ-green" },
+                     { t: "Price Sensitivity", v: "Elastic demand: small price drops yield high volume.", c: "text-brand-500" },
+                     { t: "Strategic Advice", v: "Vertical integration with electronics recommended.", c: "text-econ-amber" }
+                   ].map((item, i) => (
+                      <div key={i} className={`flex items-start gap-4 p-5 rounded-2xl border ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-surface-50 border-surface-100'}`}>
+                         <div className={`w-2 h-2 rounded-full mt-1.5 ${item.c.replace('text-', 'bg-')}`} />
+                         <div>
+                            <p className={`text-[10px] font-black uppercase ${theme === 'dark' ? 'text-white/60' : 'text-surface-700'}`}>{item.t}</p>
+                            <p className={`text-[11px] mt-1 ${theme === 'dark' ? 'text-white/40' : 'text-surface-500'}`}>{item.v}</p>
+                         </div>
+                      </div>
+                   ))}
+                </div>
              </div>
           </Section>
        </div>
@@ -939,7 +1127,7 @@ function RiskView({ state, core, phase, retail }: any) {
                             {effSat.toFixed(2)}
                          </div>
                          <div className="w-full h-1 bg-white/10 rounded-full">
-                            <div className="h-full bg-brand-500 rounded-full" style={{ width: `${Math.min(100, (1/effSat)*50)}%` }} />
+                            <div className="h-full bg-gradient-to-br from-brand-500 to-brand-600 rounded-full" style={{ width: `${Math.min(100, (1/effSat)*50)}%` }} />
                          </div>
                          <span className="text-[7px] font-bold uppercase text-white/20">Eff. Saturation</span>
                       </div>
@@ -951,7 +1139,7 @@ function RiskView({ state, core, phase, retail }: any) {
        <div className="col-span-4 space-y-6">
           <Section title="Volatility Stress Test" icon={TrendingDown}>
              <div className="space-y-4">
-                <div className="p-6 bg-econ-red/5 border border-econ-red/10 rounded-2xl text-center">
+                <div className="p-6 bg-econ-red/5 border border-econ-red/10 rounded-[1.5rem] text-center">
                    <TrendingDown className="text-econ-red mx-auto mb-4" size={32} />
                    <p className="text-[10px] font-black uppercase text-econ-red italic">Portfolio Beta Impact</p>
                    <p className="text-4xl font-black font-mono text-econ-red mt-2">
@@ -995,7 +1183,7 @@ function TabBtn({ active, onClick, icon: Icon, label }: any) {
 
 function Section({ title, icon: Icon, children, action, sub, subVal }: any) {
   return (
-    <div className="bg-surface-900 border border-white/5 rounded-3xl p-6 shadow-sm flex flex-col relative overflow-hidden group hover:shadow-xl hover:border-brand-500/20 transition-all">
+    <div className="bg-surface-900 border border-white/5 rounded-[2rem] p-6 shadow-sm flex flex-col relative overflow-hidden group hover:shadow-xl hover:border-brand-500/20 transition-all">
        <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-brand-500 border border-white/5 group-hover:bg-brand-600 group-hover:text-white transition-all">
@@ -1015,7 +1203,7 @@ function Section({ title, icon: Icon, children, action, sub, subVal }: any) {
 
 function Kpi({ label, value, sub, icon: Icon, color }: any) {
   return (
-    <div className="p-6 bg-surface-900 border border-white/5 rounded-2xl shadow-sm relative overflow-hidden group hover:border-brand-500 transition-all">
+    <div className="p-6 bg-surface-900 border border-white/5 rounded-[1.5rem] shadow-sm relative overflow-hidden group hover:border-brand-500 transition-all">
        <Icon size={48} className={`absolute -right-4 -top-4 opacity-5 ${color} group-hover:opacity-10 transition-opacity`} />
        <p className="text-[8px] font-black uppercase text-white/40 tracking-widest mb-1">{label}</p>
        <p className={`text-2xl font-black font-mono tracking-tighter ${color}`}>{value}</p>
@@ -1056,7 +1244,7 @@ function DockToggle({ label, active, onClick }: any) {
 
 function ModuleLink({ active, onClick }: any) {
   return (
-    <button onClick={onClick} className={`p-2 rounded-lg transition-all ${active ? 'text-brand-500 bg-brand-500/10 hover:bg-brand-500/20' : 'text-white/20 hover:text-econ-red hover:bg-econ-red/10'}`} title={active ? "Linked to Global Calculations" : "Detached from Global Calculations"}>
+    <button onClick={onClick} className={`p-2 rounded-lg transition-all ${active ? 'text-brand-500 bg-gradient-to-br from-brand-500 to-brand-600/10 hover:bg-gradient-to-br from-brand-500 to-brand-600/20' : 'text-white/20 hover:text-econ-red hover:bg-econ-red/10'}`} title={active ? "Linked to Global Calculations" : "Detached from Global Calculations"}>
        {active ? <Link size={16} /> : <Link2Off size={16} />}
     </button>
   );
@@ -1075,9 +1263,9 @@ function CashItem({ label, value, type, bold }: any) {
 function PhaseDot({ phase }: { phase: string }) {
   const colors: Record<string, string> = {
     Expansion: "bg-econ-green", Boom: "bg-econ-green",
-    Stagnation: "bg-econ-amber", Normal: "bg-brand-500",
+    Stagnation: "bg-econ-amber", Normal: "bg-gradient-to-br from-brand-500 to-brand-600",
     Recession: "bg-econ-red",
-    Recovery: "bg-brand-500",
+    Recovery: "bg-gradient-to-br from-brand-500 to-brand-600",
     Volatile: "bg-econ-purple"
   };
   return <span className={`w-2 h-2 rounded-full ring-4 ring-offset-0 ${colors[phase] ?? "bg-white/20"} ${colors[phase]?.replace('bg-', 'ring-')}/20`} />;

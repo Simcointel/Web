@@ -124,7 +124,7 @@ export const RESOURCES: ResourceData[] = [
   { "id": 108, "name": "Planks", "transport": 1, "buildingId": "x", "basePh": 115.13, "baseWages": 483, "inputs": { 106: 0.5 } },
   { "id": 109, "name": "Windows", "transport": 1, "buildingId": "x", "basePh": 16.71, "baseWages": 483, "inputs": { 18: 2, 45: 1 } },
   { "id": 110, "name": "Tools", "transport": 1, "buildingId": "x", "basePh": 26, "baseWages": 483, "inputs": { 108: 0.5, 21: 1, 22: 1, 43: 0.5 } },
-  { "id": 111, "name": "Construction units", "transport": 0, "buildingId": "x", "basePh": 0.99, "baseWages": 345, "inputs": { 107: 8, 109: 4, 110: 4, 112: 0.125, 12: 5 } },
+  { "id": 111, "name": "Construction units", "transport": 0, "buildingId": "x", "basePh": 0.99, "baseWages": 345, "inputs": { 107: 8, 110: 4, 112: 0.125, 12: 5 } },
   { "id": 112, "name": "Bulldozers", "transport": 100, "buildingId": "x", "basePh": 0.125, "baseWages": 483, "inputs": { 43: 40, 110: 10 } },
   { "id": 115, "name": "Cows", "transport": 1, "buildingId": "F", "basePh": 37.68, "baseWages": 138, "inputs": { 139: 12 } },
   { "id": 116, "name": "Pigs", "transport": 1, "buildingId": "F", "basePh": 82.89, "baseWages": 138, "inputs": { 139: 4 } },

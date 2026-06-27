@@ -207,12 +207,12 @@ function VWAPOverallChart({ data }: { data: any[] }) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <LineChart data={chart}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-surface-200 dark:stroke-surface-800" />
         <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
         <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={["auto", "auto"]} />
         <Tooltip content={<CustomTooltip />} />
         <Legend iconType="circle" />
-        <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="5 5" />
+        <ReferenceLine y={0} className="stroke-surface-400 dark:stroke-surface-600" strokeDasharray="5 5" />
         <Line type="monotone" dataKey="v" stroke="#0ea5e9" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: 'white' }} name="Overall VWAP Deviation" />
       </LineChart>
     </ResponsiveContainer>
@@ -241,7 +241,7 @@ function VWAPQualityChart({ data, qualities }: { data: any[]; qualities: string 
   return (
     <ResponsiveContainer width="100%" height={300}>
       <LineChart data={chart}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-surface-200 dark:stroke-surface-800" />
         <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
         <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={["auto", "auto"]} />
         <Tooltip content={({ active, payload, label }: any) => {
@@ -269,7 +269,7 @@ function VWAPQualityChart({ data, qualities }: { data: any[]; qualities: string 
           return null;
         }} />
         <Legend iconType="circle" />
-        <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="5 5" />
+        <ReferenceLine y={0} className="stroke-surface-400 dark:stroke-surface-600" strokeDasharray="5 5" />
         {qList.map((q, i) => <Line key={q} type="monotone" dataKey={q} stroke={QCOLORS[i % QCOLORS.length]} strokeWidth={2} dot={false} name={`Q${q}`} />)}
       </LineChart>
     </ResponsiveContainer>
@@ -292,12 +292,12 @@ function VWAPProductChart({ data, productId }: { data: any[]; productId: string 
       </div>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={chart}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-surface-200 dark:stroke-surface-800" />
           <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={["auto", "auto"]} />
           <Tooltip content={<CustomTooltip />} />
           <Legend iconType="circle" />
-          <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="5 5" />
+          <ReferenceLine y={0} className="stroke-surface-400 dark:stroke-surface-600" strokeDasharray="5 5" />
           <Line type="monotone" dataKey="v" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: 'white' }} name={name} />
         </LineChart>
       </ResponsiveContainer>
@@ -343,7 +343,7 @@ function VWAPBothChart({ data, productId, qualities }: { data: any[]; productId:
       </div>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={chart}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-surface-200 dark:stroke-surface-800" />
           <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={["auto", "auto"]} />
           <Tooltip content={({ active, payload, label }: any) => {
@@ -371,7 +371,7 @@ function VWAPBothChart({ data, productId, qualities }: { data: any[]; productId:
              return null;
           }} />
           <Legend iconType="circle" />
-          <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="5 5" />
+          <ReferenceLine y={0} className="stroke-surface-400 dark:stroke-surface-600" strokeDasharray="5 5" />
           {qList.map((q, i) => <Line key={q} type="monotone" dataKey={q} stroke={QCOLORS[i % QCOLORS.length]} strokeWidth={2} dot={false} name={`Q${q}`} />)}
         </LineChart>
       </ResponsiveContainer>
