@@ -43,9 +43,9 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (o:
       `}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="h-20 flex items-center px-8">
+          <div className="h-16 flex items-center px-6">
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 gradient-brand rounded-2xl flex items-center justify-center text-white shadow-lg shadow-brand-500/20 group-hover:scale-110 transition-transform">
+              <div className="w-8 h-8 gradient-brand rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-500/20 group-hover:scale-110 transition-transform">
                 <LayoutDashboard size={22} />
               </div>
               <span className="font-black text-xl tracking-tight dark:text-white uppercase italic">
@@ -55,13 +55,13 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (o:
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-8 scrollbar-hide">
+          <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6 scrollbar-hide">
             {navLinks.map((group) => (
               <div key={group.group}>
-                <h3 className="px-4 text-[11px] font-black uppercase tracking-widest text-surface-400 dark:text-surface-500 mb-3">
+                <h3 className="px-3 text-[10px] font-black uppercase tracking-widest text-surface-400 dark:text-surface-500 mb-2">
                   {group.group}
                 </h3>
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   {group.links.map((link) => {
                     const active = location === link.to;
                     return (
@@ -69,7 +69,7 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (o:
                         key={link.to}
                         to={link.to}
                         className={`
-                          flex items-center justify-between group px-4 py-3 rounded-xl transition-all duration-200
+                          flex items-center justify-between group px-3 py-2.5 rounded-lg transition-all duration-200
                           ${active
                             ? "bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 shadow-sm"
                             : "text-surface-500 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800/50 hover:text-surface-900 dark:hover:text-white"}

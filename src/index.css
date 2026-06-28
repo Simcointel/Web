@@ -24,15 +24,15 @@
   .stat-label { @apply text-[10px] font-extrabold uppercase tracking-[0.1em] text-surface-500; }
 
   .card {
-    @apply bg-white dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-800 transition-all duration-200;
+    @apply bg-white dark:bg-surface-900 rounded-lg border border-surface-200 dark:border-surface-800 transition-all duration-200;
   }
 
   .card-header {
-    @apply px-5 py-3 border-b border-surface-100 dark:border-surface-800 bg-surface-50/30 dark:bg-surface-800/30 flex items-center justify-between;
+    @apply px-4 py-2 border-b border-surface-100 dark:border-surface-800 bg-surface-50/30 dark:bg-surface-800/30 flex items-center justify-between;
   }
 
   .btn {
-    @apply inline-flex items-center justify-center px-4 py-2 text-xs font-bold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
   }
 
   .btn-primary {
