@@ -1,13 +1,13 @@
 import React from "react";
 import { ChevronRight } from "lucide-react";
 
-export function Section({ title, subtitle, children, actions, icon: Icon }: { title: string; subtitle?: string; children: React.ReactNode; actions?: React.ReactNode; icon?: React.ElementType }) {
+export function Section({ title, subtitle, children, actions, icon: Icon, color }: { title: string; subtitle?: string; children: React.ReactNode; actions?: React.ReactNode; icon?: React.ElementType; color?: string }) {
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           {Icon && (
-            <div className="p-1.5 bg-brand-50 dark:bg-brand-900/20 rounded-lg text-brand-500">
+            <div className={`p-1.5 rounded-lg ${color ? `${color.replace('text-', 'bg-')}/10 ${color}` : 'bg-brand-50 dark:bg-brand-900/20 text-brand-500'}`}>
                <Icon size={14} />
             </div>
           )}

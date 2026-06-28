@@ -58,6 +58,7 @@ interface SuiteStateV6 {
     logisticsLinked: boolean; riskLinked: boolean;
   };
   showStaff?: boolean;
+  ledger: any[];
 }
 
 const EMPTY_EXEC: Executive = { name: "", management: 0, accounting: 0, communication: 0, science: 0 };
@@ -82,7 +83,8 @@ const DEFAULT_STATE: SuiteStateV6 = {
   moduleSettings: {
     opsLinked: true, execLinked: true, financeLinked: true,
     logisticsLinked: true, riskLinked: true
-  }
+  },
+  ledger: []
 };
 
 const n = (v: any) => (typeof v === 'number' && !isNaN(v) ? v : 0);
@@ -472,10 +474,10 @@ function ExecutiveView({ state, setState, core }: any) {
   const handlePaste = () => {
     const lines = pasteData.split('\n');
     const newBoard = { ...state.board };
-    let cur: any = null;
+    let cur: keyof typeof state.board | null = null;
     lines.forEach(l => {
       const t = l.trim();
-      if (['COO', 'CFO', 'CMO', 'CTO'].includes(t)) cur = t.toLowerCase();
+      if (['COO', 'CFO', 'CMO', 'CTO'].includes(t)) cur = t.toLowerCase() as keyof typeof state.board;
       else if (t.includes('Management:')) { if (cur) newBoard[cur].management = parseInt(t.split(':')[1]) || 0; }
       else if (t.includes('Accounting:')) { if (cur) newBoard[cur].accounting = parseInt(t.split(':')[1]) || 0; }
       else if (t.includes('Communication:')) { if (cur) newBoard[cur].communication = parseInt(t.split(':')[1]) || 0; }
@@ -718,7 +720,7 @@ function KPICard({ label, value, sub, icon: Icon }: any) {
 
 function SkillNode({ label, value, sub, icon: Icon, color }: any) {
   return (
-    <div className="card p-3 flex flex-col items-center text-center border-t-2 border-current shadow-md shadow-current/5" style={{color: color.replace('text-', '')} as any}>
+    <div className={`card p-3 flex flex-col items-center text-center border-t-2 border-current shadow-md shadow-current/5 ${color}`}>
        <div className="flex items-center gap-1.5 mb-2">
           <Icon size={14} />
           <span className="text-[9px] font-black uppercase tracking-widest text-surface-900 dark:text-white italic">{label}</span>
