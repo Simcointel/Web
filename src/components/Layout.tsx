@@ -3,24 +3,24 @@ import { ChevronRight } from "lucide-react";
 
 export function Section({ title, subtitle, children, actions, icon: Icon }: { title: string; subtitle?: string; children: React.ReactNode; actions?: React.ReactNode; icon?: React.ElementType }) {
   return (
-    <section className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <section className="space-y-3">
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
           {Icon && (
-            <div className="p-2 bg-brand-50 dark:bg-brand-900/20 rounded-xl text-brand-600 dark:text-brand-400">
-               <Icon size={20} />
+            <div className="p-1.5 bg-brand-50 dark:bg-brand-900/20 rounded-lg text-brand-500">
+               <Icon size={14} />
             </div>
           )}
           <div>
-            <h2 className="text-lg font-black text-surface-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
+            <h2 className="text-[11px] font-black text-surface-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
                {title}
             </h2>
-            {subtitle && <p className="text-xs text-surface-500 font-semibold tracking-wide mt-0.5">{subtitle}</p>}
+            {subtitle && <p className="text-[9px] text-surface-400 font-bold uppercase tracking-tight mt-0.5">{subtitle}</p>}
           </div>
         </div>
-        {actions && <div className="flex items-center gap-2">{actions}</div>}
+        {actions && <div className="flex items-center gap-1">{actions}</div>}
       </div>
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div className="animate-in fade-in slide-in-from-bottom-1 duration-300">
         {children}
       </div>
     </section>

@@ -43,11 +43,10 @@ export function MacroPage() {
   const latestH = latest?.latestHistory;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 font-mono text-[10px]">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-surface-200 dark:border-surface-800 pb-4">
+    <div className="space-y-4 animate-in fade-in duration-300 font-mono text-[9px]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-100 dark:border-surface-800/50 pb-2">
         <div>
-          <h1 className="text-sm font-black uppercase tracking-widest">Macro_Economic_Matrix_R{realm}</h1>
-          <p className="text-[10px] text-surface-500 mt-0.5 font-bold uppercase opacity-60">Global_Financial_Aggregates</p>
+          <h1 className="text-xs font-black uppercase tracking-widest">Macro.Matrix_R{realm}</h1>
         </div>
 
         <div className="flex items-center gap-2">
@@ -62,49 +61,49 @@ export function MacroPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-surface-200 dark:bg-surface-800 border border-surface-200 dark:border-surface-800">
-         <MacroBox label="COMPANIES_VAL" value={latestH?.companiesValue != null ? fmt(latestH.companiesValue) : "-"} />
-         <MacroBox label="ACTIVE_FIRMS" value={latestH?.activeCompanies ?? "-"} />
-         <MacroBox label="BONDS_SOLD" value={latestH?.bondsSold != null ? fmt(latestH.bondsSold) : "-"} />
-         <MacroBox label="TOTAL_ASSETS" value={latestH?.totalBuildings ?? "-"} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-surface-100 dark:bg-surface-800 border border-surface-100 dark:border-surface-800">
+         <MacroBox label="VALUE" value={latestH?.companiesValue != null ? fmt(latestH.companiesValue) : "-"} />
+         <MacroBox label="FIRMS" value={latestH?.activeCompanies ?? "-"} />
+         <MacroBox label="BONDS" value={latestH?.bondsSold != null ? fmt(latestH.bondsSold) : "-"} />
+         <MacroBox label="ASSETS" value={latestH?.totalBuildings ?? "-"} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {history?.history && history.history.length > 0 && (
-          <ChartPanel title="Valuation_Output_Curve">
-             <ResponsiveContainer width="100%" height={240}>
+          <ChartPanel title="VALUATION">
+             <ResponsiveContainer width="100%" height={160}>
                 <AreaChart data={(indexes?.indexes ? history.history.map((h) => {
                   const ix = indexes.indexes.find((i: any) => i.date === h.date);
                   return { ...h, gdp: ix?.gdp ?? null, d: new Date(h.date).toLocaleDateString() };
                 }) : history.history.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() })))}>
-                  <CartesianGrid strokeDasharray="2 2" vertical={false} className="stroke-surface-200 dark:stroke-surface-800" />
-                  <XAxis dataKey="d" tick={{ fontSize: 8 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 8 }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ backgroundColor: '#000', border: 'none', color: '#fff', fontSize: '10px' }} />
-                  <Area type="step" dataKey="companiesValue" stroke="#000" fill="#000" fillOpacity={0.05} name="Value" />
-                  <Line type="monotone" dataKey="gdp" stroke="#000" strokeWidth={1} dot={false} name="GDP" />
+                  <CartesianGrid strokeDasharray="2 2" vertical={false} className="stroke-surface-100 dark:stroke-surface-900" />
+                  <XAxis dataKey="d" tick={{ fontSize: 6 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 6 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ backgroundColor: '#000', border: 'none', color: '#fff', fontSize: '8px' }} />
+                  <Area type="step" dataKey="companiesValue" stroke="#6366f1" fill="#6366f1" fillOpacity={0.1} name="Value" />
+                  <Line type="monotone" dataKey="gdp" stroke="#10b981" strokeWidth={1} dot={false} name="GDP" />
                 </AreaChart>
              </ResponsiveContainer>
           </ChartPanel>
         )}
 
         {indexes?.indexes && indexes.indexes.length > 0 && (
-          <ChartPanel title="Price_Index_Stability">
-             <ResponsiveContainer width="100%" height={240}>
+          <ChartPanel title="INDEXES">
+             <ResponsiveContainer width="100%" height={160}>
                 <LineChart data={indexes.indexes.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() }))}>
-                  <CartesianGrid strokeDasharray="2 2" vertical={false} className="stroke-surface-200 dark:stroke-surface-800" />
-                  <XAxis dataKey="d" tick={{ fontSize: 8 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 8 }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ backgroundColor: '#000', border: 'none', color: '#fff', fontSize: '10px' }} />
-                  <Line type="monotone" dataKey="cpi" stroke="#000" strokeWidth={1.5} dot={false} name="CPI" />
-                  <Line type="monotone" dataKey="coreCpi" stroke="#888" strokeWidth={1.5} dot={false} name="CORE" />
+                  <CartesianGrid strokeDasharray="2 2" vertical={false} className="stroke-surface-100 dark:stroke-surface-900" />
+                  <XAxis dataKey="d" tick={{ fontSize: 6 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 6 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ backgroundColor: '#000', border: 'none', color: '#fff', fontSize: '8px' }} />
+                  <Line type="monotone" dataKey="cpi" stroke="#ef4444" strokeWidth={1} dot={false} name="CPI" />
+                  <Line type="monotone" dataKey="coreCpi" stroke="#f59e0b" strokeWidth={1} dot={false} name="CORE" />
                 </LineChart>
              </ResponsiveContainer>
           </ChartPanel>
         )}
       </div>
 
-      <div className="border border-surface-200 dark:border-surface-800">
+      <div className="card">
          <div className="px-3 py-1 bg-surface-50 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800 flex justify-between">
             <span className="font-black uppercase text-[10px]">Weekly_Regime_Log</span>
             <span className="opacity-40 uppercase">Current: {phases?.currentPhase}</span>

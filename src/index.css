@@ -20,31 +20,35 @@
 }
 
 @layer components {
-  .stat-value { @apply text-2xl font-bold tracking-tight tabular-nums font-mono; }
-  .stat-label { @apply text-[10px] font-extrabold uppercase tracking-[0.1em] text-surface-500; }
+  .stat-value { @apply text-xl font-black tracking-tight tabular-nums font-mono; }
+  .stat-label { @apply text-[9px] font-black uppercase tracking-[0.2em] text-surface-400; }
 
   .card {
-    @apply bg-white dark:bg-surface-900 rounded-lg border border-surface-200 dark:border-surface-800 transition-all duration-200;
+    @apply bg-white dark:bg-surface-900 rounded-md border border-surface-100 dark:border-surface-800 transition-all duration-150;
+  }
+
+  .card-vibrant {
+     @apply border-t-2 border-t-brand-500 shadow-[0_4px_20px_-2px_rgba(14,165,233,0.1)];
   }
 
   .card-header {
-    @apply px-4 py-2 border-b border-surface-100 dark:border-surface-800 bg-surface-50/30 dark:bg-surface-800/30 flex items-center justify-between;
+    @apply px-3 py-1.5 border-b border-surface-50 dark:border-surface-800/50 bg-surface-50/50 dark:bg-surface-800/20 flex items-center justify-between;
   }
 
   .btn {
-    @apply inline-flex items-center justify-center px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center px-2 py-1 text-[10px] font-black uppercase tracking-widest rounded transition-all duration-150 focus:outline-none;
   }
 
   .btn-primary {
-    @apply bg-brand-600 text-white hover:bg-brand-700 focus:ring-brand-500 shadow-sm;
+    @apply bg-brand-500 text-white hover:bg-brand-600 shadow-[0_0_15px_rgba(14,165,233,0.3)] hover:shadow-[0_0_20px_rgba(14,165,233,0.5)];
   }
 
   .btn-secondary {
-    @apply bg-white dark:bg-surface-800 text-surface-700 dark:text-surface-200 border border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-700;
+    @apply bg-surface-50 dark:bg-surface-800 text-surface-600 dark:text-surface-300 border border-surface-100 dark:border-surface-700 hover:bg-white dark:hover:bg-surface-700;
   }
 
   .input {
-    @apply block w-full px-3 py-2 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-lg text-sm font-medium placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all;
+    @apply block w-full px-2 py-1.5 bg-surface-50 dark:bg-surface-950 border border-surface-100 dark:border-surface-800 rounded text-xs font-bold placeholder-surface-400 focus:outline-none focus:border-brand-500 transition-all;
   }
 
   .badge {

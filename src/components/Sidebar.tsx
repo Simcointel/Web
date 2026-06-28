@@ -3,23 +3,23 @@ import { useTheme } from "../hooks/useTheme";
 import {
   LayoutDashboard, Globe, Briefcase, DollarSign,
   TrendingUp, BookOpen, Share2, Sun, Moon,
-  Bell, Settings, Info, Menu, X, ChevronRight
+  Bell, Settings, Info, Menu, X, ChevronRight, LayoutGrid
 } from "lucide-react";
 
 const navLinks = [
-  { group: "Analysis", links: [
-    { to: "/", label: "Overview", icon: <LayoutDashboard size={20} /> },
-    { to: "/macro", label: "Economics", icon: <Globe size={20} /> },
-    { to: "/profit-margins", label: "Profitability", icon: <DollarSign size={20} /> },
+  { group: "ANALYZE", links: [
+    { to: "/", label: "Overview", icon: <LayoutDashboard size={18} />, color: "text-brand-500" },
+    { to: "/macro", label: "Macro", icon: <Globe size={18} />, color: "text-violet-500" },
+    { to: "/profit-margins", label: "Margins", icon: <DollarSign size={18} />, color: "text-emerald-500" },
   ]},
-  { group: "Management", links: [
-    { to: "/corporate-suite", label: "Corporate Suite", icon: <Briefcase size={20} /> },
-    { to: "/alerts", label: "System Logs", icon: <Bell size={20} /> },
+  { group: "MANAGE", links: [
+    { to: "/corporate-suite", label: "Corporate", icon: <Briefcase size={18} />, color: "text-amber-500" },
+    { to: "/alerts", label: "Logs", icon: <Bell size={18} />, color: "text-rose-500" },
   ]},
-  { group: "Intelligence", links: [
-    { to: "/vwap-inflation", label: "Market Trends", icon: <TrendingUp size={20} /> },
-    { to: "/encyclopedia", label: "Encyclopedia", icon: <BookOpen size={20} /> },
-    { to: "/production-flow", label: "Supply Chain", icon: <Share2 size={20} /> },
+  { group: "INTEL", links: [
+    { to: "/vwap-inflation", label: "Trends", icon: <TrendingUp size={18} />, color: "text-brand-500" },
+    { to: "/encyclopedia", label: "Registry", icon: <BookOpen size={18} />, color: "text-indigo-500" },
+    { to: "/production-flow", label: "Visual", icon: <Share2 size={18} />, color: "text-violet-500" },
   ]}
 ];
 
@@ -28,40 +28,37 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (o:
 
   return (
     <>
-      {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-surface-900/60 backdrop-blur-md z-40 lg:hidden"
+          className="fixed inset-0 bg-surface-950/40 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       <aside className={`
-        fixed top-0 left-0 bottom-0 z-50 w-72 bg-white dark:bg-surface-900 border-r border-surface-200 dark:border-surface-800
-        transition-all duration-300 lg:translate-x-0 lg:static lg:block
+        fixed top-0 left-0 bottom-0 z-50 w-56 bg-white dark:bg-surface-950 border-r border-surface-100 dark:border-surface-900
+        transition-all duration-200 lg:translate-x-0 lg:static lg:block
         ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}
       `}>
         <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="h-16 flex items-center px-6">
-            <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-8 h-8 gradient-brand rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-500/20 group-hover:scale-110 transition-transform">
-                <LayoutDashboard size={22} />
+          <div className="h-12 flex items-center px-6">
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="w-6 h-6 bg-brand-500 rounded flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+                <LayoutGrid size={14} />
               </div>
-              <span className="font-black text-xl tracking-tight dark:text-white uppercase italic">
-                Simco<span className="text-brand-600">Intel</span>
+              <span className="font-black text-lg tracking-tight dark:text-white italic uppercase">
+                S<span className="text-brand-600">.Matrix</span>
               </span>
             </Link>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6 scrollbar-hide">
+          <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-4 scrollbar-hide">
             {navLinks.map((group) => (
               <div key={group.group}>
-                <h3 className="px-3 text-[10px] font-black uppercase tracking-widest text-surface-400 dark:text-surface-500 mb-2">
+                <h3 className="px-3 text-[9px] font-black uppercase tracking-[0.3em] text-surface-300 dark:text-surface-700 mb-1">
                   {group.group}
                 </h3>
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {group.links.map((link) => {
                     const active = location === link.to;
                     return (
@@ -69,19 +66,16 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (o:
                         key={link.to}
                         to={link.to}
                         className={`
-                          flex items-center justify-between group px-3 py-2.5 rounded-lg transition-all duration-200
+                          flex items-center gap-3 group px-3 py-1.5 rounded transition-all duration-150
                           ${active
-                            ? "bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 shadow-sm"
-                            : "text-surface-500 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800/50 hover:text-surface-900 dark:hover:text-white"}
+                            ? "bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800 shadow-sm"
+                            : "text-surface-500 hover:bg-surface-50/50 dark:hover:bg-surface-900/50"}
                         `}
                       >
-                        <div className="flex items-center gap-4">
-                           <div className={`${active ? "text-brand-600 dark:text-brand-400 scale-110" : "opacity-50 group-hover:opacity-100 group-hover:scale-110"} transition-all duration-200`}>
-                             {link.icon}
-                           </div>
-                           <span className="text-sm font-bold tracking-tight">{link.label}</span>
+                        <div className={`${active ? link.color : "text-surface-300 dark:text-surface-600 group-hover:text-surface-400"} transition-colors`}>
+                          {link.icon}
                         </div>
-                        {active && <div className="w-1.5 h-1.5 rounded-full bg-brand-500 shadow-[0_0_8px_#0ea5e9]" />}
+                        <span className={`text-[11px] font-black uppercase tracking-tight ${active ? "text-surface-900 dark:text-white" : "text-surface-400"}`}>{link.label}</span>
                       </Link>
                     );
                   })}
@@ -90,8 +84,7 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (o:
             ))}
           </nav>
 
-          {/* Footer */}
-          <div className="p-6 space-y-4">
+          <div className="p-4 space-y-3">
              <DarkModeToggle />
              <div className="flex items-center justify-between px-2">
                 <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest opacity-50">v2.5.0-vibrant</span>
