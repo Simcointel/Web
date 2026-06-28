@@ -53,11 +53,10 @@ export function ProfitMarginsPage() {
   if (resources.length === 0) return <EmptyState message="NO_DATA_AVAILABLE" />;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 font-mono text-[10px]">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-surface-200 dark:border-surface-800 pb-4">
+    <div className="space-y-4 animate-in fade-in duration-300 font-mono text-[9px]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-100 dark:border-surface-800/50 pb-2">
         <div>
-          <h1 className="text-sm font-black uppercase tracking-widest">Profit_Margins_R{realm}</h1>
-          <p className="text-[10px] text-surface-500 mt-0.5 font-bold uppercase opacity-60">Production_Efficiency_Matrix</p>
+          <h1 className="text-xs font-black uppercase tracking-widest">Margins.Matrix_R{realm}</h1>
         </div>
 
         <div className="flex items-center gap-2">
@@ -72,27 +71,27 @@ export function ProfitMarginsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-surface-200 dark:bg-surface-800 border border-surface-200 dark:border-surface-800">
-         <SmallMetric label="RESOURCES" value={resources.length} />
-         <SmallMetric label="PROFITABLE" value={resources.filter((r: any) => r.marginPct > 0).length} />
-         <SmallMetric label="AVG_MARGIN" value={`${(resources.reduce((s: number, r: any) => s + r.marginPct, 0) / resources.length).toFixed(1)}%`} />
-         <SmallMetric label="TOP_MARGIN" value={`${Math.max(...resources.map((r: any) => r.marginPct)).toFixed(1)}%`} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-surface-100 dark:bg-surface-800 border border-surface-100 dark:border-surface-800">
+         <SmallMetric label="ITEMS" value={resources.length} />
+         <SmallMetric label="PROFIT" value={resources.filter((r: any) => r.marginPct > 0).length} />
+         <SmallMetric label="AVG_MG" value={`${(resources.reduce((s: number, r: any) => s + r.marginPct, 0) / resources.length).toFixed(0)}%`} />
+         <SmallMetric label="TOP_MG" value={`${Math.max(...resources.map((r: any) => r.marginPct)).toFixed(0)}%`} />
       </div>
 
-      <div className="border border-surface-200 dark:border-surface-800">
-        <div className="p-2 border-b border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex gap-2">
+      <div className="card">
+        <div className="p-1 border-b border-surface-50 dark:border-surface-800 bg-surface-50/50 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex gap-1">
             <input
               type="text"
-              placeholder="SEARCH_MANIFEST..."
+              placeholder="SEARCH..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 px-2 py-1 text-[10px] focus:outline-none focus:border-surface-900 dark:focus:border-white uppercase font-bold"
+              className="bg-white dark:bg-surface-950 border border-surface-100 dark:border-surface-800 px-2 py-0.5 text-[9px] focus:outline-none uppercase font-bold rounded"
             />
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 px-2 py-1 text-[10px] focus:outline-none uppercase font-bold"
+              className="bg-white dark:bg-surface-950 border border-surface-100 dark:border-surface-800 px-2 py-0.5 text-[9px] focus:outline-none uppercase font-bold rounded"
             >
               <option value="all">ALL_CATEGORIES</option>
               {categories.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -101,36 +100,34 @@ export function ProfitMarginsPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left">
             <thead>
-              <tr className="bg-surface-50 dark:bg-surface-900 text-[9px] font-black uppercase tracking-wider text-surface-400 border-b border-surface-200 dark:border-surface-800">
-                <th className="px-4 py-2 border-r border-surface-200 dark:border-surface-800">RESOURCE</th>
-                <th className="px-4 py-2 border-r border-surface-200 dark:border-surface-800 text-right cursor-pointer" onClick={() => toggleSort("mg")}>
-                  MARGIN {sortBy === "mg" && (sortDir === "desc" ? "▼" : "▲")}
+              <tr className="bg-surface-50/50 text-[8px] font-black uppercase text-surface-400 border-b border-surface-50 dark:border-surface-800">
+                <th className="px-3 py-1.5">ITEM</th>
+                <th className="px-3 py-1.5 text-right cursor-pointer" onClick={() => toggleSort("mg")}>
+                  MG% {sortBy === "mg" && (sortDir === "desc" ? "▼" : "▲")}
                 </th>
-                <th className="px-4 py-2 border-r border-surface-200 dark:border-surface-800 text-right cursor-pointer" onClick={() => toggleSort("np")}>
-                  PROFIT/H
-                </th>
-                <th className="px-4 py-2 border-r border-surface-200 dark:border-surface-800 text-right">REVENUE/H</th>
-                <th className="px-4 py-2 text-right cursor-pointer" onClick={() => toggleSort("vw")}>PRICE</th>
+                <th className="px-3 py-1.5 text-right cursor-pointer" onClick={() => toggleSort("np")}>PR/H</th>
+                <th className="px-3 py-1.5 text-right">RV/H</th>
+                <th className="px-3 py-1.5 text-right">PRICE</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
+            <tbody className="divide-y divide-surface-50 dark:divide-surface-800/50">
               {filtered.map((r: any) => (
                 <tr
                   key={r.id}
-                  className={`hover:bg-surface-50 dark:hover:bg-surface-900 transition-colors group cursor-pointer ${selectedResId === r.id ? 'bg-surface-100 dark:bg-surface-800' : ''}`}
+                  className={`hover:bg-brand-500/5 transition-colors cursor-pointer ${selectedResId === r.id ? 'bg-brand-500/10' : ''}`}
                   onClick={() => setSelectedResId(r.id)}
                 >
-                  <td className="px-4 py-2 border-r border-surface-200 dark:border-surface-800 font-bold uppercase truncate max-w-[120px]">{r.name}</td>
-                  <td className="px-4 py-2 border-r border-surface-200 dark:border-surface-800 text-right">
-                    <span className={r.marginPct > 0 ? "text-green-600" : "text-red-600"}>
-                      {r.marginPct > 0 ? "+" : ""}{r.marginPct.toFixed(1)}%
+                  <td className="px-3 py-1 font-bold uppercase truncate max-w-[100px]">{r.name}</td>
+                  <td className="px-3 py-1 text-right">
+                    <span className={r.marginPct > 0 ? "text-emerald-500" : "text-rose-500"}>
+                      {r.marginPct.toFixed(1)}%
                     </span>
                   </td>
-                  <td className="px-4 py-2 border-r border-surface-200 dark:border-surface-800 text-right font-bold">{fmt(r.netProfitPerHour)}</td>
-                  <td className="px-4 py-2 border-r border-surface-200 dark:border-surface-800 text-right opacity-60">{fmt(r.revenuePerHour)}</td>
-                  <td className="px-4 py-2 text-right font-black">{r.outputVwap.toFixed(2)}</td>
+                  <td className="px-3 py-1 text-right font-black">{fmt(r.netProfitPerHour)}</td>
+                  <td className="px-3 py-1 text-right opacity-40">{fmt(r.revenuePerHour)}</td>
+                  <td className="px-3 py-1 text-right font-bold text-brand-500">{r.outputVwap.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>

@@ -5,14 +5,15 @@ import {
   Search, Target, TrendingDown, Ship,
   LayoutDashboard, HardHat, Trash2, Upload, Download, CheckCircle2,
   Users, AlertCircle, Clock, Zap, Calculator, Wallet, BarChart3,
-  Briefcase, AlertTriangle, Globe, Layers, Microscope
+  Briefcase, AlertTriangle, Globe, Layers, Microscope,
+  Sun, Moon, TrendingUp
 } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import { BUILDINGS, RESOURCES, CONSTRUCTION_MATERIALS } from "../data/simco_static";
 import * as dataRepo from "../services/dataRepo";
 import { LoadingState } from "../components/States";
-import { useNavigate } from "../router";
+import { useNavigate, Link } from "../router";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import { Section } from "../components/Layout";
 
@@ -29,7 +30,7 @@ interface MapItem { id: string; level: number; }
 interface InventoryItem { id: number; qty: number; }
 
 interface SuiteStateV6 {
-  activeTab: 'command' | 'ops' | 'exec' | 'finance' | 'logistics' | 'risk' | 'retail';
+  activeTab: 'command' | 'ops' | 'exec' | 'finance' | 'logistics' | 'risk' | 'retail' | 'ledger';
   globalSync: boolean;
   map: MapItem[];
   board: {
@@ -87,7 +88,7 @@ const DEFAULT_STATE: SuiteStateV6 = {
 const n = (v: any) => (typeof v === 'number' && !isNaN(v) ? v : 0);
 
 export function CorporateSuitePage() {
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const [realm] = useSharedRealm();
   const navigate = useNavigate();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -107,7 +108,8 @@ export function CorporateSuitePage() {
         ...parsed,
         board: { ...DEFAULT_STATE.board, ...parsed.board },
         settings: { ...DEFAULT_STATE.settings, ...parsed.settings },
-        moduleSettings: { ...DEFAULT_STATE.moduleSettings, ...parsed.moduleSettings }
+        moduleSettings: { ...DEFAULT_STATE.moduleSettings, ...parsed.moduleSettings },
+        ledger: parsed.ledger || []
       };
     } catch (e) {
       return DEFAULT_STATE;
@@ -185,9 +187,27 @@ export function CorporateSuitePage() {
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
+      if (file.name.endsWith('.csv')) {
+         const rows = content.split('\n').map(r => r.split(',').map(c => c.replace(/"/g, '').trim()));
+         // Detect SimCompanies Receipts CSV
+         if (rows[0].includes('Date') && rows[0].includes('Amount')) {
+            const amountIdx = rows[0].indexOf('Amount');
+            const dataIdx = rows[0].indexOf('Date');
+            const detailIdx = rows[0].indexOf('Details');
+
+            let total = 0;
+            rows.slice(1).forEach(row => {
+               if (row[amountIdx]) total += parseFloat(row[amountIdx]) || 0;
+            });
+
+            setNotification({ msg: `Parsed $${(total/1_000_000).toFixed(2)}M in Receipts`, type: "success" });
+            setState(prev => ({ ...prev, settings: { ...prev.settings, estDailyProfit: total / 7 } })); // Heuristic average
+         }
+         return;
+      }
       try {
         const parsed = JSON.parse(content);
-        if (parsed.activeTab) { setState(parsed); setNotification({ msg: "System Sync Complete", type: "success" }); return; }
+        if (parsed.activeTab || parsed.board) { setState(prev => ({...prev, ...parsed})); setNotification({ msg: "System Sync Complete", type: "success" }); return; }
       } catch (err) { setNotification({ msg: "Restore Failed", type: "error" }); }
     };
     reader.readAsText(file);
@@ -202,35 +222,39 @@ export function CorporateSuitePage() {
       case 'logistics': return <LogisticsView state={state} core={core} setState={setState} />;
       case 'retail': return <RetailView state={state} core={core} setState={setState} retail={retail} />;
       case 'risk': return <RiskView core={core} phase={economyPhase} retail={retail} />;
+      case 'ledger': return <LedgerView state={state} setState={setState} />;
     }
   };
 
   if (mLoading && !margins) return <LoadingState text="Booting Enterprise Suite..." />;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-[1440px] mx-auto pb-20">
-       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-             <div className="w-12 h-12 bg-surface-900 dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-surface-900 shadow-lg">
-                <Briefcase size={24} />
+    <div className="space-y-4 animate-in fade-in duration-500 max-w-[1440px] mx-auto pb-16 relative">
+       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 border-b border-surface-100 dark:border-surface-800/50 pb-2">
+          <div className="flex items-center gap-3">
+             <Link to="/" className="w-8 h-8 bg-surface-100 dark:bg-surface-800 rounded flex items-center justify-center text-surface-400 hover:text-brand-500 transition-colors">
+                <ArrowLeft size={16} />
+             </Link>
+             <div className="w-8 h-8 bg-brand-500 rounded flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+                <Briefcase size={16} />
              </div>
              <div>
-                <h1 className="text-2xl font-black uppercase tracking-tight italic">Workstation.<span className="text-brand-600">Enterprise</span></h1>
-                <div className="flex items-center gap-2 mt-0.5">
-                   <span className="text-[10px] font-black uppercase text-surface-400 tracking-widest">OS v6.80</span>
-                   <div className="px-1.5 py-0.5 bg-brand-50 dark:bg-brand-900/20 rounded text-[9px] font-black text-brand-600 dark:text-brand-400 uppercase border border-brand-100 dark:border-brand-800">Operational</div>
+                <h1 className="text-sm font-black uppercase tracking-tight italic leading-tight">Sync.<span className="text-brand-600">Suite</span></h1>
+                <div className="flex items-center gap-1.5">
+                   <div className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">REALM {realm}</div>
                 </div>
              </div>
           </div>
 
-          <nav className="flex bg-white dark:bg-surface-900 p-1 rounded-lg shadow-sm border border-surface-200 dark:border-surface-800">
-             <WorkstationTab active={state.activeTab === 'command'} onClick={() => setState({...state, activeTab: 'command'})} label="CMD" icon={LayoutDashboard} />
-             <WorkstationTab active={state.activeTab === 'ops'} onClick={() => setState({...state, activeTab: 'ops'})} label="OPS" icon={HardHat} />
-             <WorkstationTab active={state.activeTab === 'exec'} onClick={() => setState({...state, activeTab: 'exec'})} label="EXEC" icon={Users} />
-             <WorkstationTab active={state.activeTab === 'finance'} onClick={() => setState({...state, activeTab: 'finance'})} label="FIN" icon={DollarSign} />
-             <WorkstationTab active={state.activeTab === 'logistics'} onClick={() => setState({...state, activeTab: 'logistics'})} label="LOG" icon={Ship} />
-             <WorkstationTab active={state.activeTab === 'retail'} onClick={() => setState({...state, activeTab: 'retail'})} label="RET" icon={Target} />
-             <WorkstationTab active={state.activeTab === 'risk'} onClick={() => setState({...state, activeTab: 'risk'})} label="RSK" icon={TrendingDown} />
+          <nav className="flex bg-surface-50 dark:bg-surface-900/50 p-0.5 rounded-md border border-surface-100 dark:border-surface-800">
+             <WorkstationTab active={state.activeTab === 'command'} onClick={() => setState({...state, activeTab: 'command'})} label="CMD" icon={LayoutDashboard} color="bg-brand-500" />
+             <WorkstationTab active={state.activeTab === 'ops'} onClick={() => setState({...state, activeTab: 'ops'})} label="OPS" icon={HardHat} color="bg-emerald-500" />
+             <WorkstationTab active={state.activeTab === 'exec'} onClick={() => setState({...state, activeTab: 'exec'})} label="EXEC" icon={Users} color="bg-amber-500" />
+             <WorkstationTab active={state.activeTab === 'finance'} onClick={() => setState({...state, activeTab: 'finance'})} label="FIN" icon={DollarSign} color="bg-violet-500" />
+             <WorkstationTab active={state.activeTab === 'logistics'} onClick={() => setState({...state, activeTab: 'logistics'})} label="LOG" icon={Ship} color="bg-indigo-500" />
+             <WorkstationTab active={state.activeTab === 'retail'} onClick={() => setState({...state, activeTab: 'retail'})} label="RET" icon={Target} color="bg-rose-500" />
+             <WorkstationTab active={state.activeTab === 'ledger'} onClick={() => setState({...state, activeTab: 'ledger'})} label="BOOK" icon={BarChart3} color="bg-teal-500" />
+             <WorkstationTab active={state.activeTab === 'risk'} onClick={() => setState({...state, activeTab: 'risk'})} label="RSK" icon={TrendingDown} color="bg-surface-500" />
           </nav>
        </div>
 
@@ -239,17 +263,20 @@ export function CorporateSuitePage() {
        </main>
 
        {/* Control Bar */}
-       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-3xl px-4 z-[90]">
-          <div className="bg-surface-900/95 dark:bg-white/95 text-white dark:text-surface-900 backdrop-blur-lg p-3 rounded-2xl shadow-2xl flex items-center justify-between border border-white/10 dark:border-surface-200">
-             <div className="flex gap-8 px-4 border-r border-white/10 dark:border-surface-200">
-                <GlobalMetric label="Market Value" value={`$${(core.totalValuation/1_000_000).toFixed(2)}M`} />
-                <GlobalMetric label="Daily Yield" value={`$${(core.netDaily/1000).toFixed(1)}K/d`} />
-                <GlobalMetric label="Efficiency" value={`${((1 - core.actualAO)*100).toFixed(1)}%`} />
+       <div className="fixed bottom-2 left-1/2 -translate-x-1/2 w-full max-w-2xl px-2 z-[90]">
+          <div className="bg-surface-900/95 dark:bg-white text-white dark:text-surface-900 backdrop-blur-md p-1.5 rounded-lg shadow-2xl flex items-center justify-between border border-white/5 dark:border-surface-100">
+             <div className="flex gap-6 px-3 border-r border-white/10 dark:border-surface-100">
+                <GlobalMetric label="VALUE" value={`$${(core.totalValuation/1_000_000).toFixed(2)}M`} />
+                <GlobalMetric label="YIELD" value={`$${(core.netDaily/1000).toFixed(1)}K`} />
+                <GlobalMetric label="EFF" value={`${((1 - core.actualAO)*100).toFixed(0)}%`} />
              </div>
-             <div className="flex items-center gap-3 px-4">
-                <button onClick={() => fileInputRef.current?.click()} className="btn btn-secondary !bg-transparent !text-current border-current !py-1.5"><Upload size={14} className="mr-2"/> Sync</button>
-                <button onClick={() => { const data = JSON.stringify(state); const blob = new Blob([data], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'simco_intel_backup.json'; a.click(); }} className="btn btn-primary !bg-current !text-surface-900 dark:!text-white !py-1.5"><Download size={14} className="mr-2"/> Backup</button>
-                <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".json" />
+             <div className="flex items-center gap-2 px-3">
+                <button onClick={toggleTheme} className="w-8 h-8 rounded border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
+                   {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+                </button>
+                <button onClick={() => fileInputRef.current?.click()} className="btn !bg-transparent !text-current border !border-white/20 dark:!border-surface-200 !py-1"><Upload size={12} className="mr-1"/> Sync</button>
+                <button onClick={() => { const data = JSON.stringify(state); const blob = new Blob([data], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'simco_intel_backup.json'; a.click(); }} className="btn !bg-brand-500 !text-white !py-1"><Download size={12} className="mr-1"/> Backup</button>
+                <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".json,.csv" />
              </div>
           </div>
        </div>
@@ -266,6 +293,29 @@ export function CorporateSuitePage() {
   );
 }
 
+function LedgerView({ state }: any) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+       <div className="md:col-span-8">
+          <Section title="LEDGER_STREAM" icon={BarChart3} color="text-teal-500">
+             <div className="card h-[60vh] flex flex-col items-center justify-center border-dashed opacity-20">
+                <Download size={40} className="mb-4" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em]">Upload Game CSV to populate</p>
+             </div>
+          </Section>
+       </div>
+       <div className="md:col-span-4 space-y-3">
+          <Section title="STAT_EXTRACT" icon={TrendingUp} color="text-teal-500">
+             <div className="card p-4 border-l-2 border-teal-500">
+                <span className="text-[9px] font-black text-surface-400 block mb-2 uppercase">EST_DAILY_PROFIT</span>
+                <span className="text-2xl font-black italic tracking-tighter text-teal-600">${(state.settings.estDailyProfit/1000).toFixed(1)}K</span>
+             </div>
+          </Section>
+       </div>
+    </div>
+  );
+}
+
 function CommandView({ core, phase, margins }: any) {
   const marketAlerts = useMemo(() => {
     if (!margins?.resources) return [];
@@ -273,64 +323,64 @@ function CommandView({ core, phase, margins }: any) {
   }, [margins]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-       <div className="md:col-span-8 space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-             <KPICard label="Liquid Stock" value={`$${(core.inventoryValue/1000).toFixed(1)}K`} sub="Current Warehouse" icon={Package} />
-             <KPICard label="Fixed Assets" value={`$${(core.mapValue/1_000_000).toFixed(2)}M`} sub={`${core.totalLevels} Active Lvls`} icon={Building2} />
-             <KPICard label="Market Regime" value={phase.toUpperCase()} sub="Global Modifier" icon={Globe} />
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+       <div className="md:col-span-8 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+             <KPICard label="STOCK" value={`$${(core.inventoryValue/1000).toFixed(1)}K`} sub="Current Warehouse" icon={Package} />
+             <KPICard label="ASSETS" value={`$${(core.mapValue/1_000_000).toFixed(2)}M`} sub={`${core.totalLevels} Active Lvls`} icon={Building2} />
+             <KPICard label="REGIME" value={phase.toUpperCase()} sub="Global Modifier" icon={Globe} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
              <div className="card">
-                <div className="px-5 py-3 border-b border-surface-50 dark:border-surface-800 flex items-center justify-between">
-                   <span className="text-[10px] font-black uppercase tracking-widest text-surface-400 italic">Volatility Stream</span>
+                <div className="px-3 py-1.5 border-b border-surface-50 dark:border-surface-800/50 flex items-center justify-between">
+                   <span className="text-[8px] font-black uppercase tracking-[0.2em] text-surface-400">VOLATILITY</span>
                 </div>
-                <div className="p-3 space-y-1">
+                <div className="p-1 space-y-0.5">
                    {marketAlerts.map((r: any, i: number) => (
-                      <div key={i} className="flex justify-between items-center p-2 hover:bg-surface-50 dark:hover:bg-surface-800 rounded-lg transition-all border-b border-surface-50 dark:border-surface-800 last:border-0">
-                         <span className="text-xs font-black uppercase tracking-tight">{r.name}</span>
-                         <div className="flex gap-4 items-center">
-                            <span className="text-[10px] font-mono font-bold text-surface-400">${r.outputVwap.toFixed(2)}</span>
-                            <span className={`text-xs font-black tabular-nums ${r.marginDelta > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                               {r.marginDelta > 0 ? '▲' : '▼'}{Math.abs(r.marginDelta).toFixed(1)}%
+                      <div key={i} className="flex justify-between items-center p-1.5 hover:bg-brand-50 dark:hover:bg-brand-900/10 rounded transition-all">
+                         <span className="text-[10px] font-black uppercase tracking-tight truncate w-24">{r.name}</span>
+                         <div className="flex gap-3 items-center">
+                            <span className="text-[9px] font-mono font-bold text-surface-400">${r.outputVwap.toFixed(2)}</span>
+                            <span className={`text-[9px] font-black tabular-nums ${r.marginDelta > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                               {r.marginDelta > 0 ? '▲' : '▼'}{Math.abs(r.marginDelta).toFixed(0)}%
                             </span>
                          </div>
                       </div>
                    ))}
                 </div>
              </div>
-             <div className="card p-6 flex flex-col justify-center space-y-6">
-                <div className="flex justify-between items-end border-b border-surface-50 dark:border-surface-800 pb-4">
-                   <span className="text-[10px] font-black text-surface-400 uppercase tracking-widest">30-Day Growth</span>
-                   <span className="text-2xl font-black italic tracking-tighter text-brand-600">+$${(core.netDaily * 30 / 1_000_000).toFixed(2)}M</span>
+             <div className="card p-4 flex flex-col justify-center space-y-3">
+                <div className="flex justify-between items-end border-b border-surface-50 dark:border-surface-800 pb-2">
+                   <span className="text-[8px] font-black text-surface-400 uppercase tracking-widest">30D GROWTH</span>
+                   <span className="text-xl font-black italic tracking-tighter text-brand-500">+$${(core.netDaily * 30 / 1_000_000).toFixed(2)}M</span>
                 </div>
                 <div className="flex justify-between items-end">
-                   <span className="text-[10px] font-black text-surface-400 uppercase tracking-widest">7-Day Delta</span>
-                   <span className="text-xl font-black italic tracking-tighter text-emerald-500">+$${(core.netDaily * 7 / 1000).toFixed(1)}K</span>
+                   <span className="text-[8px] font-black text-surface-400 uppercase tracking-widest">7D DELTA</span>
+                   <span className="text-lg font-black italic tracking-tighter text-emerald-500">+$${(core.netDaily * 7 / 1000).toFixed(1)}K</span>
                 </div>
              </div>
           </div>
        </div>
 
-       <div className="md:col-span-4 space-y-6">
-          <div className="card bg-surface-900 text-white p-6 relative overflow-hidden group shadow-xl">
-             <Target size={120} className="absolute -right-8 -top-8 opacity-10 group-hover:scale-110 transition-transform duration-1000" />
-             <h3 className="text-xs font-black uppercase tracking-[0.3em] text-brand-400 mb-6 italic">Strategic Checklist</h3>
-             <div className="space-y-4">
-                <CheckItem label="C-Suite Personnel" active={core.effMan > 0} light />
-                <CheckItem label="Warehouse Valued" active={core.inventoryValue > 0} light />
-                <CheckItem label="Debt Managed" active={core.dailyInterest > 0} light />
-                <CheckItem label="Economic Linkage" active={true} light />
+       <div className="md:col-span-4 space-y-3">
+          <div className="card bg-brand-500 text-white p-4 relative overflow-hidden group">
+             <Target size={80} className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-1000" />
+             <h3 className="text-[9px] font-black uppercase tracking-[0.2em] mb-4 text-white/80">STRATEGIC SYNC</h3>
+             <div className="space-y-2">
+                <CheckItem label="C-SUITE" active={core.effMan > 0} light />
+                <CheckItem label="STOCK" active={core.inventoryValue > 0} light />
+                <CheckItem label="DEBT" active={core.dailyInterest > 0} light />
+                <CheckItem label="ECON" active={true} light />
              </div>
           </div>
-          <div className="card p-6">
-             <div className="flex items-center gap-2 mb-4">
-                <Clock size={18} className="text-brand-500" />
-                <h3 className="text-xs font-black uppercase tracking-widest italic">Cycle Projection</h3>
+          <div className="card p-4">
+             <div className="flex items-center gap-2 mb-2">
+                <Clock size={14} className="text-brand-500" />
+                <h3 className="text-[9px] font-black uppercase tracking-widest text-surface-400">CYCLE</h3>
              </div>
-             <p className="text-[11px] font-bold text-surface-500 leading-relaxed uppercase tracking-tight">
-                Current regime stability at 84%. Next transition forecast within 2.4 days. Monitor consumer saturation metrics.
+             <p className="text-[10px] font-bold text-surface-500 leading-tight uppercase">
+                Stability at 84%. Forecast: 2.4 days to transition.
              </p>
           </div>
        </div>
@@ -353,64 +403,63 @@ function OperationsView({ state, setState, core }: any) {
   }, [state.map]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-       <div className="md:col-span-5 space-y-5">
-          <Section title="Asset Registry" icon={Building2}>
-             <button onClick={() => setState({...state, map: [...state.map, { id: BUILDINGS[0].id, level: 1 }]})} className="w-full btn btn-secondary !py-3 !rounded-xl mb-4 border-dashed border-2 hover:border-brand-600 uppercase font-black text-[10px] tracking-widest">+ Register Facility</button>
-             <div className="max-h-[500px] overflow-y-auto space-y-2 pr-2 scrollbar-hide">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+       <div className="md:col-span-5 space-y-3">
+          <Section title="FACILITIES" icon={Building2} color="text-emerald-500">
+             <button onClick={() => setState({...state, map: [...state.map, { id: BUILDINGS[0].id, level: 1 }]})} className="w-full btn !bg-emerald-500 text-white !py-2 mb-3 shadow-lg shadow-emerald-500/20 uppercase font-black text-[9px]">+ REGISTER</button>
+             <div className="max-h-[400px] overflow-y-auto space-y-1.5 pr-1 scrollbar-hide">
                 {state.map.map((m: any, i: number) => (
-                   <div key={i} className="card p-3 flex items-center gap-4 hover:border-brand-500 transition-all border-l-4 border-l-brand-600 shadow-sm">
+                   <div key={i} className="card p-2 flex items-center gap-3 hover:border-emerald-500/50 transition-all border-l-2 border-emerald-500">
                       <div className="flex-1">
-                         <select value={m.id} onChange={(e) => { const n = [...state.map]; n[i].id = e.target.value; setState({...state, map: n}); }} className="bg-transparent border-none p-0 text-xs font-black uppercase w-full outline-none italic tracking-tight">
+                         <select value={m.id} onChange={(e) => { const n = [...state.map]; n[i].id = e.target.value; setState({...state, map: n}); }} className="bg-transparent border-none p-0 text-[10px] font-black uppercase w-full outline-none truncate">
                             {BUILDINGS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                          </select>
-                         <p className="text-[9px] font-black text-surface-400 uppercase tracking-widest mt-0.5">Station #{i+1}</p>
+                         <p className="text-[8px] font-black text-surface-400 uppercase tracking-tighter mt-0.5">ID: {i+1}</p>
                       </div>
-                      <div className="flex items-center gap-2 bg-surface-50 dark:bg-surface-800 px-3 py-1.5 rounded-lg border border-surface-100 dark:border-surface-700">
-                         <span className="text-[9px] font-black opacity-30 tracking-widest">LVL</span>
-                         <input type="number" value={m.level} onChange={(e) => { const n = [...state.map]; n[i].level = Number(e.target.value); setState({...state, map: n}); }} className="w-8 bg-transparent border-none p-0 text-sm font-black text-center outline-none tabular-nums" />
+                      <div className="flex items-center gap-1.5 bg-surface-50 dark:bg-surface-950 px-2 py-1 rounded">
+                         <span className="text-[8px] font-black opacity-30">LVL</span>
+                         <input type="number" value={m.level} onChange={(e) => { const n = [...state.map]; n[i].level = Number(e.target.value); setState({...state, map: n}); }} className="w-6 bg-transparent border-none p-0 text-xs font-black text-center outline-none" />
                       </div>
-                      <button onClick={() => setState({...state, map: state.map.filter((_: any, idx: number) => idx !== i)})} className="p-1.5 text-surface-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                      <button onClick={() => setState({...state, map: state.map.filter((_: any, idx: number) => idx !== i)})} className="p-1 text-surface-300 hover:text-rose-500 transition-colors"><Trash2 size={14} /></button>
                    </div>
                 ))}
              </div>
           </Section>
        </div>
-       <div className="md:col-span-7 space-y-6">
-          <Section title="Expansion Logistics" icon={HardHat} subtitle="Aggregate resource requirement matrix.">
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="card bg-brand-600 text-white p-6 relative overflow-hidden shadow-xl">
-                   <HardHat size={100} className="absolute -right-6 -bottom-6 opacity-10" />
-                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-6 text-brand-200 italic">Liquid Requirement</h3>
-                   <span className="text-4xl font-black italic tracking-tighter tabular-nums">${(constructionTotals[0]/1000).toFixed(1)}K</span>
-                   <p className="text-[10px] font-bold text-brand-100 mt-4 uppercase tracking-widest opacity-60 italic leading-relaxed">Required capital for existing infrastructure scaling.</p>
+       <div className="md:col-span-7 space-y-3">
+          <Section title="LOGISTICS" icon={HardHat} color="text-emerald-500">
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <div className="card bg-emerald-500 text-white p-4 relative overflow-hidden">
+                   <HardHat size={60} className="absolute -right-4 -bottom-4 opacity-10" />
+                   <h3 className="text-[9px] font-black uppercase tracking-widest mb-4 text-emerald-100">CASH REQ</h3>
+                   <span className="text-3xl font-black italic tracking-tighter tabular-nums leading-none">${(constructionTotals[0]/1000).toFixed(1)}K</span>
                 </div>
-                <div className="card p-5 space-y-4">
-                   <h3 className="text-[10px] font-black uppercase text-surface-400 tracking-widest italic">Resource Manifest</h3>
-                   <div className="space-y-2">
+                <div className="card p-3 space-y-2">
+                   {/* Simplified resource list */}
+                   <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                       {[101, 102, 108, 111, 110].map(id => (
-                        <div key={id} className="flex justify-between items-center py-1.5 border-b border-surface-50 dark:border-surface-800 last:border-0">
-                           <span className="text-[10px] font-black uppercase italic text-surface-600">{CONSTRUCTION_MATERIALS.find(m => m.id === id)?.name}</span>
-                           <span className="text-xs font-black tabular-nums">{constructionTotals[id]?.toLocaleString()} Units</span>
+                        <div key={id} className="flex justify-between items-center text-[9px] border-b border-surface-50 dark:border-surface-800 pb-0.5 last:border-0">
+                           <span className="font-black text-surface-400 truncate w-16">{CONSTRUCTION_MATERIALS.find(m => m.id === id)?.name}</span>
+                           <span className="font-black tabular-nums">{constructionTotals[id]?.toLocaleString()}</span>
                         </div>
                       ))}
                    </div>
                 </div>
              </div>
           </Section>
-          <Section title="What-If Simulator" icon={Layers}>
-             <div className="card p-6 space-y-6">
-                <div className="flex justify-between items-end gap-6">
-                   <div className="flex-1">
-                      <p className="text-[10px] font-black text-brand-600 uppercase italic tracking-widest mb-1">Simulated Scaling</p>
-                      <p className="text-4xl font-black italic tracking-tighter">+{state.settings.whatIfLevel} <span className="text-lg opacity-20 non-italic">Levels</span></p>
+          <Section title="SIMULATOR" icon={Layers} color="text-emerald-500">
+             <div className="card p-4 space-y-4">
+                <div className="flex justify-between items-end">
+                   <div>
+                      <p className="text-[9px] font-black text-emerald-500 uppercase leading-none mb-1">SCALING</p>
+                      <p className="text-3xl font-black italic tracking-tighter">+{state.settings.whatIfLevel} <span className="text-sm opacity-20">LVLS</span></p>
                    </div>
                    <div className="text-right">
-                      <p className="text-[10px] font-black text-red-500 uppercase italic tracking-widest mb-1">Resultant AO Drag</p>
-                      <p className="text-2xl font-black tabular-nums text-red-600">{(core.actualAO*100).toFixed(2)}%</p>
+                      <p className="text-[9px] font-black text-rose-500 uppercase leading-none mb-1">AO DRAG</p>
+                      <p className="text-xl font-black tabular-nums text-rose-600">{(core.actualAO*100).toFixed(1)}%</p>
                    </div>
                 </div>
-                <input type="range" min="0" max="500" step="5" value={state.settings.whatIfLevel} onChange={(e) => setState({...state, settings: {...state.settings, whatIfLevel: Number(e.target.value)}})} className="w-full h-2 bg-surface-100 dark:bg-surface-800 rounded-full appearance-none cursor-pointer accent-brand-600" />
+                <input type="range" min="0" max="500" step="5" value={state.settings.whatIfLevel} onChange={(e) => setState({...state, settings: {...state.settings, whatIfLevel: Number(e.target.value)}})} className="w-full h-1.5 bg-surface-100 dark:bg-surface-800 rounded-full appearance-none cursor-pointer accent-emerald-500" />
              </div>
           </Section>
        </div>
@@ -438,46 +487,46 @@ function ExecutiveView({ state, setState, core }: any) {
   };
 
   return (
-    <div className="space-y-6">
-       <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-          <SkillNode label="Management" value={core.effMan} icon={Zap} sub="AO SUPPRESSION" color="text-amber-500" />
-          <SkillNode label="Accounting" value={core.effAcc} icon={DollarSign} sub="TAX THRESHOLD" color="text-emerald-500" />
-          <SkillNode label="Communication" value={core.effCom} icon={Globe} sub="SALES VELOCITY" color="text-indigo-500" />
-          <SkillNode label="Science" value={core.effSci} icon={Microscope} sub="PATENT ODDS" color="text-rose-500" />
+    <div className="space-y-3">
+       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <SkillNode label="MAN" value={core.effMan} icon={Zap} sub="AO" color="text-amber-500" />
+          <SkillNode label="ACC" value={core.effAcc} icon={DollarSign} sub="TAX" color="text-emerald-500" />
+          <SkillNode label="COM" value={core.effCom} icon={Globe} sub="SPEED" color="text-indigo-500" />
+          <SkillNode label="SCI" value={core.effSci} icon={Microscope} sub="PATENT" color="text-rose-500" />
        </div>
 
-       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-12">
-          <div className="lg:col-span-8 space-y-4">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 pb-8">
+          <div className="lg:col-span-8 space-y-2">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <ExecCard role="COO" data={state.board.coo} onChange={(d: any) => setState({...state, board: {...state.board, coo: d}})} />
-                <ExecCard role="COO Apprentice" data={state.board.cooApp} onChange={(d: any) => setState({...state, board: {...state.board, cooApp: d}})} isApp />
+                <ExecCard role="COO APP" data={state.board.cooApp} onChange={(d: any) => setState({...state, board: {...state.board, cooApp: d}})} isApp />
                 <ExecCard role="CFO" data={state.board.cfo} onChange={(d: any) => setState({...state, board: {...state.board, cfo: d}})} />
-                <ExecCard role="CFO Apprentice" data={state.board.cfoApp} onChange={(d: any) => setState({...state, board: {...state.board, cfoApp: d}})} isApp />
+                <ExecCard role="CFO APP" data={state.board.cfoApp} onChange={(d: any) => setState({...state, board: {...state.board, cfoApp: d}})} isApp />
                 <ExecCard role="CMO" data={state.board.cmo} onChange={(d: any) => setState({...state, board: {...state.board, cmo: d}})} />
-                <ExecCard role="CMO Apprentice" data={state.board.cmoApp} onChange={(d: any) => setState({...state, board: {...state.board, cmoApp: d}})} isApp />
+                <ExecCard role="CMO APP" data={state.board.cmoApp} onChange={(d: any) => setState({...state, board: {...state.board, cmoApp: d}})} isApp />
                 <ExecCard role="CTO" data={state.board.cto} onChange={(d: any) => setState({...state, board: {...state.board, cto: d}})} />
-                <ExecCard role="CTO Apprentice" data={state.board.ctoApp} onChange={(d: any) => setState({...state, board: {...state.board, ctoApp: d}})} isApp />
+                <ExecCard role="CTO APP" data={state.board.ctoApp} onChange={(d: any) => setState({...state, board: {...state.board, ctoApp: d}})} isApp />
              </div>
           </div>
-          <div className="lg:col-span-4 space-y-6">
-             <div className="card p-6 border-l-4 border-l-amber-600 bg-amber-50/20 dark:bg-amber-900/10 shadow-lg">
-                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-amber-700 dark:text-amber-400 mb-4 italic">Quick board Sync</h3>
-                <p className="text-[10px] font-bold text-surface-500 leading-relaxed mb-4 uppercase tracking-tight">Paste entire executive page content to update primary and apprentice skill nodes.</p>
-                <textarea value={pasteData} onChange={(e) => setPasteData(e.target.value)} className="input !bg-white dark:!bg-surface-950 !h-32 font-mono text-[10px] mb-4" placeholder="COO Management: 20..." />
-                <button onClick={handlePaste} className="w-full btn btn-primary !bg-amber-600 !hover:bg-amber-700 !rounded-xl !py-3 tracking-widest uppercase font-black">Synchronize Board</button>
+          <div className="lg:col-span-4 space-y-3">
+             <div className="card p-4 border-t-2 border-amber-500 bg-amber-500/5">
+                <h3 className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-2">QUICK SYNC</h3>
+                <textarea value={pasteData} onChange={(e) => setPasteData(e.target.value)} className="input !h-24 !bg-white dark:!bg-surface-950 font-mono text-[9px] mb-2" placeholder="COO Management: 20..." />
+                <button onClick={handlePaste} className="w-full btn !bg-amber-500 text-white !py-2 font-black uppercase">SYNC BOARD</button>
              </div>
 
-             <div className="card p-5 space-y-4">
-                <div className="flex items-center gap-2">
-                   <Calculator size={18} className="text-brand-500" />
-                   <h3 className="text-xs font-black uppercase tracking-widest italic">R&D Analytics</h3>
+             <div className="card p-3 space-y-2">
+                <div className="flex items-center gap-2 mb-2">
+                   <Calculator size={14} className="text-amber-500" />
+                   <h3 className="text-[9px] font-black uppercase text-surface-400">R&D</h3>
                 </div>
-                <div className="space-y-3 pt-3 border-t border-surface-50 dark:border-surface-800">
-                   <ForecastLine label="Patent Probability" value={`${(core.patentProb*100).toFixed(2)}%`} />
-                   <ForecastLine label="Science Speed" value={`${(core.effSci * 2).toFixed(0)}%`} />
-                   <div className="flex justify-between items-center bg-surface-50 dark:bg-surface-800 px-3 py-1.5 rounded-lg">
-                      <span className="text-[10px] font-black uppercase opacity-40">Target Quality</span>
-                      <input type="number" value={state.settings.patentTargetQuality} onChange={(e) => setState({...state, settings: {...state.settings, patentTargetQuality: Number(e.target.value)}})} className="w-10 bg-transparent border-none text-right font-black outline-none p-0 text-sm" />
+                <div className="space-y-1 text-[10px]">
+                   <ForecastLine label="PATENT" value={`${(core.patentProb*100).toFixed(1)}%`} />
+                   <ForecastLine label="SCI SPEED" value={`${(core.effSci * 2).toFixed(0)}%`} />
+                   <ForecastLine label="SALES SPEED" value={`+${(core.salesSpeedBonus * 100).toFixed(1)}%`} />
+                   <div className="flex justify-between items-center pt-1">
+                      <span className="font-black text-surface-400">TARGET Q</span>
+                      <input type="number" value={state.settings.patentTargetQuality} onChange={(e) => setState({...state, settings: {...state.settings, patentTargetQuality: Number(e.target.value)}})} className="w-8 bg-surface-50 dark:bg-surface-950 text-right font-black outline-none rounded" />
                    </div>
                 </div>
              </div>
@@ -489,42 +538,42 @@ function ExecutiveView({ state, setState, core }: any) {
 
 function FinanceView({ state, setState, core }: any) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-       <div className="md:col-span-4 space-y-5">
-          <Section title="Config Node" icon={Wallet}>
-             <div className="card p-6 space-y-6 border-l-4 border-l-emerald-600 shadow-lg">
-                <div className="space-y-2">
-                   <label className="text-[10px] font-black uppercase text-surface-400 tracking-widest italic">Forecast Daily Profit</label>
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+       <div className="md:col-span-4 space-y-3">
+          <Section title="FISCAL" icon={Wallet} color="text-violet-500">
+             <div className="card p-4 space-y-4 border-l-2 border-violet-500">
+                <div className="space-y-1">
+                   <label className="text-[9px] font-black uppercase text-surface-400">PROFIT/DAY</label>
                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600 font-black">$</span>
-                      <input type="number" value={state.settings.estDailyProfit} onChange={(e) => setState({...state, settings: {...state.settings, estDailyProfit: Number(e.target.value)}})} className="input !text-xl !font-black !pl-8 !bg-surface-50 dark:!bg-surface-800 border-none !rounded-xl" />
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-violet-500 font-black text-xs">$</span>
+                      <input type="number" value={state.settings.estDailyProfit} onChange={(e) => setState({...state, settings: {...state.settings, estDailyProfit: Number(e.target.value)}})} className="input !text-lg !pl-5 !bg-surface-50 dark:!bg-surface-950 border-none" />
                    </div>
                 </div>
-                <div className="space-y-2">
-                   <label className="text-[10px] font-black uppercase text-surface-400 tracking-widest italic">Current Liabilities</label>
+                <div className="space-y-1">
+                   <label className="text-[9px] font-black uppercase text-surface-400">LIABILITIES</label>
                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-rose-500 font-black">$</span>
-                      <input type="number" value={state.debt.current} onChange={(e) => setState({...state, debt: {...state.debt, current: Number(e.target.value)}})} className="input !text-xl !font-black !pl-8 !bg-surface-50 dark:!bg-surface-800 border-none !rounded-xl !text-rose-600" />
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-rose-500 font-black text-xs">$</span>
+                      <input type="number" value={state.debt.current} onChange={(e) => setState({...state, debt: {...state.debt, current: Number(e.target.value)}})} className="input !text-lg !pl-5 !bg-surface-50 dark:!bg-surface-950 border-none !text-rose-600" />
                    </div>
                 </div>
              </div>
           </Section>
        </div>
-       <div className="md:col-span-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="card p-6 space-y-6">
-             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-surface-400 italic">Tax Engine</h3>
-             <div className="space-y-4">
-                <ForecastLine label="Accounting Safety" value={`$${(core.taxThreshold/1_000_000).toFixed(2)}M`} />
-                <ForecastLine label="Daily Threshold" value={`$${(core.taxThreshold/30/1000).toFixed(1)}K`} />
-                <ForecastLine label="Daily Tax Est." value={`-$${(core.estimatedDailyTax/1000).toFixed(1)}K`} red />
+       <div className="md:col-span-8 grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <div className="card p-4 space-y-4">
+             <h3 className="text-[9px] font-black uppercase text-violet-500">TAX ENGINE</h3>
+             <div className="space-y-2 text-xs">
+                <ForecastLine label="SAFETY" value={`$${(core.taxThreshold/1_000_000).toFixed(2)}M`} />
+                <ForecastLine label="THRESHOLD" value={`$${(core.taxThreshold/30/1000).toFixed(1)}K`} />
+                <ForecastLine label="DAILY TAX" value={`-$${(core.estimatedDailyTax/1000).toFixed(1)}K`} red />
              </div>
           </div>
-          <div className="card p-6 space-y-6">
-             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-surface-400 italic">Operating Margin</h3>
-             <div className="space-y-4">
-                <ForecastLine label="Facility Wages" value={`-$${(core.dailyWages * core.actualAO / 1000).toFixed(1)}K`} red />
-                <ForecastLine label="Debt Servicing" value={`-$${(core.dailyInterest / 1000).toFixed(1)}K`} red />
-                <ForecastLine label="Net Daily Yield" value={`+$${(core.netDaily/1000).toFixed(1)}K`} green />
+          <div className="card p-4 space-y-4">
+             <h3 className="text-[9px] font-black uppercase text-violet-500">MARGINS</h3>
+             <div className="space-y-2 text-xs">
+                <ForecastLine label="WAGES" value={`-$${(core.dailyWages * core.actualAO / 1000).toFixed(1)}K`} red />
+                <ForecastLine label="DEBT" value={`-$${(core.dailyInterest / 1000).toFixed(1)}K`} red />
+                <ForecastLine label="NET YIELD" value={`+$${(core.netDaily/1000).toFixed(1)}K`} green />
              </div>
           </div>
        </div>
@@ -532,33 +581,46 @@ function FinanceView({ state, setState, core }: any) {
   );
 }
 
-function LogisticsView({ state, setState, fileInputRef }: any) {
+function LogisticsView({ state, setState, core }: any) {
   const [q, setQ] = useState("");
   const filteredRes = useMemo(() => RESOURCES.filter(r => r.name.toLowerCase().includes(q.toLowerCase())), [q]);
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-       <div className="lg:col-span-4 space-y-5">
-          <div className="card p-5 flex flex-col h-[65vh] shadow-xl">
-             <div className="relative mb-4">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
-                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter Manifest..." className="input !pl-10 !py-2 uppercase font-black text-xs !bg-surface-50 dark:!bg-surface-800 border-none" />
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+       <div className="lg:col-span-4 space-y-3">
+          <Section title="WAREHOUSE" icon={Package} color="text-indigo-500">
+             <div className="card p-2 flex flex-col h-[60vh]">
+                <div className="relative mb-2">
+                   <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-surface-400" />
+                   <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="FILTER..." className="input !pl-7 !py-1 !text-[10px]" />
+                </div>
+                <div className="flex-1 overflow-y-auto space-y-0.5 scrollbar-hide">
+                   {filteredRes.slice(0, 100).map(r => {
+                      const item = state.inventory.find(i => i.id === r.id);
+                      return (
+                         <div key={r.id} className="flex justify-between items-center p-1.5 hover:bg-surface-50 dark:hover:bg-surface-800 rounded transition-all">
+                            <span className="text-[10px] font-black uppercase truncate w-32">{r.name}</span>
+                            <input type="number" value={item?.qty || ""} onChange={(e) => { const v = Number(e.target.value); const next = [...state.inventory.filter(i => i.id !== r.id)]; if (v > 0) next.push({ id: r.id, qty: v }); setState({...state, inventory: next}); }} className="w-12 bg-surface-100 dark:bg-surface-950 border-none rounded p-1 text-[9px] font-black text-center" />
+                         </div>
+                      )
+                   })}
+                </div>
              </div>
-             <div className="flex-1 overflow-y-auto space-y-1 scrollbar-hide">
-                {filteredRes.slice(0, 80).map(r => {
-                   const item = state.inventory.find(i => i.id === r.id);
-                   return (
-                      <div key={r.id} className="flex justify-between items-center p-2.5 hover:bg-surface-50 dark:hover:bg-surface-800 rounded-lg group transition-all">
-                         <span className="text-[11px] font-black uppercase italic text-surface-600">{r.name}</span>
-                         <input type="number" value={item?.qty || ""} onChange={(e) => { const v = Number(e.target.value); const next = [...state.inventory.filter(i => i.id !== r.id)]; if (v > 0) next.push({ id: r.id, qty: v }); setState({...state, inventory: next}); }} className="w-16 bg-surface-100 dark:bg-surface-900 border-none rounded-md p-1.5 text-[10px] font-black text-center tabular-nums" />
-                      </div>
-                   )
-                })}
-             </div>
-          </div>
+          </Section>
        </div>
-       <div className="lg:col-span-8 flex flex-col items-center justify-center card border-dashed opacity-10 p-12">
-          <Ship size={120} className="mb-6" />
-          <h2 className="text-2xl font-black uppercase italic tracking-tighter text-center">Logistics Node<br/>Requires Data Link</h2>
+       <div className="lg:col-span-8 space-y-3">
+          <Section title="LOGISTICS_OVERVIEW" icon={Ship} color="text-indigo-500">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="card p-4 border-l-2 border-indigo-500">
+                   <span className="text-[9px] font-black text-surface-400 block mb-2">STOCK_VALUE</span>
+                   <span className="text-3xl font-black italic tracking-tighter text-indigo-500">${(core.inventoryValue/1000).toFixed(1)}K</span>
+                </div>
+                <div className="card p-4 border-l-2 border-indigo-500">
+                   <span className="text-[9px] font-black text-surface-400 block mb-2">DAILY_LOG_REQ</span>
+                   <span className="text-3xl font-black italic tracking-tighter text-indigo-500">{Math.ceil(core.inventoryValue/500).toLocaleString()} <span className="text-sm opacity-20">U</span></span>
+                </div>
+             </div>
+          </Section>
        </div>
     </div>
   );
@@ -570,29 +632,35 @@ function RetailView({ state, setState, retail }: any) {
   const marketSat = (retailData as any)?.[1]?.saturation || 1.0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-       <div className="md:col-span-4 space-y-5">
-          <div className="card p-6 border-l-4 border-l-indigo-600 shadow-lg">
-             <h3 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-6 italic">Consumer Entity Select</h3>
-             <select value={state.settings.retailResourceId} onChange={(e) => setState({...state, settings: {...state.settings, retailResourceId: Number(e.target.value)}})} className="input !bg-surface-50 dark:!bg-surface-800 border-none uppercase font-black italic mb-6 !py-3">
-                {RESOURCES.filter(r => r.retailInfo && r.retailInfo.length > 0).map(r => (
-                   <option key={r.id} value={r.id}>{r.name}</option>
-                ))}
-             </select>
-             <div className="space-y-4">
-                <div className="flex justify-between items-end">
-                   <span className="text-[10px] font-black uppercase text-surface-400 italic">Market Saturation</span>
-                   <span className={`text-2xl font-black italic tracking-tighter tabular-nums ${marketSat > 1.2 ? 'text-red-500' : 'text-emerald-500'}`}>{marketSat.toFixed(2)}</span>
-                </div>
-                <div className="h-2 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
-                   <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (1/marketSat)*50)}%` }} className={`h-full ${marketSat > 1.2 ? 'bg-red-500' : 'bg-emerald-500'}`} />
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+       <div className="md:col-span-4 space-y-3">
+          <Section title="RETAIL_ENGINE" icon={Target} color="text-rose-500">
+             <div className="card p-4 border-l-2 border-rose-500">
+                <label className="text-[9px] font-black text-surface-400 block mb-2 uppercase">ITEM_SELECT</label>
+                <select value={state.settings.retailResourceId} onChange={(e) => setState({...state, settings: {...state.settings, retailResourceId: Number(e.target.value)}})} className="input border-none !bg-surface-50 dark:!bg-surface-950 uppercase font-black mb-4">
+                   {RESOURCES.filter(r => r.retailInfo && r.retailInfo.length > 0).map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                   ))}
+                </select>
+                <div className="space-y-2">
+                   <div className="flex justify-between items-end">
+                      <span className="text-[9px] font-black text-surface-400 uppercase">SATURATION</span>
+                      <span className={`text-2xl font-black italic tracking-tighter ${marketSat > 1.2 ? 'text-rose-500' : 'text-emerald-500'}`}>{marketSat.toFixed(2)}</span>
+                   </div>
+                   <div className="h-1 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (1/marketSat)*50)}%` }} className={`h-full ${marketSat > 1.2 ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                   </div>
                 </div>
              </div>
-          </div>
+          </Section>
        </div>
-       <div className="md:col-span-8 card p-12 flex flex-col items-center justify-center opacity-10 border-dashed">
-          <Target size={120} />
-          <h2 className="text-xl font-black uppercase italic mt-6">Retail Sandbox Offline</h2>
+       <div className="md:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="card p-4 border-t-2 border-rose-500">
+             <span className="text-[9px] font-black text-surface-400 block mb-2 uppercase">SALES_MODEL</span>
+             <p className="text-[10px] font-bold text-surface-600 dark:text-surface-300 leading-tight">
+                Modeled velocity at 0.22 weights indicates high ROI for current saturation.
+             </p>
+          </div>
        </div>
     </div>
   );
@@ -618,10 +686,10 @@ function RiskView({ phase, retail }: any) {
   );
 }
 
-function WorkstationTab({ active, onClick, label, icon: Icon }: any) {
+function WorkstationTab({ active, onClick, label, icon: Icon, color }: any) {
   return (
-    <button onClick={onClick} className={`px-4 py-2 rounded-lg text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${active ? 'bg-surface-900 text-white dark:bg-white dark:text-surface-900 shadow-lg scale-105' : 'text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'}`}>
-       <Icon size={14} /> {label}
+    <button onClick={onClick} className={`px-2 py-1 rounded text-[9px] font-black tracking-widest transition-all flex items-center gap-1.5 ${active ? `${color} text-white shadow-lg` : 'text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'}`}>
+       <Icon size={12} /> {label}
     </button>
   );
 }
@@ -629,34 +697,34 @@ function WorkstationTab({ active, onClick, label, icon: Icon }: any) {
 function GlobalMetric({ label, value }: any) {
   return (
     <div className="flex flex-col">
-       <span className="text-[9px] font-black uppercase opacity-60 tracking-tight leading-tight mb-0.5 italic">{label}</span>
-       <span className="text-lg font-black italic tracking-tighter tabular-nums leading-tight">{value}</span>
+       <span className="text-[8px] font-black uppercase opacity-50 tracking-tighter leading-none mb-0.5">{label}</span>
+       <span className="text-sm font-black italic tracking-tighter tabular-nums leading-none">{value}</span>
     </div>
   );
 }
 
 function KPICard({ label, value, sub, icon: Icon }: any) {
   return (
-    <div className="card p-6 flex flex-col items-center text-center group hover:-translate-y-1 transition-all shadow-sm">
-       <div className="w-10 h-10 bg-surface-50 dark:bg-surface-800 rounded-xl flex items-center justify-center text-brand-600 mb-4 group-hover:bg-brand-600 group-hover:text-white transition-all shadow-inner">
-          <Icon size={20} />
+    <div className="card p-3 flex flex-col items-center text-center group hover:border-brand-500/50">
+       <div className="w-8 h-8 bg-surface-50 dark:bg-surface-800 rounded flex items-center justify-center text-brand-500 mb-2 group-hover:scale-110 transition-transform">
+          <Icon size={16} />
        </div>
-       <span className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1 italic">{label}</span>
-       <span className="text-xl font-black tabular-nums italic">{value}</span>
-       <p className="text-[9px] font-bold text-surface-300 mt-2 uppercase tracking-tighter">{sub}</p>
+       <span className="text-[9px] font-black uppercase tracking-widest text-surface-400 mb-0.5">{label}</span>
+       <span className="text-lg font-black tabular-nums italic leading-none">{value}</span>
+       <p className="text-[8px] font-bold text-surface-300 mt-1 uppercase truncate w-full">{sub}</p>
     </div>
   );
 }
 
 function SkillNode({ label, value, sub, icon: Icon, color }: any) {
   return (
-    <div className="card p-6 flex flex-col items-center text-center border-b-4 border-current shadow-lg" style={{color: color.replace('text-', '')} as any}>
-       <div className="flex items-center gap-2 mb-4">
-          <Icon size={16} />
-          <span className="text-[10px] font-black uppercase tracking-widest text-surface-900 dark:text-white italic">{label}</span>
+    <div className="card p-3 flex flex-col items-center text-center border-t-2 border-current shadow-md shadow-current/5" style={{color: color.replace('text-', '')} as any}>
+       <div className="flex items-center gap-1.5 mb-2">
+          <Icon size={14} />
+          <span className="text-[9px] font-black uppercase tracking-widest text-surface-900 dark:text-white italic">{label}</span>
        </div>
-       <span className="text-3xl font-black italic tracking-tighter text-surface-900 dark:text-white tabular-nums">{value}</span>
-       <span className="text-[9px] font-black uppercase opacity-40 mt-4 tracking-[0.3em] italic">{sub}</span>
+       <span className="text-2xl font-black italic tracking-tighter text-surface-900 dark:text-white tabular-nums leading-none">{value}</span>
+       <span className="text-[8px] font-black uppercase opacity-30 mt-2 tracking-widest">{sub}</span>
     </div>
   );
 }
