@@ -1,85 +1,163 @@
-import React from 'react';
-import { useSharedRealm } from '../hooks/useSharedRealm';
-import { useDataRepoPoll } from '../hooks/useDataRepo';
-import * as dataRepo from '../services/dataRepo';
-import { LoadingState } from '../components/States';
-import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
-import { Button } from '../components/ui/Button';
-import { cn } from '../utils/cn';
+import { useDataRepoPoll } from "../hooks/useDataRepo";
+import * as dataRepo from "../services/dataRepo";
+import { LoadingState, ErrorState } from "../components/States";
+import { useSharedRealm } from "../hooks/useSharedRealm";
+import { useMemo } from "react";
 import {
-  Globe, Calendar, TrendingUp,
-  ShieldCheck, Activity
-} from 'lucide-react';
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area
+} from "recharts";
+
+interface PhaseRecord {
+  phase: string;
+  startDate: string;
+  endDate: string | null;
+  days: number;
+}
 
 export function MacroPage() {
-  const [realm] = useSharedRealm();
-  const { data: dash, loading } = useDataRepoPoll(() => dataRepo.fetchDashboardState(realm), 60000, [realm]);
+  const [realm, setRealm] = useSharedRealm();
+  const { data: latest, loading: lLoading, error: lError, refresh: lRefresh } = useDataRepoPoll(() => dataRepo.fetchMacroLatest(realm), 60000, [realm]);
+  const { data: history } = useDataRepoPoll(() => dataRepo.fetchMacroHistory(realm, 120), 120000, [realm]);
+  const { data: indexes } = useDataRepoPoll(() => dataRepo.fetchMacroIndexes(realm, 200), 120000, [realm]);
+  const { data: inflation } = useDataRepoPoll(() => dataRepo.fetchMacroInflation(realm, 200), 120000, [realm]);
+  const { data: phases } = useDataRepoPoll(() => dataRepo.fetchMacroPhases(realm), 120000, [realm]);
 
-  if (loading && !dash) return <LoadingState text="Synthesizing Macroeconomic Vectors..." />;
+  const filteredPhases = useMemo<PhaseRecord[]>(() => {
+    if (!phases?.phases) return [];
+    const sorted = (phases.phases as PhaseRecord[]).slice().sort((a, b) => b.startDate.localeCompare(a.startDate));
+    const result: PhaseRecord[] = [];
+    let lastDate: Date | null = null;
+    for (const p of sorted) {
+      const d = new Date(p.startDate);
+      if (!lastDate || (lastDate.getTime() - d.getTime()) >= (6 * 24 * 60 * 60 * 1000)) {
+        result.push(p);
+        lastDate = d;
+      }
+    }
+    return result;
+  }, [phases]);
 
-  const ds = (dash as any)?.[String(realm)];
-  const regime = ds?.regime;
+  const content = useMemo(() => {
+    if (lLoading && !latest) return <LoadingState text="SYNC_MACRO..." />;
+    if (lError) return <ErrorState message={lError} onRetry={lRefresh} />;
+    return null;
+  }, [lLoading, latest, lError, lRefresh]);
+
+  const latestH = latest?.latestHistory;
+
+  if (content) return content;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+    <div className="space-y-4 animate-in fade-in duration-300 font-mono text-[9px]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-100 dark:border-surface-800/50 pb-2">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase italic">
-            Macro.<span className="text-sky-600">Intelligence</span>
-          </h1>
-          <p className="text-slate-500 font-medium mt-1">Global economy regime analysis and cycle forecasting.</p>
+          <h1 className="text-xs font-black uppercase tracking-widest">Macro.Matrix_R{realm}</h1>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <select
+            value={realm}
+            onChange={(e) => setRealm(Number(e.target.value))}
+            className="bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 text-[10px] font-black px-2 py-1 outline-none uppercase"
+          >
+            <option value={0}>R0</option>
+            <option value={1}>R1</option>
+          </select>
         </div>
       </div>
 
-      <div className="layout-grid grid-cols-1 lg:grid-cols-12">
-         <div className="lg:col-span-4">
-            <Card title="Current Regime" icon={Globe} className="bg-sky-600 border-none text-white overflow-hidden relative">
-               <Globe className="absolute -right-6 -bottom-6 w-40 h-40 text-white/10" />
-               <div className="relative z-10 py-6 text-center">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-2">ACTIVE_PHASE</p>
-                  <h2 className="text-4xl font-black italic uppercase tracking-tighter">
-                     {regime?.na || 'Normal'}
-                  </h2>
-                  <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-xl border border-white/20">
-                     <ShieldCheck size={16} />
-                     <span className="text-xs font-black">Stability Index: 84%</span>
-                  </div>
-               </div>
-            </Card>
-         </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-surface-100 dark:bg-surface-800 border border-surface-100 dark:border-surface-800">
+         <MacroBox label="VALUE" value={latestH?.companiesValue != null ? fmt(latestH.companiesValue) : "-"} />
+         <MacroBox label="FIRMS" value={latestH?.activeCompanies ?? "-"} />
+         <MacroBox label="BONDS" value={latestH?.bondsSold != null ? fmt(latestH.bondsSold) : "-"} />
+         <MacroBox label="ASSETS" value={latestH?.totalBuildings ?? "-"} />
+      </div>
 
-         <div className="lg:col-span-8">
-            <Card title="Phase Characteristics" icon={Activity} subtitle="Algorithmic Multipliers">
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <MultiplierCard label="Production Speed" value="+12%" color="text-emerald-600" />
-                  <MultiplierCard label="Retail Demand" value="-5%" color="text-rose-600" />
-                  <MultiplierCard label="Sourcing Cost" value="+2%" color="text-amber-600" />
-               </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {history?.history && history.history.length > 0 && (
+          <ChartPanel title="VALUATION">
+             <ResponsiveContainer width="100%" height={160}>
+                <AreaChart data={(indexes?.indexes ? history.history.map((h) => {
+                  const ix = indexes.indexes.find((i: any) => i.date === h.date);
+                  return { ...h, gdp: ix?.gdp ?? null, d: new Date(h.date).toLocaleDateString() };
+                }) : history.history.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() })))}>
+                  <CartesianGrid strokeDasharray="2 2" vertical={false} className="stroke-surface-100 dark:stroke-surface-900" />
+                  <XAxis dataKey="d" tick={{ fontSize: 6 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 6 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ backgroundColor: '#000', border: 'none', color: '#fff', fontSize: '8px' }} />
+                  <Area type="step" dataKey="companiesValue" stroke="#6366f1" fill="#6366f1" fillOpacity={0.1} name="Value" />
+                  <Line type="monotone" dataKey="gdp" stroke="#10b981" strokeWidth={1} dot={false} name="GDP" />
+                </AreaChart>
+             </ResponsiveContainer>
+          </ChartPanel>
+        )}
 
-               <div className="mt-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-4">
-                     <div className="p-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm">
-                        <Calendar size={18} className="text-sky-600" />
-                     </div>
-                     <div>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase">Forecasted Duration</p>
-                        <p className="text-sm font-black italic">Approx. 2.4 days remaining in current phase.</p>
-                     </div>
-                  </div>
-               </div>
-            </Card>
+        {indexes?.indexes && indexes.indexes.length > 0 && (
+          <ChartPanel title="INDEXES">
+             <ResponsiveContainer width="100%" height={160}>
+                <LineChart data={indexes.indexes.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() }))}>
+                  <CartesianGrid strokeDasharray="2 2" vertical={false} className="stroke-surface-100 dark:stroke-surface-900" />
+                  <XAxis dataKey="d" tick={{ fontSize: 6 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 6 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ backgroundColor: '#000', border: 'none', color: '#fff', fontSize: '8px' }} />
+                  <Line type="monotone" dataKey="cpi" stroke="#ef4444" strokeWidth={1} dot={false} name="CPI" />
+                  <Line type="monotone" dataKey="coreCpi" stroke="#f59e0b" strokeWidth={1} dot={false} name="CORE" />
+                </LineChart>
+             </ResponsiveContainer>
+          </ChartPanel>
+        )}
+      </div>
+
+      <div className="card">
+         <div className="px-3 py-1 bg-surface-50 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800 flex justify-between">
+            <span className="font-black uppercase text-[10px]">Weekly_Regime_Log</span>
+            <span className="opacity-40 uppercase">Current: {phases?.currentPhase}</span>
          </div>
+         <table className="w-full text-left">
+            <thead className="text-[8px] font-black uppercase text-surface-400 border-b border-surface-200 dark:border-surface-800">
+               <tr>
+                  <th className="px-4 py-2">PHASE</th>
+                  <th className="px-4 py-2 text-right">START</th>
+                  <th className="px-4 py-2 text-right">END</th>
+                  <th className="px-4 py-2 text-right">DURATION</th>
+               </tr>
+            </thead>
+            <tbody className="divide-y divide-surface-100 dark:divide-surface-900">
+               {filteredPhases.map((p, i) => (
+                  <tr key={i} className="hover:bg-surface-50 dark:hover:bg-surface-900 transition-colors">
+                     <td className="px-4 py-2 uppercase font-bold">{p.phase}</td>
+                     <td className="px-4 py-2 text-right opacity-60">{p.startDate}</td>
+                     <td className="px-4 py-2 text-right opacity-60">{p.endDate || 'ACTV'}</td>
+                     <td className="px-4 py-2 text-right font-black">{p.days}D</td>
+                  </tr>
+               ))}
+            </tbody>
+         </table>
       </div>
     </div>
   );
 }
 
-function MultiplierCard({ label, value, color }: any) {
+function MacroBox({ label, value }: { label: string; value: string | number }) {
    return (
-      <div className="p-4 bg-slate-50 dark:bg-slate-800/20 rounded-2xl border border-slate-100 dark:border-slate-800">
-         <p className="text-[10px] font-bold text-slate-500 uppercase mb-2">{label}</p>
-         <p className={cn("text-2xl font-black tabular-nums tracking-tighter", color)}>{value}</p>
+      <div className="bg-white dark:bg-surface-950 p-4 text-center">
+         <p className="text-[8px] font-bold opacity-40 uppercase mb-1">{label}</p>
+         <p className="text-sm font-black">{value}</p>
       </div>
    );
+}
+
+function ChartPanel({ title, children }: { title: string; children: React.ReactNode }) {
+   return (
+      <div className="border border-surface-200 dark:border-surface-800">
+         <div className="px-2 py-1 bg-surface-50 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800 uppercase font-black text-[9px] tracking-widest">{title}</div>
+         <div className="p-4">{children}</div>
+      </div>
+   );
+}
+
+function fmt(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
 }
