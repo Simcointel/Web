@@ -1,10 +1,7 @@
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
-import { StatCard } from "../components/StatCard";
-import { MiniSparkline } from "../components/MiniSparkline";
 import { motion } from "framer-motion";
-import { Section } from "../components/Layout";
 import { LoadingState, ErrorState } from "../components/States";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { useCallback } from "react";
@@ -75,8 +72,12 @@ export function HomePage() {
                    <h2 className={`text-4xl font-black italic uppercase tracking-tighter ${regime?.na === "Expansion" ? 'text-emerald-500' : regime?.na === "Recession" ? 'text-rose-500' : 'text-brand-500'}`}>
                       {regime?.na ?? "Neutral"}
                    </h2>
-                   <div className="mt-4 w-full h-8 opacity-20 text-brand-500">
-                      <MiniSparkline data={sparkData} color="currentColor" />
+                   <div className="mt-4 w-full h-8 opacity-20 text-sky-600">
+                      <div className="flex items-end justify-center gap-0.5 h-full">
+                         {[40, 70, 45, 90, 65].map((h, i) => (
+                            <div key={i} className="w-1 bg-current rounded-full" style={{ height: `${h}%` }} />
+                         ))}
+                      </div>
                    </div>
                 </div>
                 <Link to="/macro" className="p-2 bg-surface-50 dark:bg-surface-800/50 border-t border-surface-100 dark:border-surface-800 flex items-center justify-between hover:bg-brand-500 hover:text-white transition-all group">
