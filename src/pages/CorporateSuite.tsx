@@ -122,7 +122,6 @@ export function CorporateSuitePage() {
     }
   });
 
-  useEffect(() => { localStorage.setItem("simco_suite_v6", JSON.stringify(state)); }, [state]);
 
   useEffect(() => {
     if (notification) {
@@ -207,14 +206,29 @@ export function CorporateSuitePage() {
        return { name: b.name, profit: netProfitPh, level: m.level };
     });
 
-    return {
+    const result = {
       totalLevels, actualAO, rawAO, taxThreshold, salesSpeedBonus, patentProb,
       dailyWages, inventoryValue, mapValue, dailyInterest, effMan, effAcc, effCom, effSci,
       estimatedDailyTax, coverageRatio, buildingProfits,
       totalValuation: inventoryValue + mapValue + (effProfit * 30),
       netDaily: effProfit - dailyInterest - estimatedDailyTax - (dailyWages * actualAO)
     };
+
+    // Side effect to sync metrics
+    const metrics = {
+       prodBonus: state.settings.prodBonus,
+       actualAO: result.actualAO,
+       abundance: state.settings.abundance,
+       researchBonus: state.settings.researchBonus
+    };
+    localStorage.setItem("simco_suite_metrics", JSON.stringify(metrics));
+
+    return result;
   }, [state, margins]);
+
+  useEffect(() => {
+    localStorage.setItem("simco_suite_v6", JSON.stringify(state));
+  }, [state]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

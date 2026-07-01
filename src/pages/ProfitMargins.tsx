@@ -15,12 +15,30 @@ export function ProfitMarginsPage() {
   const { data, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 60000, [realm]);
 
   const [localCalc, setLocalCalc] = useState(false);
+  const [syncWithSuite, setSyncWithSuite] = useState(true);
   const [prodBonus, setProdBonus] = useState(12);
   const [adminOverhead, setAdminOverhead] = useState(0);
   const [abundance, setAbundance] = useState(100);
   const [resBonus, setResBonus] = useState(0);
 
   const [selectedResId, setSelectedResId] = useState<number | null>(null);
+
+  // Sync with Corporate Suite
+  useMemo(() => {
+    if (!syncWithSuite) return;
+    const saved = localStorage.getItem("simco_suite_metrics");
+    if (saved) {
+      try {
+        const metrics = JSON.parse(saved);
+        setProdBonus(metrics.prodBonus ?? 12);
+        setAdminOverhead((metrics.actualAO ?? 0) * 100);
+        setAbundance(metrics.abundance ?? 100);
+        setResBonus(metrics.researchBonus ?? 0);
+      } catch (e) {
+        console.error("Suite sync failed", e);
+      }
+    }
+  }, [syncWithSuite]);
   const resources = data?.resources ?? [];
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -132,11 +150,20 @@ export function ProfitMarginsPage() {
               <span className="font-black uppercase tracking-widest text-[8px] text-surface-400">Local_Calculations_Override</span>
            </div>
            {localCalc && (
-              <div className="flex flex-wrap gap-4">
-                 <Slider label="PROD" val={prodBonus} set={setProdBonus} unit="%" />
-                 <Slider label="AO" val={adminOverhead} set={setAdminOverhead} unit="%" />
-                 <Slider label="ABUN" val={abundance} set={setAbundance} unit="%" />
-                 <Slider label="RES" val={resBonus} set={setResBonus} unit="%" />
+              <div className="flex flex-wrap items-center gap-4">
+                 <div className="flex items-center gap-2 mr-2 border-r border-surface-100 dark:border-surface-800 pr-4">
+                    <input
+                      type="checkbox"
+                      checked={syncWithSuite}
+                      onChange={(e) => setSyncWithSuite(e.target.checked)}
+                      className="w-3 h-3 accent-brand-500"
+                    />
+                    <span className="font-black uppercase tracking-widest text-[8px] text-brand-500">Sync_Suite</span>
+                 </div>
+                 <InputNode label="PROD" val={prodBonus} set={setProdBonus} unit="%" disabled={syncWithSuite} />
+                 <InputNode label="AO" val={adminOverhead} set={setAdminOverhead} unit="%" disabled={syncWithSuite} />
+                 <InputNode label="ABUN" val={abundance} set={setAbundance} unit="%" disabled={syncWithSuite} />
+                 <InputNode label="RES" val={resBonus} set={setResBonus} unit="%" disabled={syncWithSuite} />
               </div>
            )}
         </div>
@@ -246,19 +273,20 @@ function SmallMetric({ label, value }: { label: string; value: string | number }
    );
 }
 
-function Slider({ label, val, set, unit }: any) {
+function InputNode({ label, val, set, unit, disabled }: any) {
   return (
-    <div className="flex items-center gap-2">
-       <span className="text-[8px] font-black text-surface-400">{label}</span>
-       <input
-         type="range"
-         min={label === "ABUN" ? 50 : 0}
-         max={label === "AO" ? 100 : 200}
-         value={val}
-         onChange={(e) => set(Number(e.target.value))}
-         className="w-16 h-1 bg-surface-100 dark:bg-surface-800 rounded-full appearance-none cursor-pointer accent-brand-500"
-       />
-       <span className="text-[8px] font-bold w-6">{val}{unit}</span>
+    <div className="flex items-center gap-1.5">
+       <span className="text-[8px] font-black text-surface-400 uppercase">{label}</span>
+       <div className={`flex items-center bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800 rounded px-1 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+          <input
+            type="number"
+            value={val}
+            onChange={(e) => !disabled && set(Number(e.target.value))}
+            disabled={disabled}
+            className="w-8 bg-transparent text-[9px] font-black text-right outline-none py-0.5 appearance-none"
+          />
+          <span className="text-[8px] font-bold opacity-30 ml-0.5">{unit}</span>
+       </div>
     </div>
   )
 }
