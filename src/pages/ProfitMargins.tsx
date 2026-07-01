@@ -113,17 +113,17 @@ export function ProfitMarginsPage() {
   if (status) return status;
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-300 font-mono text-[9px]">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-100 dark:border-surface-800/50 pb-2">
+    <div className="space-y-6 animate-in fade-in duration-300 text-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-200 dark:border-surface-800 pb-4">
         <div>
-          <h1 className="text-xs font-black uppercase tracking-widest">Margins.Matrix_R{realm}</h1>
+          <h1 className="text-lg font-bold">Profit Matrix (R{realm})</h1>
         </div>
 
         <div className="flex items-center gap-2">
           <select
             value={realm}
             onChange={(e) => setRealm(Number(e.target.value))}
-            className="bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 text-[10px] font-black px-2 py-1 outline-none uppercase"
+            className="bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 text-sm font-medium px-3 py-1.5 rounded outline-none"
           >
             <option value={0}>R0</option>
             <option value={1}>R1</option>
@@ -131,35 +131,41 @@ export function ProfitMarginsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-surface-100 dark:bg-surface-800 border border-surface-100 dark:border-surface-800">
-         <SmallMetric label="ITEMS" value={resources.length} />
-         <SmallMetric label="PROFIT" value={resources.filter((r: any) => r.marginPct > 0).length} />
-         <SmallMetric label="AVG_MG" value={`${(resources.reduce((s: number, r: any) => s + r.marginPct, 0) / resources.length).toFixed(0)}%`} />
-         <SmallMetric label="TOP_MG" value={`${Math.max(...resources.map((r: any) => r.marginPct)).toFixed(0)}%`} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+         <SmallMetric label="Items" value={resources.length} />
+         <SmallMetric label="Profit" value={resources.filter((r: any) => r.marginPct > 0).length} />
+         <SmallMetric label="Avg Margin" value={`${(resources.reduce((s: number, r: any) => s + r.marginPct, 0) / (resources.length || 1)).toFixed(1)}%`} />
+         <SmallMetric label="Top Margin" value={`${Math.max(...resources.map((r: any) => r.marginPct), 0).toFixed(1)}%`} />
       </div>
 
-      <div className="card p-4 space-y-4">
-        <div className="flex items-center justify-between border-b border-surface-50 dark:border-surface-800 pb-2">
-           <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={localCalc}
-                onChange={(e) => setLocalCalc(e.target.checked)}
-                className="w-3 h-3 accent-brand-500"
-              />
-              <span className="font-black uppercase tracking-widest text-[8px] text-surface-400">Local_Calculations_Override</span>
-           </div>
-           {localCalc && (
-              <div className="flex flex-wrap items-center gap-4">
-                 <div className="flex items-center gap-2 mr-2 border-r border-surface-100 dark:border-surface-800 pr-4">
+      <div className="card !shadow-none !border-surface-200 dark:!border-surface-800 p-6 space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-100 dark:border-surface-800 pb-4">
+           <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={localCalc}
+                  onChange={(e) => setLocalCalc(e.target.checked)}
+                  className="w-4 h-4 accent-brand-500 rounded"
+                />
+                <span className="text-sm font-semibold">Local Overrides</span>
+              </label>
+
+              {localCalc && (
+                 <label className="flex items-center gap-2 cursor-pointer pl-4 border-l border-surface-200 dark:border-surface-800">
                     <input
                       type="checkbox"
                       checked={syncWithSuite}
                       onChange={(e) => setSyncWithSuite(e.target.checked)}
-                      className="w-3 h-3 accent-brand-500"
+                      className="w-4 h-4 accent-brand-500 rounded"
                     />
-                    <span className="font-black uppercase tracking-widest text-[8px] text-brand-500">Sync_Suite</span>
-                 </div>
+                    <span className="text-sm font-semibold text-brand-600">Sync with Corporate Suite</span>
+                 </label>
+              )}
+           </div>
+
+           {localCalc && (
+              <div className="flex flex-wrap items-center gap-4">
                  <InputNode label="PROD" val={prodBonus} set={setProdBonus} unit="%" disabled={syncWithSuite} />
                  <InputNode label="AO" val={adminOverhead} set={setAdminOverhead} unit="%" disabled={syncWithSuite} />
                  <InputNode label="ABUN" val={abundance} set={setAbundance} unit="%" disabled={syncWithSuite} />
@@ -168,19 +174,19 @@ export function ProfitMarginsPage() {
            )}
         </div>
 
-        <div className="p-1 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex gap-1">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex gap-2">
             <input
               type="text"
-              placeholder="SEARCH..."
+              placeholder="Search resource..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-white dark:bg-surface-950 border border-surface-100 dark:border-surface-800 px-2 py-0.5 text-[9px] focus:outline-none uppercase font-bold rounded"
+              className="bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-sm rounded focus:ring-1 focus:ring-brand-500 outline-none w-64"
             />
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="bg-white dark:bg-surface-950 border border-surface-100 dark:border-surface-800 px-2 py-0.5 text-[9px] focus:outline-none uppercase font-bold rounded"
+              className="bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-sm rounded focus:ring-1 focus:ring-brand-500 outline-none"
             >
               <option value="all">ALL_CATEGORIES</option>
               {categories.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -188,35 +194,35 @@ export function ProfitMarginsPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto border border-surface-100 dark:border-surface-800 rounded">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-surface-50/50 text-[8px] font-black uppercase text-surface-400 border-b border-surface-50 dark:border-surface-800">
-                <th className="px-3 py-1.5">ITEM</th>
-                <th className="px-3 py-1.5 text-right cursor-pointer" onClick={() => toggleSort("mg")}>
-                  MG% {sortBy === "mg" && (sortDir === "desc" ? "▼" : "▲")}
+              <tr className="bg-surface-50 dark:bg-surface-900 text-xs font-bold uppercase text-surface-500 border-b border-surface-100 dark:border-surface-800">
+                <th className="px-4 py-3">Resource</th>
+                <th className="px-4 py-3 text-right cursor-pointer hover:text-brand-500" onClick={() => toggleSort("mg")}>
+                  Margin {sortBy === "mg" && (sortDir === "desc" ? "↓" : "↑")}
                 </th>
-                <th className="px-3 py-1.5 text-right cursor-pointer" onClick={() => toggleSort("np")}>PR/H</th>
-                <th className="px-3 py-1.5 text-right">RV/H</th>
-                <th className="px-3 py-1.5 text-right">PRICE</th>
+                <th className="px-4 py-3 text-right cursor-pointer hover:text-brand-500" onClick={() => toggleSort("np")}>Profit/H</th>
+                <th className="px-4 py-3 text-right">Rev/H</th>
+                <th className="px-4 py-3 text-right">VWAP</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-50 dark:divide-surface-800/50">
               {filtered.map((r: any) => (
                 <tr
                   key={r.id}
-                  className={`hover:bg-brand-500/5 transition-colors cursor-pointer ${selectedResId === r.id ? 'bg-brand-500/10' : ''}`}
+                  className={`hover:bg-brand-50 dark:hover:bg-brand-900/10 transition-colors cursor-pointer ${selectedResId === r.id ? 'bg-brand-50 dark:bg-brand-900/20' : ''}`}
                   onClick={() => setSelectedResId(r.id)}
                 >
-                  <td className="px-3 py-1 font-bold uppercase truncate max-w-[100px]">{r.name}</td>
-                  <td className="px-3 py-1 text-right">
-                    <span className={r.marginPct > 0 ? "text-emerald-500" : "text-rose-500"}>
+                  <td className="px-4 py-2 font-medium">{r.name}</td>
+                  <td className="px-4 py-2 text-right">
+                    <span className={`font-bold ${r.marginPct > 0 ? "text-emerald-600" : "text-rose-600"}`}>
                       {r.marginPct.toFixed(1)}%
                     </span>
                   </td>
-                  <td className="px-3 py-1 text-right font-black">{fmt(r.netProfitPerHour)}</td>
-                  <td className="px-3 py-1 text-right opacity-40">{fmt(r.revenuePerHour)}</td>
-                  <td className="px-3 py-1 text-right font-bold text-brand-500">{r.outputVwap.toFixed(2)}</td>
+                  <td className="px-4 py-2 text-right font-bold">{fmt(r.netProfitPerHour)}</td>
+                  <td className="px-4 py-2 text-right text-surface-400">{fmt(r.revenuePerHour)}</td>
+                  <td className="px-4 py-2 text-right font-medium text-brand-600">{r.outputVwap.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -225,23 +231,23 @@ export function ProfitMarginsPage() {
       </div>
 
       {selectedResId && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-           <div className="border border-surface-200 dark:border-surface-800 p-4">
-              <span className="block font-black uppercase text-[10px] opacity-40 mb-4 tracking-widest">Sourcing_Matrix</span>
-              <div className="space-y-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+           <div className="card p-6 border-surface-200 dark:border-surface-800">
+              <h3 className="text-sm font-bold text-surface-500 mb-4">Input Requirements</h3>
+              <div className="space-y-3">
                  {(() => {
                     const res = RESOURCES.find(r => r.id === selectedResId);
-                    if (!res || !res.inputs) return <p className="opacity-40 italic">NO_INPUTS_REQ</p>;
+                    if (!res || !res.inputs) return <p className="text-sm text-surface-400 italic">No inputs required for this resource.</p>;
                     return Object.entries(res.inputs).map(([id, qty]) => {
                        const input = RESOURCES.find(r => r.id === Number(id));
                        const inputMargin = resources.find((r: any) => r.id === Number(id));
                        return (
-                          <div key={id} className="flex justify-between items-center py-1 border-b border-surface-100 dark:border-surface-900 last:border-0">
-                             <span className="uppercase font-bold">{input?.name || `ID_${id}`}</span>
-                             <div className="flex gap-4">
-                                <span className="opacity-40">{qty}U</span>
-                                <span className={`font-black ${inputMargin?.marginPct > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                   {inputMargin ? `${inputMargin.marginPct.toFixed(1)}%` : '??'}
+                          <div key={id} className="flex justify-between items-center py-2 border-b border-surface-50 dark:border-surface-800 last:border-0">
+                             <span className="font-medium">{input?.name || `ID_${id}`}</span>
+                             <div className="flex items-center gap-4">
+                                <span className="text-surface-400 text-xs">{qty} Units</span>
+                                <span className={`font-bold text-xs ${inputMargin?.marginPct > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                   {inputMargin ? `${inputMargin.marginPct.toFixed(1)}%` : '--'}
                                 </span>
                              </div>
                           </div>
@@ -250,13 +256,14 @@ export function ProfitMarginsPage() {
                  })()}
               </div>
            </div>
-           <div className="border border-surface-200 dark:border-surface-800 p-4 bg-surface-900 text-white dark:bg-white dark:text-surface-950 flex flex-col justify-center">
-              <span className="font-black uppercase text-[10px] opacity-60 mb-2">Operational_Advisory</span>
-              <p className="text-[10px] font-bold leading-relaxed uppercase">
-                 {resources.find((r: any) => r.id === selectedResId)?.marginPct > 5 ? 'EXPAND_CAPACITY' : 'SEEK_EXTERNAL_CONTRACTS'}
-                 <br/>
-                 RESOURCE_ID: {selectedResId}
+           <div className="card p-6 bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-800 flex flex-col justify-center">
+              <h3 className="text-sm font-bold text-surface-500 mb-2">Operational Advice</h3>
+              <p className="text-lg font-bold leading-tight">
+                 {resources.find((r: any) => r.id === selectedResId)?.marginPct > 5
+                    ? 'Recommended: Expand production capacity.'
+                    : 'Notice: Sourcing from market may be more efficient.'}
               </p>
+              <p className="text-xs text-surface-400 mt-2 font-medium">Resource Database Index: {selectedResId}</p>
            </div>
         </div>
       )}
@@ -266,26 +273,26 @@ export function ProfitMarginsPage() {
 
 function SmallMetric({ label, value }: { label: string; value: string | number }) {
    return (
-      <div className="bg-white dark:bg-surface-950 p-3 text-center">
-         <p className="text-[8px] font-bold opacity-40 uppercase mb-1">{label}</p>
-         <p className="text-sm font-black">{value}</p>
+      <div className="card p-4 text-center border-surface-100 dark:border-surface-800">
+         <p className="text-xs font-semibold text-surface-500 mb-1">{label}</p>
+         <p className="text-xl font-bold">{value}</p>
       </div>
    );
 }
 
 function InputNode({ label, val, set, unit, disabled }: any) {
   return (
-    <div className="flex items-center gap-1.5">
-       <span className="text-[8px] font-black text-surface-400 uppercase">{label}</span>
-       <div className={`flex items-center bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800 rounded px-1 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+    <div className="flex items-center gap-2">
+       <span className="text-xs font-bold text-surface-500">{label}</span>
+       <div className={`flex items-center bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 rounded-md px-2 py-1 ${disabled ? 'opacity-50 bg-surface-50' : 'focus-within:ring-1 focus-within:ring-brand-500'}`}>
           <input
             type="number"
             value={val}
             onChange={(e) => !disabled && set(Number(e.target.value))}
             disabled={disabled}
-            className="w-8 bg-transparent text-[9px] font-black text-right outline-none py-0.5 appearance-none"
+            className="w-12 bg-transparent text-sm font-bold text-right outline-none appearance-none"
           />
-          <span className="text-[8px] font-bold opacity-30 ml-0.5">{unit}</span>
+          <span className="text-xs font-medium text-surface-400 ml-1">{unit}</span>
        </div>
     </div>
   )

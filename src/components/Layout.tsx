@@ -3,22 +3,22 @@ import { ChevronRight } from "lucide-react";
 
 export function Section({ title, subtitle, children, actions, icon: Icon, color }: { title: string; subtitle?: string; children: React.ReactNode; actions?: React.ReactNode; icon?: React.ElementType; color?: string }) {
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2">
+    <section className="space-y-4">
+      <div className="flex items-center justify-between px-2">
+        <div className="flex items-center gap-3">
           {Icon && (
-            <div className={`p-1.5 rounded-lg ${color ? `${color.replace('text-', 'bg-')}/10 ${color}` : 'bg-brand-50 dark:bg-brand-900/20 text-brand-500'}`}>
-               <Icon size={14} />
+            <div className={`p-2 rounded-xl ${color ? `${color.replace('text-', 'bg-')}/10 ${color}` : 'bg-brand-50 dark:bg-brand-900/20 text-brand-600'}`}>
+               <Icon size={20} />
             </div>
           )}
           <div>
-            <h2 className="text-[11px] font-black text-surface-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+            <h2 className="text-sm font-bold text-surface-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
                {title}
             </h2>
-            {subtitle && <p className="text-[9px] text-surface-400 font-bold uppercase tracking-tight mt-0.5">{subtitle}</p>}
+            {subtitle && <p className="text-xs text-surface-400 font-semibold uppercase tracking-wide mt-1">{subtitle}</p>}
           </div>
         </div>
-        {actions && <div className="flex items-center gap-1">{actions}</div>}
+        {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
       <div className="animate-in fade-in slide-in-from-bottom-1 duration-300">
         {children}

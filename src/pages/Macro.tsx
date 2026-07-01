@@ -48,17 +48,17 @@ export function MacroPage() {
   if (content) return content;
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-300 font-mono text-[9px]">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-100 dark:border-surface-800/50 pb-2">
+    <div className="space-y-8 animate-in fade-in duration-300 text-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-200 dark:border-surface-800 pb-4">
         <div>
-          <h1 className="text-xs font-black uppercase tracking-widest">Macro.Matrix_R{realm}</h1>
+          <h1 className="text-xl font-bold italic tracking-tight">Macro Intelligence (R{realm})</h1>
         </div>
 
         <div className="flex items-center gap-2">
           <select
             value={realm}
             onChange={(e) => setRealm(Number(e.target.value))}
-            className="bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 text-[10px] font-black px-2 py-1 outline-none uppercase"
+            className="bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 text-sm font-bold px-3 py-1.5 rounded-lg outline-none"
           >
             <option value={0}>R0</option>
             <option value={1}>R1</option>
@@ -66,73 +66,75 @@ export function MacroPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-surface-100 dark:bg-surface-800 border border-surface-100 dark:border-surface-800">
-         <MacroBox label="VALUE" value={latestH?.companiesValue != null ? fmt(latestH.companiesValue) : "-"} />
-         <MacroBox label="FIRMS" value={latestH?.activeCompanies ?? "-"} />
-         <MacroBox label="BONDS" value={latestH?.bondsSold != null ? fmt(latestH.bondsSold) : "-"} />
-         <MacroBox label="ASSETS" value={latestH?.totalBuildings ?? "-"} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+         <MacroBox label="Total System Value" value={latestH?.companiesValue != null ? `$${(latestH.companiesValue / 1_000_000_000).toFixed(2)}B` : "-"} />
+         <MacroBox label="Active Entities" value={latestH?.activeCompanies?.toLocaleString() ?? "-"} />
+         <MacroBox label="Bonds Outstanding" value={latestH?.bondsSold != null ? fmt(latestH.bondsSold) : "-"} />
+         <MacroBox label="Total Facilities" value={latestH?.totalBuildings?.toLocaleString() ?? "-"} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {history?.history && history.history.length > 0 && (
-          <ChartPanel title="VALUATION">
-             <ResponsiveContainer width="100%" height={160}>
+          <ChartPanel title="Market Valuation & GDP Trends">
+             <ResponsiveContainer width="100%" height={240}>
                 <AreaChart data={(indexes?.indexes ? history.history.map((h) => {
                   const ix = indexes.indexes.find((i: any) => i.date === h.date);
                   return { ...h, gdp: ix?.gdp ?? null, d: new Date(h.date).toLocaleDateString() };
                 }) : history.history.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() })))}>
-                  <CartesianGrid strokeDasharray="2 2" vertical={false} className="stroke-surface-100 dark:stroke-surface-900" />
-                  <XAxis dataKey="d" tick={{ fontSize: 6 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 6 }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ backgroundColor: '#000', border: 'none', color: '#fff', fontSize: '8px' }} />
-                  <Area type="step" dataKey="companiesValue" stroke="#6366f1" fill="#6366f1" fillOpacity={0.1} name="Value" />
-                  <Line type="monotone" dataKey="gdp" stroke="#10b981" strokeWidth={1} dot={false} name="GDP" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-surface-200 dark:stroke-surface-800" />
+                  <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                  <Area type="monotone" dataKey="companiesValue" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.1} name="Total Value" />
+                  <Line type="monotone" dataKey="gdp" stroke="#10b981" strokeWidth={2} dot={false} name="GDP Index" />
                 </AreaChart>
              </ResponsiveContainer>
           </ChartPanel>
         )}
 
         {indexes?.indexes && indexes.indexes.length > 0 && (
-          <ChartPanel title="INDEXES">
-             <ResponsiveContainer width="100%" height={160}>
+          <ChartPanel title="Price Indexes (CPI & Core)">
+             <ResponsiveContainer width="100%" height={240}>
                 <LineChart data={indexes.indexes.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() }))}>
-                  <CartesianGrid strokeDasharray="2 2" vertical={false} className="stroke-surface-100 dark:stroke-surface-900" />
-                  <XAxis dataKey="d" tick={{ fontSize: 6 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 6 }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ backgroundColor: '#000', border: 'none', color: '#fff', fontSize: '8px' }} />
-                  <Line type="monotone" dataKey="cpi" stroke="#ef4444" strokeWidth={1} dot={false} name="CPI" />
-                  <Line type="monotone" dataKey="coreCpi" stroke="#f59e0b" strokeWidth={1} dot={false} name="CORE" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-surface-200 dark:stroke-surface-800" />
+                  <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                  <Line type="monotone" dataKey="cpi" stroke="#ef4444" strokeWidth={2} dot={false} name="CPI" />
+                  <Line type="monotone" dataKey="coreCpi" stroke="#f59e0b" strokeWidth={2} dot={false} name="Core Index" />
                 </LineChart>
              </ResponsiveContainer>
           </ChartPanel>
         )}
       </div>
 
-      <div className="card">
-         <div className="px-3 py-1 bg-surface-50 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800 flex justify-between">
-            <span className="font-black uppercase text-[10px]">Weekly_Regime_Log</span>
-            <span className="opacity-40 uppercase">Current: {phases?.currentPhase}</span>
+      <div className="card !shadow-none border-surface-200 dark:border-surface-800 overflow-hidden">
+         <div className="px-6 py-4 bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800 flex justify-between items-center">
+            <h3 className="font-bold uppercase text-xs text-surface-500 tracking-wider">Historical Regime Registry</h3>
+            <span className="text-xs font-bold text-brand-600 uppercase">Status: {phases?.currentPhase}</span>
          </div>
-         <table className="w-full text-left">
-            <thead className="text-[8px] font-black uppercase text-surface-400 border-b border-surface-200 dark:border-surface-800">
-               <tr>
-                  <th className="px-4 py-2">PHASE</th>
-                  <th className="px-4 py-2 text-right">START</th>
-                  <th className="px-4 py-2 text-right">END</th>
-                  <th className="px-4 py-2 text-right">DURATION</th>
-               </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-100 dark:divide-surface-900">
-               {filteredPhases.map((p, i) => (
-                  <tr key={i} className="hover:bg-surface-50 dark:hover:bg-surface-900 transition-colors">
-                     <td className="px-4 py-2 uppercase font-bold">{p.phase}</td>
-                     <td className="px-4 py-2 text-right opacity-60">{p.startDate}</td>
-                     <td className="px-4 py-2 text-right opacity-60">{p.endDate || 'ACTV'}</td>
-                     <td className="px-4 py-2 text-right font-black">{p.days}D</td>
+         <div className="overflow-x-auto">
+            <table className="w-full text-left">
+               <thead className="text-xs font-bold uppercase text-surface-400 bg-surface-50/50 dark:bg-surface-900/50 border-b border-surface-100 dark:border-surface-800">
+                  <tr>
+                     <th className="px-6 py-3">Economic Phase</th>
+                     <th className="px-6 py-3 text-right">Start Date</th>
+                     <th className="px-6 py-3 text-right">End Date</th>
+                     <th className="px-6 py-3 text-right">Duration</th>
                   </tr>
-               ))}
-            </tbody>
-         </table>
+               </thead>
+               <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
+                  {filteredPhases.map((p, i) => (
+                     <tr key={i} className="hover:bg-surface-50 dark:hover:bg-surface-900 transition-colors">
+                        <td className="px-6 py-4 font-bold text-surface-800 dark:text-surface-200">{p.phase}</td>
+                        <td className="px-6 py-4 text-right text-surface-500">{p.startDate}</td>
+                        <td className="px-6 py-4 text-right text-surface-500">{p.endDate || 'Active'}</td>
+                        <td className="px-6 py-4 text-right font-bold">{p.days} Days</td>
+                     </tr>
+                  ))}
+               </tbody>
+            </table>
+         </div>
       </div>
     </div>
   );
@@ -140,18 +142,18 @@ export function MacroPage() {
 
 function MacroBox({ label, value }: { label: string; value: string | number }) {
    return (
-      <div className="bg-white dark:bg-surface-950 p-4 text-center">
-         <p className="text-[8px] font-bold opacity-40 uppercase mb-1">{label}</p>
-         <p className="text-sm font-black">{value}</p>
+      <div className="card p-6 text-center border-surface-200 dark:border-surface-800 !shadow-none">
+         <p className="text-xs font-bold text-surface-500 uppercase mb-2 tracking-wide">{label}</p>
+         <p className="text-2xl font-bold tabular-nums">{value}</p>
       </div>
    );
 }
 
 function ChartPanel({ title, children }: { title: string; children: React.ReactNode }) {
    return (
-      <div className="border border-surface-200 dark:border-surface-800">
-         <div className="px-2 py-1 bg-surface-50 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800 uppercase font-black text-[9px] tracking-widest">{title}</div>
-         <div className="p-4">{children}</div>
+      <div className="card !shadow-none border-surface-200 dark:border-surface-800">
+         <div className="px-6 py-3 bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800 uppercase font-bold text-xs text-surface-500 tracking-wider">{title}</div>
+         <div className="p-6">{children}</div>
       </div>
    );
 }

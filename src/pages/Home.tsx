@@ -41,23 +41,23 @@ export function HomePage() {
   const alertList = alerts ? (Array.isArray(alerts) ? alerts : (alerts as any).events ?? []).slice(0, 4) : [];
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-300">
-       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-2">
+    <div className="space-y-8 animate-in fade-in duration-300 text-sm">
+       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-surface-200 dark:border-surface-800 pb-4">
           <div>
-             <h1 className="text-2xl font-black text-surface-900 dark:text-white tracking-tight uppercase italic">
-                Simco<span className="text-brand-500">.Matrix</span>
+             <h1 className="text-3xl font-bold text-surface-900 dark:text-white tracking-tight">
+                Simco<span className="text-brand-600">Intel</span>
              </h1>
           </div>
 
-          <div className="flex items-center gap-3">
-             <div className="flex items-center gap-2 px-3 py-1 bg-surface-50 dark:bg-surface-900 rounded border border-surface-100 dark:border-surface-800">
-                <div className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-surface-300'}`} />
-                <span className="text-[9px] font-black uppercase tracking-widest">{connected ? 'ACTIVE' : 'OFFLINE'}</span>
+          <div className="flex items-center gap-4">
+             <div className="flex items-center gap-2 px-4 py-1.5 bg-surface-100 dark:bg-surface-900 rounded-lg border border-surface-200 dark:border-surface-800">
+                <div className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'bg-surface-300'}`} />
+                <span className="text-xs font-bold uppercase tracking-wide">{connected ? 'Node Connected' : 'Offline'}</span>
              </div>
              <select
                value={realm}
                onChange={(e) => setRealm(Number(e.target.value))}
-               className="bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800 rounded px-2 py-1 text-[10px] font-black uppercase tracking-widest"
+               className="bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-1.5 text-sm font-bold uppercase"
              >
                <option value={0}>REALM 0</option>
                <option value={1}>REALM 1</option>
@@ -65,50 +65,46 @@ export function HomePage() {
           </div>
        </div>
 
-       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <ColorfulStat title="HEALTH" value={scores?.eh} icon={Activity} color="bg-brand-500" />
-          <ColorfulStat title="SENTIMENT" value={scores?.ms} icon={TrendingUp} color="bg-violet-500" />
-          <ColorfulStat title="STABILITY" value={scores?.st} icon={Shield} color="bg-emerald-500" />
-          <ColorfulStat title="RISK" value={scores?.sr} icon={AlertCircle} color="bg-rose-500" />
+       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <ColorfulStat title="Economic Health" value={scores?.eh} icon={Activity} color="text-brand-600" border="border-brand-600" />
+          <ColorfulStat title="Market Sentiment" value={scores?.ms} icon={TrendingUp} color="text-violet-600" border="border-violet-600" />
+          <ColorfulStat title="System Stability" value={scores?.st} icon={Shield} color="text-emerald-600" border="border-emerald-600" />
+          <ColorfulStat title="Risk Assessment" value={scores?.sr} icon={AlertCircle} color="text-rose-600" border="border-rose-600" />
        </div>
 
-       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-4">
-             <div className="card h-full flex flex-col relative overflow-hidden card-vibrant">
-                <div className="p-4 flex flex-col items-center justify-center flex-1 text-center">
-                   <span className="text-[9px] font-black uppercase tracking-widest text-surface-400 mb-2">REGIME</span>
-                   <h2 className={`text-4xl font-black italic uppercase tracking-tighter ${regime?.na === "Expansion" ? 'text-emerald-500' : regime?.na === "Recession" ? 'text-rose-500' : 'text-brand-500'}`}>
+             <div className="card h-full flex flex-col border-surface-200 dark:border-surface-800 !shadow-none">
+                <div className="p-10 flex flex-col items-center justify-center flex-1 text-center bg-surface-50 dark:bg-surface-900/50 rounded-t-xl">
+                   <span className="text-xs font-bold uppercase tracking-[0.2em] text-surface-500 mb-4">Current Economic Regime</span>
+                   <h2 className={`text-5xl font-bold uppercase tracking-tight ${regime?.na === "Expansion" ? 'text-emerald-600' : regime?.na === "Recession" ? 'text-rose-600' : 'text-brand-600'}`}>
                       {regime?.na ?? "Neutral"}
                    </h2>
-                   <div className="mt-4 w-full h-8 opacity-20 text-brand-500">
-                      <MiniSparkline data={sparkData} color="currentColor" />
-                   </div>
                 </div>
-                <Link to="/macro" className="p-2 bg-surface-50 dark:bg-surface-800/50 border-t border-surface-100 dark:border-surface-800 flex items-center justify-between hover:bg-brand-500 hover:text-white transition-all group">
-                   <span className="text-[8px] font-black uppercase tracking-widest">DETAILS</span>
-                   <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                <Link to="/macro" className="p-4 bg-white dark:bg-surface-800 border-t border-surface-200 dark:border-surface-800 flex items-center justify-between hover:bg-surface-50 transition-all group rounded-b-xl">
+                   <span className="text-sm font-bold text-surface-700 dark:text-surface-300">View Macro Analysis</span>
+                   <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform text-brand-600" />
                 </Link>
              </div>
           </div>
 
-          <div className="lg:col-span-8 text-xs">
-             <div className="card h-full flex flex-col border-t-2 border-t-violet-500 shadow-[0_4px_20px_-2px_rgba(139,92,246,0.1)]">
-                <div className="px-3 py-1.5 border-b border-surface-50 dark:border-surface-800/50 flex items-center justify-between">
-                   <h3 className="text-[9px] font-black uppercase tracking-widest text-surface-400">EVENT_STREAM</h3>
-                   <Link to="/alerts" className="text-[8px] font-black text-violet-500 uppercase">VIEW ALL</Link>
+          <div className="lg:col-span-8">
+             <div className="card h-full flex flex-col border-surface-200 dark:border-surface-800 !shadow-none">
+                <div className="px-6 py-4 border-b border-surface-100 dark:border-surface-800 flex items-center justify-between">
+                   <h3 className="text-sm font-bold uppercase text-surface-500">Live Event Log</h3>
+                   <Link to="/alerts" className="text-xs font-bold text-brand-600 hover:underline">Full History</Link>
                 </div>
-                <div className="divide-y divide-surface-50 dark:divide-surface-800">
+                <div className="divide-y divide-surface-100 dark:divide-surface-800">
                    {alertList.length > 0 ? alertList.map((a: any) => (
-                      <div key={a.id} className="px-3 py-2 flex items-center gap-3 hover:bg-surface-50 dark:hover:bg-surface-800/30 transition-colors group">
-                         <div className="w-1 h-1 rounded-full bg-violet-500/30 group-hover:bg-violet-500 group-hover:scale-125 transition-all" />
+                      <div key={a.id} className="px-6 py-4 flex items-center gap-4 hover:bg-surface-50 dark:hover:bg-surface-800/30 transition-colors group">
                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-surface-900 dark:text-white truncate uppercase tracking-tight italic">{a.ti}</p>
+                            <p className="font-bold text-surface-900 dark:text-white truncate text-base">{a.ti}</p>
+                            <p className="text-xs text-surface-400 mt-0.5">{new Date(a.ts).toLocaleString()}</p>
                          </div>
-                         <div className="text-[8px] font-black text-surface-400 uppercase">{new Date(a.ts).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                         <div className="shrink-0 scale-75 origin-right"><SeverityBadge severity={a.se} /></div>
+                         <div className="shrink-0"><SeverityBadge severity={a.se} /></div>
                       </div>
                    )) : (
-                      <div className="py-10 text-center opacity-10 uppercase font-black text-[9px]">IDLE</div>
+                      <div className="py-20 text-center text-surface-300 font-bold text-sm">No recent events detected.</div>
                    )}
                 </div>
              </div>
@@ -124,15 +120,15 @@ export function HomePage() {
   );
 }
 
-function ColorfulStat({ title, value, icon: Icon, color }: any) {
+function ColorfulStat({ title, value, icon: Icon, color, border }: any) {
    return (
-      <div className="card p-3 flex items-center justify-between group overflow-hidden relative">
+      <div className={`card p-6 flex items-center justify-between border-l-4 ${border} !shadow-none`}>
          <div>
-            <span className="text-[8px] font-black uppercase tracking-widest text-surface-400 block">{title}</span>
-            <span className="text-xl font-black italic tracking-tighter tabular-nums leading-none">{value ?? '--'}</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-surface-500 block mb-1">{title}</span>
+            <span className="text-3xl font-bold tabular-nums leading-none">{value ?? '--'}</span>
          </div>
-         <div className={`w-8 h-8 rounded flex items-center justify-center ${color} text-white shadow-lg`}>
-            <Icon size={16} />
+         <div className={`${color}`}>
+            <Icon size={28} />
          </div>
       </div>
    );
@@ -140,12 +136,12 @@ function ColorfulStat({ title, value, icon: Icon, color }: any) {
 
 function HomeTool({ to, title, icon: Icon, color }: { to: string; title: string; icon: any; color: string }) {
    return (
-      <Link to={to} className={`card p-3 group hover:border-brand-500 transition-all`}>
-         <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded ${color} text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-               <Icon size={16} />
+      <Link to={to} className={`card p-6 group hover:border-brand-600 transition-all !shadow-none border-surface-200 dark:border-surface-800`}>
+         <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-xl ${color} text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform`}>
+               <Icon size={24} />
             </div>
-            <h3 className="text-xs font-black uppercase italic tracking-widest dark:text-white">{title}</h3>
+            <h3 className="text-lg font-bold text-surface-800 dark:text-white">{title}</h3>
          </div>
       </Link>
    );

@@ -13,19 +13,19 @@ export function MobileNav() {
   ];
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-surface-950/80 backdrop-blur-xl border-t border-surface-200 dark:border-surface-800 px-4 py-2 flex justify-between items-center z-[100] safe-area-bottom shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-surface-950 border-t border-surface-200 dark:border-surface-800 px-4 py-2 flex justify-between items-center z-[100] safe-area-bottom shadow-[0_-8px_30px_rgba(0,0,0,0.05)]">
       {links.map((link) => {
         const active = location === link.to;
         return (
           <Link
             key={link.to}
             to={link.to}
-            className={`flex flex-col items-center gap-1 p-2 rounded-2xl transition-all duration-300 ${active ? "text-brand-600 dark:text-brand-400 scale-110" : "text-surface-400 hover:text-surface-600 dark:hover:text-surface-200"}`}
+            className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all duration-200 ${active ? "text-brand-600" : "text-surface-400"}`}
           >
-            <div className={`${active ? "bg-brand-600 text-white p-2 rounded-xl shadow-lg shadow-brand-500/20" : ""}`}>
+            <div className={`${active ? "text-brand-600 scale-110 transition-transform" : ""}`}>
                {link.icon}
             </div>
-            <span className={`text-[10px] font-black uppercase tracking-tighter ${active ? "opacity-100" : "opacity-0 h-0"}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-wide ${active ? "opacity-100" : "opacity-60"}`}>
                {link.label}
             </span>
           </Link>
