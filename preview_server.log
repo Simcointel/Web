@@ -1,7 +1,6 @@
 
 > simcointel-web@1.0.0 preview
-> vite preview --port 5174
+> vite preview
 
-Port 5174 is in use, trying another one...
-  ➜  Local:   http://localhost:5175/Web/
+  ➜  Local:   http://localhost:4173/Web/
   ➜  Network: use --host to expose

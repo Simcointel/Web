@@ -3,7 +3,7 @@ import { useTheme } from "../hooks/useTheme";
 import {
   LayoutDashboard, Globe, Briefcase, DollarSign,
   TrendingUp, BookOpen, Share2, Sun, Moon,
-  Bell, Settings, Info, Menu, X, ChevronRight, LayoutGrid, Brain
+  Bell, Settings, Info, Menu, X, ChevronRight, LayoutGrid
 } from "lucide-react";
 
 const navLinks = [
@@ -18,7 +18,6 @@ const navLinks = [
   ]},
   { group: "INTEL", links: [
     { to: "/vwap-inflation", label: "Trends", icon: <TrendingUp size={18} />, color: "text-brand-500" },
-    { to: "/intelligence", label: "Intelligence", icon: <Brain size={18} />, color: "text-amber-500" },
     { to: "/encyclopedia", label: "Registry", icon: <BookOpen size={18} />, color: "text-indigo-500" },
     { to: "/production-flow", label: "Visual", icon: <Share2 size={18} />, color: "text-violet-500" },
   ]}

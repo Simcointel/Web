@@ -14,6 +14,12 @@ export function ProfitMarginsPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const { data, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 60000, [realm]);
 
+  const [localCalc, setLocalCalc] = useState(false);
+  const [prodBonus, setProdBonus] = useState(12);
+  const [adminOverhead, setAdminOverhead] = useState(0);
+  const [abundance, setAbundance] = useState(100);
+  const [resBonus, setResBonus] = useState(0);
+
   const [selectedResId, setSelectedResId] = useState<number | null>(null);
   const resources = data?.resources ?? [];
   const categories = useMemo(() => {
@@ -32,7 +38,38 @@ export function ProfitMarginsPage() {
   };
 
   const filtered = useMemo(() => {
-    let list = resources;
+    let list = resources.map((r: any) => {
+      if (!localCalc) return r;
+
+      const staticRes = RESOURCES.find(sr => sr.id === r.id);
+      if (!staticRes || !staticRes.basePh || !staticRes.baseWages) return r;
+
+      const isExtraction = ["O", "M", "Q"].includes(String(staticRes.buildingId));
+      const isResearch = ["p", "b", "c", "h", "s", "a", "f", "y"].includes(String(staticRes.buildingId));
+
+      const effProdBonus = isResearch ? 0 : prodBonus;
+      const effResBonus = isResearch ? resBonus : 0;
+
+      let unitsPh = staticRes.basePh * (1 + (effProdBonus + effResBonus) / 100);
+      if (isExtraction) unitsPh *= (abundance / 100);
+
+      const wagesPh = staticRes.baseWages * (1 + adminOverhead / 100);
+      const inputCostPh = r.inputCostPerHour; // Keep original input cost for simplicity or calculate from VWAPs
+
+      const totalCostPh = inputCostPh + wagesPh + r.transportPerHour;
+      const revenuePh = unitsPh * r.outputVwap;
+      const netProfitPh = revenuePh - totalCostPh;
+      const marginPct = (netProfitPh / revenuePh) * 100;
+
+      return {
+        ...r,
+        producedPerHour: unitsPh,
+        revenuePerHour: revenuePh,
+        netProfitPerHour: netProfitPh,
+        marginPct: marginPct
+      };
+    });
+
     if (category !== "all") list = list.filter((r: any) => r.categoryName === category);
     if (search) list = list.filter((r: any) => r.name.toLowerCase().includes(search.toLowerCase()) || r.categoryName.toLowerCase().includes(search.toLowerCase()));
 
@@ -46,7 +83,7 @@ export function ProfitMarginsPage() {
       return sortDir === "desc" ? valB - valA : valA - valB;
     });
     return list;
-  }, [resources, category, search, sortBy, sortDir]);
+  }, [resources, category, search, sortBy, sortDir, localCalc, prodBonus, adminOverhead, abundance, resBonus]);
 
   const status = useMemo(() => {
     if (loading && !data) return <LoadingState text="SYNC_PRICES..." />;
@@ -83,8 +120,28 @@ export function ProfitMarginsPage() {
          <SmallMetric label="TOP_MG" value={`${Math.max(...resources.map((r: any) => r.marginPct)).toFixed(0)}%`} />
       </div>
 
-      <div className="card">
-        <div className="p-1 border-b border-surface-50 dark:border-surface-800 bg-surface-50/50 flex flex-wrap items-center justify-between gap-2">
+      <div className="card p-4 space-y-4">
+        <div className="flex items-center justify-between border-b border-surface-50 dark:border-surface-800 pb-2">
+           <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={localCalc}
+                onChange={(e) => setLocalCalc(e.target.checked)}
+                className="w-3 h-3 accent-brand-500"
+              />
+              <span className="font-black uppercase tracking-widest text-[8px] text-surface-400">Local_Calculations_Override</span>
+           </div>
+           {localCalc && (
+              <div className="flex flex-wrap gap-4">
+                 <Slider label="PROD" val={prodBonus} set={setProdBonus} unit="%" />
+                 <Slider label="AO" val={adminOverhead} set={setAdminOverhead} unit="%" />
+                 <Slider label="ABUN" val={abundance} set={setAbundance} unit="%" />
+                 <Slider label="RES" val={resBonus} set={setResBonus} unit="%" />
+              </div>
+           )}
+        </div>
+
+        <div className="p-1 flex flex-wrap items-center justify-between gap-2">
           <div className="flex gap-1">
             <input
               type="text"
@@ -187,6 +244,23 @@ function SmallMetric({ label, value }: { label: string; value: string | number }
          <p className="text-sm font-black">{value}</p>
       </div>
    );
+}
+
+function Slider({ label, val, set, unit }: any) {
+  return (
+    <div className="flex items-center gap-2">
+       <span className="text-[8px] font-black text-surface-400">{label}</span>
+       <input
+         type="range"
+         min={label === "ABUN" ? 50 : 0}
+         max={label === "AO" ? 100 : 200}
+         value={val}
+         onChange={(e) => set(Number(e.target.value))}
+         className="w-16 h-1 bg-surface-100 dark:bg-surface-800 rounded-full appearance-none cursor-pointer accent-brand-500"
+       />
+       <span className="text-[8px] font-bold w-6">{val}{unit}</span>
+    </div>
+  )
 }
 
 function fmt(n: number): string {

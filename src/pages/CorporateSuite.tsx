@@ -51,6 +51,8 @@ interface SuiteStateV6 {
     patentTargetQuality: number;
     researchUnitCost: number;
     retailResourceId: number;
+    abundance: number;
+    researchBonus: number;
   };
   debt: { current: number; rate: number; };
   moduleSettings: {
@@ -77,7 +79,9 @@ const DEFAULT_STATE: SuiteStateV6 = {
     bankLevel: 0, cash: 0, bondsSold: 0, bondsOwned: 0,
     profileSalesBonus: 0, recreationalBuildings: 0,
     patentStartingQuality: 0, patentTargetQuality: 1, researchUnitCost: 179,
-    retailResourceId: 24
+    retailResourceId: 24,
+    abundance: 100,
+    researchBonus: 0
   },
   debt: { current: 2000000, rate: 0.5 },
   moduleSettings: {
@@ -174,10 +178,39 @@ export function CorporateSuitePage() {
 
     const coverageRatio = dailyInterest > 0 ? effProfit / dailyInterest : 100;
 
+    // Building profits
+    const buildingProfits = effMap.map(m => {
+       const b = BUILDINGS.find(bu => bu.id === m.id);
+       if (!b) return { name: 'Unknown', profit: 0 };
+
+       const res = RESOURCES.find(r => r.buildingId === b.id); // Simplification: assume 1 primary resource per building
+       const mRes = (margins?.resources as any[])?.find(r => r.id === res?.id);
+
+       if (!mRes || !res) return { name: b.name, profit: 0 };
+
+       const isExtraction = ["O", "M", "Q"].includes(String(b.id));
+       const isResearch = ["p", "b", "c", "h", "s", "a", "f", "y"].includes(String(b.id));
+
+       const effProdBonus = isResearch ? 0 : state.settings.prodBonus;
+       const effResBonus = isResearch ? state.settings.researchBonus : 0;
+
+       let unitsPh = (res.basePh || 0) * (1 + (effProdBonus + effResBonus) / 100);
+       if (isExtraction) unitsPh *= (state.settings.abundance / 100);
+
+       const wagesPh = (b.wages || 0) * (1 + actualAO);
+       const inputCostPh = mRes.inputCostPerHour;
+
+       const totalCostPh = inputCostPh + wagesPh + (mRes.transportPerHour || 0);
+       const revenuePh = unitsPh * mRes.outputVwap;
+       const netProfitPh = (revenuePh - totalCostPh) * m.level;
+
+       return { name: b.name, profit: netProfitPh, level: m.level };
+    });
+
     return {
       totalLevels, actualAO, rawAO, taxThreshold, salesSpeedBonus, patentProb,
       dailyWages, inventoryValue, mapValue, dailyInterest, effMan, effAcc, effCom, effSci,
-      estimatedDailyTax, coverageRatio,
+      estimatedDailyTax, coverageRatio, buildingProfits,
       totalValuation: inventoryValue + mapValue + (effProfit * 30),
       netDaily: effProfit - dailyInterest - estimatedDailyTax - (dailyWages * actualAO)
     };
@@ -295,67 +328,14 @@ export function CorporateSuitePage() {
   );
 }
 
-function LedgerView({ state, setState }: any) {
-  const [showExample, setShowExample] = useState(false);
-  const exampleData = [
-    { date: "2024-06-25 14:20", type: "Sale", item: "Smart phones", qty: 100, price: 620, total: 62000 },
-    { date: "2024-06-25 12:05", type: "Buy", item: "Processors", qty: 200, price: 150, total: -30000 },
-    { date: "2024-06-24 18:10", type: "Wages", item: "Electronics Factory", qty: 1, price: 4140, total: -4140 },
-    { date: "2024-06-24 10:00", type: "Sale", item: "Smart phones", qty: 50, price: 625, total: 31250 },
-  ];
-
+function LedgerView({ state }: any) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
        <div className="md:col-span-8">
-          <Section
-            title="LEDGER_STREAM"
-            icon={BarChart3}
-            color="text-teal-500"
-            actions={
-               <button
-                 onClick={() => setShowExample(!showExample)}
-                 className="text-[8px] font-black uppercase px-2 py-0.5 border border-teal-500/30 rounded hover:bg-teal-500/10 transition-colors"
-               >
-                  {showExample ? 'CLEAR_VIEW' : 'LOAD_MOCK'}
-               </button>
-            }
-          >
-             <div className="card h-[60vh] overflow-hidden flex flex-col">
-                {state.ledger.length === 0 && !showExample ? (
-                   <div className="flex-1 flex flex-col items-center justify-center border-dashed opacity-20">
-                      <Download size={40} className="mb-4" />
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em]">Upload Game CSV to populate</p>
-                   </div>
-                ) : (
-                   <div className="overflow-x-auto flex-1">
-                      <table className="w-full text-left border-collapse">
-                         <thead className="sticky top-0 bg-surface-50 dark:bg-surface-900 z-10">
-                            <tr className="text-[8px] font-black uppercase text-surface-400 border-b border-surface-100 dark:border-surface-800">
-                               <th className="px-3 py-2">TIMESTAMP</th>
-                               <th className="px-3 py-2">TYPE</th>
-                               <th className="px-3 py-2">ENTITY</th>
-                               <th className="px-3 py-2 text-right">QTY</th>
-                               <th className="px-3 py-2 text-right">UNIT</th>
-                               <th className="px-3 py-2 text-right">TOTAL</th>
-                            </tr>
-                         </thead>
-                         <tbody className="divide-y divide-surface-50 dark:divide-surface-800/50">
-                            {(showExample ? exampleData : state.ledger).map((row: any, i: number) => (
-                               <tr key={i} className="hover:bg-teal-500/5 transition-colors text-[9px]">
-                                  <td className="px-3 py-1.5 opacity-40 tabular-nums">{row.date}</td>
-                                  <td className="px-3 py-1.5 font-bold uppercase">{row.type}</td>
-                                  <td className="px-3 py-1.5 uppercase truncate max-w-[120px]">{row.item}</td>
-                                  <td className="px-3 py-1.5 text-right tabular-nums">{row.qty}</td>
-                                  <td className="px-3 py-1.5 text-right tabular-nums text-surface-400">${row.price?.toFixed(2)}</td>
-                                  <td className={`px-3 py-1.5 text-right font-black tabular-nums ${row.total > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                     {row.total > 0 ? '+' : ''}{row.total?.toLocaleString()}
-                                  </td>
-                               </tr>
-                            ))}
-                         </tbody>
-                      </table>
-                   </div>
-                )}
+          <Section title="LEDGER_STREAM" icon={BarChart3} color="text-teal-500">
+             <div className="card h-[60vh] flex flex-col items-center justify-center border-dashed opacity-20">
+                <Download size={40} className="mb-4" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em]">Upload Game CSV to populate</p>
              </div>
           </Section>
        </div>
@@ -502,15 +482,72 @@ function OperationsView({ state, setState, core }: any) {
                 </div>
              </div>
           </Section>
-          <Section title="SIMULATOR" icon={Layers} color="text-emerald-500">
+          <Section title="EXECUTIVE_OUTLOOK" icon={Zap} color="text-emerald-500">
+             <div className="card p-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                   <div>
+                      <span className="text-[8px] font-black text-surface-400 uppercase block">PROD_BONUS</span>
+                      <div className="flex items-center gap-2">
+                         <input type="number" value={state.settings.prodBonus} onChange={(e) => setState({...state, settings: {...state.settings, prodBonus: Number(e.target.value)}})} className="w-12 bg-transparent font-black text-emerald-600 outline-none" />
+                         <span className="text-emerald-600 font-black">%</span>
+                      </div>
+                   </div>
+                   <div>
+                      <span className="text-[8px] font-black text-surface-400 uppercase block">ADMIN_COST</span>
+                      <span className="text-xl font-black text-rose-600">{(core.actualAO*100).toFixed(1)}%</span>
+                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-surface-50 dark:border-surface-800">
+                   <div>
+                      <span className="text-[8px] font-black text-surface-400 uppercase block">ABUNDANCE</span>
+                      <div className="flex items-center gap-2">
+                         <input type="number" value={state.settings.abundance} onChange={(e) => setState({...state, settings: {...state.settings, abundance: Number(e.target.value)}})} className="w-12 bg-transparent font-black text-brand-600 outline-none" />
+                         <span className="text-brand-600 font-black">%</span>
+                      </div>
+                   </div>
+                   <div>
+                      <span className="text-[8px] font-black text-surface-400 uppercase block">RESEARCH</span>
+                      <div className="flex items-center gap-2">
+                         <input type="number" value={state.settings.researchBonus} onChange={(e) => setState({...state, settings: {...state.settings, researchBonus: Number(e.target.value)}})} className="w-12 bg-transparent font-black text-amber-600 outline-none" />
+                         <span className="text-amber-600 font-black">%</span>
+                      </div>
+                   </div>
+                </div>
+             </div>
+          </Section>
+
+          <Section title="PROFIT_CONTRIBUTION" icon={TrendingUp} color="text-emerald-500">
+             <div className="card p-2">
+                <table className="w-full text-[9px] font-black uppercase">
+                   <thead>
+                      <tr className="text-surface-400 border-b border-surface-50 dark:border-surface-800">
+                         <th className="text-left py-1">BUILDING</th>
+                         <th className="text-center py-1">LVL</th>
+                         <th className="text-right py-1">NET/H</th>
+                      </tr>
+                   </thead>
+                   <tbody>
+                      {core.buildingProfits.map((p: any, i: number) => (
+                         <tr key={i} className="border-b border-surface-50 dark:border-surface-800 last:border-0">
+                            <td className="py-1.5">{p.name}</td>
+                            <td className="py-1.5 text-center opacity-40">{p.level}</td>
+                            <td className={`py-1.5 text-right ${p.profit > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>${p.profit.toFixed(0)}</td>
+                         </tr>
+                      ))}
+                   </tbody>
+                </table>
+             </div>
+          </Section>
+
+          <Section title="SCALING_SIMULATOR" icon={Layers} color="text-emerald-500">
              <div className="card p-4 space-y-4">
                 <div className="flex justify-between items-end">
                    <div>
-                      <p className="text-[9px] font-black text-emerald-500 uppercase leading-none mb-1">SCALING</p>
+                      <p className="text-[9px] font-black text-emerald-500 uppercase leading-none mb-1">FUTURE_CAPACITY</p>
                       <p className="text-3xl font-black italic tracking-tighter">+{state.settings.whatIfLevel} <span className="text-sm opacity-20">LVLS</span></p>
                    </div>
                    <div className="text-right">
-                      <p className="text-[9px] font-black text-rose-500 uppercase leading-none mb-1">AO DRAG</p>
+                      <p className="text-[9px] font-black text-rose-500 uppercase leading-none mb-1">PROJECTED_AO</p>
                       <p className="text-xl font-black tabular-nums text-rose-600">{(core.actualAO*100).toFixed(1)}%</p>
                    </div>
                 </div>
