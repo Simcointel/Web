@@ -93,6 +93,35 @@ export function EncyclopediaPage() {
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="card p-4 space-y-4">
+                     <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp size={14} className="text-brand-500" />
+                        <h3 className="text-[9px] font-black uppercase text-surface-400">FINANCIAL_MODEL</h3>
+                     </div>
+                     <div className="space-y-2">
+                        <FinancialLine label="REVENUE/H" value={`$${(selectedMargin?.revenuePerHour || 0).toFixed(0)}`} />
+                        <FinancialLine label="INPUTS/H" value={`-$${(selectedMargin?.inputCostPerHour || 0).toFixed(0)}`} red />
+                        <FinancialLine label="WAGES/H" value={`-$${(selectedMargin?.wagesPerHour || 0).toFixed(0)}`} red />
+                        <div className="pt-2 border-t border-surface-50 dark:border-surface-800 flex justify-between items-center">
+                           <span className="text-[10px] font-black uppercase text-brand-500">NET_PROFIT/H</span>
+                           <span className="text-lg font-black tabular-nums">${(selectedMargin?.netProfitPerHour || 0).toFixed(0)}</span>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div className="card p-4 space-y-4">
+                     <div className="flex items-center gap-2 mb-2">
+                        <Info size={14} className="text-brand-500" />
+                        <h3 className="text-[9px] font-black uppercase text-surface-400">ENTITY_SPECS</h3>
+                     </div>
+                     <div className="grid grid-cols-2 gap-4">
+                        <SpecNode label="BASE_WAGES" value={`$${selected.baseWages || 0}`} />
+                        <SpecNode label="UNITS/H" value={`${(selected.basePh || 0).toFixed(1)}`} />
+                        <SpecNode label="TRANSPORT" value={selected.transport} />
+                        <SpecNode label="B_ID" value={selected.buildingId || 'N/A'} />
+                     </div>
+                  </div>
+
                   <div className="card flex flex-col">
                      <div className="px-3 py-1.5 border-b border-surface-50 dark:border-surface-800/50 flex items-center gap-2">
                         <Factory size={12} className="text-emerald-500" />
@@ -164,4 +193,22 @@ export function EncyclopediaPage() {
       </div>
     </div>
   );
+}
+
+function FinancialLine({ label, value, red }: any) {
+   return (
+      <div className="flex justify-between items-center text-[10px]">
+         <span className="font-bold text-surface-400 uppercase tracking-tighter">{label}</span>
+         <span className={`font-black tabular-nums ${red ? 'text-rose-500' : 'text-surface-600 dark:text-surface-300'}`}>{value}</span>
+      </div>
+   );
+}
+
+function SpecNode({ label, value }: any) {
+   return (
+      <div className="bg-surface-50 dark:bg-surface-950 p-2 rounded">
+         <span className="block text-[7px] font-black text-surface-400 uppercase mb-1">{label}</span>
+         <span className="text-[11px] font-black text-surface-900 dark:text-white uppercase">{value}</span>
+      </div>
+   );
 }

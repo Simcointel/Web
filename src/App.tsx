@@ -11,7 +11,6 @@ import { VWAPInflationPage } from "./pages/VWAPInflation";
 import { ProfitMarginsPage } from "./pages/ProfitMargins";
 import { EncyclopediaPage } from "./pages/Encyclopedia";
 import { ProductionFlowPage } from "./pages/ProductionFlow";
-import { IntelligencePage } from "./pages/Intelligence";
 import { WidgetPage } from "./pages/WidgetRenderer";
 import { NotFoundPage } from "./pages/NotFound";
 import { CorporateSuitePage } from "./pages/CorporateSuite";
@@ -31,7 +30,6 @@ export function AppShell({ path }: { path: string }) {
     : path === "/profit-margins" ? <ProfitMarginsPage />
     : path === "/encyclopedia" ? <EncyclopediaPage />
     : path === "/production-flow" ? <ProductionFlowPage />
-    : path === "/intelligence" ? <IntelligencePage />
     : path === "/about" ? <AboutPage />
     : isWidget ? <WidgetPage />
     : <NotFoundPage />;
