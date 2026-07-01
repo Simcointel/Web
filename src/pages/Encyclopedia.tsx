@@ -27,7 +27,12 @@ export function EncyclopediaPage() {
     margins?.resources?.find((r: any) => r.id === selectedId),
   [margins, selectedId]);
 
-  if (loading && !margins) return <LoadingState text="Accessing Knowledge Base..." />;
+  const content = useMemo(() => {
+    if (loading && !margins) return <LoadingState text="Accessing Knowledge Base..." />;
+    return null;
+  }, [loading, margins]);
+
+  if (content) return content;
 
   return (
     <div className="grid grid-cols-12 gap-3 animate-in fade-in duration-300">

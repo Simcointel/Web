@@ -13,13 +13,11 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "clsx": "^2.1.1",
     "framer-motion": "^12.40.0",
     "lucide-react": "0.475.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "recharts": "^2.15.0",
-    "tailwind-merge": "^3.6.0"
+    "recharts": "^2.15.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
