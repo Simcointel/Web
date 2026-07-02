@@ -35,35 +35,35 @@ export function EncyclopediaPage() {
   if (content) return content;
 
   return (
-    <div className="grid grid-cols-12 gap-3 animate-in fade-in duration-300">
-      <div className="col-span-12 lg:col-span-4 space-y-3">
-         <div className="card h-[70vh] flex flex-col overflow-hidden">
-            <div className="p-2 border-b border-surface-50 dark:border-surface-800 bg-surface-50/20">
+    <div className="grid grid-cols-12 gap-6 animate-in fade-in duration-300 text-sm">
+      <div className="col-span-12 lg:col-span-4 space-y-4">
+         <div className="card h-[75vh] flex flex-col overflow-hidden !shadow-none border-surface-200 dark:border-surface-800">
+            <div className="p-4 border-b border-surface-100 dark:border-surface-800 bg-surface-50 dark:bg-surface-900">
                <div className="relative">
-                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-surface-400" />
+                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
                   <input
                     type="text"
-                    placeholder="Search Entity..."
+                    placeholder="Search encyclopedia..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="input !pl-8 !py-1.5 !bg-white dark:!bg-surface-950 !rounded shadow-none border-none"
+                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 rounded-lg text-sm focus:ring-1 focus:ring-brand-500 outline-none"
                   />
                </div>
             </div>
-            <div className="flex-1 overflow-y-auto divide-y divide-surface-50 dark:divide-surface-800 scrollbar-hide">
+            <div className="flex-1 overflow-y-auto divide-y divide-surface-100 dark:divide-surface-800">
                {filtered.map(r => (
                   <button
                     key={r.id}
                     onClick={() => setSelectedId(r.id)}
-                    className={`w-full text-left px-3 py-2 hover:bg-brand-50 dark:hover:bg-brand-900/10 transition-all flex justify-between items-center group ${selectedId === r.id ? 'bg-brand-500/5 dark:bg-brand-500/10 border-l-2 border-brand-500' : ''}`}
+                    className={`w-full text-left px-4 py-3 hover:bg-surface-50 dark:hover:bg-brand-900/10 transition-all flex justify-between items-center group ${selectedId === r.id ? 'bg-brand-50 dark:bg-brand-900/20 border-l-4 border-brand-600' : ''}`}
                   >
-                     <div className="flex items-center gap-2">
-                        <div className={`w-6 h-6 rounded flex items-center justify-center text-surface-400 group-hover:text-brand-500 transition-colors ${selectedId === r.id ? 'text-brand-500 bg-white dark:bg-surface-800 shadow-sm' : ''}`}>
-                           <Layers size={12} />
+                     <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-surface-400 group-hover:text-brand-600 transition-colors ${selectedId === r.id ? 'text-brand-600 bg-white dark:bg-surface-800 shadow-sm' : ''}`}>
+                           <Layers size={16} />
                         </div>
-                        <span className={`text-[10px] font-black uppercase tracking-tight ${selectedId === r.id ? 'text-brand-600' : 'text-surface-500 dark:text-surface-400'}`}>{r.name}</span>
+                        <span className={`font-semibold ${selectedId === r.id ? 'text-brand-600' : 'text-surface-700 dark:text-surface-300'}`}>{r.name}</span>
                      </div>
-                     <ChevronRight size={10} className={`text-surface-300 transition-transform ${selectedId === r.id ? 'translate-x-1 text-brand-500' : ''}`} />
+                     <ChevronRight size={14} className={`text-surface-300 transition-transform ${selectedId === r.id ? 'translate-x-1 text-brand-600' : ''}`} />
                   </button>
                ))}
             </div>
@@ -72,72 +72,72 @@ export function EncyclopediaPage() {
 
       <div className="col-span-12 lg:col-span-8">
          {selected ? (
-            <div className="space-y-3 animate-in slide-in-from-right-2 duration-300">
-               <div className="card p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden group border-t-2 border-brand-500">
+            <div className="space-y-6 animate-in slide-in-from-right-2 duration-300">
+               <div className="card p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden group !shadow-none border-surface-200 dark:border-surface-800 border-t-4 border-t-brand-600">
                   <div className="absolute -right-8 -top-8 text-brand-500/5 group-hover:scale-110 transition-transform duration-1000">
-                     <BookOpen size={160} />
+                     <BookOpen size={200} />
                   </div>
                   <div className="relative z-10">
-                     <div className="flex items-center gap-2 mb-1">
-                        <div className="px-1.5 py-0.5 bg-brand-500 text-white rounded-[2px] text-[8px] font-black uppercase tracking-widest">REGISTRY</div>
-                        <span className="text-[8px] font-black text-surface-400 uppercase tracking-widest"># {selected.id}</span>
+                     <div className="flex items-center gap-2 mb-2">
+                        <div className="px-2 py-0.5 bg-brand-600 text-white rounded text-[10px] font-bold uppercase">Registry Item</div>
+                        <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">ID #{selected.id}</span>
                      </div>
-                     <h1 className="text-2xl font-black uppercase tracking-tight italic text-surface-900 dark:text-white">{selected.name}</h1>
+                     <h1 className="text-4xl font-bold tracking-tight text-surface-900 dark:text-white">{selected.name}</h1>
                   </div>
                   {selectedMargin && (
                      <div className="relative z-10 text-right">
-                        <span className="block text-[8px] font-black uppercase tracking-widest text-surface-400 mb-0.5">BENCHMARK</span>
-                        <span className="text-xl font-black italic tracking-tighter tabular-nums text-brand-500">${selectedMargin.outputVwap.toFixed(2)}</span>
+                        <span className="block text-xs font-bold uppercase text-surface-400 mb-1">Market Benchmark</span>
+                        <span className="text-3xl font-bold text-brand-600">${selectedMargin.outputVwap.toFixed(2)}</span>
                      </div>
                   )}
                </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="card p-4 space-y-4">
-                     <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp size={14} className="text-brand-500" />
-                        <h3 className="text-[9px] font-black uppercase text-surface-400">FINANCIAL_MODEL</h3>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="card p-6 space-y-6 border-surface-200 dark:border-surface-800 !shadow-none">
+                     <div className="flex items-center gap-2">
+                        <TrendingUp size={18} className="text-emerald-600" />
+                        <h3 className="text-sm font-bold text-surface-500 uppercase">Financial Model</h3>
                      </div>
-                     <div className="space-y-2">
-                        <FinancialLine label="REVENUE/H" value={`$${(selectedMargin?.revenuePerHour || 0).toFixed(0)}`} />
-                        <FinancialLine label="INPUTS/H" value={`-$${(selectedMargin?.inputCostPerHour || 0).toFixed(0)}`} red />
-                        <FinancialLine label="WAGES/H" value={`-$${(selectedMargin?.wagesPerHour || 0).toFixed(0)}`} red />
-                        <div className="pt-2 border-t border-surface-50 dark:border-surface-800 flex justify-between items-center">
-                           <span className="text-[10px] font-black uppercase text-brand-500">NET_PROFIT/H</span>
-                           <span className="text-lg font-black tabular-nums">${(selectedMargin?.netProfitPerHour || 0).toFixed(0)}</span>
+                     <div className="space-y-3">
+                        <FinancialLine label="Gross Revenue/H" value={`$${(selectedMargin?.revenuePerHour || 0).toFixed(0)}`} />
+                        <FinancialLine label="Input Costs/H" value={`-$${(selectedMargin?.inputCostPerHour || 0).toFixed(0)}`} red />
+                        <FinancialLine label="Wages Cost/H" value={`-$${(selectedMargin?.wagesPerHour || 0).toFixed(0)}`} red />
+                        <div className="pt-4 border-t border-surface-100 dark:border-surface-800 flex justify-between items-center">
+                           <span className="text-sm font-bold text-brand-600">Projected Net Profit/H</span>
+                           <span className="text-2xl font-bold">${(selectedMargin?.netProfitPerHour || 0).toFixed(0)}</span>
                         </div>
                      </div>
                   </div>
 
-                  <div className="card p-4 space-y-4">
-                     <div className="flex items-center gap-2 mb-2">
-                        <Info size={14} className="text-brand-500" />
-                        <h3 className="text-[9px] font-black uppercase text-surface-400">ENTITY_SPECS</h3>
+                  <div className="card p-6 space-y-6 border-surface-200 dark:border-surface-800 !shadow-none">
+                     <div className="flex items-center gap-2">
+                        <Info size={18} className="text-brand-600" />
+                        <h3 className="text-sm font-bold text-surface-500 uppercase">Entity Specifications</h3>
                      </div>
                      <div className="grid grid-cols-2 gap-4">
-                        <SpecNode label="BASE_WAGES" value={`$${selected.baseWages || 0}`} />
-                        <SpecNode label="UNITS/H" value={`${(selected.basePh || 0).toFixed(1)}`} />
-                        <SpecNode label="TRANSPORT" value={selected.transport} />
-                        <SpecNode label="B_ID" value={selected.buildingId || 'N/A'} />
+                        <SpecNode label="Base Wages" value={`$${selected.baseWages || 0}`} />
+                        <SpecNode label="Base Units/H" value={`${(selected.basePh || 0).toFixed(1)}`} />
+                        <SpecNode label="Transport Req" value={selected.transport} />
+                        <SpecNode label="Facility ID" value={selected.buildingId || 'N/A'} />
                      </div>
                   </div>
 
-                  <div className="card flex flex-col">
-                     <div className="px-3 py-1.5 border-b border-surface-50 dark:border-surface-800/50 flex items-center gap-2">
-                        <Factory size={12} className="text-emerald-500" />
-                        <h3 className="text-[9px] font-black uppercase text-surface-400">PRODUCTION</h3>
+                  <div className="card flex flex-col border-surface-200 dark:border-surface-800 !shadow-none">
+                     <div className="px-6 py-4 border-b border-surface-100 dark:border-surface-800 flex items-center gap-2">
+                        <Factory size={18} className="text-emerald-600" />
+                        <h3 className="text-sm font-bold text-surface-500 uppercase">Production Process</h3>
                      </div>
-                     <div className="p-3 space-y-3">
-                        <div className="flex justify-between items-center p-2 bg-surface-50 dark:bg-surface-950 rounded">
-                           <span className="text-xs font-black uppercase truncate">{BUILDINGS.find(b => b.id === (selected as any).buildingId)?.name || 'Extraction'}</span>
-                           <ChevronRight size={10} className="text-surface-300" />
+                     <div className="p-6 space-y-4">
+                        <div className="flex justify-between items-center p-3 bg-surface-50 dark:bg-surface-900 rounded-lg">
+                           <span className="font-bold">{BUILDINGS.find(b => b.id === (selected as any).buildingId)?.name || 'Extraction Facility'}</span>
+                           <ChevronRight size={14} className="text-surface-300" />
                         </div>
                         {selected.inputs && (
-                           <div className="grid grid-cols-1 gap-1">
+                           <div className="space-y-2">
                               {Object.entries(selected.inputs).map(([id, qty]) => (
-                                 <div key={id} className="flex justify-between items-center px-2 py-1 text-[10px] border-b border-surface-50 dark:border-surface-800 last:border-0">
-                                    <span className="font-bold text-surface-500 truncate">{RESOURCES.find(r => r.id === Number(id))?.name}</span>
-                                    <span className="font-black tabular-nums">{qty}</span>
+                                 <div key={id} className="flex justify-between items-center px-2 py-2 border-b border-surface-50 dark:border-surface-800 last:border-0">
+                                    <span className="font-medium text-surface-600 dark:text-surface-400">{RESOURCES.find(r => r.id === Number(id))?.name}</span>
+                                    <span className="font-bold">{qty}</span>
                                  </div>
                               ))}
                            </div>
@@ -145,34 +145,35 @@ export function EncyclopediaPage() {
                      </div>
                   </div>
 
-                  <div className="card flex flex-col">
-                     <div className="px-3 py-1.5 border-b border-surface-50 dark:border-surface-800/50 flex items-center gap-2">
-                        <ShoppingCart size={12} className="text-rose-500" />
-                        <h3 className="text-[9px] font-black uppercase text-surface-400">RETAIL</h3>
+                  <div className="card flex flex-col border-surface-200 dark:border-surface-800 !shadow-none">
+                     <div className="px-6 py-4 border-b border-surface-100 dark:border-surface-800 flex items-center gap-2">
+                        <ShoppingCart size={18} className="text-rose-600" />
+                        <h3 className="text-sm font-bold text-surface-500 uppercase">Retail Outlook</h3>
                      </div>
-                     <div className="p-3">
+                     <div className="p-6">
                         {selected.retailInfo && selected.retailInfo.length > 0 ? (
-                           <div className="space-y-3">
-                              <div className="grid grid-cols-2 gap-2">
-                                 <div className="bg-surface-50 dark:bg-surface-950 p-2 text-center rounded">
-                                    <span className="block text-[8px] font-black text-surface-400">DEMAND</span>
-                                    <span className="text-xs font-black text-emerald-500">HIGH</span>
+                           <div className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                 <div className="bg-surface-50 dark:bg-surface-900 p-4 text-center rounded-lg">
+                                    <span className="block text-xs font-bold text-surface-400 mb-1">Market Demand</span>
+                                    <span className="text-lg font-bold text-emerald-600 uppercase">High</span>
                                  </div>
-                                 <div className="bg-surface-50 dark:bg-surface-950 p-2 text-center rounded">
-                                    <span className="block text-[8px] font-black text-surface-400">SAT</span>
-                                    <span className="text-xs font-black text-brand-500">0.22</span>
+                                 <div className="bg-surface-50 dark:bg-surface-900 p-4 text-center rounded-lg">
+                                    <span className="block text-xs font-bold text-surface-400 mb-1">Saturation</span>
+                                    <span className="text-lg font-bold text-brand-600">0.22</span>
                                  </div>
                               </div>
-                              <div className="p-3 bg-brand-500/5 rounded border border-brand-500/10">
-                                 <p className="text-[10px] font-bold text-surface-600 dark:text-surface-300 italic leading-tight">
-                                    High margin potential in Expansion regimes. Saturation optimal.
+                              <div className="p-4 bg-brand-50 dark:bg-brand-900/10 rounded-lg border border-brand-100 dark:border-brand-900/20">
+                                 <p className="text-sm font-medium text-surface-600 dark:text-surface-300 leading-relaxed italic">
+                                    Current market analysis suggests high margin potential in Expansion regimes. Retail saturation remains optimal.
                                  </p>
                               </div>
                            </div>
                         ) : (
-                           <div className="py-8 text-center opacity-20">
-                              <Layers size={30} className="mx-auto mb-2" />
-                              <p className="text-[9px] font-black">INDUSTRIAL ASSET</p>
+                           <div className="py-12 text-center opacity-30">
+                              <Layers size={48} className="mx-auto mb-4" />
+                              <p className="text-sm font-bold uppercase tracking-widest">Industrial Asset Only</p>
+                              <p className="text-xs mt-1">This node cannot be sold in retail stores.</p>
                            </div>
                         )}
                      </div>
@@ -180,13 +181,13 @@ export function EncyclopediaPage() {
                </div>
             </div>
          ) : (
-            <div className="h-full card border-dashed border-2 border-surface-200 dark:border-surface-800 flex flex-col items-center justify-center text-center p-12 group hover:border-brand-600/30 transition-all">
-               <div className="w-20 h-20 rounded-2xl bg-surface-50 dark:bg-surface-900 flex items-center justify-center text-brand-600 dark:text-brand-400 mb-6 shadow-xl group-hover:scale-110 transition-transform duration-700">
-                  <BookOpen size={40} />
+            <div className="h-full card border-dashed border-2 border-surface-200 dark:border-surface-800 flex flex-col items-center justify-center text-center p-16 group hover:border-brand-600/30 transition-all !shadow-none">
+               <div className="w-24 h-24 rounded-3xl bg-surface-100 dark:bg-surface-900 flex items-center justify-center text-brand-600 dark:text-brand-400 mb-8 shadow-sm group-hover:scale-105 transition-transform duration-500">
+                  <BookOpen size={48} />
                </div>
-               <h2 className="text-3xl font-black uppercase italic tracking-tighter text-surface-900 dark:text-white">Knowledge.<span className="text-brand-600">Matrix</span></h2>
-               <p className="mt-4 font-bold text-surface-400 max-w-xs uppercase tracking-widest text-[10px] leading-relaxed italic">
-                  Select an industrial or retail node from the global registry to initialize professional entity inspection.
+               <h2 className="text-4xl font-bold tracking-tight text-surface-900 dark:text-white italic">Entity.<span className="text-brand-600">Encyclopedia</span></h2>
+               <p className="mt-4 font-medium text-surface-500 max-w-sm text-sm leading-relaxed">
+                  Select an industrial resource or consumer good from the registry to initialize deep entity inspection.
                </p>
             </div>
          )}

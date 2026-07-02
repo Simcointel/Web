@@ -39,45 +39,45 @@ export function AlertsPage() {
   if (loadingOrError) return loadingOrError;
 
   return (
-    <div className="space-y-6 font-mono text-[10px]">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-surface-200 dark:border-surface-800 pb-4">
+    <div className="space-y-8 animate-in fade-in duration-300 text-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-200 dark:border-surface-800 pb-4">
         <div>
-          <h1 className="text-sm font-black uppercase tracking-widest">Event_Log_R{realm}</h1>
-          <p className="text-[10px] text-surface-500 mt-0.5 font-bold uppercase opacity-60">
-            {allEvents.length} Entries Recorded &middot; {connected ? "LINK_ACTIVE" : "POLLING"}
+          <h1 className="text-xl font-bold italic tracking-tight">Intelligence Event Log (R{realm})</h1>
+          <p className="text-sm text-surface-500 mt-1 font-medium">
+            {allEvents.length} events analyzed &middot; System link: <span className={connected ? "text-emerald-600 font-bold" : "text-surface-400 font-bold"}>{connected ? "ACTIVE" : "POLLING"}</span>
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
            <select
              value={severity}
              onChange={(e) => setSeverity(e.target.value)}
-             className="bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 text-[10px] font-black px-2 py-1 outline-none uppercase"
+             className="bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 text-sm font-bold px-3 py-1.5 rounded-lg outline-none"
            >
-             <option value="all">ALL_SEVERITIES</option>
-             <option value="critical">CRITICAL</option>
-             <option value="warning">WARNING</option>
-             <option value="info">INFO</option>
+             <option value="all">All Severities</option>
+             <option value="critical">Critical</option>
+             <option value="warning">Warning</option>
+             <option value="info">Information</option>
            </select>
            <select
              value={category}
              onChange={(e) => setCategory(e.target.value)}
-             className="bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 text-[10px] font-black px-2 py-1 outline-none uppercase"
+             className="bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 text-sm font-bold px-3 py-1.5 rounded-lg outline-none"
            >
-             <option value="all">ALL_CATEGORIES</option>
+             <option value="all">All Categories</option>
              {categories.map((c: any) => <option key={c} value={c}>{c}</option>)}
            </select>
         </div>
       </div>
 
-      <div className="border border-surface-200 dark:border-surface-800">
-        {filtered.length === 0 ? <EmptyState message="NO_MATCHING_EVENTS" /> :
-        <div className="divide-y divide-surface-100 dark:divide-surface-900">
+      <div className="card !shadow-none border-surface-200 dark:border-surface-800 overflow-hidden">
+        {filtered.length === 0 ? <EmptyState message="No events match your current filter." /> :
+        <div className="divide-y divide-surface-100 dark:divide-surface-800">
           {filtered.slice(0, 100).map((e: any) => (
-            <div key={e.id} className="px-4 py-2 hover:bg-surface-50 dark:hover:bg-surface-900 transition-colors flex items-center gap-6">
-               <span className={`w-2 h-2 shrink-0 ${e.se === 'critical' ? 'bg-red-600' : e.se === 'warning' ? 'bg-orange-500' : 'bg-blue-500'}`} />
-               <span className="opacity-40 shrink-0 w-24">{new Date(e.ts).toLocaleTimeString([], {hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'})}</span>
-               <span className="opacity-60 uppercase font-bold shrink-0 w-24 truncate">{e.ca}</span>
-               <span className="font-black uppercase truncate flex-1">{e.ti}</span>
+            <div key={e.id} className="px-6 py-4 hover:bg-surface-50 dark:hover:bg-surface-900 transition-colors flex items-center gap-8">
+               <div className={`w-3 h-3 rounded-full shrink-0 ${e.se === 'critical' ? 'bg-rose-600 shadow-[0_0_8px_rgba(225,29,72,0.4)]' : e.se === 'warning' ? 'bg-amber-500' : 'bg-brand-500'}`} />
+               <span className="text-surface-400 font-medium shrink-0 w-24">{new Date(e.ts).toLocaleTimeString([], {hour12: false, hour: '2-digit', minute: '2-digit'})}</span>
+               <span className="text-surface-500 font-bold uppercase text-xs shrink-0 w-32 truncate">{e.ca}</span>
+               <span className="font-bold text-surface-900 dark:text-white truncate flex-1 text-base italic">{e.ti}</span>
             </div>
           ))}
         </div>}

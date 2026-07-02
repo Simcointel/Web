@@ -278,32 +278,32 @@ export function CorporateSuitePage() {
   if (mLoading && !margins) return <LoadingState text="Booting Enterprise Suite..." />;
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500 max-w-[1440px] mx-auto pb-16 relative">
-       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 border-b border-surface-100 dark:border-surface-800/50 pb-2">
-          <div className="flex items-center gap-3">
-             <Link to="/" className="w-8 h-8 bg-surface-100 dark:bg-surface-800 rounded flex items-center justify-center text-surface-400 hover:text-brand-500 transition-colors">
-                <ArrowLeft size={16} />
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-24 relative text-sm">
+       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-surface-200 dark:border-surface-800 pb-4">
+          <div className="flex items-center gap-4">
+             <Link to="/" className="w-10 h-10 bg-surface-100 dark:bg-surface-800 rounded-lg flex items-center justify-center text-surface-500 hover:text-brand-600 transition-colors">
+                <ArrowLeft size={18} />
              </Link>
-             <div className="w-8 h-8 bg-brand-500 rounded flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
-                <Briefcase size={16} />
+             <div className="w-10 h-10 bg-brand-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+                <Briefcase size={18} />
              </div>
              <div>
-                <h1 className="text-sm font-black uppercase tracking-tight italic leading-tight">Sync.<span className="text-brand-600">Suite</span></h1>
+                <h1 className="text-xl font-bold leading-tight tracking-tight">Sync.<span className="text-brand-600">Suite</span></h1>
                 <div className="flex items-center gap-1.5">
-                   <div className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">REALM {realm}</div>
+                   <div className="text-xs font-bold text-emerald-600 uppercase">Realm {realm}</div>
                 </div>
              </div>
           </div>
 
-          <nav className="flex bg-surface-50 dark:bg-surface-900/50 p-0.5 rounded-md border border-surface-100 dark:border-surface-800">
-             <WorkstationTab active={state.activeTab === 'command'} onClick={() => setState({...state, activeTab: 'command'})} label="CMD" icon={LayoutDashboard} color="bg-brand-500" />
-             <WorkstationTab active={state.activeTab === 'ops'} onClick={() => setState({...state, activeTab: 'ops'})} label="OPS" icon={HardHat} color="bg-emerald-500" />
-             <WorkstationTab active={state.activeTab === 'exec'} onClick={() => setState({...state, activeTab: 'exec'})} label="EXEC" icon={Users} color="bg-amber-500" />
-             <WorkstationTab active={state.activeTab === 'finance'} onClick={() => setState({...state, activeTab: 'finance'})} label="FIN" icon={DollarSign} color="bg-violet-500" />
-             <WorkstationTab active={state.activeTab === 'logistics'} onClick={() => setState({...state, activeTab: 'logistics'})} label="LOG" icon={Ship} color="bg-indigo-500" />
-             <WorkstationTab active={state.activeTab === 'retail'} onClick={() => setState({...state, activeTab: 'retail'})} label="RET" icon={Target} color="bg-rose-500" />
-             <WorkstationTab active={state.activeTab === 'ledger'} onClick={() => setState({...state, activeTab: 'ledger'})} label="BOOK" icon={BarChart3} color="bg-teal-500" />
-             <WorkstationTab active={state.activeTab === 'risk'} onClick={() => setState({...state, activeTab: 'risk'})} label="RSK" icon={TrendingDown} color="bg-surface-500" />
+          <nav className="flex bg-surface-100 dark:bg-surface-900 p-1 rounded-lg border border-surface-200 dark:border-surface-800 overflow-x-auto scrollbar-hide">
+             <WorkstationTab active={state.activeTab === 'command'} onClick={() => setState({...state, activeTab: 'command'})} label="COMMAND" icon={LayoutDashboard} color="bg-brand-600" />
+             <WorkstationTab active={state.activeTab === 'ops'} onClick={() => setState({...state, activeTab: 'ops'})} label="OPS" icon={HardHat} color="bg-emerald-600" />
+             <WorkstationTab active={state.activeTab === 'exec'} onClick={() => setState({...state, activeTab: 'exec'})} label="EXEC" icon={Users} color="bg-amber-600" />
+             <WorkstationTab active={state.activeTab === 'finance'} onClick={() => setState({...state, activeTab: 'finance'})} label="FINANCE" icon={DollarSign} color="bg-violet-600" />
+             <WorkstationTab active={state.activeTab === 'logistics'} onClick={() => setState({...state, activeTab: 'logistics'})} label="LOGISTICS" icon={Ship} color="bg-indigo-600" />
+             <WorkstationTab active={state.activeTab === 'retail'} onClick={() => setState({...state, activeTab: 'retail'})} label="RETAIL" icon={Target} color="bg-rose-600" />
+             <WorkstationTab active={state.activeTab === 'ledger'} onClick={() => setState({...state, activeTab: 'ledger'})} label="LEDGER" icon={BarChart3} color="bg-teal-600" />
+             <WorkstationTab active={state.activeTab === 'risk'} onClick={() => setState({...state, activeTab: 'risk'})} label="RISK" icon={TrendingDown} color="bg-surface-600" />
           </nav>
        </div>
 
@@ -312,19 +312,19 @@ export function CorporateSuitePage() {
        </main>
 
        {/* Control Bar */}
-       <div className="fixed bottom-2 left-1/2 -translate-x-1/2 w-full max-w-2xl px-2 z-[90]">
-          <div className="bg-surface-900/95 dark:bg-white text-white dark:text-surface-900 backdrop-blur-md p-1.5 rounded-lg shadow-2xl flex items-center justify-between border border-white/5 dark:border-surface-100">
-             <div className="flex gap-6 px-3 border-r border-white/10 dark:border-surface-100">
-                <GlobalMetric label="VALUE" value={`$${(core.totalValuation/1_000_000).toFixed(2)}M`} />
-                <GlobalMetric label="YIELD" value={`$${(core.netDaily/1000).toFixed(1)}K`} />
-                <GlobalMetric label="EFF" value={`${((1 - core.actualAO)*100).toFixed(0)}%`} />
+       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4 z-[90]">
+          <div className="bg-white dark:bg-surface-900 text-surface-900 dark:text-white p-2.5 rounded-xl shadow-2xl flex items-center justify-between border border-surface-200 dark:border-surface-800">
+             <div className="flex gap-8 px-6 border-r border-surface-200 dark:border-surface-800">
+                <GlobalMetric label="Total Valuation" value={`$${(core.totalValuation/1_000_000).toFixed(2)}M`} />
+                <GlobalMetric label="Net Daily Yield" value={`$${(core.netDaily/1000).toFixed(1)}K`} />
+                <GlobalMetric label="Map Efficiency" value={`${((1 - core.actualAO)*100).toFixed(0)}%`} />
              </div>
-             <div className="flex items-center gap-2 px-3">
-                <button onClick={toggleTheme} className="w-8 h-8 rounded border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
-                   {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+             <div className="flex items-center gap-3 px-4">
+                <button onClick={toggleTheme} title="Toggle Theme" className="w-10 h-10 rounded-lg border border-surface-200 dark:border-surface-700 flex items-center justify-center hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors">
+                   {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
-                <button onClick={() => fileInputRef.current?.click()} className="btn !bg-transparent !text-current border !border-white/20 dark:!border-surface-200 !py-1"><Upload size={12} className="mr-1"/> Sync</button>
-                <button onClick={() => { const data = JSON.stringify(state); const blob = new Blob([data], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'simco_intel_backup.json'; a.click(); }} className="btn !bg-brand-500 !text-white !py-1"><Download size={12} className="mr-1"/> Backup</button>
+                <button onClick={() => fileInputRef.current?.click()} className="btn !bg-white dark:!bg-surface-800 !text-current border border-surface-300 dark:border-surface-700 !px-4 !py-2"><Upload size={14} className="mr-2"/> Sync</button>
+                <button onClick={() => { const data = JSON.stringify(state); const blob = new Blob([data], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'simco_intel_backup.json'; a.click(); }} className="btn !bg-brand-600 !text-white !px-4 !py-2 shadow-sm font-bold"><Download size={14} className="mr-2"/> Backup</button>
                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".json,.csv" />
              </div>
           </div>
@@ -368,68 +368,67 @@ function LedgerView({ state }: any) {
 function CommandView({ core, phase, margins }: any) {
   const marketAlerts = useMemo(() => {
     if (!margins?.resources) return [];
-    return (margins.resources as any[]).filter(r => Math.abs(r.marginDelta || 0) > 5).slice(0, 4);
+    return (margins.resources as any[]).filter(r => Math.abs(r.marginDelta || 0) > 5).slice(0, 5);
   }, [margins]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-       <div className="md:col-span-8 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-             <KPICard label="STOCK" value={`$${(core.inventoryValue/1000).toFixed(1)}K`} sub="Current Warehouse" icon={Package} />
-             <KPICard label="ASSETS" value={`$${(core.mapValue/1_000_000).toFixed(2)}M`} sub={`${core.totalLevels} Active Lvls`} icon={Building2} />
-             <KPICard label="REGIME" value={phase.toUpperCase()} sub="Global Modifier" icon={Globe} />
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+       <div className="md:col-span-8 space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+             <KPICard label="Warehouse Value" value={`$${(core.inventoryValue/1000).toFixed(1)}K`} sub="Current Inventory" icon={Package} />
+             <KPICard label="Asset Valuation" value={`$${(core.mapValue/1_000_000).toFixed(2)}M`} sub={`${core.totalLevels} Facility Levels`} icon={Building2} />
+             <KPICard label="Market Regime" value={phase} sub="Global Environment" icon={Globe} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-             <div className="card">
-                <div className="px-3 py-1.5 border-b border-surface-50 dark:border-surface-800/50 flex items-center justify-between">
-                   <span className="text-[8px] font-black uppercase tracking-[0.2em] text-surface-400">VOLATILITY</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+             <div className="card !shadow-none border-surface-200 dark:border-surface-800 overflow-hidden">
+                <div className="px-6 py-4 border-b border-surface-100 dark:border-surface-800 bg-surface-50 dark:bg-surface-900">
+                   <h3 className="text-sm font-bold uppercase text-surface-500">Market Volatility</h3>
                 </div>
-                <div className="p-1 space-y-0.5">
+                <div className="divide-y divide-surface-50 dark:divide-surface-800">
                    {marketAlerts.map((r: any, i: number) => (
-                      <div key={i} className="flex justify-between items-center p-1.5 hover:bg-brand-50 dark:hover:bg-brand-900/10 rounded transition-all">
-                         <span className="text-[10px] font-black uppercase tracking-tight truncate w-24">{r.name}</span>
-                         <div className="flex gap-3 items-center">
-                            <span className="text-[9px] font-mono font-bold text-surface-400">${r.outputVwap.toFixed(2)}</span>
-                            <span className={`text-[9px] font-black tabular-nums ${r.marginDelta > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                               {r.marginDelta > 0 ? '▲' : '▼'}{Math.abs(r.marginDelta).toFixed(0)}%
+                      <div key={i} className="flex justify-between items-center px-6 py-3 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-all">
+                         <span className="font-bold text-surface-800 dark:text-surface-200">{r.name}</span>
+                         <div className="flex gap-4 items-center">
+                            <span className="font-medium text-surface-400">${r.outputVwap.toFixed(2)}</span>
+                            <span className={`font-bold tabular-nums ${r.marginDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                               {r.marginDelta > 0 ? '↑' : '↓'} {Math.abs(r.marginDelta).toFixed(1)}%
                             </span>
                          </div>
                       </div>
                    ))}
                 </div>
              </div>
-             <div className="card p-4 flex flex-col justify-center space-y-3">
-                <div className="flex justify-between items-end border-b border-surface-50 dark:border-surface-800 pb-2">
-                   <span className="text-[8px] font-black text-surface-400 uppercase tracking-widest">30D GROWTH</span>
-                   <span className="text-xl font-black italic tracking-tighter text-brand-500">+$${(core.netDaily * 30 / 1_000_000).toFixed(2)}M</span>
+             <div className="card p-6 flex flex-col justify-center space-y-6 !shadow-none border-surface-200 dark:border-surface-800">
+                <div className="flex justify-between items-end border-b border-surface-100 dark:border-surface-800 pb-4">
+                   <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">30D Forecast</span>
+                   <span className="text-2xl font-bold text-brand-600">+$${(core.netDaily * 30 / 1_000_000).toFixed(2)}M</span>
                 </div>
                 <div className="flex justify-between items-end">
-                   <span className="text-[8px] font-black text-surface-400 uppercase tracking-widest">7D DELTA</span>
-                   <span className="text-lg font-black italic tracking-tighter text-emerald-500">+$${(core.netDaily * 7 / 1000).toFixed(1)}K</span>
+                   <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">7D Projection</span>
+                   <span className="text-xl font-bold text-emerald-600">+$${(core.netDaily * 7 / 1000).toFixed(1)}K</span>
                 </div>
              </div>
           </div>
        </div>
 
-       <div className="md:col-span-4 space-y-3">
-          <div className="card bg-brand-500 text-white p-4 relative overflow-hidden group">
-             <Target size={80} className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-1000" />
-             <h3 className="text-[9px] font-black uppercase tracking-[0.2em] mb-4 text-white/80">STRATEGIC SYNC</h3>
-             <div className="space-y-2">
-                <CheckItem label="C-SUITE" active={core.effMan > 0} light />
-                <CheckItem label="STOCK" active={core.inventoryValue > 0} light />
-                <CheckItem label="DEBT" active={core.dailyInterest > 0} light />
-                <CheckItem label="ECON" active={true} light />
+       <div className="md:col-span-4 space-y-6">
+          <div className="card bg-brand-600 text-white p-6 !shadow-none border-none">
+             <h3 className="text-sm font-bold uppercase tracking-widest mb-6 opacity-80">Strategic Integration</h3>
+             <div className="space-y-4">
+                <CheckItem label="EXECUTIVE BOARD" active={core.effMan > 0} light />
+                <CheckItem label="WAREHOUSE SYNC" active={core.inventoryValue > 0} light />
+                <CheckItem label="DEBT MANAGEMENT" active={core.dailyInterest > 0} light />
+                <CheckItem label="ECONOMY SYNC" active={true} light />
              </div>
           </div>
-          <div className="card p-4">
-             <div className="flex items-center gap-2 mb-2">
-                <Clock size={14} className="text-brand-500" />
-                <h3 className="text-[9px] font-black uppercase tracking-widest text-surface-400">CYCLE</h3>
+          <div className="card p-6 border-surface-200 dark:border-surface-800 !shadow-none">
+             <div className="flex items-center gap-3 mb-3">
+                <Clock size={20} className="text-brand-600" />
+                <h3 className="text-sm font-bold uppercase text-surface-500">Economic Cycle</h3>
              </div>
-             <p className="text-[10px] font-bold text-surface-500 leading-tight uppercase">
-                Stability at 84%. Forecast: 2.4 days to transition.
+             <p className="text-base font-bold text-surface-800 dark:text-surface-200">
+                Phase stability is high (84%). Expected transition in 2.4 days.
              </p>
           </div>
        </div>
@@ -452,120 +451,120 @@ function OperationsView({ state, setState, core }: any) {
   }, [state.map]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-       <div className="md:col-span-5 space-y-3">
-          <Section title="FACILITIES" icon={Building2} color="text-emerald-500">
-             <button onClick={() => setState({...state, map: [...state.map, { id: BUILDINGS[0].id, level: 1 }]})} className="w-full btn !bg-emerald-500 text-white !py-2 mb-3 shadow-lg shadow-emerald-500/20 uppercase font-black text-[9px]">+ REGISTER</button>
-             <div className="max-h-[400px] overflow-y-auto space-y-1.5 pr-1 scrollbar-hide">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+       <div className="md:col-span-5 space-y-6">
+          <Section title="Facility Management" icon={Building2} color="text-emerald-600">
+             <button onClick={() => setState({...state, map: [...state.map, { id: BUILDINGS[0].id, level: 1 }]})} className="w-full btn !bg-emerald-600 text-white !py-3 mb-4 shadow-sm font-bold">+ Register New Building</button>
+             <div className="max-h-[500px] overflow-y-auto space-y-2 pr-2 scrollbar-hide">
                 {state.map.map((m: any, i: number) => (
-                   <div key={i} className="card p-2 flex items-center gap-3 hover:border-emerald-500/50 transition-all border-l-2 border-emerald-500">
+                   <div key={i} className="card p-3 flex items-center gap-4 hover:border-emerald-600/30 transition-all border-l-4 border-emerald-600 !shadow-none border-surface-200 dark:border-surface-800">
                       <div className="flex-1">
-                         <select value={m.id} onChange={(e) => { const n = [...state.map]; n[i].id = e.target.value; setState({...state, map: n}); }} className="bg-transparent border-none p-0 text-[10px] font-black uppercase w-full outline-none truncate">
+                         <select value={m.id} onChange={(e) => { const n = [...state.map]; n[i].id = e.target.value; setState({...state, map: n}); }} className="bg-transparent border-none p-0 font-bold uppercase w-full outline-none text-sm">
                             {BUILDINGS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                          </select>
-                         <p className="text-[8px] font-black text-surface-400 uppercase tracking-tighter mt-0.5">ID: {i+1}</p>
+                         <p className="text-xs text-surface-400 font-medium mt-1">Instance Ref: {i+1}</p>
                       </div>
-                      <div className="flex items-center gap-1.5 bg-surface-50 dark:bg-surface-950 px-2 py-1 rounded">
-                         <span className="text-[8px] font-black opacity-30">LVL</span>
-                         <input type="number" value={m.level} onChange={(e) => { const n = [...state.map]; n[i].level = Number(e.target.value); setState({...state, map: n}); }} className="w-6 bg-transparent border-none p-0 text-xs font-black text-center outline-none" />
+                      <div className="flex items-center gap-2 bg-surface-100 dark:bg-surface-900 px-3 py-1.5 rounded-lg border border-surface-200 dark:border-surface-800">
+                         <span className="text-[10px] font-bold text-surface-400 uppercase">LVL</span>
+                         <input type="number" value={m.level} onChange={(e) => { const n = [...state.map]; n[i].level = Number(e.target.value); setState({...state, map: n}); }} className="w-8 bg-transparent border-none p-0 text-sm font-bold text-center outline-none" />
                       </div>
-                      <button onClick={() => setState({...state, map: state.map.filter((_: any, idx: number) => idx !== i)})} className="p-1 text-surface-300 hover:text-rose-500 transition-colors"><Trash2 size={14} /></button>
+                      <button onClick={() => setState({...state, map: state.map.filter((_: any, idx: number) => idx !== i)})} className="p-2 text-surface-300 hover:text-rose-600 transition-colors"><Trash2 size={18} /></button>
                    </div>
                 ))}
              </div>
           </Section>
        </div>
-       <div className="md:col-span-7 space-y-3">
-          <Section title="LOGISTICS" icon={HardHat} color="text-emerald-500">
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                <div className="card bg-emerald-500 text-white p-4 relative overflow-hidden">
-                   <HardHat size={60} className="absolute -right-4 -bottom-4 opacity-10" />
-                   <h3 className="text-[9px] font-black uppercase tracking-widest mb-4 text-emerald-100">CASH REQ</h3>
-                   <span className="text-3xl font-black italic tracking-tighter tabular-nums leading-none">${(constructionTotals[0]/1000).toFixed(1)}K</span>
+       <div className="md:col-span-7 space-y-6">
+          <Section title="Construction Logistics" icon={HardHat} color="text-emerald-600">
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="card bg-emerald-600 text-white p-6 relative overflow-hidden !shadow-none border-none">
+                   <HardHat size={80} className="absolute -right-6 -bottom-6 opacity-10" />
+                   <h3 className="text-xs font-bold uppercase tracking-widest mb-6 opacity-80">Total Capital Required</h3>
+                   <span className="text-4xl font-bold tabular-nums leading-none">${(constructionTotals[0]/1000).toFixed(1)}K</span>
                 </div>
-                <div className="card p-3 space-y-2">
-                   {/* Simplified resource list */}
-                   <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                <div className="card p-6 space-y-3 !shadow-none border-surface-200 dark:border-surface-800">
+                   <div className="space-y-2">
                       {[101, 102, 108, 111, 110].map(id => (
-                        <div key={id} className="flex justify-between items-center text-[9px] border-b border-surface-50 dark:border-surface-800 pb-0.5 last:border-0">
-                           <span className="font-black text-surface-400 truncate w-16">{CONSTRUCTION_MATERIALS.find(m => m.id === id)?.name}</span>
-                           <span className="font-black tabular-nums">{constructionTotals[id]?.toLocaleString()}</span>
+                        <div key={id} className="flex justify-between items-center text-sm border-b border-surface-100 dark:border-surface-800 pb-2 last:border-0">
+                           <span className="font-medium text-surface-500">{CONSTRUCTION_MATERIALS.find(m => m.id === id)?.name}</span>
+                           <span className="font-bold tabular-nums">{constructionTotals[id]?.toLocaleString()}</span>
                         </div>
                       ))}
                    </div>
                 </div>
              </div>
           </Section>
-          <Section title="EXECUTIVE_OUTLOOK" icon={Zap} color="text-emerald-500">
-             <div className="card p-4 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                   <div>
-                      <span className="text-[8px] font-black text-surface-400 uppercase block">PROD_BONUS</span>
-                      <div className="flex items-center gap-2">
-                         <input type="number" value={state.settings.prodBonus} onChange={(e) => setState({...state, settings: {...state.settings, prodBonus: Number(e.target.value)}})} className="w-12 bg-transparent font-black text-emerald-600 outline-none" />
-                         <span className="text-emerald-600 font-black">%</span>
+
+          <Section title="Economic Outlook & Scaling" icon={Zap} color="text-emerald-600">
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="card p-6 space-y-6 !shadow-none border-surface-200 dark:border-surface-800">
+                   <div className="grid grid-cols-2 gap-6">
+                      <div>
+                         <span className="text-xs font-bold text-surface-400 uppercase block mb-1">Production Bonus</span>
+                         <div className="flex items-center gap-1">
+                            <input type="number" value={state.settings.prodBonus} onChange={(e) => setState({...state, settings: {...state.settings, prodBonus: Number(e.target.value)}})} className="w-16 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded px-2 py-1 font-bold text-emerald-600 outline-none" />
+                            <span className="text-emerald-600 font-bold">%</span>
+                         </div>
+                      </div>
+                      <div>
+                         <span className="text-xs font-bold text-surface-400 uppercase block mb-1">Admin Overhead</span>
+                         <span className="text-xl font-bold text-rose-600 block mt-1">{(core.actualAO*100).toFixed(1)}%</span>
                       </div>
                    </div>
-                   <div>
-                      <span className="text-[8px] font-black text-surface-400 uppercase block">ADMIN_COST</span>
-                      <span className="text-xl font-black text-rose-600">{(core.actualAO*100).toFixed(1)}%</span>
+                   <div className="grid grid-cols-2 gap-6 pt-4 border-t border-surface-100 dark:border-surface-800">
+                      <div>
+                         <span className="text-xs font-bold text-surface-400 uppercase block mb-1">Resource Abundance</span>
+                         <div className="flex items-center gap-1">
+                            <input type="number" value={state.settings.abundance} onChange={(e) => setState({...state, settings: {...state.settings, abundance: Number(e.target.value)}})} className="w-16 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded px-2 py-1 font-bold text-brand-600 outline-none" />
+                            <span className="text-brand-600 font-bold">%</span>
+                         </div>
+                      </div>
+                      <div>
+                         <span className="text-xs font-bold text-surface-400 uppercase block mb-1">Research Bonus</span>
+                         <div className="flex items-center gap-1">
+                            <input type="number" value={state.settings.researchBonus} onChange={(e) => setState({...state, settings: {...state.settings, researchBonus: Number(e.target.value)}})} className="w-16 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded px-2 py-1 font-bold text-amber-600 outline-none" />
+                            <span className="text-amber-600 font-bold">%</span>
+                         </div>
+                      </div>
                    </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-surface-50 dark:border-surface-800">
-                   <div>
-                      <span className="text-[8px] font-black text-surface-400 uppercase block">ABUNDANCE</span>
-                      <div className="flex items-center gap-2">
-                         <input type="number" value={state.settings.abundance} onChange={(e) => setState({...state, settings: {...state.settings, abundance: Number(e.target.value)}})} className="w-12 bg-transparent font-black text-brand-600 outline-none" />
-                         <span className="text-brand-600 font-black">%</span>
+
+                <div className="card p-6 space-y-6 !shadow-none border-surface-200 dark:border-surface-800">
+                   <div className="flex justify-between items-end">
+                      <div>
+                         <p className="text-xs font-bold text-emerald-600 uppercase mb-1">Scaling Simulation</p>
+                         <p className="text-3xl font-bold">+{state.settings.whatIfLevel} <span className="text-sm text-surface-400">Levels</span></p>
+                      </div>
+                      <div className="text-right">
+                         <p className="text-xs font-bold text-rose-500 uppercase mb-1">Projected AO</p>
+                         <p className="text-xl font-bold tabular-nums text-rose-600">{(core.actualAO*100).toFixed(1)}%</p>
                       </div>
                    </div>
-                   <div>
-                      <span className="text-[8px] font-black text-surface-400 uppercase block">RESEARCH</span>
-                      <div className="flex items-center gap-2">
-                         <input type="number" value={state.settings.researchBonus} onChange={(e) => setState({...state, settings: {...state.settings, researchBonus: Number(e.target.value)}})} className="w-12 bg-transparent font-black text-amber-600 outline-none" />
-                         <span className="text-amber-600 font-black">%</span>
-                      </div>
-                   </div>
+                   <input type="range" min="0" max="500" step="5" value={state.settings.whatIfLevel} onChange={(e) => setState({...state, settings: {...state.settings, whatIfLevel: Number(e.target.value)}})} className="w-full h-2 bg-surface-100 dark:bg-surface-800 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
                 </div>
              </div>
           </Section>
 
-          <Section title="PROFIT_CONTRIBUTION" icon={TrendingUp} color="text-emerald-500">
-             <div className="card p-2">
-                <table className="w-full text-[9px] font-black uppercase">
+          <Section title="Profit Contribution Breakdown" icon={TrendingUp} color="text-emerald-600">
+             <div className="card overflow-hidden !shadow-none border-surface-200 dark:border-surface-800">
+                <table className="w-full text-sm">
                    <thead>
-                      <tr className="text-surface-400 border-b border-surface-50 dark:border-surface-800">
-                         <th className="text-left py-1">BUILDING</th>
-                         <th className="text-center py-1">LVL</th>
-                         <th className="text-right py-1">NET/H</th>
+                      <tr className="text-surface-500 bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800">
+                         <th className="text-left px-6 py-3 font-bold uppercase text-xs">Building Type</th>
+                         <th className="text-center px-6 py-3 font-bold uppercase text-xs">Lvl</th>
+                         <th className="text-right px-6 py-3 font-bold uppercase text-xs">Est. Profit/H</th>
                       </tr>
                    </thead>
-                   <tbody>
+                   <tbody className="divide-y divide-surface-50 dark:divide-surface-800">
                       {core.buildingProfits.map((p: any, i: number) => (
-                         <tr key={i} className="border-b border-surface-50 dark:border-surface-800 last:border-0">
-                            <td className="py-1.5">{p.name}</td>
-                            <td className="py-1.5 text-center opacity-40">{p.level}</td>
-                            <td className={`py-1.5 text-right ${p.profit > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>${p.profit.toFixed(0)}</td>
+                         <tr key={i} className="hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors">
+                            <td className="px-6 py-4 font-medium">{p.name}</td>
+                            <td className="px-6 py-4 text-center text-surface-400 font-bold">{p.level}</td>
+                            <td className={`px-6 py-4 text-right font-bold ${p.profit > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>${p.profit.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
                          </tr>
                       ))}
                    </tbody>
                 </table>
-             </div>
-          </Section>
-
-          <Section title="SCALING_SIMULATOR" icon={Layers} color="text-emerald-500">
-             <div className="card p-4 space-y-4">
-                <div className="flex justify-between items-end">
-                   <div>
-                      <p className="text-[9px] font-black text-emerald-500 uppercase leading-none mb-1">FUTURE_CAPACITY</p>
-                      <p className="text-3xl font-black italic tracking-tighter">+{state.settings.whatIfLevel} <span className="text-sm opacity-20">LVLS</span></p>
-                   </div>
-                   <div className="text-right">
-                      <p className="text-[9px] font-black text-rose-500 uppercase leading-none mb-1">PROJECTED_AO</p>
-                      <p className="text-xl font-black tabular-nums text-rose-600">{(core.actualAO*100).toFixed(1)}%</p>
-                   </div>
-                </div>
-                <input type="range" min="0" max="500" step="5" value={state.settings.whatIfLevel} onChange={(e) => setState({...state, settings: {...state.settings, whatIfLevel: Number(e.target.value)}})} className="w-full h-1.5 bg-surface-100 dark:bg-surface-800 rounded-full appearance-none cursor-pointer accent-emerald-500" />
              </div>
           </Section>
        </div>
@@ -593,46 +592,47 @@ function ExecutiveView({ state, setState, core }: any) {
   };
 
   return (
-    <div className="space-y-3">
-       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <SkillNode label="MAN" value={core.effMan} icon={Zap} sub="AO" color="text-amber-500" />
-          <SkillNode label="ACC" value={core.effAcc} icon={DollarSign} sub="TAX" color="text-emerald-500" />
-          <SkillNode label="COM" value={core.effCom} icon={Globe} sub="SPEED" color="text-indigo-500" />
-          <SkillNode label="SCI" value={core.effSci} icon={Microscope} sub="PATENT" color="text-rose-500" />
+    <div className="space-y-6">
+       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <SkillNode label="Management" value={core.effMan} icon={Zap} sub="AO Reduction" color="text-amber-600" />
+          <SkillNode label="Accounting" value={core.effAcc} icon={DollarSign} sub="Tax Threshold" color="text-emerald-600" />
+          <SkillNode label="Communication" value={core.effCom} icon={Globe} sub="Sales Speed" color="text-indigo-600" />
+          <SkillNode label="Science" value={core.effSci} icon={Microscope} sub="Patent Odds" color="text-rose-600" />
        </div>
 
-       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 pb-8">
-          <div className="lg:col-span-8 space-y-2">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <ExecCard role="COO" data={state.board.coo} onChange={(d: any) => setState({...state, board: {...state.board, coo: d}})} />
-                <ExecCard role="COO APP" data={state.board.cooApp} onChange={(d: any) => setState({...state, board: {...state.board, cooApp: d}})} isApp />
-                <ExecCard role="CFO" data={state.board.cfo} onChange={(d: any) => setState({...state, board: {...state.board, cfo: d}})} />
-                <ExecCard role="CFO APP" data={state.board.cfoApp} onChange={(d: any) => setState({...state, board: {...state.board, cfoApp: d}})} isApp />
-                <ExecCard role="CMO" data={state.board.cmo} onChange={(d: any) => setState({...state, board: {...state.board, cmo: d}})} />
-                <ExecCard role="CMO APP" data={state.board.cmoApp} onChange={(d: any) => setState({...state, board: {...state.board, cmoApp: d}})} isApp />
-                <ExecCard role="CTO" data={state.board.cto} onChange={(d: any) => setState({...state, board: {...state.board, cto: d}})} />
-                <ExecCard role="CTO APP" data={state.board.ctoApp} onChange={(d: any) => setState({...state, board: {...state.board, ctoApp: d}})} isApp />
+       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-12">
+          <div className="lg:col-span-8 space-y-4">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ExecCard role="Chief Operating Officer" data={state.board.coo} onChange={(d: any) => setState({...state, board: {...state.board, coo: d}})} />
+                <ExecCard role="COO Apprentice" data={state.board.cooApp} onChange={(d: any) => setState({...state, board: {...state.board, cooApp: d}})} isApp />
+                <ExecCard role="Chief Financial Officer" data={state.board.cfo} onChange={(d: any) => setState({...state, board: {...state.board, cfo: d}})} />
+                <ExecCard role="CFO Apprentice" data={state.board.cfoApp} onChange={(d: any) => setState({...state, board: {...state.board, cfoApp: d}})} isApp />
+                <ExecCard role="Chief Marketing Officer" data={state.board.cmo} onChange={(d: any) => setState({...state, board: {...state.board, cmo: d}})} />
+                <ExecCard role="CMO Apprentice" data={state.board.cmoApp} onChange={(d: any) => setState({...state, board: {...state.board, cmoApp: d}})} isApp />
+                <ExecCard role="Chief Technical Officer" data={state.board.cto} onChange={(d: any) => setState({...state, board: {...state.board, cto: d}})} />
+                <ExecCard role="CTO Apprentice" data={state.board.ctoApp} onChange={(d: any) => setState({...state, board: {...state.board, ctoApp: d}})} isApp />
              </div>
           </div>
-          <div className="lg:col-span-4 space-y-3">
-             <div className="card p-4 border-t-2 border-amber-500 bg-amber-500/5">
-                <h3 className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-2">QUICK SYNC</h3>
-                <textarea value={pasteData} onChange={(e) => setPasteData(e.target.value)} className="input !h-24 !bg-white dark:!bg-surface-950 font-mono text-[9px] mb-2" placeholder="COO Management: 20..." />
-                <button onClick={handlePaste} className="w-full btn !bg-amber-500 text-white !py-2 font-black uppercase">SYNC BOARD</button>
+          <div className="lg:col-span-4 space-y-6">
+             <div className="card p-6 border-surface-200 dark:border-surface-800 !shadow-none">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-amber-600 mb-4">Board Intelligence Sync</h3>
+                <p className="text-xs text-surface-500 mb-4 font-medium leading-relaxed">Paste the raw text from your Executives page to instantly update skills.</p>
+                <textarea value={pasteData} onChange={(e) => setPasteData(e.target.value)} className="w-full h-32 p-3 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-lg text-sm focus:ring-1 focus:ring-amber-500 outline-none mb-4" placeholder="COO Management: 20..." />
+                <button onClick={handlePaste} className="w-full btn !bg-amber-600 text-white !py-3 font-bold uppercase text-sm">Apply Sync</button>
              </div>
 
-             <div className="card p-3 space-y-2">
-                <div className="flex items-center gap-2 mb-2">
-                   <Calculator size={14} className="text-amber-500" />
-                   <h3 className="text-[9px] font-black uppercase text-surface-400">R&D</h3>
+             <div className="card p-6 space-y-6 border-surface-200 dark:border-surface-800 !shadow-none">
+                <div className="flex items-center gap-2">
+                   <Calculator size={18} className="text-amber-600" />
+                   <h3 className="text-sm font-bold uppercase text-surface-500">R&D Impact Analysis</h3>
                 </div>
-                <div className="space-y-1 text-[10px]">
-                   <ForecastLine label="PATENT" value={`${(core.patentProb*100).toFixed(1)}%`} />
-                   <ForecastLine label="SCI SPEED" value={`${(core.effSci * 2).toFixed(0)}%`} />
-                   <ForecastLine label="SALES SPEED" value={`+${(core.salesSpeedBonus * 100).toFixed(1)}%`} />
-                   <div className="flex justify-between items-center pt-1">
-                      <span className="font-black text-surface-400">TARGET Q</span>
-                      <input type="number" value={state.settings.patentTargetQuality} onChange={(e) => setState({...state, settings: {...state.settings, patentTargetQuality: Number(e.target.value)}})} className="w-8 bg-surface-50 dark:bg-surface-950 text-right font-black outline-none rounded" />
+                <div className="space-y-4 text-sm">
+                   <ForecastLine label="Patent Probability" value={`${(core.patentProb*100).toFixed(1)}%`} />
+                   <ForecastLine label="Research Speed" value={`${(core.effSci * 2).toFixed(0)}%`} />
+                   <ForecastLine label="Retail Sales Bonus" value={`+${(core.salesSpeedBonus * 100).toFixed(1)}%`} />
+                   <div className="flex justify-between items-center pt-2 border-t border-surface-50 dark:border-surface-800">
+                      <span className="font-bold text-surface-500 uppercase text-xs">Target Quality</span>
+                      <input type="number" value={state.settings.patentTargetQuality} onChange={(e) => setState({...state, settings: {...state.settings, patentTargetQuality: Number(e.target.value)}})} className="w-12 bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 text-right font-bold py-1 px-2 rounded-md outline-none focus:ring-1 focus:ring-amber-500" />
                    </div>
                 </div>
              </div>
@@ -644,42 +644,42 @@ function ExecutiveView({ state, setState, core }: any) {
 
 function FinanceView({ state, setState, core }: any) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-       <div className="md:col-span-4 space-y-3">
-          <Section title="FISCAL" icon={Wallet} color="text-violet-500">
-             <div className="card p-4 space-y-4 border-l-2 border-violet-500">
-                <div className="space-y-1">
-                   <label className="text-[9px] font-black uppercase text-surface-400">PROFIT/DAY</label>
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+       <div className="md:col-span-4 space-y-6">
+          <Section title="Fiscal Parameters" icon={Wallet} color="text-violet-600">
+             <div className="card p-6 space-y-6 border-l-4 border-violet-600 !shadow-none border-surface-200 dark:border-surface-800">
+                <div className="space-y-2">
+                   <label className="text-xs font-bold uppercase text-surface-500">Estimated Daily Profit</label>
                    <div className="relative">
-                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-violet-500 font-black text-xs">$</span>
-                      <input type="number" value={state.settings.estDailyProfit} onChange={(e) => setState({...state, settings: {...state.settings, estDailyProfit: Number(e.target.value)}})} className="input !text-lg !pl-5 !bg-surface-50 dark:!bg-surface-950 border-none" />
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-violet-600 font-bold text-lg">$</span>
+                      <input type="number" value={state.settings.estDailyProfit} onChange={(e) => setState({...state, settings: {...state.settings, estDailyProfit: Number(e.target.value)}})} className="w-full bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg py-3 pl-8 pr-4 text-xl font-bold outline-none focus:ring-1 focus:ring-violet-600" />
                    </div>
                 </div>
-                <div className="space-y-1">
-                   <label className="text-[9px] font-black uppercase text-surface-400">LIABILITIES</label>
+                <div className="space-y-2">
+                   <label className="text-xs font-bold uppercase text-surface-500">Total Liabilities (Debt)</label>
                    <div className="relative">
-                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-rose-500 font-black text-xs">$</span>
-                      <input type="number" value={state.debt.current} onChange={(e) => setState({...state, debt: {...state.debt, current: Number(e.target.value)}})} className="input !text-lg !pl-5 !bg-surface-50 dark:!bg-surface-950 border-none !text-rose-600" />
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-rose-600 font-bold text-lg">$</span>
+                      <input type="number" value={state.debt.current} onChange={(e) => setState({...state, debt: {...state.debt, current: Number(e.target.value)}})} className="w-full bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg py-3 pl-8 pr-4 text-xl font-bold !text-rose-600 outline-none focus:ring-1 focus:ring-rose-600" />
                    </div>
                 </div>
              </div>
           </Section>
        </div>
-       <div className="md:col-span-8 grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <div className="card p-4 space-y-4">
-             <h3 className="text-[9px] font-black uppercase text-violet-500">TAX ENGINE</h3>
-             <div className="space-y-2 text-xs">
-                <ForecastLine label="SAFETY" value={`$${(core.taxThreshold/1_000_000).toFixed(2)}M`} />
-                <ForecastLine label="THRESHOLD" value={`$${(core.taxThreshold/30/1000).toFixed(1)}K`} />
-                <ForecastLine label="DAILY TAX" value={`-$${(core.estimatedDailyTax/1000).toFixed(1)}K`} red />
+       <div className="md:col-span-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="card p-6 space-y-6 !shadow-none border-surface-200 dark:border-surface-800">
+             <h3 className="text-sm font-bold uppercase text-violet-600">Tax Engine Analysis</h3>
+             <div className="space-y-4">
+                <ForecastLine label="Annual Tax-Free Limit" value={`$${(core.taxThreshold/1_000_000).toFixed(2)}M`} />
+                <ForecastLine label="Daily Threshold" value={`$${(core.taxThreshold/30/1000).toFixed(1)}K`} />
+                <ForecastLine label="Estimated Daily Tax" value={`-$${(core.estimatedDailyTax/1000).toFixed(1)}K`} red />
              </div>
           </div>
-          <div className="card p-4 space-y-4">
-             <h3 className="text-[9px] font-black uppercase text-violet-500">MARGINS</h3>
-             <div className="space-y-2 text-xs">
-                <ForecastLine label="WAGES" value={`-$${(core.dailyWages * core.actualAO / 1000).toFixed(1)}K`} red />
-                <ForecastLine label="DEBT" value={`-$${(core.dailyInterest / 1000).toFixed(1)}K`} red />
-                <ForecastLine label="NET YIELD" value={`+$${(core.netDaily/1000).toFixed(1)}K`} green />
+          <div className="card p-6 space-y-6 !shadow-none border-surface-200 dark:border-surface-800">
+             <h3 className="text-sm font-bold uppercase text-violet-600">Net Margin Breakdown</h3>
+             <div className="space-y-4">
+                <ForecastLine label="AO Wage Impact" value={`-$${(core.dailyWages * core.actualAO / 1000).toFixed(1)}K`} red />
+                <ForecastLine label="Daily Interest Expense" value={`-$${(core.dailyInterest / 1000).toFixed(1)}K`} red />
+                <ForecastLine label="Total Net Daily Yield" value={`+$${(core.netDaily/1000).toFixed(1)}K`} green />
              </div>
           </div>
        </div>
@@ -692,21 +692,21 @@ function LogisticsView({ state, setState, core }: any) {
   const filteredRes = useMemo(() => RESOURCES.filter(r => r.name.toLowerCase().includes(q.toLowerCase())), [q]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
-       <div className="lg:col-span-4 space-y-3">
-          <Section title="WAREHOUSE" icon={Package} color="text-indigo-500">
-             <div className="card p-2 flex flex-col h-[60vh]">
-                <div className="relative mb-2">
-                   <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-surface-400" />
-                   <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="FILTER..." className="input !pl-7 !py-1 !text-[10px]" />
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+       <div className="lg:col-span-4 space-y-6">
+          <Section title="Warehouse Inventory" icon={Package} color="text-indigo-600">
+             <div className="card p-4 flex flex-col h-[70vh] !shadow-none border-surface-200 dark:border-surface-800">
+                <div className="relative mb-4">
+                   <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
+                   <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search inventory..." className="w-full pl-10 pr-4 py-2 bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 rounded-lg text-sm focus:ring-1 focus:ring-indigo-600 outline-none" />
                 </div>
-                <div className="flex-1 overflow-y-auto space-y-0.5 scrollbar-hide">
+                <div className="flex-1 overflow-y-auto divide-y divide-surface-100 dark:divide-surface-800">
                    {filteredRes.slice(0, 100).map(r => {
                       const item = state.inventory.find(i => i.id === r.id);
                       return (
-                         <div key={r.id} className="flex justify-between items-center p-1.5 hover:bg-surface-50 dark:hover:bg-surface-800 rounded transition-all">
-                            <span className="text-[10px] font-black uppercase truncate w-32">{r.name}</span>
-                            <input type="number" value={item?.qty || ""} onChange={(e) => { const v = Number(e.target.value); const next = [...state.inventory.filter(i => i.id !== r.id)]; if (v > 0) next.push({ id: r.id, qty: v }); setState({...state, inventory: next}); }} className="w-12 bg-surface-100 dark:bg-surface-950 border-none rounded p-1 text-[9px] font-black text-center" />
+                         <div key={r.id} className="flex justify-between items-center py-2.5 px-2 hover:bg-surface-50 dark:hover:bg-surface-900 transition-all">
+                            <span className="font-bold text-surface-700 dark:text-surface-300">{r.name}</span>
+                            <input type="number" value={item?.qty || ""} onChange={(e) => { const v = Number(e.target.value); const next = [...state.inventory.filter(i => i.id !== r.id)]; if (v > 0) next.push({ id: r.id, qty: v }); setState({...state, inventory: next}); }} className="w-20 bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 rounded px-2 py-1 text-sm font-bold text-right outline-none focus:ring-1 focus:ring-indigo-600" />
                          </div>
                       )
                    })}
@@ -714,16 +714,16 @@ function LogisticsView({ state, setState, core }: any) {
              </div>
           </Section>
        </div>
-       <div className="lg:col-span-8 space-y-3">
-          <Section title="LOGISTICS_OVERVIEW" icon={Ship} color="text-indigo-500">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="card p-4 border-l-2 border-indigo-500">
-                   <span className="text-[9px] font-black text-surface-400 block mb-2">STOCK_VALUE</span>
-                   <span className="text-3xl font-black italic tracking-tighter text-indigo-500">${(core.inventoryValue/1000).toFixed(1)}K</span>
+       <div className="lg:col-span-8 space-y-6">
+          <Section title="Logistics Assessment" icon={Ship} color="text-indigo-600">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="card p-6 border-l-4 border-indigo-600 !shadow-none border-surface-200 dark:border-surface-800">
+                   <span className="text-xs font-bold text-surface-500 block mb-2 uppercase tracking-wide">Current Stock Liquidity</span>
+                   <span className="text-4xl font-bold text-indigo-600">${(core.inventoryValue/1000).toFixed(1)}K</span>
                 </div>
-                <div className="card p-4 border-l-2 border-indigo-500">
-                   <span className="text-[9px] font-black text-surface-400 block mb-2">DAILY_LOG_REQ</span>
-                   <span className="text-3xl font-black italic tracking-tighter text-indigo-500">{Math.ceil(core.inventoryValue/500).toLocaleString()} <span className="text-sm opacity-20">U</span></span>
+                <div className="card p-6 border-l-4 border-indigo-600 !shadow-none border-surface-200 dark:border-surface-800">
+                   <span className="text-xs font-bold text-surface-500 block mb-2 uppercase tracking-wide">Estimated Transport Units</span>
+                   <span className="text-4xl font-bold text-indigo-600">{Math.ceil(core.inventoryValue/500).toLocaleString()} <span className="text-lg opacity-40 font-medium">Req</span></span>
                 </div>
              </div>
           </Section>
@@ -738,33 +738,33 @@ function RetailView({ state, setState, retail }: any) {
   const marketSat = (retailData as any)?.[1]?.saturation || 1.0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-       <div className="md:col-span-4 space-y-3">
-          <Section title="RETAIL_ENGINE" icon={Target} color="text-rose-500">
-             <div className="card p-4 border-l-2 border-rose-500">
-                <label className="text-[9px] font-black text-surface-400 block mb-2 uppercase">ITEM_SELECT</label>
-                <select value={state.settings.retailResourceId} onChange={(e) => setState({...state, settings: {...state.settings, retailResourceId: Number(e.target.value)}})} className="input border-none !bg-surface-50 dark:!bg-surface-950 uppercase font-black mb-4">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+       <div className="md:col-span-4 space-y-6">
+          <Section title="Retail Engine" icon={Target} color="text-rose-600">
+             <div className="card p-6 border-l-4 border-rose-600 !shadow-none border-surface-200 dark:border-surface-800">
+                <label className="text-xs font-bold text-surface-500 block mb-3 uppercase">Inventory Selection</label>
+                <select value={state.settings.retailResourceId} onChange={(e) => setState({...state, settings: {...state.settings, retailResourceId: Number(e.target.value)}})} className="w-full bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 rounded-lg py-2.5 px-4 font-bold text-sm outline-none focus:ring-1 focus:ring-rose-600 mb-6">
                    {RESOURCES.filter(r => r.retailInfo && r.retailInfo.length > 0).map(r => (
                       <option key={r.id} value={r.id}>{r.name}</option>
                    ))}
                 </select>
-                <div className="space-y-2">
+                <div className="space-y-4">
                    <div className="flex justify-between items-end">
-                      <span className="text-[9px] font-black text-surface-400 uppercase">SATURATION</span>
-                      <span className={`text-2xl font-black italic tracking-tighter ${marketSat > 1.2 ? 'text-rose-500' : 'text-emerald-500'}`}>{marketSat.toFixed(2)}</span>
+                      <span className="text-sm font-bold text-surface-400 uppercase">Market Saturation</span>
+                      <span className={`text-3xl font-bold ${marketSat > 1.2 ? 'text-rose-600' : 'text-emerald-600'}`}>{marketSat.toFixed(2)}</span>
                    </div>
-                   <div className="h-1 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
-                      <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (1/marketSat)*50)}%` }} className={`h-full ${marketSat > 1.2 ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                   <div className="h-2 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (1/marketSat)*50)}%` }} className={`h-full ${marketSat > 1.2 ? 'bg-rose-600' : 'bg-emerald-600'}`} />
                    </div>
                 </div>
              </div>
           </Section>
        </div>
-       <div className="md:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="card p-4 border-t-2 border-rose-500">
-             <span className="text-[9px] font-black text-surface-400 block mb-2 uppercase">SALES_MODEL</span>
-             <p className="text-[10px] font-bold text-surface-600 dark:text-surface-300 leading-tight">
-                Modeled velocity at 0.22 weights indicates high ROI for current saturation.
+       <div className="md:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="card p-6 border-t-4 border-rose-600 !shadow-none border-surface-200 dark:border-surface-800">
+             <span className="text-sm font-bold text-surface-500 block mb-3 uppercase tracking-wide">Velocity Sales Model</span>
+             <p className="text-base font-medium text-surface-600 dark:text-surface-300 leading-relaxed">
+                A market saturation of <span className="font-bold text-brand-600">{marketSat.toFixed(2)}</span> indicates {marketSat < 1 ? "optimal conditions for aggressive retail expansion" : "a highly competitive landscape requiring premium quality to maintain margins"}.
              </p>
           </div>
        </div>
@@ -774,16 +774,16 @@ function RetailView({ state, setState, retail }: any) {
 
 function RiskView({ phase, retail }: any) {
   return (
-    <div className="card p-8">
-       <h3 className="text-xs font-black uppercase tracking-[0.3em] text-surface-400 mb-8 italic">Real-time Regime Sentiment Matrix</h3>
-       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+    <div className="card p-10 !shadow-none border-surface-200 dark:border-surface-800">
+       <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-surface-500 mb-10 text-center">Global Market Sentiment & Risk Matrix</h3>
+       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-6">
           {RESOURCES.filter(r => r.retailInfo && r.retailInfo.length > 0).slice(0, 24).map(res => {
              const retailItem: any = retail?.retail ? Object.entries(retail.retail).find(([k]) => k.toLowerCase() === res.name.toLowerCase()) : null;
              const sat = retailItem?.[1]?.saturation || 1.0;
              return (
-               <div key={res.id} className="card p-4 text-center border-b-4 border-indigo-600 shadow-md hover:-translate-y-1 transition-all">
-                  <span className="block text-[10px] font-black uppercase text-surface-400 truncate mb-2">{res.name}</span>
-                  <span className={`text-xl font-black tabular-nums italic ${sat < 1 ? 'text-emerald-500' : 'text-red-500'}`}>{sat.toFixed(2)}</span>
+               <div key={res.id} className="card p-5 text-center border-b-4 border-indigo-600 !shadow-none border-surface-200 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-brand-900/10 transition-all">
+                  <span className="block text-xs font-bold uppercase text-surface-400 truncate mb-3">{res.name}</span>
+                  <span className={`text-2xl font-bold tabular-nums ${sat < 1 ? 'text-emerald-600' : 'text-rose-600'}`}>{sat.toFixed(2)}</span>
                </div>
              )
           })}
@@ -794,8 +794,8 @@ function RiskView({ phase, retail }: any) {
 
 function WorkstationTab({ active, onClick, label, icon: Icon, color }: any) {
   return (
-    <button onClick={onClick} className={`px-2 py-1 rounded text-[9px] font-black tracking-widest transition-all flex items-center gap-1.5 ${active ? `${color} text-white shadow-lg` : 'text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'}`}>
-       <Icon size={12} /> {label}
+    <button onClick={onClick} className={`px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${active ? `${color} text-white shadow-sm` : 'text-surface-500 hover:bg-surface-200 dark:hover:bg-surface-800'}`}>
+       <Icon size={16} /> {label}
     </button>
   );
 }
@@ -803,53 +803,49 @@ function WorkstationTab({ active, onClick, label, icon: Icon, color }: any) {
 function GlobalMetric({ label, value }: any) {
   return (
     <div className="flex flex-col">
-       <span className="text-[8px] font-black uppercase opacity-50 tracking-tighter leading-none mb-0.5">{label}</span>
-       <span className="text-sm font-black italic tracking-tighter tabular-nums leading-none">{value}</span>
+       <span className="text-[10px] font-bold uppercase text-surface-400 leading-none mb-1">{label}</span>
+       <span className="text-lg font-bold tabular-nums leading-none">{value}</span>
     </div>
   );
 }
 
 function KPICard({ label, value, sub, icon: Icon }: any) {
   return (
-    <div className="card p-3 flex flex-col items-center text-center group hover:border-brand-500/50">
-       <div className="w-8 h-8 bg-surface-50 dark:bg-surface-800 rounded flex items-center justify-center text-brand-500 mb-2 group-hover:scale-110 transition-transform">
-          <Icon size={16} />
+    <div className="card p-6 flex flex-col items-center text-center !shadow-none border-surface-200 dark:border-surface-800 group">
+       <div className="w-12 h-12 bg-surface-50 dark:bg-surface-900 rounded-xl flex items-center justify-center text-brand-600 mb-4 group-hover:scale-105 transition-transform">
+          <Icon size={24} />
        </div>
-       <span className="text-[9px] font-black uppercase tracking-widest text-surface-400 mb-0.5">{label}</span>
-       <span className="text-lg font-black tabular-nums italic leading-none">{value}</span>
-       <p className="text-[8px] font-bold text-surface-300 mt-1 uppercase truncate w-full">{sub}</p>
+       <span className="text-xs font-bold uppercase tracking-widest text-surface-400 mb-1">{label}</span>
+       <span className="text-2xl font-bold tabular-nums leading-none">{value}</span>
+       <p className="text-xs font-medium text-surface-500 mt-2 truncate w-full">{sub}</p>
     </div>
   );
 }
 
 function SkillNode({ label, value, sub, icon: Icon, color }: any) {
   return (
-    <div className={`card p-3 flex flex-col items-center text-center border-t-2 border-current shadow-md shadow-current/5 ${color}`}>
-       <div className="flex items-center gap-1.5 mb-2">
-          <Icon size={14} />
-          <span className="text-[9px] font-black uppercase tracking-widest text-surface-900 dark:text-white italic">{label}</span>
+    <div className={`card p-6 flex flex-col items-center text-center border-t-4 border-current shadow-sm ${color}`}>
+       <div className="flex items-center gap-2 mb-3">
+          <Icon size={18} />
+          <span className="text-sm font-bold uppercase tracking-wide text-surface-900 dark:text-white">{label}</span>
        </div>
-       <span className="text-2xl font-black italic tracking-tighter text-surface-900 dark:text-white tabular-nums leading-none">{value}</span>
-       <span className="text-[8px] font-black uppercase opacity-30 mt-2 tracking-widest">{sub}</span>
+       <span className="text-3xl font-bold text-surface-900 dark:text-white tabular-nums leading-none">{value}</span>
+       <span className="text-xs font-semibold uppercase opacity-40 mt-3 tracking-wide">{sub}</span>
     </div>
   );
 }
 
 function ExecCard({ role, data, onChange, isApp }: any) {
   return (
-    <div className={`card p-6 space-y-6 border-l-4 transition-all ${isApp ? 'border-l-surface-300 dark:border-l-surface-700 opacity-80 scale-95 hover:opacity-100 hover:scale-100' : 'border-l-brand-600 shadow-lg'}`}>
+    <div className={`card p-6 space-y-6 border-l-4 !shadow-none border-surface-200 dark:border-surface-800 transition-all ${isApp ? 'border-l-surface-300 dark:border-l-surface-600 opacity-80' : 'border-l-brand-600'}`}>
        <div className="flex items-center justify-between">
-          <span className={`text-[11px] font-black uppercase italic tracking-widest ${isApp ? 'text-surface-400' : 'text-brand-600'}`}>{role}</span>
-          <div className="flex gap-1.5">
-             <div className="w-2 h-2 rounded-full bg-brand-500" />
-             <div className="w-2 h-2 rounded-full bg-brand-500 opacity-20" />
-          </div>
+          <span className={`text-sm font-bold uppercase tracking-wide ${isApp ? 'text-surface-500' : 'text-brand-600'}`}>{role}</span>
        </div>
-       <div className="grid grid-cols-2 gap-3">
-          <SkillLineSmall label="MAN" val={data.management} onChange={(v: any) => onChange({...data, management: v})} />
-          <SkillLineSmall label="ACC" val={data.accounting} onChange={(v: any) => onChange({...data, accounting: v})} />
-          <SkillLineSmall label="COM" val={data.communication} onChange={(v: any) => onChange({...data, communication: v})} />
-          <SkillLineSmall label="SCI" val={data.science} onChange={(v: any) => onChange({...data, science: v})} />
+       <div className="grid grid-cols-2 gap-4">
+          <SkillLineSmall label="Management" val={data.management} onChange={(v: any) => onChange({...data, management: v})} />
+          <SkillLineSmall label="Accounting" val={data.accounting} onChange={(v: any) => onChange({...data, accounting: v})} />
+          <SkillLineSmall label="Communication" val={data.communication} onChange={(v: any) => onChange({...data, communication: v})} />
+          <SkillLineSmall label="Science" val={data.science} onChange={(v: any) => onChange({...data, science: v})} />
        </div>
     </div>
   );
@@ -857,9 +853,9 @@ function ExecCard({ role, data, onChange, isApp }: any) {
 
 function SkillLineSmall({ label, val, onChange }: any) {
   return (
-    <div className="flex justify-between items-center bg-surface-50 dark:bg-surface-800 px-4 py-2 rounded-xl border border-surface-100 dark:border-surface-700 hover:border-brand-500 transition-colors">
-       <span className="text-[10px] font-black text-surface-400">{label}</span>
-       <input type="number" value={val} onChange={(e) => onChange(Number(e.target.value))} className="w-10 bg-transparent border-none p-0 text-sm font-black text-right outline-none tabular-nums" />
+    <div className="flex flex-col bg-surface-50 dark:bg-surface-900 px-4 py-3 rounded-lg border border-surface-100 dark:border-surface-800">
+       <span className="text-[10px] font-bold text-surface-400 uppercase mb-1">{label}</span>
+       <input type="number" value={val} onChange={(e) => onChange(Number(e.target.value))} className="bg-transparent border-none p-0 text-lg font-bold outline-none tabular-nums" />
     </div>
   );
 }
