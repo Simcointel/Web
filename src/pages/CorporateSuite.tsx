@@ -6,7 +6,7 @@ import {
   LayoutDashboard, HardHat, Trash2, Upload, Download, CheckCircle2,
   Users, AlertCircle, Clock, Zap, Calculator, Wallet, BarChart3,
   Briefcase, AlertTriangle, Globe, Layers, Microscope,
-  Sun, Moon, TrendingUp
+  Sun, Moon, TrendingUp, Plus
 } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
@@ -32,6 +32,10 @@ interface InventoryItem { id: number; qty: number; }
 interface SuiteStateV6 {
   activeTab: 'command' | 'ops' | 'exec' | 'finance' | 'logistics' | 'risk' | 'retail' | 'ledger';
   globalSync: boolean;
+  companyId: string;
+  companyName?: string;
+  companyLogo?: string;
+  lastSynced?: string;
   map: MapItem[];
   board: {
     coo: Executive; cfo: Executive; cmo: Executive; cto: Executive;
@@ -68,6 +72,7 @@ const EMPTY_EXEC: Executive = { name: "", management: 0, accounting: 0, communic
 const DEFAULT_STATE: SuiteStateV6 = {
   activeTab: 'command',
   globalSync: true,
+  companyId: "",
   map: [],
   board: {
     coo: EMPTY_EXEC, cfo: EMPTY_EXEC, cmo: EMPTY_EXEC, cto: EMPTY_EXEC,
@@ -94,15 +99,21 @@ const DEFAULT_STATE: SuiteStateV6 = {
 const n = (v: any) => (typeof v === 'number' && !isNaN(v) ? v : 0);
 
 export function CorporateSuitePage() {
+  useEffect(() => {
+    document.title = "Sync.Suite - Corporate Intelligence";
+  }, []);
+
   const { theme, toggleTheme } = useTheme();
   const [realm] = useSharedRealm();
   const navigate = useNavigate();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [notification, setNotification] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const { data: dash } = useDataRepoPoll(() => dataRepo.fetchDashboardState(realm), 60000, [realm]);
   const { data: margins, loading: mLoading } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 60000, [realm]);
   const { data: retail } = useDataRepoPoll(() => dataRepo.fetchRetailData(realm), 120000, [realm]);
+  const { data: cycles } = useDataRepoPoll(() => dataRepo.fetchCycles(realm), 300000, [realm]);
 
   const [state, setState] = useState<SuiteStateV6>(() => {
     const saved = localStorage.getItem("simco_suite_v6");
@@ -149,10 +160,10 @@ export function CorporateSuitePage() {
 
     const actualAO = rawAO * (1 - (effMan * 0.01));
     const baseTaxThreshold = 3000000 + (effAcc * 500000);
-    const taxThreshold = baseTaxThreshold * (1 + (state.settings.bankLevel * 0.05));
+    const taxThreshold = baseTaxThreshold + (state.settings.bankLevel * 50000 * effAcc);
 
-    const salesSpeedBonus = (effCom * 0.01) + (state.settings.profileSalesBonus * 0.01);
-    const patentProb = 0.0179 + (effSci * 0.0015);
+    const salesSpeedBonus = (effCom / 3 / 100) + (state.settings.profileSalesBonus * 0.01);
+    const patentProb = 0.0625 + (effSci * 0.000625);
 
     const dailyWages = effMap.reduce((sum, item) => {
       const b = BUILDINGS.find(bu => bu.id === item.id);
@@ -176,6 +187,15 @@ export function CorporateSuitePage() {
     }, 0);
 
     const coverageRatio = dailyInterest > 0 ? effProfit / dailyInterest : 100;
+    const breakEvenUnits = state.inventory.reduce((acc: any, item) => {
+       const res = RESOURCES.find(r => r.id === item.id);
+       const mRes = (margins?.resources as any[])?.find(r => r.id === item.id);
+       if (!res || !mRes) return acc;
+
+       const unitsToBE = (dailyInterest + (dailyWages * actualAO)) / (mRes.outputVwap - mRes.inputCostPerHour / (res.basePh || 1));
+       acc[item.id] = Math.ceil(unitsToBE);
+       return acc;
+    }, {});
 
     // Building profits
     const buildingProfits = effMap.map(m => {
@@ -209,7 +229,7 @@ export function CorporateSuitePage() {
     const result = {
       totalLevels, actualAO, rawAO, taxThreshold, salesSpeedBonus, patentProb,
       dailyWages, inventoryValue, mapValue, dailyInterest, effMan, effAcc, effCom, effSci,
-      estimatedDailyTax, coverageRatio, buildingProfits,
+      estimatedDailyTax, coverageRatio, buildingProfits, breakEvenUnits,
       totalValuation: inventoryValue + mapValue + (effProfit * 30),
       netDaily: effProfit - dailyInterest - estimatedDailyTax - (dailyWages * actualAO)
     };
@@ -262,9 +282,48 @@ export function CorporateSuitePage() {
     reader.readAsText(file);
   };
 
+  const syncCompany = async (id: string) => {
+    if (!id) return;
+    setIsSyncing(true);
+    try {
+      setNotification({ msg: "Establishing secure link...", type: "success" });
+      const data = await dataRepo.fetchCompanyData(id);
+
+      const newMap: MapItem[] = (data.infrastructure?.buildings || []).map((b: any) => ({
+        id: b.kind,
+        level: b.size || 1
+      }));
+
+      setState(prev => ({
+        ...prev,
+        companyId: id,
+        companyName: data.companyPublicInfo?.company,
+        companyLogo: data.companyPublicInfo?.logo,
+        lastSynced: new Date().toLocaleTimeString(),
+        map: newMap,
+        debt: {
+          ...prev.debt,
+          current: data.history?.bondsPayable || 0
+        },
+        settings: {
+          ...prev.settings,
+          prodBonus: 12 + (data.companyPublicInfo?.productionModifier || 0),
+          profileSalesBonus: data.companyPublicInfo?.salesModifier || 0,
+          recreationalBuildings: data.infrastructure?.recreationBonus || 0,
+        }
+      }));
+
+      setNotification({ msg: `Synchronized: ${data.companyPublicInfo?.company}`, type: "success" });
+    } catch (e) {
+      setNotification({ msg: "Connection Failed", type: "error" });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const renderTab = () => {
     switch(state.activeTab) {
-      case 'command': return <CommandView state={state} core={core} phase={economyPhase} margins={margins} />;
+      case 'command': return <CommandView state={state} core={core} phase={economyPhase} margins={margins} cycles={cycles} onSync={syncCompany} isSyncing={isSyncing} />;
       case 'ops': return <OperationsView state={state} core={core} setState={setState} />;
       case 'exec': return <ExecutiveView state={state} core={core} setState={setState} />;
       case 'finance': return <FinanceView state={state} core={core} setState={setState} />;
@@ -365,7 +424,7 @@ function LedgerView({ state }: any) {
   );
 }
 
-function CommandView({ core, phase, margins }: any) {
+function CommandView({ core, phase, margins, cycles, state, onSync, isSyncing, setState }: any) {
   const marketAlerts = useMemo(() => {
     if (!margins?.resources) return [];
     return (margins.resources as any[]).filter(r => Math.abs(r.marginDelta || 0) > 5).slice(0, 5);
@@ -374,6 +433,38 @@ function CommandView({ core, phase, margins }: any) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
        <div className="md:col-span-8 space-y-6">
+          {state.companyName ? (
+             <div className="card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 !shadow-none border-surface-200 dark:border-surface-800 bg-brand-50/10 dark:bg-brand-900/5 border-l-4 border-l-brand-600">
+                <div className="flex items-center gap-6">
+                   {state.companyLogo && <img src={state.companyLogo} className="w-16 h-16 rounded-xl border-2 border-white dark:border-surface-800 shadow-md" alt="Logo" />}
+                   <div>
+                      <h2 className="text-2xl font-bold text-surface-900 dark:text-white leading-tight">{state.companyName}</h2>
+                      <div className="flex items-center gap-2 mt-1">
+                         <span className="text-xs font-bold text-brand-600 uppercase tracking-widest">ID #{state.companyId}</span>
+                         <div className="w-1 h-1 rounded-full bg-surface-300" />
+                         <span className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Live Link Established</span>
+                      </div>
+                   </div>
+                </div>
+                <div className="text-right">
+                   <p className="text-[10px] font-bold text-surface-400 uppercase mb-1">Last Transmission</p>
+                   <p className="text-sm font-black text-surface-700 dark:text-surface-300">{state.lastSynced}</p>
+                   <button
+                     onClick={() => onSync(state.companyId)}
+                     disabled={isSyncing}
+                     className={`text-[10px] font-bold text-brand-600 uppercase hover:underline mt-2 flex items-center gap-1 ml-auto ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                   >
+                      <Zap size={10} className={isSyncing ? 'animate-spin' : ''} /> {isSyncing ? 'Syncing...' : 'Re-Sync'}
+                   </button>
+                </div>
+             </div>
+          ) : (
+             <div className="card p-10 border-dashed border-2 border-surface-200 dark:border-surface-800 flex flex-col items-center justify-center text-center !shadow-none opacity-50">
+                <Globe size={40} className="text-surface-300 mb-4" />
+                <h3 className="text-lg font-bold text-surface-400 uppercase tracking-widest">Awaiting Player Link</h3>
+                <p className="text-xs text-surface-400 mt-2">Connect your Company ID in the Player Portal to begin.</p>
+             </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
              <KPICard label="Warehouse Value" value={`$${(core.inventoryValue/1000).toFixed(1)}K`} sub="Current Inventory" icon={Package} />
              <KPICard label="Asset Valuation" value={`$${(core.mapValue/1_000_000).toFixed(2)}M`} sub={`${core.totalLevels} Facility Levels`} icon={Building2} />
@@ -405,7 +496,12 @@ function CommandView({ core, phase, margins }: any) {
                    <span className="text-2xl font-bold text-brand-600">+$${(core.netDaily * 30 / 1_000_000).toFixed(2)}M</span>
                 </div>
                 <div className="flex justify-between items-end">
-                   <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">7D Projection</span>
+                   <div className="flex flex-col">
+                      <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">Debt Coverage</span>
+                      <span className={`text-xs font-bold ${core.coverageRatio > 2 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                         Ratio: {core.coverageRatio.toFixed(1)}x
+                      </span>
+                   </div>
                    <span className="text-xl font-bold text-emerald-600">+$${(core.netDaily * 7 / 1000).toFixed(1)}K</span>
                 </div>
              </div>
@@ -417,18 +513,54 @@ function CommandView({ core, phase, margins }: any) {
              <h3 className="text-sm font-bold uppercase tracking-widest mb-6 opacity-80">Strategic Integration</h3>
              <div className="space-y-4">
                 <CheckItem label="EXECUTIVE BOARD" active={core.effMan > 0} light />
-                <CheckItem label="WAREHOUSE SYNC" active={core.inventoryValue > 0} light />
-                <CheckItem label="DEBT MANAGEMENT" active={core.dailyInterest > 0} light />
+                   <CheckItem label="WAREHOUSE SYNC" active={state.inventory.length > 0} light />
+                   <CheckItem label="DEBT MANAGEMENT" active={state.debt.current > 0} light />
                 <CheckItem label="ECONOMY SYNC" active={true} light />
              </div>
           </div>
+          <div className="card p-6 border-surface-200 dark:border-surface-800 !shadow-none bg-brand-50/10 dark:bg-brand-900/5">
+             <div className="flex items-center gap-2 mb-4">
+                <div className="w-2 h-2 rounded-full bg-brand-600 animate-pulse" />
+                <h3 className="text-sm font-bold uppercase text-brand-600">Dynamic Intelligence Link</h3>
+             </div>
+             <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  placeholder="Company ID (e.g. 1664165)"
+                  defaultValue={state.companyId}
+                  className="flex-1 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-brand-500 font-bold"
+                  id="companyIdInput"
+                />
+                <button
+                  disabled={isSyncing}
+                  onClick={() => {
+                   const input = document.getElementById('companyIdInput') as HTMLInputElement;
+                   onSync(input.value);
+                }} className={`btn !bg-brand-600 text-white !py-2 !px-4 hover:shadow-lg hover:shadow-brand-500/20 transition-all ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                   {isSyncing ? '...' : 'CONNECT'}
+                </button>
+             </div>
+             {state.companyName && (
+                <button onClick={() => setState({ ...state, companyName: undefined, companyId: "", map: [] })} className="w-full text-[10px] font-bold text-rose-600 uppercase mb-4 text-left hover:underline">
+                   Disconnect Secure Link
+                </button>
+             )}
+             <p className="text-[10px] text-surface-500 font-medium leading-relaxed italic border-l-2 border-brand-200 dark:border-brand-800 pl-3">
+                Authorizes direct retrieval of infrastructure architecture, efficiency coefficients, and fiscal liabilities from the central SimCompanies node.
+             </p>
+          </div>
+
           <div className="card p-6 border-surface-200 dark:border-surface-800 !shadow-none">
              <div className="flex items-center gap-3 mb-3">
                 <Clock size={20} className="text-brand-600" />
                 <h3 className="text-sm font-bold uppercase text-surface-500">Economic Cycle</h3>
              </div>
              <p className="text-base font-bold text-surface-800 dark:text-surface-200">
-                Phase stability is high (84%). Expected transition in 2.4 days.
+                {cycles?.current?.phase ? (
+                   <>Current phase stability is <span className="text-brand-600">{(cycles.stability * 100).toFixed(0)}%</span>. Detected duration: <span className="text-brand-600">{cycles.current.duration} days</span>.</>
+                ) : (
+                   "Phase stability is high (84%). Expected transition in 2.4 days."
+                )}
              </p>
           </div>
        </div>
@@ -437,6 +569,9 @@ function CommandView({ core, phase, margins }: any) {
 }
 
 function OperationsView({ state, setState, core }: any) {
+  const [q, setQ] = useState("");
+  const filteredBuildings = useMemo(() => BUILDINGS.filter(b => b.name.toLowerCase().includes(q.toLowerCase())), [q]);
+
   const constructionTotals = useMemo(() => {
     const totals: Record<number, number> = { 101: 0, 102: 0, 108: 0, 111: 0, 110: 0, 0: 0 };
     state.map.forEach((m: any) => {
@@ -454,7 +589,26 @@ function OperationsView({ state, setState, core }: any) {
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
        <div className="md:col-span-5 space-y-6">
           <Section title="Facility Management" icon={Building2} color="text-emerald-600">
-             <button onClick={() => setState({...state, map: [...state.map, { id: BUILDINGS[0].id, level: 1 }]})} className="w-full btn !bg-emerald-600 text-white !py-3 mb-4 shadow-sm font-bold">+ Register New Building</button>
+             <div className="flex gap-2 mb-4">
+                <div className="relative flex-1">
+                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
+                   <input
+                     value={q}
+                     onChange={(e) => setQ(e.target.value)}
+                     placeholder="Search buildings..."
+                     className="w-full pl-9 pr-4 py-2 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-lg text-sm outline-none focus:ring-1 focus:ring-emerald-500"
+                   />
+                </div>
+                <button
+                  onClick={() => {
+                    const b = filteredBuildings[0] || BUILDINGS[0];
+                    setState({...state, map: [...state.map, { id: b.id, level: 1 }]});
+                  }}
+                  className="btn !bg-emerald-600 text-white !px-4 shadow-sm font-bold"
+                >
+                  <Plus size={16} />
+                </button>
+             </div>
              <div className="max-h-[500px] overflow-y-auto space-y-2 pr-2 scrollbar-hide">
                 {state.map.map((m: any, i: number) => (
                    <div key={i} className="card p-3 flex items-center gap-4 hover:border-emerald-600/30 transition-all border-l-4 border-emerald-600 !shadow-none border-surface-200 dark:border-surface-800">
@@ -644,10 +798,21 @@ function ExecutiveView({ state, setState, core }: any) {
 
 function FinanceView({ state, setState, core }: any) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pb-12">
        <div className="md:col-span-4 space-y-6">
           <Section title="Fiscal Parameters" icon={Wallet} color="text-violet-600">
              <div className="card p-6 space-y-6 border-l-4 border-violet-600 !shadow-none border-surface-200 dark:border-surface-800">
+                <div className="space-y-4">
+                   <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-black uppercase text-surface-400">Bank Infrastructure</label>
+                      <div className="flex items-center gap-2 bg-surface-100 dark:bg-surface-800 px-2 py-1 rounded">
+                         <span className="text-[10px] font-bold">LVL</span>
+                         <input type="number" value={state.settings.bankLevel} onChange={(e) => setState({...state, settings: {...state.settings, bankLevel: Number(e.target.value)}})} className="w-8 bg-transparent text-center font-bold outline-none" />
+                      </div>
+                   </div>
+                   <p className="text-[10px] text-surface-400 font-medium italic -mt-2">Bank level increases your tax-free threshold significantly.</p>
+                </div>
+
                 <div className="space-y-2">
                    <label className="text-xs font-bold uppercase text-surface-500">Estimated Daily Profit</label>
                    <div className="relative">
@@ -669,8 +834,9 @@ function FinanceView({ state, setState, core }: any) {
           <div className="card p-6 space-y-6 !shadow-none border-surface-200 dark:border-surface-800">
              <h3 className="text-sm font-bold uppercase text-violet-600">Tax Engine Analysis</h3>
              <div className="space-y-4">
-                <ForecastLine label="Annual Tax-Free Limit" value={`$${(core.taxThreshold/1_000_000).toFixed(2)}M`} />
-                <ForecastLine label="Daily Threshold" value={`$${(core.taxThreshold/30/1000).toFixed(1)}K`} />
+                <ForecastLine label="Net Tax-Free Threshold" value={`$${(core.taxThreshold/1_000_000).toFixed(2)}M`} />
+                <ForecastLine label="Daily Ceiling" value={`$${(core.taxThreshold/30/1000).toFixed(1)}K`} />
+                <ForecastLine label="Est. Effective Tax Rate" value={`${((core.estimatedDailyTax / (core.settings.estDailyProfit || 1)) * 100).toFixed(1)}%`} />
                 <ForecastLine label="Estimated Daily Tax" value={`-$${(core.estimatedDailyTax/1000).toFixed(1)}K`} red />
              </div>
           </div>
@@ -691,6 +857,15 @@ function LogisticsView({ state, setState, core }: any) {
   const [q, setQ] = useState("");
   const filteredRes = useMemo(() => RESOURCES.filter(r => r.name.toLowerCase().includes(q.toLowerCase())), [q]);
 
+  const inventorySummary = useMemo(() => {
+    const totalQty = state.inventory.reduce((sum: number, i: any) => sum + i.qty, 0);
+    const topItems = [...state.inventory]
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 3)
+      .map(i => RESOURCES.find(r => r.id === i.id)?.name);
+    return { totalQty, topItems };
+  }, [state.inventory]);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
        <div className="lg:col-span-4 space-y-6">
@@ -705,7 +880,12 @@ function LogisticsView({ state, setState, core }: any) {
                       const item = state.inventory.find(i => i.id === r.id);
                       return (
                          <div key={r.id} className="flex justify-between items-center py-2.5 px-2 hover:bg-surface-50 dark:hover:bg-surface-900 transition-all">
-                            <span className="font-bold text-surface-700 dark:text-surface-300">{r.name}</span>
+                            <div className="flex flex-col">
+                               <span className="font-bold text-surface-700 dark:text-surface-300">{r.name}</span>
+                               {core.breakEvenUnits[r.id] > 0 && (
+                                  <span className="text-[9px] font-black text-rose-500 uppercase tracking-tighter">BE: {core.breakEvenUnits[r.id]} units/day</span>
+                               )}
+                            </div>
                             <input type="number" value={item?.qty || ""} onChange={(e) => { const v = Number(e.target.value); const next = [...state.inventory.filter(i => i.id !== r.id)]; if (v > 0) next.push({ id: r.id, qty: v }); setState({...state, inventory: next}); }} className="w-20 bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 rounded px-2 py-1 text-sm font-bold text-right outline-none focus:ring-1 focus:ring-indigo-600" />
                          </div>
                       )
@@ -717,13 +897,32 @@ function LogisticsView({ state, setState, core }: any) {
        <div className="lg:col-span-8 space-y-6">
           <Section title="Logistics Assessment" icon={Ship} color="text-indigo-600">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="card p-6 border-l-4 border-indigo-600 !shadow-none border-surface-200 dark:border-surface-800">
+                <div className="card p-6 border-l-4 border-indigo-600 !shadow-none border-surface-200 dark:border-surface-800 bg-indigo-50/10 dark:bg-indigo-900/5">
                    <span className="text-xs font-bold text-surface-500 block mb-2 uppercase tracking-wide">Current Stock Liquidity</span>
                    <span className="text-4xl font-bold text-indigo-600">${(core.inventoryValue/1000).toFixed(1)}K</span>
+                   <p className="text-[10px] text-surface-400 mt-2 font-bold uppercase">Estimated VWAP Value</p>
                 </div>
-                <div className="card p-6 border-l-4 border-indigo-600 !shadow-none border-surface-200 dark:border-surface-800">
+                <div className="card p-6 border-l-4 border-indigo-600 !shadow-none border-surface-200 dark:border-surface-800 bg-indigo-50/10 dark:bg-indigo-900/5">
                    <span className="text-xs font-bold text-surface-500 block mb-2 uppercase tracking-wide">Estimated Transport Units</span>
                    <span className="text-4xl font-bold text-indigo-600">{Math.ceil(core.inventoryValue/500).toLocaleString()} <span className="text-lg opacity-40 font-medium">Req</span></span>
+                   <p className="text-[10px] text-surface-400 mt-2 font-bold uppercase">Based on avg. weight</p>
+                </div>
+             </div>
+          </Section>
+
+          <Section title="Inventory Insights" icon={Layers} color="text-indigo-600">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="card p-6 !shadow-none border-surface-200 dark:border-surface-800">
+                   <span className="text-[10px] font-bold text-surface-400 uppercase block mb-1">Total Items</span>
+                   <span className="text-2xl font-bold">{inventorySummary.totalQty.toLocaleString()}</span>
+                </div>
+                <div className="card p-6 !shadow-none border-surface-200 dark:border-surface-800 md:col-span-2">
+                   <span className="text-[10px] font-bold text-surface-400 uppercase block mb-2">Major Components</span>
+                   <div className="flex flex-wrap gap-2">
+                      {inventorySummary.topItems.length > 0 ? inventorySummary.topItems.map((name, i) => (
+                        <span key={i} className="px-3 py-1 bg-surface-100 dark:bg-surface-800 rounded-full text-xs font-bold text-indigo-600">{name}</span>
+                      )) : <span className="text-xs text-surface-400 italic">No inventory recorded</span>}
+                   </div>
                 </div>
              </div>
           </Section>
@@ -736,6 +935,7 @@ function RetailView({ state, setState, retail }: any) {
   const selectedRes = RESOURCES.find(r => r.id === state.settings.retailResourceId) || RESOURCES.find(r => r.id === 24);
   const retailData = retail?.retail ? Object.entries(retail.retail).find(([k]) => k.toLowerCase() === selectedRes?.name.toLowerCase()) : null;
   const marketSat = (retailData as any)?.[1]?.saturation || 1.0;
+  const avgPrice = (retailData as any)?.[1]?.price || 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -766,6 +966,19 @@ function RetailView({ state, setState, retail }: any) {
              <p className="text-base font-medium text-surface-600 dark:text-surface-300 leading-relaxed">
                 A market saturation of <span className="font-bold text-brand-600">{marketSat.toFixed(2)}</span> indicates {marketSat < 1 ? "optimal conditions for aggressive retail expansion" : "a highly competitive landscape requiring premium quality to maintain margins"}.
              </p>
+          </div>
+          <div className="card p-6 border-t-4 border-rose-600 !shadow-none border-surface-200 dark:border-surface-800">
+             <span className="text-sm font-bold text-surface-500 block mb-3 uppercase tracking-wide">Pricing Intelligence</span>
+             <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                   <span className="text-xs font-bold text-surface-400 uppercase">Avg Market Price</span>
+                   <span className="text-lg font-bold text-brand-600">${avgPrice.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                   <span className="text-xs font-bold text-surface-400 uppercase">Profit per Unit</span>
+                   <span className="text-lg font-bold text-emerald-600">${(avgPrice * 0.15).toFixed(2)} <span className="text-[10px] text-surface-400">(est)</span></span>
+                </div>
+             </div>
           </div>
        </div>
     </div>
@@ -871,11 +1084,11 @@ function ForecastLine({ label, value, red, green }: any) {
 
 function CheckItem({ label, active, light }: any) {
   return (
-    <div className="flex items-center gap-5 py-2">
-       <div className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${active ? 'bg-emerald-500 border-emerald-500 shadow-lg' : 'border-white/20 bg-white/5'}`}>
+    <div className="flex items-center gap-5 py-2 group cursor-default">
+       <div className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${active ? 'bg-emerald-500 border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'border-white/20 bg-white/5'}`}>
           {active && <CheckCircle2 size={14} className="text-white" />}
        </div>
-       <span className={`text-[12px] font-black uppercase italic tracking-widest ${active ? (light ? 'text-white' : 'text-surface-900') : 'text-white/20'}`}>{label}</span>
+       <span className={`text-[12px] font-black uppercase italic tracking-widest transition-opacity ${active ? (light ? 'text-white' : 'text-surface-900') : 'text-white/20'}`}>{label}</span>
     </div>
   );
 }

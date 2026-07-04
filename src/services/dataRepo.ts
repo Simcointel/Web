@@ -584,6 +584,15 @@ export async function fetchCycles(realm: number): Promise<any> {
 }
 
 /* ============================================================
+   Player API
+   ============================================================ */
+export async function fetchCompanyData(companyId: string | number): Promise<any> {
+  const res = await fetch(`https://www.simcompanies.com/api/v3/companies/${companyId}/`);
+  if (!res.ok) throw new Error("Could not fetch company data");
+  return res.json();
+}
+
+/* ============================================================
    Dependencies
    ============================================================ */
 export async function fetchDependencies(realm: number): Promise<any> {

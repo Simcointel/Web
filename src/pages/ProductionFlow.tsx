@@ -14,12 +14,13 @@ export function ProductionFlowPage() {
   const tree = useMemo(() => {
     const buildTree = (id: number, depth = 0): any => {
       const res = RESOURCES.find(r => r.id === id);
-      if (!res || depth > 4) return { id, name: res?.name || '?', inputs: [] };
+      if (!res || depth > 5) return { id, name: res?.name || '?', inputs: [] };
       const inputs = res.inputs ? Object.entries(res.inputs).map(([iid, qty]) => ({
         ...buildTree(Number(iid), depth + 1),
-        qty
+        qty,
+        parentId: id
       })) : [];
-      return { id, name: res.name, inputs };
+      return { id, name: res.name, inputs, buildingId: res.buildingId };
     };
     return buildTree(targetId);
   }, [targetId]);
@@ -77,14 +78,21 @@ function TreeNode({ node, isRoot, qty }: { node: any; isRoot?: boolean; qty?: an
        <div className={`p-4 px-6 rounded-xl border transition-all duration-300 group relative ${isRoot ? 'bg-brand-600 text-white shadow-md border-brand-700' : 'bg-white dark:bg-surface-900 border-surface-200 dark:border-surface-800 hover:border-brand-500 shadow-sm'}`}>
           {qty && (
              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-emerald-600 text-white rounded-full text-[10px] font-bold shadow-md z-20 uppercase tracking-widest border border-white dark:border-surface-900">
-                {qty} Units
+                {qty} / unit
              </div>
           )}
-          <div className="flex items-center gap-3">
-             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isRoot ? 'bg-white/20' : 'bg-brand-50 dark:bg-brand-900/20 text-brand-600'}`}>
-                {isRoot ? <Zap size={18} /> : <Layers size={14} />}
+          <div className="flex flex-col items-center gap-2">
+             <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isRoot ? 'bg-white/20' : 'bg-brand-50 dark:bg-brand-900/20 text-brand-600'}`}>
+                   {isRoot ? <Zap size={18} /> : <Layers size={14} />}
+                </div>
+                <span className="text-sm font-bold uppercase tracking-wide whitespace-nowrap">{node.name}</span>
              </div>
-             <span className="text-sm font-bold uppercase tracking-wide whitespace-nowrap">{node.name}</span>
+             {node.buildingId && (
+               <div className={`text-[9px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded ${isRoot ? 'bg-white/10 text-white' : 'bg-surface-100 dark:bg-surface-800 text-surface-500'}`}>
+                 Produced in: {node.buildingId}
+               </div>
+             )}
           </div>
        </div>
 
