@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { Section } from "../components/Layout";
 import { LoadingState, ErrorState } from "../components/States";
 import { SeverityBadge } from "../components/SeverityBadge";
-import { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useEffect } from "react";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import type { RealmDashboard } from "../types/api";
 import { Link } from "../router";
@@ -18,6 +18,10 @@ import {
 } from "lucide-react";
 
 export function HomePage() {
+  useEffect(() => {
+    document.title = "SimcoIntel - Economic Intelligence";
+  }, []);
+
   const [realm, setRealm] = useSharedRealm();
   const { data: dashState, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardState(realm), 60000, [realm]);
   const { data: alerts } = useDataRepoPoll(() => dataRepo.fetchDashboardAlerts(realm), 60000, [realm]);

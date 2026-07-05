@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { LoadingState, ErrorState } from "../components/States";
@@ -8,6 +8,10 @@ import {
 } from "recharts";
 
 export function VWAPInflationPage() {
+  useEffect(() => {
+    document.title = "Trends - SimcoIntel";
+  }, []);
+
   const [realm, setRealm] = useSharedRealm();
   const [vwapTab, setVwapTab] = useState<"overall" | "quality" | "product" | "both">("overall");
   const [selectedProduct, setSelectedProduct] = useState("");

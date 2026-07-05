@@ -1,17 +1,35 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { RESOURCES, BUILDINGS } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
-import { Search, Info, Factory, ShoppingCart, TrendingUp, ChevronRight, BookOpen, Layers } from "lucide-react";
+import { Search, Info, Factory, ShoppingCart, TrendingUp, ChevronRight, BookOpen, Layers, BarChart } from "lucide-react";
 import { LoadingState } from "../components/States";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 export function EncyclopediaPage() {
+  useEffect(() => {
+    document.title = "Encyclopedia - SimcoIntel";
+  }, []);
+
   const [realm] = useSharedRealm();
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [hLoading, setHLoading] = useState(false);
 
   const { data: margins, loading } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 120000, [realm]);
+
+  useEffect(() => {
+    if (selectedId) {
+      setHLoading(true);
+      dataRepo.fetchResourcePriceHistory(realm, selectedId, 30)
+        .then(data => {
+          setHistory(data.map(d => ({ ...d, d: new Date(d.date).toLocaleDateString() })));
+        })
+        .finally(() => setHLoading(false));
+    }
+  }, [selectedId, realm]);
 
   const filtered = useMemo(() => {
     return RESOURCES.filter(r =>
@@ -93,6 +111,31 @@ export function EncyclopediaPage() {
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="card p-6 md:col-span-2 space-y-6 border-surface-200 dark:border-surface-800 !shadow-none">
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                           <BarChart size={18} className="text-brand-600" />
+                           <h3 className="text-sm font-bold text-surface-500 uppercase">Market Price History (30D)</h3>
+                        </div>
+                        {hLoading && <span className="text-[10px] font-bold text-brand-600 animate-pulse uppercase">Syncing...</span>}
+                     </div>
+                     <div className="h-[200px] w-full">
+                        {history.length > 0 ? (
+                           <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={history}>
+                                 <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-surface-200 dark:stroke-surface-800" />
+                                 <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                                 <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
+                                 <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                                 <Line type="monotone" dataKey="vwap" stroke="#0ea5e9" strokeWidth={3} dot={false} name="VWAP" />
+                              </LineChart>
+                           </ResponsiveContainer>
+                        ) : (
+                           <div className="h-full flex items-center justify-center text-surface-400 italic text-xs">Insufficient data for trend analysis</div>
+                        )}
+                     </div>
+                  </div>
+
                   <div className="card p-6 space-y-6 border-surface-200 dark:border-surface-800 !shadow-none">
                      <div className="flex items-center gap-2">
                         <TrendingUp size={18} className="text-emerald-600" />
@@ -155,17 +198,17 @@ export function EncyclopediaPage() {
                            <div className="space-y-4">
                               <div className="grid grid-cols-2 gap-4">
                                  <div className="bg-surface-50 dark:bg-surface-900 p-4 text-center rounded-lg">
-                                    <span className="block text-xs font-bold text-surface-400 mb-1">Market Demand</span>
-                                    <span className="text-lg font-bold text-emerald-600 uppercase">High</span>
+                                    <span className="block text-xs font-bold text-surface-400 mb-1">Optimal AS</span>
+                                    <span className="text-lg font-bold text-emerald-600 uppercase">{(selected.retailInfo[0] as any)?.optimalAS || 'N/A'}</span>
                                  </div>
                                  <div className="bg-surface-50 dark:bg-surface-900 p-4 text-center rounded-lg">
-                                    <span className="block text-xs font-bold text-surface-400 mb-1">Saturation</span>
-                                    <span className="text-lg font-bold text-brand-600">0.22</span>
+                                    <span className="block text-xs font-bold text-surface-400 mb-1">Avg Price</span>
+                                    <span className="text-lg font-bold text-brand-600">${(selected.retailInfo[0] as any)?.averagePrice?.toFixed(2) || 'N/A'}</span>
                                  </div>
                               </div>
                               <div className="p-4 bg-brand-50 dark:bg-brand-900/10 rounded-lg border border-brand-100 dark:border-brand-900/20">
                                  <p className="text-sm font-medium text-surface-600 dark:text-surface-300 leading-relaxed italic">
-                                    Current market analysis suggests high margin potential in Expansion regimes. Retail saturation remains optimal.
+                                    Targeting quality {(selected.retailInfo[0] as any)?.avgQuality || 0} items for maximum throughput.
                                  </p>
                               </div>
                            </div>

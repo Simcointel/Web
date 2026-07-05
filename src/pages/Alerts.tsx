@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { useSseConnected, useSseEvent } from "../hooks/useSse";
@@ -6,6 +6,10 @@ import { LoadingState, ErrorState, EmptyState } from "../components/States";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 
 export function AlertsPage() {
+  useEffect(() => {
+    document.title = "Event Logs - SimcoIntel";
+  }, []);
+
   const [realm, setRealm] = useSharedRealm();
   const { data: eventsData, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardEvents(realm, 200), 60000, [realm]);
   const [severity, setSeverity] = useState<string>("all");
