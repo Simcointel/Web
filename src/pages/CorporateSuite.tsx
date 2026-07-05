@@ -99,10 +99,6 @@ const DEFAULT_STATE: SuiteStateV6 = {
 const n = (v: any) => (typeof v === 'number' && !isNaN(v) ? v : 0);
 
 export function CorporateSuitePage() {
-  useEffect(() => {
-    document.title = "Sync.Suite - Corporate Intelligence";
-  }, []);
-
   const { theme, toggleTheme } = useTheme();
   const [realm] = useSharedRealm();
   const navigate = useNavigate();
@@ -187,15 +183,6 @@ export function CorporateSuitePage() {
     }, 0);
 
     const coverageRatio = dailyInterest > 0 ? effProfit / dailyInterest : 100;
-    const breakEvenUnits = state.inventory.reduce((acc: any, item) => {
-       const res = RESOURCES.find(r => r.id === item.id);
-       const mRes = (margins?.resources as any[])?.find(r => r.id === item.id);
-       if (!res || !mRes) return acc;
-
-       const unitsToBE = (dailyInterest + (dailyWages * actualAO)) / (mRes.outputVwap - mRes.inputCostPerHour / (res.basePh || 1));
-       acc[item.id] = Math.ceil(unitsToBE);
-       return acc;
-    }, {});
 
     // Building profits
     const buildingProfits = effMap.map(m => {
@@ -229,7 +216,7 @@ export function CorporateSuitePage() {
     const result = {
       totalLevels, actualAO, rawAO, taxThreshold, salesSpeedBonus, patentProb,
       dailyWages, inventoryValue, mapValue, dailyInterest, effMan, effAcc, effCom, effSci,
-      estimatedDailyTax, coverageRatio, buildingProfits, breakEvenUnits,
+      estimatedDailyTax, coverageRatio, buildingProfits,
       totalValuation: inventoryValue + mapValue + (effProfit * 30),
       netDaily: effProfit - dailyInterest - estimatedDailyTax - (dailyWages * actualAO)
     };
@@ -323,7 +310,7 @@ export function CorporateSuitePage() {
 
   const renderTab = () => {
     switch(state.activeTab) {
-      case 'command': return <CommandView state={state} core={core} phase={economyPhase} margins={margins} cycles={cycles} onSync={syncCompany} isSyncing={isSyncing} />;
+      case 'command': return <CommandView state={state} core={core} phase={economyPhase} margins={margins} cycles={cycles} onSync={syncCompany} isSyncing={isSyncing} setState={setState} />;
       case 'ops': return <OperationsView state={state} core={core} setState={setState} />;
       case 'exec': return <ExecutiveView state={state} core={core} setState={setState} />;
       case 'finance': return <FinanceView state={state} core={core} setState={setState} />;
@@ -496,12 +483,7 @@ function CommandView({ core, phase, margins, cycles, state, onSync, isSyncing, s
                    <span className="text-2xl font-bold text-brand-600">+$${(core.netDaily * 30 / 1_000_000).toFixed(2)}M</span>
                 </div>
                 <div className="flex justify-between items-end">
-                   <div className="flex flex-col">
-                      <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">Debt Coverage</span>
-                      <span className={`text-xs font-bold ${core.coverageRatio > 2 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                         Ratio: {core.coverageRatio.toFixed(1)}x
-                      </span>
-                   </div>
+                   <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">7D Projection</span>
                    <span className="text-xl font-bold text-emerald-600">+$${(core.netDaily * 7 / 1000).toFixed(1)}K</span>
                 </div>
              </div>
@@ -513,8 +495,8 @@ function CommandView({ core, phase, margins, cycles, state, onSync, isSyncing, s
              <h3 className="text-sm font-bold uppercase tracking-widest mb-6 opacity-80">Strategic Integration</h3>
              <div className="space-y-4">
                 <CheckItem label="EXECUTIVE BOARD" active={core.effMan > 0} light />
-                   <CheckItem label="WAREHOUSE SYNC" active={state.inventory.length > 0} light />
-                   <CheckItem label="DEBT MANAGEMENT" active={state.debt.current > 0} light />
+                <CheckItem label="WAREHOUSE SYNC" active={core.inventoryValue > 0} light />
+                <CheckItem label="DEBT MANAGEMENT" active={core.dailyInterest > 0} light />
                 <CheckItem label="ECONOMY SYNC" active={true} light />
              </div>
           </div>
@@ -880,12 +862,7 @@ function LogisticsView({ state, setState, core }: any) {
                       const item = state.inventory.find(i => i.id === r.id);
                       return (
                          <div key={r.id} className="flex justify-between items-center py-2.5 px-2 hover:bg-surface-50 dark:hover:bg-surface-900 transition-all">
-                            <div className="flex flex-col">
-                               <span className="font-bold text-surface-700 dark:text-surface-300">{r.name}</span>
-                               {core.breakEvenUnits[r.id] > 0 && (
-                                  <span className="text-[9px] font-black text-rose-500 uppercase tracking-tighter">BE: {core.breakEvenUnits[r.id]} units/day</span>
-                               )}
-                            </div>
+                            <span className="font-bold text-surface-700 dark:text-surface-300">{r.name}</span>
                             <input type="number" value={item?.qty || ""} onChange={(e) => { const v = Number(e.target.value); const next = [...state.inventory.filter(i => i.id !== r.id)]; if (v > 0) next.push({ id: r.id, qty: v }); setState({...state, inventory: next}); }} className="w-20 bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 rounded px-2 py-1 text-sm font-bold text-right outline-none focus:ring-1 focus:ring-indigo-600" />
                          </div>
                       )
@@ -935,7 +912,6 @@ function RetailView({ state, setState, retail }: any) {
   const selectedRes = RESOURCES.find(r => r.id === state.settings.retailResourceId) || RESOURCES.find(r => r.id === 24);
   const retailData = retail?.retail ? Object.entries(retail.retail).find(([k]) => k.toLowerCase() === selectedRes?.name.toLowerCase()) : null;
   const marketSat = (retailData as any)?.[1]?.saturation || 1.0;
-  const avgPrice = (retailData as any)?.[1]?.price || 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -966,19 +942,6 @@ function RetailView({ state, setState, retail }: any) {
              <p className="text-base font-medium text-surface-600 dark:text-surface-300 leading-relaxed">
                 A market saturation of <span className="font-bold text-brand-600">{marketSat.toFixed(2)}</span> indicates {marketSat < 1 ? "optimal conditions for aggressive retail expansion" : "a highly competitive landscape requiring premium quality to maintain margins"}.
              </p>
-          </div>
-          <div className="card p-6 border-t-4 border-rose-600 !shadow-none border-surface-200 dark:border-surface-800">
-             <span className="text-sm font-bold text-surface-500 block mb-3 uppercase tracking-wide">Pricing Intelligence</span>
-             <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                   <span className="text-xs font-bold text-surface-400 uppercase">Avg Market Price</span>
-                   <span className="text-lg font-bold text-brand-600">${avgPrice.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                   <span className="text-xs font-bold text-surface-400 uppercase">Profit per Unit</span>
-                   <span className="text-lg font-bold text-emerald-600">${(avgPrice * 0.15).toFixed(2)} <span className="text-[10px] text-surface-400">(est)</span></span>
-                </div>
-             </div>
           </div>
        </div>
     </div>
@@ -1084,11 +1047,11 @@ function ForecastLine({ label, value, red, green }: any) {
 
 function CheckItem({ label, active, light }: any) {
   return (
-    <div className="flex items-center gap-5 py-2 group cursor-default">
-       <div className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${active ? 'bg-emerald-500 border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'border-white/20 bg-white/5'}`}>
+    <div className="flex items-center gap-5 py-2">
+       <div className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${active ? 'bg-emerald-500 border-emerald-500 shadow-lg' : 'border-white/20 bg-white/5'}`}>
           {active && <CheckCircle2 size={14} className="text-white" />}
        </div>
-       <span className={`text-[12px] font-black uppercase italic tracking-widest transition-opacity ${active ? (light ? 'text-white' : 'text-surface-900') : 'text-white/20'}`}>{label}</span>
+       <span className={`text-[12px] font-black uppercase italic tracking-widest ${active ? (light ? 'text-white' : 'text-surface-900') : 'text-white/20'}`}>{label}</span>
     </div>
   );
 }
