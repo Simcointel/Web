@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { Section } from "../components/Layout";
@@ -7,6 +7,10 @@ import { useSharedRealm } from "../hooks/useSharedRealm";
 import { RESOURCES } from "../data/simco_static";
 
 export function ProfitMarginsPage() {
+  useEffect(() => {
+    document.title = "Profit Matrix - SimcoIntel";
+  }, []);
+
   const [realm, setRealm] = useSharedRealm();
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");

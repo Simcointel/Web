@@ -2,7 +2,7 @@ import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { LoadingState, ErrorState } from "../components/States";
 import { useSharedRealm } from "../hooks/useSharedRealm";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area
 } from "recharts";
@@ -15,6 +15,10 @@ interface PhaseRecord {
 }
 
 export function MacroPage() {
+  useEffect(() => {
+    document.title = "Macro Intel - SimcoIntel";
+  }, []);
+
   const [realm, setRealm] = useSharedRealm();
   const { data: latest, loading: lLoading, error: lError, refresh: lRefresh } = useDataRepoPoll(() => dataRepo.fetchMacroLatest(realm), 60000, [realm]);
   const { data: history } = useDataRepoPoll(() => dataRepo.fetchMacroHistory(realm, 120), 120000, [realm]);
@@ -86,6 +90,7 @@ export function MacroPage() {
                   <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
                   <Area type="monotone" dataKey="companiesValue" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.1} name="Total Value" />
+                  <Area type="monotone" dataKey="totalBuildings" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.05} name="Total Facilities" />
                   <Line type="monotone" dataKey="gdp" stroke="#10b981" strokeWidth={2} dot={false} name="GDP Index" />
                 </AreaChart>
              </ResponsiveContainer>

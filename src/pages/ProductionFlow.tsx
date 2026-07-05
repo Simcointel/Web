@@ -1,9 +1,13 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { RESOURCES } from "../data/simco_static";
 import { Search, ChevronRight, Share2, Layers, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function ProductionFlowPage() {
+  useEffect(() => {
+    document.title = "Visual Flow - SimcoIntel";
+  }, []);
+
   const [targetId, setTargetId] = useState<number>(2); // Default to Apples
   const [search, setSearch] = useState("");
 
