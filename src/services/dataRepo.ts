@@ -586,18 +586,9 @@ export async function fetchCycles(realm: number): Promise<any> {
 /* ============================================================
    Player API
    ============================================================ */
-export async function fetchCompanyData(companyId: string | number): Promise<any> {
-  // Use a CORS proxy to bypass SimCompanies CORS policy during development/deployment
-  const proxyUrl = "https://cors-anywhere.herokuapp.com/";
-  const targetUrl = `https://www.simcompanies.com/api/v3/companies/${companyId}/`;
-
-  // Note: cors-anywhere requires a 'x-requested-with' header or a demo access click
-  // Alternatively, if our backend has a proxy, we should use it.
-  // In the current vite config, we have a proxy for /api pointing to 3001.
-
-  // Trying with direct fetch first, but if it fails we might need a dedicated proxy.
-  // Given the error message, direct browser fetch is definitely blocked.
-
+export async function fetchCompanyData(companyId: string | number, realm = 0): Promise<any> {
+  const base = realm === 1 ? "https://www.simcompanies.com/api/v3/entrepreneurs/companies/" : "https://www.simcompanies.com/api/v3/companies/";
+  const targetUrl = `${base}${companyId}/`;
   const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
   if (!res.ok) throw new Error("Could not fetch company data via proxy");
   const wrapper = await res.json();
@@ -631,5 +622,3 @@ export async function fetchDependencies(realm: number): Promise<any> {
     dependencyMatrix: {},
   };
 }
-
-

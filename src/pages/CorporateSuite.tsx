@@ -26,12 +26,11 @@ interface Executive {
   science: number;
 }
 
-interface MapItem { id: string; level: number; }
+interface MapItem { id: string; level: number; instanceId?: number; }
 interface InventoryItem { id: number; qty: number; }
 
 interface SuiteStateV6 {
   activeTab: 'command' | 'ops' | 'exec' | 'finance' | 'logistics' | 'risk' | 'retail' | 'ledger';
-  globalSync: boolean;
   companyId: string;
   companyName?: string;
   companyLogo?: string;
@@ -59,11 +58,6 @@ interface SuiteStateV6 {
     researchBonus: number;
   };
   debt: { current: number; rate: number; };
-  moduleSettings: {
-    opsLinked: boolean; execLinked: boolean; financeLinked: boolean;
-    logisticsLinked: boolean; riskLinked: boolean;
-  };
-  showStaff?: boolean;
   ledger: any[];
 }
 
@@ -71,7 +65,6 @@ const EMPTY_EXEC: Executive = { name: "", management: 0, accounting: 0, communic
 
 const DEFAULT_STATE: SuiteStateV6 = {
   activeTab: 'command',
-  globalSync: true,
   companyId: "",
   map: [],
   board: {
@@ -89,14 +82,14 @@ const DEFAULT_STATE: SuiteStateV6 = {
     researchBonus: 0
   },
   debt: { current: 2000000, rate: 0.5 },
-  moduleSettings: {
-    opsLinked: true, execLinked: true, financeLinked: true,
-    logisticsLinked: true, riskLinked: true
-  },
   ledger: []
 };
 
-const n = (v: any) => (typeof v === 'number' && !isNaN(v) ? v : 0);
+const n = (v: any) => {
+  if (v === undefined || v === null) return 0;
+  const num = Number(v);
+  return isNaN(num) ? 0 : num;
+};
 
 export function CorporateSuitePage() {
   const { theme, toggleTheme } = useTheme();
@@ -105,6 +98,8 @@ export function CorporateSuitePage() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [notification, setNotification] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [debugData, setDebugData] = useState<any>(null);
+  const [showDebug, setShowDebug] = useState(false);
 
   const { data: dash } = useDataRepoPoll(() => dataRepo.fetchDashboardState(realm), 60000, [realm]);
   const { data: margins, loading: mLoading } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 60000, [realm]);
@@ -113,22 +108,21 @@ export function CorporateSuitePage() {
 
   const [state, setState] = useState<SuiteStateV6>(() => {
     const saved = localStorage.getItem("simco_suite_v6");
-    if (!saved) return DEFAULT_STATE;
+    const base = { ...DEFAULT_STATE };
+    if (!saved) return base;
     try {
       const parsed = JSON.parse(saved);
       return {
-        ...DEFAULT_STATE,
+        ...base,
         ...parsed,
-        board: { ...DEFAULT_STATE.board, ...parsed.board },
-        settings: { ...DEFAULT_STATE.settings, ...parsed.settings },
-        moduleSettings: { ...DEFAULT_STATE.moduleSettings, ...parsed.moduleSettings },
+        board: { ...base.board, ...(parsed.board || {}) },
+        settings: { ...base.settings, ...(parsed.settings || {}) },
         ledger: parsed.ledger || []
       };
     } catch (e) {
-      return DEFAULT_STATE;
+      return base;
     }
   });
-
 
   useEffect(() => {
     if (notification) {
@@ -140,75 +134,77 @@ export function CorporateSuitePage() {
   const economyPhase = (dash as any)?.[String(realm)]?.regime?.na || 'Normal';
 
   const core = useMemo(() => {
-    const effMap = state.map;
-    const effBoard = state.board;
-    const effProfit = n(state.settings.estDailyProfit);
+    const s = state || DEFAULT_STATE;
+    const settings = s.settings || DEFAULT_STATE.settings;
+    const effMap = s.map || [];
+    const effBoard = s.board || DEFAULT_STATE.board;
 
-    const totalLevels = effMap.reduce((s, i) => s + n(i.level), 0) + n(state.settings.whatIfLevel);
+    const effProfit = n(settings.estDailyProfit);
+    const totalLevels = effMap.reduce((sum, i) => sum + n(i.level), 0) + n(settings.whatIfLevel);
     const rawAO = Math.max(0, (totalLevels - 1) / 170);
 
-    const getEff = (primary: number, others: number[]) => n(primary) + Math.floor(others.reduce((s, v) => s + n(v), 0) / 4);
+    const getEff = (primary: number, others: number[]) => n(primary) + Math.floor(others.reduce((acc, v) => acc + n(v), 0) / 4);
 
     const effMan = getEff(effBoard.coo.management, [effBoard.cfo.management, effBoard.cmo.management, effBoard.cto.management, effBoard.cooApp.management, effBoard.cfoApp.management, effBoard.cmoApp.management, effBoard.ctoApp.management]);
-    const effAcc = getEff(effBoard.cfo.accounting, [effBoard.coo.accounting, effBoard.cmo.accounting, effBoard.cto.accounting, effBoard.cooApp.accounting, effBoard.cfoApp.accounting, effBoard.cmoApp.accounting, effBoard.cto.accounting]);
-    const effCom = getEff(effBoard.cmo.communication, [effBoard.coo.communication, effBoard.cfo.communication, effBoard.cto.communication, effBoard.cooApp.communication, effBoard.cfoApp.communication, effBoard.cmoApp.communication, effBoard.ctoApp.communication]);
-    const effSci = getEff(effBoard.cto.science, [effBoard.coo.science, effBoard.cfo.science, effBoard.cmo.science, effBoard.cooApp.science, effBoard.cfoApp.science, effBoard.cmo.science, effBoard.cto.science]);
+    const effAcc = getEff(effBoard.cfo.accounting, [effBoard.coo.accounting, effBoard.cmo.accounting, effBoard.cto.accounting, effBoard.cooApp.accounting, effBoard.cfoApp.accounting, effBoard.cmoApp.accounting, effBoard.ctoApp.accounting]);
+    const effCom = getEff(effBoard.cmo.communication, [effBoard.coo.communication, effBoard.cfo.communication, effBoard.cto.communication, effBoard.cooApp.communication, effBoard.cfoApp.communication, effBoard.cmo.communication, effBoard.ctoApp.accounting]);
+    const effSci = getEff(effBoard.cto.science, [effBoard.coo.science, effBoard.cfo.science, effBoard.cto.science, effBoard.cooApp.science, effBoard.cfoApp.science, effBoard.cmo.science, effBoard.cto.science]);
 
     const actualAO = rawAO * (1 - (effMan * 0.01));
     const baseTaxThreshold = 3000000 + (effAcc * 500000);
-    const taxThreshold = baseTaxThreshold + (state.settings.bankLevel * 50000 * effAcc);
+    const taxThreshold = baseTaxThreshold + (n(settings.bankLevel) * 50000 * effAcc);
 
-    const salesSpeedBonus = (effCom / 3 / 100) + (state.settings.profileSalesBonus * 0.01);
+    const salesSpeedBonus = (effCom / 3 / 100) + (n(settings.profileSalesBonus) * 0.01);
     const patentProb = 0.0625 + (effSci * 0.000625);
 
     const dailyWages = effMap.reduce((sum, item) => {
       const b = BUILDINGS.find(bu => bu.id === item.id);
-      return sum + (item.level * (b?.wages || 0) * 24);
+      return sum + (n(item.level) * (b?.wages || 0) * 24);
     }, 0);
 
-    const dailyInterest = state.debt.current * (state.debt.rate / 100);
+    const dailyInterest = n(s.debt?.current) * (n(s.debt?.rate) / 100);
     const taxableAmount = Math.max(0, effProfit - (taxThreshold / 30));
     const estimatedDailyTax = taxableAmount * 0.07;
 
-    const inventoryValue = state.inventory.reduce((sum, item) => {
+    const inventoryValue = (s.inventory || []).reduce((sum, item) => {
       const price = (margins?.resources as any[])?.find(m => m.id === item.id)?.outputVwap || 0;
       return sum + (price * item.qty);
     }, 0);
+
     const mapValue = effMap.reduce((sum, item) => {
       const b = BUILDINGS.find(bu => bu.id === item.id);
       if (!b) return sum;
       let cost = 0;
-      for(let l=1; l<=item.level; l++) cost += b.cost * (l <= 2 ? 1 : l-1);
+      for(let l=1; l<=n(item.level); l++) cost += b.cost * (l <= 2 ? 1 : l-1);
       return sum + cost;
     }, 0);
 
     const coverageRatio = dailyInterest > 0 ? effProfit / dailyInterest : 100;
 
-    // Building profits
     const buildingProfits = effMap.map(m => {
        const b = BUILDINGS.find(bu => bu.id === m.id);
-       if (!b) return { name: 'Unknown', profit: 0 };
+       if (!b) return { name: 'Unknown', profit: 0, level: m.level };
 
-       const res = RESOURCES.find(r => r.buildingId === b.id); // Simplification: assume 1 primary resource per building
+       const res = RESOURCES.find(r => r.buildingId === b.id);
        const mRes = (margins?.resources as any[])?.find(r => r.id === res?.id);
 
-       if (!mRes || !res) return { name: b.name, profit: 0 };
+       if (!mRes || !res) return { name: b.name, profit: 0, level: m.level };
 
        const isExtraction = ["O", "M", "Q"].includes(String(b.id));
        const isResearch = ["p", "b", "c", "h", "s", "a", "f", "y"].includes(String(b.id));
 
-       const effProdBonus = isResearch ? 0 : state.settings.prodBonus;
-       const effResBonus = isResearch ? state.settings.researchBonus : 0;
+       const effProdBonus = isResearch ? 0 : settings.prodBonus || 0;
+       const effResBonus = isResearch ? settings.researchBonus || 0 : 0;
 
        let unitsPh = (res.basePh || 0) * (1 + (effProdBonus + effResBonus) / 100);
-       if (isExtraction) unitsPh *= (state.settings.abundance / 100);
+       if (isExtraction) unitsPh *= (n(settings.abundance) / 100);
 
        const wagesPh = (b.wages || 0) * (1 + actualAO);
-       const inputCostPh = mRes.inputCostPerHour;
+       const inputCostPh = n(mRes.inputCostPerHour);
 
-       const totalCostPh = inputCostPh + wagesPh + (mRes.transportPerHour || 0);
-       const revenuePh = unitsPh * mRes.outputVwap;
-       const netProfitPh = (revenuePh - totalCostPh) * m.level;
+       const totalCostPh = inputCostPh + wagesPh + n(mRes.transportPerHour);
+       const revenuePh = unitsPh * n(mRes.outputVwap);
+       const netProfitPh = (revenuePh - totalCostPh) * n(m.level);
 
        return { name: b.name, profit: netProfitPh, level: m.level };
     });
@@ -221,12 +217,11 @@ export function CorporateSuitePage() {
       netDaily: effProfit - dailyInterest - estimatedDailyTax - (dailyWages * actualAO)
     };
 
-    // Side effect to sync metrics
     const metrics = {
-       prodBonus: state.settings.prodBonus,
+       prodBonus: settings.prodBonus,
        actualAO: result.actualAO,
-       abundance: state.settings.abundance,
-       researchBonus: state.settings.researchBonus
+       abundance: n(settings.abundance),
+       researchBonus: n(settings.researchBonus)
     };
     localStorage.setItem("simco_suite_metrics", JSON.stringify(metrics));
 
@@ -234,7 +229,7 @@ export function CorporateSuitePage() {
   }, [state, margins]);
 
   useEffect(() => {
-    localStorage.setItem("simco_suite_v6", JSON.stringify(state));
+    if (state) localStorage.setItem("simco_suite_v6", JSON.stringify(state));
   }, [state]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -245,19 +240,14 @@ export function CorporateSuitePage() {
       const content = e.target?.result as string;
       if (file.name.endsWith('.csv')) {
          const rows = content.split('\n').map(r => r.split(',').map(c => c.replace(/"/g, '').trim()));
-         // Detect SimCompanies Receipts CSV
          if (rows[0].includes('Date') && rows[0].includes('Amount')) {
             const amountIdx = rows[0].indexOf('Amount');
-            const dataIdx = rows[0].indexOf('Date');
-            const detailIdx = rows[0].indexOf('Details');
-
             let total = 0;
             rows.slice(1).forEach(row => {
                if (row[amountIdx]) total += parseFloat(row[amountIdx]) || 0;
             });
-
             setNotification({ msg: `Parsed $${(total/1_000_000).toFixed(2)}M in Receipts`, type: "success" });
-            setState(prev => ({ ...prev, settings: { ...prev.settings, estDailyProfit: total / 7 } })); // Heuristic average
+            setState(prev => ({ ...prev, settings: { ...prev.settings, estDailyProfit: total / 7 } }));
          }
          return;
       }
@@ -274,12 +264,30 @@ export function CorporateSuitePage() {
     setIsSyncing(true);
     try {
       setNotification({ msg: "Establishing secure link...", type: "success" });
-      const data = await dataRepo.fetchCompanyData(id);
+      const data = await dataRepo.fetchCompanyData(id, realm);
+      setDebugData(data);
 
-      const newMap: MapItem[] = (data.infrastructure?.buildings || []).map((b: any) => ({
-        id: b.kind,
-        level: b.size || 1
-      }));
+      const newMap: MapItem[] = (data.infrastructure?.buildings || [])
+        .filter((b: any) => b && b.kind)
+        .map((b: any) => {
+          const apiLevel = n(b.level);
+          const apiSize = n(b.size);
+
+          // Prioritize size as it typically represents levels/slots in the infrastructure array
+          let level = apiSize > 0 ? apiSize : (apiLevel > 0 ? apiLevel : 1);
+
+          if (b.busy && (b.busy.category === 'u' || b.busy.category === 'upgrading' || b.busy.category === 'upgrade')) {
+             if (b.busy.upkeep === false) {
+                level += 1;
+             }
+          }
+
+          return {
+            id: b.kind,
+            level: Math.max(level, 1),
+            instanceId: b.id
+          };
+        });
 
       setState(prev => ({
         ...prev,
@@ -295,21 +303,23 @@ export function CorporateSuitePage() {
         settings: {
           ...prev.settings,
           prodBonus: 12 + (data.companyPublicInfo?.productionModifier || 0),
-          profileSalesBonus: data.companyPublicInfo?.salesModifier || 0,
+          profileSalesBonus: (data.companyPublicInfo?.salesModifier || 0),
           recreationalBuildings: data.infrastructure?.recreationBonus || 0,
         }
       }));
 
       setNotification({ msg: `Synchronized: ${data.companyPublicInfo?.company}`, type: "success" });
-    } catch (e) {
+    } catch (e: any) {
       setNotification({ msg: "Connection Failed", type: "error" });
+      setDebugData({ error: e.message || String(e) });
     } finally {
       setIsSyncing(false);
     }
   };
 
   const renderTab = () => {
-    switch(state.activeTab) {
+    if (!core || !state) return <LoadingState text="Syncing Engine..." />;
+    switch(state.activeTab || 'command') {
       case 'command': return <CommandView state={state} core={core} phase={economyPhase} margins={margins} cycles={cycles} onSync={syncCompany} isSyncing={isSyncing} setState={setState} />;
       case 'ops': return <OperationsView state={state} core={core} setState={setState} />;
       case 'exec': return <ExecutiveView state={state} core={core} setState={setState} />;
@@ -318,6 +328,7 @@ export function CorporateSuitePage() {
       case 'retail': return <RetailView state={state} core={core} setState={setState} retail={retail} />;
       case 'risk': return <RiskView core={core} phase={economyPhase} retail={retail} />;
       case 'ledger': return <LedgerView state={state} setState={setState} />;
+      default: return <CommandView state={state} core={core} phase={economyPhase} margins={margins} cycles={cycles} onSync={syncCompany} isSyncing={isSyncing} setState={setState} />;
     }
   };
 
@@ -361,9 +372,9 @@ export function CorporateSuitePage() {
        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4 z-[90]">
           <div className="bg-white dark:bg-surface-900 text-surface-900 dark:text-white p-2.5 rounded-xl shadow-2xl flex items-center justify-between border border-surface-200 dark:border-surface-800">
              <div className="flex gap-8 px-6 border-r border-surface-200 dark:border-surface-800">
-                <GlobalMetric label="Total Valuation" value={`$${(core.totalValuation/1_000_000).toFixed(2)}M`} />
-                <GlobalMetric label="Net Daily Yield" value={`$${(core.netDaily/1000).toFixed(1)}K`} />
-                <GlobalMetric label="Map Efficiency" value={`${((1 - core.actualAO)*100).toFixed(0)}%`} />
+                <GlobalMetric label="Total Valuation" value={core ? `$${(core.totalValuation/1_000_000).toFixed(2)}M` : '--'} />
+                <GlobalMetric label="Net Daily Yield" value={core ? `$${(core.netDaily/1000).toFixed(1)}K` : '--'} />
+                <GlobalMetric label="Map Efficiency" value={core ? `${((1 - core.actualAO)*100).toFixed(0)}%` : '--'} />
              </div>
              <div className="flex items-center gap-3 px-4">
                 <button onClick={toggleTheme} title="Toggle Theme" className="w-10 h-10 rounded-lg border border-surface-200 dark:border-surface-700 flex items-center justify-center hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors">
@@ -381,6 +392,23 @@ export function CorporateSuitePage() {
             <div className={`px-4 py-2 rounded-xl shadow-2xl flex items-center gap-3 border-2 ${notification.type === 'success' ? 'bg-econ-green text-white border-white/20' : 'bg-econ-red text-white border-white/20'}`}>
                {notification.type === 'success' ? <CheckCircle2 size={20} /> : <AlertTriangle size={20} />}
                <span className="font-black uppercase tracking-widest text-xs">{notification.msg}</span>
+               {notification.type === 'error' && (
+                 <button onClick={() => setShowDebug(true)} className="ml-2 text-[10px] underline">Debug</button>
+               )}
+            </div>
+         </div>
+       )}
+
+       {showDebug && debugData && (
+         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[1000] flex items-center justify-center p-6">
+            <div className="bg-white dark:bg-surface-900 w-full max-w-4xl h-[80vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl border border-surface-200 dark:border-surface-800">
+               <div className="p-4 border-b border-surface-100 dark:border-surface-800 flex justify-between items-center bg-surface-50 dark:bg-surface-950">
+                  <h3 className="font-bold uppercase tracking-widest text-xs">Transmission Debug Log</h3>
+                  <button onClick={() => setShowDebug(false)} className="p-2 hover:bg-surface-200 dark:hover:bg-surface-800 rounded-lg transition-colors text-xs font-bold uppercase">Close</button>
+               </div>
+               <pre className="flex-1 overflow-auto p-6 text-[10px] font-mono leading-relaxed bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-brand-400">
+                  {JSON.stringify(debugData, null, 2)}
+               </pre>
             </div>
          </div>
        )}
@@ -403,7 +431,7 @@ function LedgerView({ state }: any) {
           <Section title="STAT_EXTRACT" icon={TrendingUp} color="text-teal-500">
              <div className="card p-4 border-l-2 border-teal-500">
                 <span className="text-[9px] font-black text-surface-400 block mb-2 uppercase">EST_DAILY_PROFIT</span>
-                <span className="text-2xl font-black italic tracking-tighter text-teal-600">${(state.settings.estDailyProfit/1000).toFixed(1)}K</span>
+                <span className="text-2xl font-black italic tracking-tighter text-teal-600">$${(n(state.settings?.estDailyProfit)/1000).toFixed(1)}K</span>
              </div>
           </Section>
        </div>
@@ -468,7 +496,7 @@ function CommandView({ core, phase, margins, cycles, state, onSync, isSyncing, s
                       <div key={i} className="flex justify-between items-center px-6 py-3 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-all">
                          <span className="font-bold text-surface-800 dark:text-surface-200">{r.name}</span>
                          <div className="flex gap-4 items-center">
-                            <span className="font-medium text-surface-400">${r.outputVwap.toFixed(2)}</span>
+                            <span className="font-medium text-surface-400">$${r.outputVwap.toFixed(2)}</span>
                             <span className={`font-bold tabular-nums ${r.marginDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                                {r.marginDelta > 0 ? '↑' : '↓'} {Math.abs(r.marginDelta).toFixed(1)}%
                             </span>
@@ -556,12 +584,12 @@ function OperationsView({ state, setState, core }: any) {
 
   const constructionTotals = useMemo(() => {
     const totals: Record<number, number> = { 101: 0, 102: 0, 108: 0, 111: 0, 110: 0, 0: 0 };
-    state.map.forEach((m: any) => {
+    (state.map || []).forEach((m: any) => {
       const b = BUILDINGS.find(bu => bu.id === m.id);
       if (!b) return;
-      totals[0] += b.cost * (m.level <= 1 ? 1 : m.level);
+      totals[0] += b.cost * (n(m.level) <= 1 ? 1 : n(m.level));
       b.resources.forEach((r: any) => {
-         if (r.id !== 109) totals[r.id] = (totals[r.id] || 0) + (r.qty * (m.level || 1));
+         if (r.id !== 109) totals[r.id] = (totals[r.id] || 0) + (r.qty * (n(m.level) || 1));
       });
     });
     return totals;
@@ -584,7 +612,7 @@ function OperationsView({ state, setState, core }: any) {
                 <button
                   onClick={() => {
                     const b = filteredBuildings[0] || BUILDINGS[0];
-                    setState({...state, map: [...state.map, { id: b.id, level: 1 }]});
+                    setState({...state, map: [...(state.map || []), { id: b.id, level: 1 }]});
                   }}
                   className="btn !bg-emerald-600 text-white !px-4 shadow-sm font-bold"
                 >
@@ -592,17 +620,17 @@ function OperationsView({ state, setState, core }: any) {
                 </button>
              </div>
              <div className="max-h-[500px] overflow-y-auto space-y-2 pr-2 scrollbar-hide">
-                {state.map.map((m: any, i: number) => (
+                {(state.map || []).map((m: any, i: number) => (
                    <div key={i} className="card p-3 flex items-center gap-4 hover:border-emerald-600/30 transition-all border-l-4 border-emerald-600 !shadow-none border-surface-200 dark:border-surface-800">
                       <div className="flex-1">
-                         <select value={m.id} onChange={(e) => { const n = [...state.map]; n[i].id = e.target.value; setState({...state, map: n}); }} className="bg-transparent border-none p-0 font-bold uppercase w-full outline-none text-sm">
+                         <select value={m.id} onChange={(e) => { const next = [...state.map]; next[i].id = e.target.value; setState({...state, map: next}); }} className="bg-transparent border-none p-0 font-bold uppercase w-full outline-none text-sm">
                             {BUILDINGS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                          </select>
-                         <p className="text-xs text-surface-400 font-medium mt-1">Instance Ref: {i+1}</p>
+                         <p className="text-xs text-surface-400 font-medium mt-1">Instance Ref: {i+1} {m.instanceId ? `(ID: ${m.instanceId})` : ''}</p>
                       </div>
                       <div className="flex items-center gap-2 bg-surface-100 dark:bg-surface-900 px-3 py-1.5 rounded-lg border border-surface-200 dark:border-surface-800">
                          <span className="text-[10px] font-bold text-surface-400 uppercase">LVL</span>
-                         <input type="number" value={m.level} onChange={(e) => { const n = [...state.map]; n[i].level = Number(e.target.value); setState({...state, map: n}); }} className="w-8 bg-transparent border-none p-0 text-sm font-bold text-center outline-none" />
+                         <input type="number" value={m.level} onChange={(e) => { const next = [...state.map]; next[i].level = Number(e.target.value); setState({...state, map: next}); }} className="w-8 bg-transparent border-none p-0 text-sm font-bold text-center outline-none" />
                       </div>
                       <button onClick={() => setState({...state, map: state.map.filter((_: any, idx: number) => idx !== i)})} className="p-2 text-surface-300 hover:text-rose-600 transition-colors"><Trash2 size={18} /></button>
                    </div>
@@ -616,7 +644,7 @@ function OperationsView({ state, setState, core }: any) {
                 <div className="card bg-emerald-600 text-white p-6 relative overflow-hidden !shadow-none border-none">
                    <HardHat size={80} className="absolute -right-6 -bottom-6 opacity-10" />
                    <h3 className="text-xs font-bold uppercase tracking-widest mb-6 opacity-80">Total Capital Required</h3>
-                   <span className="text-4xl font-bold tabular-nums leading-none">${(constructionTotals[0]/1000).toFixed(1)}K</span>
+                   <span className="text-4xl font-bold tabular-nums leading-none">$${(constructionTotals[0]/1000).toFixed(1)}K</span>
                 </div>
                 <div className="card p-6 space-y-3 !shadow-none border-surface-200 dark:border-surface-800">
                    <div className="space-y-2">
@@ -638,7 +666,7 @@ function OperationsView({ state, setState, core }: any) {
                       <div>
                          <span className="text-xs font-bold text-surface-400 uppercase block mb-1">Production Bonus</span>
                          <div className="flex items-center gap-1">
-                            <input type="number" value={state.settings.prodBonus} onChange={(e) => setState({...state, settings: {...state.settings, prodBonus: Number(e.target.value)}})} className="w-16 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded px-2 py-1 font-bold text-emerald-600 outline-none" />
+                            <input type="number" value={state.settings?.prodBonus} onChange={(e) => setState({...state, settings: {...state.settings, prodBonus: Number(e.target.value)}})} className="w-16 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded px-2 py-1 font-bold text-emerald-600 outline-none" />
                             <span className="text-emerald-600 font-bold">%</span>
                          </div>
                       </div>
@@ -651,14 +679,14 @@ function OperationsView({ state, setState, core }: any) {
                       <div>
                          <span className="text-xs font-bold text-surface-400 uppercase block mb-1">Resource Abundance</span>
                          <div className="flex items-center gap-1">
-                            <input type="number" value={state.settings.abundance} onChange={(e) => setState({...state, settings: {...state.settings, abundance: Number(e.target.value)}})} className="w-16 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded px-2 py-1 font-bold text-brand-600 outline-none" />
+                            <input type="number" value={state.settings?.abundance} onChange={(e) => setState({...state, settings: {...state.settings, abundance: Number(e.target.value)}})} className="w-16 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded px-2 py-1 font-bold text-brand-600 outline-none" />
                             <span className="text-brand-600 font-bold">%</span>
                          </div>
                       </div>
                       <div>
                          <span className="text-xs font-bold text-surface-400 uppercase block mb-1">Research Bonus</span>
                          <div className="flex items-center gap-1">
-                            <input type="number" value={state.settings.researchBonus} onChange={(e) => setState({...state, settings: {...state.settings, researchBonus: Number(e.target.value)}})} className="w-16 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded px-2 py-1 font-bold text-amber-600 outline-none" />
+                            <input type="number" value={state.settings?.researchBonus} onChange={(e) => setState({...state, settings: {...state.settings, researchBonus: Number(e.target.value)}})} className="w-16 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded px-2 py-1 font-bold text-amber-600 outline-none" />
                             <span className="text-amber-600 font-bold">%</span>
                          </div>
                       </div>
@@ -669,14 +697,14 @@ function OperationsView({ state, setState, core }: any) {
                    <div className="flex justify-between items-end">
                       <div>
                          <p className="text-xs font-bold text-emerald-600 uppercase mb-1">Scaling Simulation</p>
-                         <p className="text-3xl font-bold">+{state.settings.whatIfLevel} <span className="text-sm text-surface-400">Levels</span></p>
+                         <p className="text-3xl font-bold">+{state.settings?.whatIfLevel} <span className="text-sm text-surface-400">Levels</span></p>
                       </div>
                       <div className="text-right">
                          <p className="text-xs font-bold text-rose-500 uppercase mb-1">Projected AO</p>
                          <p className="text-xl font-bold tabular-nums text-rose-600">{(core.actualAO*100).toFixed(1)}%</p>
                       </div>
                    </div>
-                   <input type="range" min="0" max="500" step="5" value={state.settings.whatIfLevel} onChange={(e) => setState({...state, settings: {...state.settings, whatIfLevel: Number(e.target.value)}})} className="w-full h-2 bg-surface-100 dark:bg-surface-800 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+                   <input type="range" min="0" max="500" step="5" value={state.settings?.whatIfLevel} onChange={(e) => setState({...state, settings: {...state.settings, whatIfLevel: Number(e.target.value)}})} className="w-full h-2 bg-surface-100 dark:bg-surface-800 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
                 </div>
              </div>
           </Section>
@@ -696,7 +724,7 @@ function OperationsView({ state, setState, core }: any) {
                          <tr key={i} className="hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors">
                             <td className="px-6 py-4 font-medium">{p.name}</td>
                             <td className="px-6 py-4 text-center text-surface-400 font-bold">{p.level}</td>
-                            <td className={`px-6 py-4 text-right font-bold ${p.profit > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>${p.profit.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                            <td className={`px-6 py-4 text-right font-bold ${p.profit > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>$${p.profit.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
                          </tr>
                       ))}
                    </tbody>
@@ -768,7 +796,7 @@ function ExecutiveView({ state, setState, core }: any) {
                    <ForecastLine label="Retail Sales Bonus" value={`+${(core.salesSpeedBonus * 100).toFixed(1)}%`} />
                    <div className="flex justify-between items-center pt-2 border-t border-surface-50 dark:border-surface-800">
                       <span className="font-bold text-surface-500 uppercase text-xs">Target Quality</span>
-                      <input type="number" value={state.settings.patentTargetQuality} onChange={(e) => setState({...state, settings: {...state.settings, patentTargetQuality: Number(e.target.value)}})} className="w-12 bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 text-right font-bold py-1 px-2 rounded-md outline-none focus:ring-1 focus:ring-amber-500" />
+                      <input type="number" value={state.settings?.patentTargetQuality} onChange={(e) => setState({...state, settings: {...state.settings, patentTargetQuality: Number(e.target.value)}})} className="w-12 bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 text-right font-bold py-1 px-2 rounded-md outline-none focus:ring-1 focus:ring-amber-500" />
                    </div>
                 </div>
              </div>
@@ -789,7 +817,7 @@ function FinanceView({ state, setState, core }: any) {
                       <label className="text-[10px] font-black uppercase text-surface-400">Bank Infrastructure</label>
                       <div className="flex items-center gap-2 bg-surface-100 dark:bg-surface-800 px-2 py-1 rounded">
                          <span className="text-[10px] font-bold">LVL</span>
-                         <input type="number" value={state.settings.bankLevel} onChange={(e) => setState({...state, settings: {...state.settings, bankLevel: Number(e.target.value)}})} className="w-8 bg-transparent text-center font-bold outline-none" />
+                         <input type="number" value={state.settings?.bankLevel} onChange={(e) => setState({...state, settings: {...state.settings, bankLevel: Number(e.target.value)}})} className="w-8 bg-transparent text-center font-bold outline-none" />
                       </div>
                    </div>
                    <p className="text-[10px] text-surface-400 font-medium italic -mt-2">Bank level increases your tax-free threshold significantly.</p>
@@ -799,14 +827,14 @@ function FinanceView({ state, setState, core }: any) {
                    <label className="text-xs font-bold uppercase text-surface-500">Estimated Daily Profit</label>
                    <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-violet-600 font-bold text-lg">$</span>
-                      <input type="number" value={state.settings.estDailyProfit} onChange={(e) => setState({...state, settings: {...state.settings, estDailyProfit: Number(e.target.value)}})} className="w-full bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg py-3 pl-8 pr-4 text-xl font-bold outline-none focus:ring-1 focus:ring-violet-600" />
+                      <input type="number" value={state.settings?.estDailyProfit} onChange={(e) => setState({...state, settings: {...state.settings, estDailyProfit: Number(e.target.value)}})} className="w-full bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg py-3 pl-8 pr-4 text-xl font-bold outline-none focus:ring-1 focus:ring-violet-600" />
                    </div>
                 </div>
                 <div className="space-y-2">
                    <label className="text-xs font-bold uppercase text-surface-500">Total Liabilities (Debt)</label>
                    <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-rose-600 font-bold text-lg">$</span>
-                      <input type="number" value={state.debt.current} onChange={(e) => setState({...state, debt: {...state.debt, current: Number(e.target.value)}})} className="w-full bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg py-3 pl-8 pr-4 text-xl font-bold !text-rose-600 outline-none focus:ring-1 focus:ring-rose-600" />
+                      <input type="number" value={state.debt?.current} onChange={(e) => setState({...state, debt: {...state.debt, current: Number(e.target.value)}})} className="w-full bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg py-3 pl-8 pr-4 text-xl font-bold !text-rose-600 outline-none focus:ring-1 focus:ring-rose-600" />
                    </div>
                 </div>
              </div>
@@ -818,8 +846,8 @@ function FinanceView({ state, setState, core }: any) {
              <div className="space-y-4">
                 <ForecastLine label="Net Tax-Free Threshold" value={`$${(core.taxThreshold/1_000_000).toFixed(2)}M`} />
                 <ForecastLine label="Daily Ceiling" value={`$${(core.taxThreshold/30/1000).toFixed(1)}K`} />
-                <ForecastLine label="Est. Effective Tax Rate" value={`${((core.estimatedDailyTax / (core.settings.estDailyProfit || 1)) * 100).toFixed(1)}%`} />
-                <ForecastLine label="Estimated Daily Tax" value={`-$${(core.estimatedDailyTax/1000).toFixed(1)}K`} red />
+                <ForecastLine label="Est. Effective Tax Rate" value={`${((core.estimatedDailyTax / (state.settings?.estDailyProfit || 1)) * 100).toFixed(1)}%`} />
+                <ForecastLine label="Estimated Daily Tax" value={`-$${(core.estimatedDailyTax/1000).toFixed(1)}K` } red />
              </div>
           </div>
           <div className="card p-6 space-y-6 !shadow-none border-surface-200 dark:border-surface-800">
@@ -840,8 +868,8 @@ function LogisticsView({ state, setState, core }: any) {
   const filteredRes = useMemo(() => RESOURCES.filter(r => r.name.toLowerCase().includes(q.toLowerCase())), [q]);
 
   const inventorySummary = useMemo(() => {
-    const totalQty = state.inventory.reduce((sum: number, i: any) => sum + i.qty, 0);
-    const topItems = [...state.inventory]
+    const totalQty = (state.inventory || []).reduce((sum: number, i: any) => sum + i.qty, 0);
+    const topItems = [...(state.inventory || [])]
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 3)
       .map(i => RESOURCES.find(r => r.id === i.id)?.name);
@@ -859,7 +887,7 @@ function LogisticsView({ state, setState, core }: any) {
                 </div>
                 <div className="flex-1 overflow-y-auto divide-y divide-surface-100 dark:divide-surface-800">
                    {filteredRes.slice(0, 100).map(r => {
-                      const item = state.inventory.find(i => i.id === r.id);
+                      const item = (state.inventory || []).find(i => i.id === r.id);
                       return (
                          <div key={r.id} className="flex justify-between items-center py-2.5 px-2 hover:bg-surface-50 dark:hover:bg-surface-900 transition-all">
                             <span className="font-bold text-surface-700 dark:text-surface-300">{r.name}</span>
@@ -876,7 +904,7 @@ function LogisticsView({ state, setState, core }: any) {
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="card p-6 border-l-4 border-indigo-600 !shadow-none border-surface-200 dark:border-surface-800 bg-indigo-50/10 dark:bg-indigo-900/5">
                    <span className="text-xs font-bold text-surface-500 block mb-2 uppercase tracking-wide">Current Stock Liquidity</span>
-                   <span className="text-4xl font-bold text-indigo-600">${(core.inventoryValue/1000).toFixed(1)}K</span>
+                   <span className="text-4xl font-bold text-indigo-600">$${(core.inventoryValue/1000).toFixed(1)}K</span>
                    <p className="text-[10px] text-surface-400 mt-2 font-bold uppercase">Estimated VWAP Value</p>
                 </div>
                 <div className="card p-6 border-l-4 border-indigo-600 !shadow-none border-surface-200 dark:border-surface-800 bg-indigo-50/10 dark:bg-indigo-900/5">
@@ -909,7 +937,7 @@ function LogisticsView({ state, setState, core }: any) {
 }
 
 function RetailView({ state, setState, retail }: any) {
-  const selectedRes = RESOURCES.find(r => r.id === state.settings.retailResourceId) || RESOURCES.find(r => r.id === 24);
+  const selectedRes = RESOURCES.find(r => r.id === state.settings?.retailResourceId) || RESOURCES.find(r => r.id === 24);
   const retailData = retail?.retail ? Object.entries(retail.retail).find(([k]) => k.toLowerCase() === selectedRes?.name.toLowerCase()) : null;
   const marketSat = (retailData as any)?.[1]?.saturation || 1.0;
 
@@ -919,7 +947,7 @@ function RetailView({ state, setState, retail }: any) {
           <Section title="Retail Engine" icon={Target} color="text-rose-600">
              <div className="card p-6 border-l-4 border-rose-600 !shadow-none border-surface-200 dark:border-surface-800">
                 <label className="text-xs font-bold text-surface-500 block mb-3 uppercase">Inventory Selection</label>
-                <select value={state.settings.retailResourceId} onChange={(e) => setState({...state, settings: {...state.settings, retailResourceId: Number(e.target.value)}})} className="w-full bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 rounded-lg py-2.5 px-4 font-bold text-sm outline-none focus:ring-1 focus:ring-rose-600 mb-6">
+                <select value={state.settings?.retailResourceId} onChange={(e) => setState({...state, settings: {...state.settings, retailResourceId: Number(e.target.value)}})} className="w-full bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 rounded-lg py-2.5 px-4 font-bold text-sm outline-none focus:ring-1 focus:ring-rose-600 mb-6">
                    {RESOURCES.filter(r => r.retailInfo && r.retailInfo.length > 0).map(r => (
                       <option key={r.id} value={r.id}>{r.name}</option>
                    ))}
