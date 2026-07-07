@@ -34,6 +34,14 @@ interface SuiteStateV6 {
   companyId: string;
   companyName?: string;
   companyLogo?: string;
+  companyLevel?: number;
+  companyRank?: number;
+  companyValue?: number;
+  apiAO?: number;
+  workers?: number;
+  governmentTier?: number;
+  extraSlots?: number;
+  onlineStatus?: string;
   lastSynced?: string;
   map: MapItem[];
   board: {
@@ -66,6 +74,14 @@ const EMPTY_EXEC: Executive = { name: "", management: 0, accounting: 0, communic
 const DEFAULT_STATE: SuiteStateV6 = {
   activeTab: 'command',
   companyId: "",
+  companyLevel: 0,
+  companyRank: 0,
+  companyValue: 0,
+  apiAO: 0,
+  workers: 0,
+  governmentTier: 0,
+  extraSlots: 0,
+  onlineStatus: "n/a",
   map: [],
   board: {
     coo: EMPTY_EXEC, cfo: EMPTY_EXEC, cmo: EMPTY_EXEC, cto: EMPTY_EXEC,
@@ -143,12 +159,20 @@ export function CorporateSuitePage() {
     const totalLevels = effMap.reduce((sum, i) => sum + n(i.level), 0) + n(settings.whatIfLevel);
     const rawAO = Math.max(0, (totalLevels - 1) / 170);
 
-    const getEff = (primary: number, others: number[]) => n(primary) + Math.floor(others.reduce((acc, v) => acc + n(v), 0) / 4);
+    const getEff = (primary: number, all: number[]) => {
+      const sumOthers = all.reduce((acc, v) => acc + n(v), 0) - n(primary);
+      return n(primary) + Math.floor(sumOthers / 4);
+    };
 
-    const effMan = getEff(effBoard.coo.management, [effBoard.cfo.management, effBoard.cmo.management, effBoard.cto.management, effBoard.cooApp.management, effBoard.cfoApp.management, effBoard.cmoApp.management, effBoard.ctoApp.management]);
-    const effAcc = getEff(effBoard.cfo.accounting, [effBoard.coo.accounting, effBoard.cmo.accounting, effBoard.cto.accounting, effBoard.cooApp.accounting, effBoard.cfoApp.accounting, effBoard.cmoApp.accounting, effBoard.ctoApp.accounting]);
-    const effCom = getEff(effBoard.cmo.communication, [effBoard.coo.communication, effBoard.cfo.communication, effBoard.cto.communication, effBoard.cooApp.communication, effBoard.cfoApp.communication, effBoard.cmo.communication, effBoard.ctoApp.accounting]);
-    const effSci = getEff(effBoard.cto.science, [effBoard.coo.science, effBoard.cfo.science, effBoard.cto.science, effBoard.cooApp.science, effBoard.cfoApp.science, effBoard.cmo.science, effBoard.cto.science]);
+    const allMan = [effBoard.coo.management, effBoard.cfo.management, effBoard.cmo.management, effBoard.cto.management, effBoard.cooApp.management, effBoard.cfoApp.management, effBoard.cmoApp.management, effBoard.ctoApp.management];
+    const allAcc = [effBoard.coo.accounting, effBoard.cfo.accounting, effBoard.cmo.accounting, effBoard.cto.accounting, effBoard.cooApp.accounting, effBoard.cfoApp.accounting, effBoard.cmoApp.accounting, effBoard.ctoApp.accounting];
+    const allCom = [effBoard.coo.communication, effBoard.cfo.communication, effBoard.cmo.communication, effBoard.cto.communication, effBoard.cooApp.communication, effBoard.cfoApp.communication, effBoard.cmoApp.communication, effBoard.ctoApp.communication];
+    const allSci = [effBoard.coo.science, effBoard.cfo.science, effBoard.cmo.science, effBoard.cto.science, effBoard.cooApp.science, effBoard.cfoApp.science, effBoard.cmoApp.science, effBoard.ctoApp.science];
+
+    const effMan = getEff(effBoard.coo.management, allMan);
+    const effAcc = getEff(effBoard.cfo.accounting, allAcc);
+    const effCom = getEff(effBoard.cmo.communication, allCom);
+    const effSci = getEff(effBoard.cto.science, allSci);
 
     const actualAO = rawAO * (1 - (effMan * 0.01));
     const baseTaxThreshold = 3000000 + (effAcc * 500000);
@@ -294,6 +318,14 @@ export function CorporateSuitePage() {
         companyId: id,
         companyName: data.companyPublicInfo?.company,
         companyLogo: data.companyPublicInfo?.logo,
+        companyLevel: data.companyPublicInfo?.level,
+        companyRank: data.companyPublicInfo?.rank,
+        companyValue: data.history?.value,
+        apiAO: data.infrastructure?.administrationOverhead,
+        workers: data.infrastructure?.workers,
+        governmentTier: data.governmentOrderTierIndex,
+        extraSlots: data.companyPublicInfo?.extraBuildingSlots,
+        onlineStatus: data.companyPublicInfo?.online,
         lastSynced: new Date().toLocaleTimeString(),
         map: newMap,
         debt: {
@@ -453,11 +485,19 @@ function CommandView({ core, phase, margins, cycles, state, onSync, isSyncing, s
                 <div className="flex items-center gap-6">
                    {state.companyLogo && <img src={state.companyLogo} className="w-16 h-16 rounded-xl border-2 border-white dark:border-surface-800 shadow-md" alt="Logo" />}
                    <div>
-                      <h2 className="text-2xl font-bold text-surface-900 dark:text-white leading-tight">{state.companyName}</h2>
+                      <div className="flex items-center gap-3">
+                         <h2 className="text-2xl font-bold text-surface-900 dark:text-white leading-tight">{state.companyName}</h2>
+                         <span className="px-2 py-0.5 bg-brand-100 dark:bg-brand-900/30 text-brand-600 rounded text-[10px] font-black uppercase tracking-widest border border-brand-200 dark:border-brand-800">LVL {state.companyLevel}</span>
+                         {state.companyRank > 0 && <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded text-[10px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-800">RANK #{state.companyRank}</span>}
+                      </div>
                       <div className="flex items-center gap-2 mt-1">
                          <span className="text-xs font-bold text-brand-600 uppercase tracking-widest">ID #{state.companyId}</span>
                          <div className="w-1 h-1 rounded-full bg-surface-300" />
                          <span className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Live Link Established</span>
+                         <div className="w-1 h-1 rounded-full bg-surface-300" />
+                         <span className={`text-xs font-bold uppercase tracking-widest ${state.onlineStatus === 'Today' || state.onlineStatus === 'Now' ? 'text-emerald-600' : 'text-surface-400'}`}>
+                            {state.onlineStatus === 'Now' ? '● Online' : `Seen ${state.onlineStatus}`}
+                         </span>
                       </div>
                    </div>
                 </div>
@@ -480,10 +520,30 @@ function CommandView({ core, phase, margins, cycles, state, onSync, isSyncing, s
                 <p className="text-xs text-surface-400 mt-2">Connect your Company ID in the Player Portal to begin.</p>
              </div>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
              <KPICard label="Warehouse Value" value={`$${(core.inventoryValue/1000).toFixed(1)}K`} sub="Current Inventory" icon={Package} />
              <KPICard label="Asset Valuation" value={`$${(core.mapValue/1_000_000).toFixed(2)}M`} sub={`${core.totalLevels} Facility Levels`} icon={Building2} />
+             <KPICard label="Company Value" value={state.companyValue ? `$${(state.companyValue/1_000_000).toFixed(1)}M` : '--'} sub="Total Player Equity" icon={DollarSign} />
              <KPICard label="Market Regime" value={phase} sub="Global Environment" icon={Globe} />
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+             <div className="card p-4 !shadow-none border-surface-200 dark:border-surface-800 text-center">
+                <span className="text-[10px] font-bold text-surface-400 uppercase block mb-1">Workers</span>
+                <span className="text-xl font-bold tabular-nums">{state.workers?.toLocaleString() || '--'}</span>
+             </div>
+             <div className="card p-4 !shadow-none border-surface-200 dark:border-surface-800 text-center">
+                <span className="text-[10px] font-bold text-surface-400 uppercase block mb-1">Gov. Tier</span>
+                <span className="text-xl font-bold tabular-nums">{state.governmentTier ?? '--'}</span>
+             </div>
+             <div className="card p-4 !shadow-none border-surface-200 dark:border-surface-800 text-center">
+                <span className="text-[10px] font-bold text-surface-400 uppercase block mb-1">Extra Slots</span>
+                <span className="text-xl font-bold tabular-nums">+{state.extraSlots || '0'}</span>
+             </div>
+             <div className="card p-4 !shadow-none border-surface-200 dark:border-surface-800 text-center">
+                <span className="text-[10px] font-bold text-surface-400 uppercase block mb-1">API AO Ref</span>
+                <span className="text-xl font-bold tabular-nums text-rose-600">{(n(state.apiAO)*100).toFixed(1)}%</span>
+             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
