@@ -34,7 +34,7 @@ export function ProfitMarginsPage() {
     if (saved) {
       try {
         const metrics = JSON.parse(saved);
-        setProdBonus(metrics.prodBonus ?? 12);
+        if (metrics) setProdBonus(metrics.prodBonus ?? 12);
         setAdminOverhead((metrics.actualAO ?? 0) * 100);
         setAbundance(metrics.abundance ?? 100);
         setResBonus(metrics.researchBonus ?? 0);
