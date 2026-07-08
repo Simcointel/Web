@@ -60,6 +60,23 @@ export const CONSTRUCTION_MATERIALS = [
   { id: 110, name: "Tools", basePrice: 14.5 }
 ];
 
+// Retail store → sellable product IDs
+// ponytail: approximate mapping based on resource categories; the game API
+// returns the authoritative mapping via resource.retailInfo
+export const RETAIL_PRODUCT_MAP: Record<string, number[]> = {
+  G: [121, 122, 134, 27, 28, 29, 30, 31, 32, 38, 39, 49, 53, 54, 55, 56, 57, 58], // Grocery
+  C: [24, 70, 71, 74, 83, 84],  // Electronics
+  A: [11, 12],                   // Gas station
+  2: [86, 87, 88, 89, 90],      // Car dealership
+  H: [59, 60, 61, 62, 63, 64, 65, 66], // Fashion
+  d: [101, 102, 108, 110, 111],  // Hardware
+  r: [],                         // Restaurant — uses menu/recipe system, handled separately
+  B: [],                         // Sales offices — B2B contracts, no retail products
+  t: [67, 68],                   // Halloween market
+  u: [131, 132],                 // Xmas market
+  z: [36, 37],                   // Beach market
+};
+
 // Game reference prices for construction materials (fixed by game)
 export const MAT_REF_PRICES: Record<number, number> = { 101: 500, 102: 15, 108: 30, 111: 2673.75, 110: 14.5 };
 

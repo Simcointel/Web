@@ -23,7 +23,6 @@ import { OperationsView } from "./corporate-suite/OperationsView";
 import { ExecutiveView } from "./corporate-suite/ExecutiveView";
 import { FinanceView } from "./corporate-suite/FinanceView";
 import { LogisticsView } from "./corporate-suite/LogisticsView";
-import { RetailView } from "./corporate-suite/RetailView";
 import { RiskView } from "./corporate-suite/RiskView";
 
 export function CorporateSuitePage() {
@@ -298,7 +297,16 @@ export function CorporateSuitePage() {
       case 'exec': return <ExecutiveView state={state} core={core} setState={setState} setNotification={setNotification} />;
       case 'finance': return <FinanceView state={state} core={core} setState={setState} />;
       case 'logistics': return <LogisticsView state={state} core={core} setState={setState} />;
-      case 'retail': return <RetailView state={state} core={core} setState={setState} retail={retail} />;
+      case 'retail': return (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 rounded-2xl flex items-center justify-center mb-4">
+            <Target size={32} className="text-rose-600" />
+          </div>
+          <h3 className="text-lg font-bold mb-2">Retail Calculator</h3>
+          <p className="text-sm text-surface-500 mb-6 max-w-md">Full retail profitability calculator with per-store product filtering, saturation data, and restaurant mode</p>
+          <Link to="/retail-calculator" className="px-6 py-3 bg-rose-600 text-white rounded-xl font-bold text-sm hover:bg-rose-700 transition-colors">Open Retail Calculator</Link>
+        </div>
+      );
       case 'risk': return <RiskView core={core} phase={economyPhase} retail={retail} />;
       case 'ledger': return <LedgerView state={state} setState={setState} />;
       default: return <CommandView state={state} core={core} phase={economyPhase} margins={margins} cycles={cycles} onSync={syncCompany} isSyncing={isSyncing} setState={setState} />;
