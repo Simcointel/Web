@@ -173,6 +173,34 @@ export async function fetchDashboardEvents(realm: number, limit = 200): Promise<
    Macro
    ============================================================ */
 export async function fetchMacroLatest(realm: number): Promise<any> {
+  // Attempt to fetch from optimized public aggregate first
+  try {
+    const publicData = await rawFetch(`public/realm-${realm}/macro.json`);
+    if (publicData && publicData.latest) {
+      return {
+        latestHistory: {
+          date: publicData.generatedAt,
+          companiesValue: publicData.latest.companiesValue,
+          activeCompanies: publicData.latest.activeCompanies,
+          bondsSold: publicData.latest.bondsSold,
+          totalBuildings: publicData.latest.totalBuildings,
+        },
+        latestIndexes: publicData.latestIndexes ? {
+          cpi: publicData.latestIndexes.cpi?.v ?? null,
+          coreCpi: publicData.latestIndexes["core-cpi"]?.v ?? null,
+          gdp: publicData.latestIndexes.gdp?.v ?? null,
+        } : null,
+        latestInflation: publicData.latestInflation ? {
+          cpiRate: publicData.latestInflation.cpi?.ch ?? null,
+          coreCpiRate: publicData.latestInflation["core-cpi"]?.ch ?? null,
+          gdpGrowth: publicData.latestInflation["gdp"]?.ch ?? null,
+        } : null,
+      };
+    }
+  } catch (err) {
+    // Fallback to legacy structure
+  }
+
   const [data, ixData, infData] = await Promise.all([
     fetchLatest(`aggregates/realm-status/realm-${realm}`, "realm-status-"),
     fetchLatest(`aggregates/indexes/realm-${realm}`, "price-indexes-").catch(() => null),
@@ -352,6 +380,39 @@ function mapProfitMargins(data: any) {
 }
 
 export async function fetchProfitMargins(realm: number): Promise<any> {
+  // Attempt to fetch from optimized public aggregate first
+  try {
+    const publicData = await rawFetch(`public/realm-${realm}/margins.json`);
+    if (publicData && Array.isArray(publicData)) {
+      return {
+        ts: new Date().toISOString(),
+        realm,
+        resources: publicData.map((r: any) => ({
+          id: r.i,
+          name: r.n,
+          category: r.c,
+          categoryName: r.cn,
+          producedPerHour: r.ph,
+          revenuePerHour: r.rv,
+          inputCostPerHour: r.ic,
+          wagesPerHour: r.wg,
+          transportPerHour: r.tr,
+          netProfitPerHour: r.np,
+          marginPct: r.mg,
+          marginDelta: r.m1 ?? null,
+          profitDelta: r.n1 ?? null,
+          marginDirection: r.md ?? null,
+          forecastMargin: r.fp ?? null,
+          trendDirection: r.td ?? null,
+          outputVwap: r.vw,
+        })),
+        total: publicData.length,
+      };
+    }
+  } catch (err) {
+    // Fallback to legacy structure
+  }
+
   const data = await fetchLatest(`aggregates/profit-margins/realm-${realm}`, "profit-margins-");
   const mapped = mapProfitMargins(data);
   if (!mapped) throw new Error("No profit margins data");
