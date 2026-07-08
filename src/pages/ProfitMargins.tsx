@@ -59,8 +59,11 @@ export function ProfitMarginsPage() {
       const effResBonus = isResearch ? resBonus : 0;
       let ph = sr.basePh * (1 + (effProdBonus + effResBonus) / 100);
       if (isExtraction) ph *= abundance / 100;
+      // Wages = baseWage * buildingLevel (per game: linear with level)
+      // Since we don't know the exact level per building, use the default API wages
+      const wagesPh = sr.baseWages;
       const rev = ph * r.outputVwap;
-      const cost = r.inputCostPerHour + sr.baseWages * (1 + adminOverhead / 100) + r.transportPerHour;
+      const cost = r.inputCostPerHour + wagesPh * (1 + adminOverhead / 100) + r.transportPerHour;
       const np = rev - cost;
       return { ...r, producedPerHour: ph, revenuePerHour: rev, netProfitPerHour: np, marginPct: rev > 0 ? (np / rev) * 100 : 0 };
     });

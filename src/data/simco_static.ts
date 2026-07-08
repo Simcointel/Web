@@ -60,6 +60,12 @@ export const CONSTRUCTION_MATERIALS = [
   { id: 110, name: "Tools", basePrice: 14.5 }
 ];
 
+// Game reference prices for construction materials (fixed by game)
+export const MAT_REF_PRICES: Record<number, number> = { 101: 500, 102: 15, 108: 30, 111: 2673.75, 110: 14.5 };
+
+// Economic phase production multipliers (game uses these internally)
+export const PHASE_MULTIPLIERS: Record<string, number> = { boom: 1.25, normal: 1.0, recession: 0.8 };
+
 export interface ResourceData {
   id: number;
   name: string;

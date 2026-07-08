@@ -19,6 +19,7 @@ const CorporateSuitePage = lazy(() => import("./pages/CorporateSuite").then(m =>
 const ProfitCalculatorPage = lazy(() => import("./pages/ProfitCalculator").then(m => ({ default: m.ProfitCalculatorPage })));
 const ConstructionCalculatorPage = lazy(() => import("./pages/ConstructionCalculator").then(m => ({ default: m.ConstructionCalculatorPage })));
 const ExecutiveOptimizerPage = lazy(() => import("./pages/ExecutiveOptimizer").then(m => ({ default: m.ExecutiveOptimizerPage })));
+const RetailCalculatorPage = lazy(() => import("./pages/RetailCalculator").then(m => ({ default: m.RetailCalculatorPage })));
 
 export function AppShell({ path }: { path: string }) {
   const { theme } = useTheme();
@@ -36,6 +37,7 @@ export function AppShell({ path }: { path: string }) {
     : path === "/profit-calculator" ? <ProfitCalculatorPage />
     : path === "/construction-calculator" ? <ConstructionCalculatorPage />
     : path === "/executive-optimizer" ? <ExecutiveOptimizerPage />
+    : path === "/retail-calculator" ? <RetailCalculatorPage />
     : path === "/about" ? <AboutPage />
     : isWidget ? <WidgetPage />
     : <NotFoundPage />;

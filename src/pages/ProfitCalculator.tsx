@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { LoadingState } from "../components/States";
-import { RESOURCES, BUILDINGS } from "../data/simco_static";
+import { RESOURCES, BUILDINGS, PHASE_MULTIPLIERS } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import type { ProfitMarginsResponse } from "../types/api";
 
@@ -24,6 +24,7 @@ export function ProfitCalculatorPage() {
   const [customPrice, setCustomPrice] = useState("");
   const [contractMode, setContractMode] = useState(false);
   const [inputOverrides, setInputOverrides] = useState<Record<number, string>>({});
+  const [phase, setPhase] = useState<string>("normal");
 
   const { data: marginsData, loading } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 120000, [realm]);
   const margins = (marginsData as ProfitMarginsResponse | undefined)?.resources ?? [];
@@ -36,11 +37,24 @@ export function ProfitCalculatorPage() {
 
   const result = useMemo(() => {
     if (!selected || !sellingPrice) return null;
-    const ph = selected.basePh ?? 1;
+    const basePh = selected.basePh ?? 1;
+    const phaseMult = PHASE_MULTIPLIERS[phase] ?? 1.0;
+
+    // Production quantity = basePh * phase * buildingLevel (scales linearly)
+    let ph = basePh * phaseMult * buildingLevel;
+    if (selected.buildingId && ["M","O","Q","P","v"].includes(String(selected.buildingId))) {
+      ph *= abundance / 100;
+    }
+
+    // Wages = baseWage * level (linear, per game guide)
     const wageBase = selected.baseWages ?? 0;
-    const wageAtLevel = wageBase * (1 + 0.1 * (buildingLevel - 1));
+    const wageAtLevel = wageBase * buildingLevel;
     const wageTotal = robots ? wageAtLevel * 0.97 : wageAtLevel;
 
+    // Admin overhead cost = wages * AO/100
+    const overheadCost = wageTotal * (overhead / 100);
+
+    // Input costs = sum of (input_qty * input_price)
     let inputCost = 0;
     const inputDetails: { id: number; name: string; qty: number; vwap: number; overridePrice: number; cost: number }[] = [];
     if (selected.inputs) {
@@ -57,16 +71,21 @@ export function ProfitCalculatorPage() {
       }
     }
 
+    // Revenue = sellingPrice * ph
     const grossRevenue = sellingPrice * ph;
-    const marketFee = contractMode ? 0 : grossRevenue * 0.04;
+
+    // Market fee = 3% (not 4%!) per game guides
+    const marketFee = contractMode ? 0 : grossRevenue * 0.03;
+
+    // Transport cost: (transport * ph * 0.01). Contracts = 50% transport
     const transportCost = (selected.transport ?? 0) * ph * 0.01;
     const transportActual = contractMode ? transportCost * 0.5 : transportCost;
-    const overheadCost = grossRevenue * (overhead / 100);
-    const netProfit = grossRevenue - marketFee - inputCost - wageTotal - transportActual - overheadCost;
+
+    const netProfit = grossRevenue - marketFee - inputCost - wageTotal - overheadCost - transportActual;
     const marginPct = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0;
 
-    return { grossRevenue, marketFee, inputCost, wageTotal, transportActual, overheadCost, netProfit, marginPct, inputDetails, ph, wageBase, wageAtLevel };
-  }, [selected, sellingPrice, buildingLevel, robots, overhead, margins, contractMode, inputOverrides]);
+    return { grossRevenue, marketFee, inputCost, wageTotal, overheadCost, transportActual, netProfit, marginPct, inputDetails, ph, phaseMult };
+  }, [selected, sellingPrice, buildingLevel, robots, overhead, margins, contractMode, inputOverrides, abundance, phase]);
 
   const isExtraction = selected?.buildingId && ["M","O","Q","P","v"].includes(String(selected.buildingId));
 
@@ -86,7 +105,6 @@ export function ProfitCalculatorPage() {
                 <option key={r.id} value={r.id}>{r.name}</option>
               ))}
             </select>
-
             {selected && (
               <div className="text-xs text-surface-500">
                 Building: <span className="font-bold">{getBuildingName(selected.buildingId)}</span>
@@ -108,26 +126,35 @@ export function ProfitCalculatorPage() {
                 <label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">Building Lv</label>
                 <input type="number" min={1} max={20} value={buildingLevel} onChange={e => setBuildingLevel(Math.max(1, Math.min(20, Number(e.target.value))))} className="w-full border border-surface-300 px-3 py-2 rounded-lg text-sm font-bold outline-none" />
               </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">Economy</label>
+                <select value={phase} onChange={e => setPhase(e.target.value)} className="w-full border border-surface-300 px-3 py-2 rounded-lg text-sm font-bold outline-none">
+                  <option value="boom">Boom (×1.25)</option>
+                  <option value="normal">Normal (×1.0)</option>
+                  <option value="recession">Recession (×0.8)</option>
+                </select>
+              </div>
               {isExtraction && (
                 <div>
                   <label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">Abundance %</label>
                   <input type="number" min={1} max={200} value={abundance} onChange={e => setAbundance(Number(e.target.value))} className="w-full border border-surface-300 px-3 py-2 rounded-lg text-sm font-bold outline-none" />
                 </div>
               )}
-              <div>
-                <label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">AO %</label>
-                <input type="number" min={0} max={50} value={overhead} onChange={e => setOverhead(Number(e.target.value))} className="w-full border border-surface-300 px-3 py-2 rounded-lg text-sm font-bold outline-none" />
-              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">Admin Overhead %</label>
+              <input type="number" min={0} max={100} value={overhead} onChange={e => setOverhead(Number(e.target.value))} className="w-full border border-surface-300 px-3 py-2 rounded-lg text-sm font-bold outline-none" placeholder="e.g. 44.26" />
             </div>
 
             <div className="flex items-center gap-4 pt-1">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={robots} onChange={e => setRobots(e.target.checked)} className="rounded" />
-                <span className="text-xs font-bold uppercase">Robots (-3%)</span>
+                <span className="text-xs font-bold uppercase">Robots (-3% wage)</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={contractMode} onChange={e => setContractMode(e.target.checked)} className="rounded" />
-                <span className="text-xs font-bold uppercase">Contract (0% fee)</span>
+                <span className="text-xs font-bold uppercase">Contract</span>
               </label>
             </div>
 
@@ -165,10 +192,13 @@ export function ProfitCalculatorPage() {
               </div>
 
               <div className="border border-surface-200 rounded-lg">
-                <div className="px-4 py-2 border-b border-surface-100 bg-surface-50 text-xs font-bold text-surface-500 uppercase">Cost Breakdown</div>
+                <div className="px-4 py-2 border-b border-surface-100 bg-surface-50 text-xs font-bold text-surface-500 uppercase flex justify-between">
+                  <span>Cost Breakdown ({phase}, ×{result.phaseMult.toFixed(2)})</span>
+                  <span className="text-brand-600">3% market fee</span>
+                </div>
                 <div className="p-4 space-y-3">
-                  <div className="flex justify-between py-2 border-b border-surface-100"><span className="text-xs font-bold text-surface-500">Revenue (Q{quality})</span><span className="text-sm font-bold text-emerald-600">+${result.grossRevenue.toFixed(2)}</span></div>
-                  <div className="flex justify-between py-2 border-b border-surface-100"><span className="text-xs font-bold text-surface-500">Market Fee ({contractMode ? '0%' : '4%'})</span><span className="text-sm font-bold text-rose-500">-${result.marketFee.toFixed(2)}</span></div>
+                  <div className="flex justify-between py-2 border-b border-surface-100"><span className="text-xs font-bold text-surface-500">Revenue</span><span className="text-sm font-bold text-emerald-600">+${result.grossRevenue.toFixed(2)}</span></div>
+                  <div className="flex justify-between py-2 border-b border-surface-100"><span className="text-xs font-bold text-surface-500">Market Fee (3%)</span><span className="text-sm font-bold text-rose-500">-${result.marketFee.toFixed(2)}</span></div>
 
                   {result.inputDetails.length > 0 && (
                     <>
@@ -186,9 +216,9 @@ export function ProfitCalculatorPage() {
                     </>
                   )}
 
-                  <div className="flex justify-between py-2 border-b border-surface-100"><span className="text-xs font-bold text-surface-500">Wages (Lv{buildingLevel}{robots ? ' -3%' : ''})</span><span className="text-sm font-bold text-rose-500">-${result.wageTotal.toFixed(2)}</span></div>
+                  <div className="flex justify-between py-2 border-b border-surface-100"><span className="text-xs font-bold text-surface-500">Wages (Lv{buildingLevel})</span><span className="text-sm font-bold text-rose-500">-${result.wageTotal.toFixed(2)}</span></div>
+                  <div className="flex justify-between py-2 border-b border-surface-100"><span className="text-xs font-bold text-surface-500">Admin Overhead ({overhead}%)</span><span className="text-sm font-bold text-rose-500">-${result.overheadCost.toFixed(2)}</span></div>
                   <div className="flex justify-between py-2 border-b border-surface-100"><span className="text-xs font-bold text-surface-500">Transport{contractMode ? ' (50%)' : ''}</span><span className="text-sm font-bold text-rose-500">-${result.transportActual.toFixed(2)}</span></div>
-                  <div className="flex justify-between py-2 border-b border-surface-100"><span className="text-xs font-bold text-surface-500">AO ({overhead}%)</span><span className="text-sm font-bold text-rose-500">-${result.overheadCost.toFixed(2)}</span></div>
                   <div className="flex justify-between py-3"><span className="text-sm font-bold uppercase">Net Profit</span><span className={`text-lg font-bold ${result.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>${result.netProfit.toFixed(2)}/h</span></div>
                 </div>
               </div>

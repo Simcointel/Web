@@ -313,6 +313,9 @@ export async function fetchMacroInflation(realm: number, limit = 200): Promise<M
    Retail
    ============================================================ */
 export async function fetchRetailData(realm: number): Promise<RetailData> {
+  try {
+    return await rawFetch<RetailData>(`public/realm-${realm}/retail.json`);
+  } catch { /* fall through */ }
   const data = await fetchLatest<RetailData>(`aggregates/retail/realm-${realm}`, "retail-summary-");
   if (!data) throw new Error("No retail data");
   return data;
