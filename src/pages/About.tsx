@@ -1,7 +1,11 @@
+import { useEffect } from "react";
 import { methodology } from "../data/methodology";
 import { Section } from "../components/Layout";
 
 export function AboutPage() {
+  useEffect(() => {
+    document.title = "SimCo Intel - About";
+  }, []);
   return (
     <div className="space-y-8 max-w-3xl">
       <div>

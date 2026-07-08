@@ -12,6 +12,7 @@ export interface InventoryItem { id: number; qty: number; }
 export interface SuiteStateV6 {
   activeTab: 'command' | 'ops' | 'exec' | 'finance' | 'logistics' | 'risk' | 'retail' | 'ledger';
   companyId: string;
+  ledgerMeta?: { type: string; header: string[] };
   companyName?: string;
   companyLogo?: string;
   companyLevel?: number;

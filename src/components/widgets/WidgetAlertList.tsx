@@ -24,15 +24,15 @@ export function WidgetAlertList({ realm = 0, limit = 5 }: { realm?: number; limi
     return () => clearInterval(id);
   }, [realm, limit]);
 
-  if (!data?.a?.length) return <div style={{ fontSize: 10, color: "#9ca3af", padding: 4 }}>No recent alerts</div>;
+  if (!data?.a?.length) return <div className="text-[10px] text-gray-400 dark:text-gray-500 p-1">No recent alerts</div>;
 
   return (
-    <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 10, lineHeight: 1.4 }}>
+    <div className="text-[10px] leading-[1.4]">
       {data.a.slice(0, limit).map((a, i) => (
-        <div key={i} style={{ display: "flex", gap: 4, padding: "2px 0", alignItems: "center" }}>
+        <div key={i} className="flex gap-1 py-0.5 items-center">
           <SeverityDot severity={a.s} />
-          <span style={{ color: "#6b7280", flexShrink: 0 }}>{new Date(a.t).toLocaleTimeString()}</span>
-          <span style={{ color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.i}</span>
+          <span className="text-gray-500 dark:text-gray-400 shrink-0">{new Date(a.t).toLocaleTimeString()}</span>
+          <span className="text-gray-700 dark:text-gray-300 overflow-hidden text-ellipsis whitespace-nowrap">{a.i}</span>
         </div>
       ))}
     </div>

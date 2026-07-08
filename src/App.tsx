@@ -3,6 +3,7 @@ import { useTheme } from "./hooks/useTheme";
 import { Sidebar } from "./components/Sidebar";
 import { MobileNav } from "./components/MobileNav";
 import { Footer } from "./components/Footer";
+import { PageErrorBoundary } from "./components/PageErrorBoundary";
 
 const HomePage = lazy(() => import("./pages/Home").then(m => ({ default: m.HomePage })));
 const MacroPage = lazy(() => import("./pages/Macro").then(m => ({ default: m.MacroPage })));
@@ -11,10 +12,13 @@ const AboutPage = lazy(() => import("./pages/About").then(m => ({ default: m.Abo
 const VWAPInflationPage = lazy(() => import("./pages/VWAPInflation").then(m => ({ default: m.VWAPInflationPage })));
 const ProfitMarginsPage = lazy(() => import("./pages/ProfitMargins").then(m => ({ default: m.ProfitMarginsPage })));
 const EncyclopediaPage = lazy(() => import("./pages/Encyclopedia").then(m => ({ default: m.EncyclopediaPage })));
-const ProductionFlowPage = lazy(() => import("./pages/ProductionFlow").then(m => ({ default: m.ProductionFlowPage })));
+// Production Flow merged into Encyclopedia (use "Flow" button on detail view)
 const WidgetPage = lazy(() => import("./pages/WidgetRenderer").then(m => ({ default: m.WidgetPage })));
 const NotFoundPage = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFoundPage })));
 const CorporateSuitePage = lazy(() => import("./pages/CorporateSuite").then(m => ({ default: m.CorporateSuitePage })));
+const ProfitCalculatorPage = lazy(() => import("./pages/ProfitCalculator").then(m => ({ default: m.ProfitCalculatorPage })));
+const ConstructionCalculatorPage = lazy(() => import("./pages/ConstructionCalculator").then(m => ({ default: m.ConstructionCalculatorPage })));
+const ExecutiveOptimizerPage = lazy(() => import("./pages/ExecutiveOptimizer").then(m => ({ default: m.ExecutiveOptimizerPage })));
 
 export function AppShell({ path }: { path: string }) {
   const { theme } = useTheme();
@@ -29,13 +33,15 @@ export function AppShell({ path }: { path: string }) {
     : path === "/vwap-inflation" ? <VWAPInflationPage />
     : path === "/profit-margins" ? <ProfitMarginsPage />
     : path === "/encyclopedia" ? <EncyclopediaPage />
-    : path === "/production-flow" ? <ProductionFlowPage />
+    : path === "/profit-calculator" ? <ProfitCalculatorPage />
+    : path === "/construction-calculator" ? <ConstructionCalculatorPage />
+    : path === "/executive-optimizer" ? <ExecutiveOptimizerPage />
     : path === "/about" ? <AboutPage />
     : isWidget ? <WidgetPage />
     : <NotFoundPage />;
 
   if (isWidget) {
-    return <main className="bg-transparent"><Suspense fallback={null}>{page}</Suspense></main>;
+    return <main className="bg-transparent"><Suspense fallback={null}><PageErrorBoundary>{page}</PageErrorBoundary></Suspense></main>;
   }
 
   return (
@@ -50,7 +56,7 @@ export function AppShell({ path }: { path: string }) {
         <main className="flex-1 overflow-y-auto focus:outline-none custom-scrollbar pb-16 lg:pb-0">
           <div className={`${isSuite ? 'max-w-full px-4 lg:px-8 py-4' : 'max-w-[1600px] mx-auto p-3 sm:p-4 lg:p-6'}`}>
             <Suspense fallback={<div className="flex items-center justify-center py-20 text-surface-400 font-bold">Loading...</div>}>
-              {page}
+              <PageErrorBoundary>{page}</PageErrorBoundary>
             </Suspense>
           </div>
           {!isSuite && <Footer />}

@@ -3,7 +3,8 @@ import { useTheme } from "../hooks/useTheme";
 import {
   LayoutDashboard, Globe, Briefcase, DollarSign,
   TrendingUp, BookOpen, Share2, Sun, Moon,
-  Bell, Settings, Info, Menu, X, ChevronRight, LayoutGrid
+  Bell, Settings, Info, Menu, X, ChevronRight, LayoutGrid,
+  Calculator, HardHat, UserCheck
 } from "lucide-react";
 
 const navLinks = [
@@ -19,7 +20,11 @@ const navLinks = [
   { group: "INTEL", links: [
     { to: "/vwap-inflation", label: "Trends", icon: <TrendingUp size={18} />, color: "text-brand-500" },
     { to: "/encyclopedia", label: "Registry", icon: <BookOpen size={18} />, color: "text-indigo-500" },
-    { to: "/production-flow", label: "Visual", icon: <Share2 size={18} />, color: "text-violet-500" },
+  ]},
+  { group: "TOOLS", links: [
+    { to: "/profit-calculator", label: "Profit Calc", icon: <Calculator size={18} />, color: "text-emerald-500" },
+    { to: "/construction-calculator", label: "Construction", icon: <HardHat size={18} />, color: "text-amber-500" },
+    { to: "/executive-optimizer", label: "Exec Optimizer", icon: <UserCheck size={18} />, color: "text-violet-500" },
   ]}
 ];
 

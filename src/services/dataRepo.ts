@@ -672,14 +672,68 @@ export async function fetchCycles(realm: number): Promise<{
 /* ============================================================
    Player API
    ============================================================ */
-export async function fetchCompanyData(companyId: string | number, realm = 0): Promise<Record<string, unknown>> {
+export interface CompanyInfrastructure {
+  buildings?: Array<{
+    id?: number;
+    kind?: string;
+    level?: number;
+    size?: number;
+    busy?: Record<string, unknown>;
+  }>;
+  administrationOverhead?: number;
+  workers?: number;
+  recreationBonus?: number;
+}
+
+export interface CompanyPublicInfo {
+  company?: string;
+  logo?: string;
+  level?: number;
+  rank?: number;
+  online?: string;
+  productionModifier?: number;
+  salesModifier?: number;
+  extraBuildingSlots?: number;
+}
+
+export interface CompanyHistory {
+  value?: number;
+  bondsPayable?: number;
+}
+
+export interface CompanyData {
+  infrastructure?: CompanyInfrastructure;
+  companyPublicInfo?: CompanyPublicInfo;
+  history?: CompanyHistory;
+  governmentOrderTierIndex?: number;
+}
+
+// ponytail: corsproxy.io is a third-party free proxy; add a local API relay when the backend
+// supports it. The retry loop handles intermittent drop-outs from the free tier.
+export async function fetchCompanyData(companyId: string | number, realm = 0): Promise<CompanyData> {
   const base = realm === 1
     ? "https://www.simcompanies.com/api/v3/entrepreneurs/companies/"
     : "https://www.simcompanies.com/api/v3/companies/";
   const targetUrl = `${base}${companyId}/`;
-  const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
-  if (!res.ok) throw new Error(`Proxy fetch failed: ${res.status}`);
-  return res.json();
+
+  const proxies = [
+    (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    // ponytail: add "api/relay?url=" when a backend endpoint exists
+  ];
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    for (const buildUrl of proxies) {
+      try {
+        const res = await fetch(buildUrl(targetUrl));
+        if (res.ok) return res.json();
+      } catch {
+        // try next proxy / retry
+      }
+    }
+    if (attempt < 2) await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+  }
+
+  throw new Error("Company data fetch failed after retries");
 }
 
 /* ============================================================

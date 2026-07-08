@@ -27,19 +27,19 @@ export function WidgetHealthCard({ realm = 0, compact = true }: { realm?: number
   const regime = data.r;
 
   return (
-    <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 11, lineHeight: 1.4, color: "#374151" }}>
+    <div className="text-[11px] leading-[1.4] text-gray-700 dark:text-gray-300">
       <div className="flex items-center justify-between mb-1.5">
-        <span style={{ fontWeight: 600, fontSize: 10, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Economic Health</span>
+        <span className="font-semibold text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">Economic Health</span>
         {regime && <MiniRegimeBadge regime={regime.na} />}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <div className="flex flex-col gap-0.5">
         <MiniScoreBar value={scores.eh} />
         <MiniScoreBar value={scores.ms} />
         <MiniScoreBar value={scores.st} />
         <MiniScoreBar value={scores.ip} />
         <MiniScoreBar value={scores.sr} />
       </div>
-      <div style={{ fontSize: 8, color: "#9ca3af", marginTop: 4, textAlign: "right" }}>
+      <div className="text-[8px] text-gray-400 dark:text-gray-500 mt-1 text-right">
         {data.t ? new Date(data.t).toLocaleTimeString() : ""}
       </div>
     </div>

@@ -3,7 +3,7 @@ export function MiniScoreBar({ value, maxWidth = 60 }: { value: number; maxWidth
   const color = pct >= 70 ? "bg-econ-green" : pct >= 40 ? "bg-econ-amber" : "bg-econ-red";
   return (
     <div className="flex items-center gap-1.5" style={{ maxWidth }}>
-      <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
         <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
       <span className="text-[10px] font-mono font-bold tabular-nums">{value}</span>

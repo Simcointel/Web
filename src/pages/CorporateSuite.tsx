@@ -15,6 +15,7 @@ import { useSharedRealm } from "../hooks/useSharedRealm";
 import { Section } from "../components/Layout";
 import type { SuiteStateV6, MapItem } from "./corporate-suite/types";
 import type { DashboardMap, ProfitMarginsResponse } from "../types/api";
+import type { CompanyData } from "../services/dataRepo";
 import { DEFAULT_STATE, n } from "./corporate-suite/types";
 import { WorkstationTab, GlobalMetric, LedgerView } from "./corporate-suite/components";
 import { CommandView } from "./corporate-suite/CommandView";
@@ -26,6 +27,10 @@ import { RetailView } from "./corporate-suite/RetailView";
 import { RiskView } from "./corporate-suite/RiskView";
 
 export function CorporateSuitePage() {
+  useEffect(() => {
+    document.title = "SimCo Intel - Corporate Suite";
+  }, []);
+
   const { theme, toggleTheme } = useTheme();
   const [realm] = useSharedRealm();
   const navigate = useNavigate();
@@ -183,15 +188,26 @@ export function CorporateSuitePage() {
     reader.onload = (e) => {
       const content = e.target?.result as string;
       if (file.name.endsWith('.csv')) {
-         const rows = content.split('\n').map(r => r.split(',').map(c => c.replace(/"/g, '').trim()));
-         if (rows[0].includes('Date') && rows[0].includes('Amount')) {
-            const amountIdx = rows[0].indexOf('Amount');
+         const rows = content.split('\n').map(r => r.split(',').map(c => c.replace(/"/g, '').trim())).filter(r => r.length > 1);
+         if (!rows.length) return;
+         const header = rows[0];
+         const csvType = header.includes('Sales') && header.includes('COGS') ? 'income'
+           : header.includes('Cash') && header.includes('Accounts Receivable') ? 'balance'
+           : header.includes('All income') ? 'cashflow'
+           : header.includes('Resource') && header.includes('Quality') && header.includes('Amount') ? 'warehouse'
+           : header.includes('Date') && header.includes('Amount') ? 'receipts'
+           : 'unknown';
+         setState(prev => ({ ...prev, ledger: rows.slice(1), ledgerMeta: { type: csvType, header } }));
+         if (csvType === 'receipts') {
+            const amountIdx = header.indexOf('Amount');
             let total = 0;
             rows.slice(1).forEach(row => {
                if (row[amountIdx]) total += parseFloat(row[amountIdx]) || 0;
             });
             setNotification({ msg: `Parsed $${(total/1_000_000).toFixed(2)}M in Receipts`, type: "success" });
             setState(prev => ({ ...prev, settings: { ...prev.settings, estDailyProfit: total / 7 } }));
+         } else {
+            setNotification({ msg: `Imported ${csvType} CSV (${rows.length - 1} rows)`, type: "success" });
          }
          return;
       }
@@ -209,18 +225,18 @@ export function CorporateSuitePage() {
     try {
       setNotification({ msg: "Establishing secure link...", type: "success" });
       const companyData = await dataRepo.fetchCompanyData(id, realm);
-      setDebugData(companyData);
+      setDebugData(companyData as unknown as Record<string, unknown>);
 
-      const buildings = ((companyData.infrastructure as Record<string, unknown>)?.buildings || []) as Array<Record<string, unknown>>;
+      const buildings = companyData.infrastructure?.buildings ?? [];
       const newMap: MapItem[] = buildings
-        .filter((b: Record<string, unknown>) => b && b.kind)
-        .map((b: Record<string, unknown>) => {
+        .filter((b) => b?.kind)
+        .map((b) => {
           const apiLevel = n(b.level);
           const apiSize = n(b.size);
 
           let level = apiSize > 0 ? apiSize : (apiLevel > 0 ? apiLevel : 1);
 
-          const busy = b.busy as Record<string, unknown> | undefined;
+          const busy = b.busy;
           if (busy && (busy.category === 'u' || busy.category === 'upgrading' || busy.category === 'upgrade')) {
              if (busy.upkeep === false) {
                 level += 1;
@@ -228,44 +244,44 @@ export function CorporateSuitePage() {
           }
 
           return {
-            id: b.kind as string,
+            id: b.kind ?? "",
             level: Math.max(level, 1),
-            instanceId: b.id as number | undefined,
+            instanceId: b.id,
           };
         });
 
-      const inf = companyData.infrastructure as Record<string, unknown> | undefined;
-      const pub = companyData.companyPublicInfo as Record<string, unknown> | undefined;
-      const hist = companyData.history as Record<string, unknown> | undefined;
+      const inf = companyData.infrastructure;
+      const pub = companyData.companyPublicInfo;
+      const hist = companyData.history;
 
       setState(prev => ({
         ...prev,
         companyId: id,
-        companyName: pub?.company as string | undefined,
-        companyLogo: pub?.logo as string | undefined,
-        companyLevel: pub?.level as number | undefined,
-        companyRank: pub?.rank as number | undefined,
-        companyValue: hist?.value as number | undefined,
-        apiAO: inf?.administrationOverhead as number | undefined,
-        workers: inf?.workers as number | undefined,
-        governmentTier: companyData.governmentOrderTierIndex as number | undefined,
-        extraSlots: pub?.extraBuildingSlots as number | undefined,
-        onlineStatus: pub?.online as string | undefined,
+        companyName: pub?.company,
+        companyLogo: pub?.logo,
+        companyLevel: pub?.level,
+        companyRank: pub?.rank,
+        companyValue: hist?.value,
+        apiAO: inf?.administrationOverhead,
+        workers: inf?.workers,
+        governmentTier: companyData.governmentOrderTierIndex,
+        extraSlots: pub?.extraBuildingSlots,
+        onlineStatus: pub?.online,
         lastSynced: new Date().toLocaleTimeString(),
         map: newMap,
         debt: {
           ...prev.debt,
-          current: (hist?.bondsPayable as number) || 0
+          current: hist?.bondsPayable ?? 0
         },
         settings: {
           ...prev.settings,
-          prodBonus: 12 + ((pub?.productionModifier as number) || 0),
-          profileSalesBonus: (pub?.salesModifier as number) || 0,
-          recreationalBuildings: (inf?.recreationBonus as number) || 0,
+          prodBonus: 12 + (pub?.productionModifier ?? 0),
+          profileSalesBonus: pub?.salesModifier ?? 0,
+          recreationalBuildings: inf?.recreationBonus ?? 0,
         }
       }));
 
-      setNotification({ msg: `Synchronized: ${pub?.company as string}`, type: "success" });
+      setNotification({ msg: `Synchronized: ${pub?.company ?? id}`, type: "success" });
     } catch (e) {
       setNotification({ msg: "Connection Failed", type: "error" });
       setDebugData({ error: e instanceof Error ? e.message : String(e) });

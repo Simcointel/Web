@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { SearchParams, useSearchParams } from "../router";
 import { WidgetHealthCard } from "../components/widgets/WidgetHealthCard";
 import { WidgetAlertList } from "../components/widgets/WidgetAlertList";
@@ -14,21 +14,18 @@ function queryRealm(params: SearchParams): number {
 
 function WidgetShell({ children, title }: { children: React.ReactNode; title?: string }) {
   return (
-    <div style={{
-      background: "white",
-      borderRadius: 8,
-      border: "1px solid #e5e7eb",
-      padding: "8px 10px",
-      fontFamily: "system-ui, -apple-system, sans-serif",
-      boxSizing: "border-box",
-    }}>
-      {title && <div style={{ fontSize: 8, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{title}</div>}
+    <div className="bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 p-[8px_10px]">
+      {title && <div className="text-[8px] text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">{title}</div>}
       {children}
     </div>
   );
 }
 
 export function WidgetPage() {
+  useEffect(() => {
+    document.title = "SimCo Intel - Widgets";
+  }, []);
+
   const params = useSearchParams();
   const type = (params.get("type") || "health") as WidgetType;
   const realm = queryRealm(params);
@@ -40,9 +37,9 @@ export function WidgetPage() {
       {type === "regime" && <WidgetRegimeCard realm={realm} />}
       {type === "scores" && <WidgetShell title="Composite Scores"><WidgetHealthCard realm={realm} /></WidgetShell>}
       {type === "forecast" && <WidgetShell title="Forecasts"><WidgetForecastCard realm={realm} /></WidgetShell>}
-      {type === "signals" && <WidgetShell title="Signals">{/* signals compact from widget API */}<WidgetForecastCard realm={realm} /></WidgetShell>}
-      {type === "cycles" && <WidgetShell title="Cycle">{/* cycles widget */}<WidgetForecastCard realm={realm} /></WidgetShell>}
-      {type === "dependencies" && <WidgetShell title="Dependencies">{/* deps widget */}<WidgetForecastCard realm={realm} /></WidgetShell>}
+      {type === "signals" && <WidgetShell title="Signals"><div className="text-[10px] text-gray-400 dark:text-gray-500 italic p-2">Not yet available</div></WidgetShell>}
+      {type === "cycles" && <WidgetShell title="Cycle"><div className="text-[10px] text-gray-400 dark:text-gray-500 italic p-2">Not yet available</div></WidgetShell>}
+      {type === "dependencies" && <WidgetShell title="Dependencies"><div className="text-[10px] text-gray-400 dark:text-gray-500 italic p-2">Not yet available</div></WidgetShell>}
     </div>
   );
 }

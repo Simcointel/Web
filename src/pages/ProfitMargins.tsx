@@ -207,9 +207,15 @@ export function ProfitMarginsPage() {
                 <th className="px-4 py-3 text-right cursor-pointer hover:text-brand-500" onClick={() => toggleSort("mg")}>
                   Margin {sortBy === "mg" && (sortDir === "desc" ? "↓" : "↑")}
                 </th>
-                <th className="px-4 py-3 text-right cursor-pointer hover:text-brand-500" onClick={() => toggleSort("np")}>Profit/H</th>
-                <th className="px-4 py-3 text-right">Rev/H</th>
-                <th className="px-4 py-3 text-right">VWAP</th>
+                <th className="px-4 py-3 text-right cursor-pointer hover:text-brand-500" onClick={() => toggleSort("np")}>
+                  Profit/H {sortBy === "np" && (sortDir === "desc" ? "↓" : "↑")}
+                </th>
+                <th className="px-4 py-3 text-right cursor-pointer hover:text-brand-500" onClick={() => toggleSort("rv")}>
+                  Rev/H {sortBy === "rv" && (sortDir === "desc" ? "↓" : "↑")}
+                </th>
+                <th className="px-4 py-3 text-right cursor-pointer hover:text-brand-500" onClick={() => toggleSort("vw")}>
+                  VWAP {sortBy === "vw" && (sortDir === "desc" ? "↓" : "↑")}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-50 dark:divide-surface-800/50">

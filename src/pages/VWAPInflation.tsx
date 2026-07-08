@@ -10,7 +10,7 @@ import type { VWAPInflationResponse } from "../types/api";
 
 export function VWAPInflationPage() {
   useEffect(() => {
-    document.title = "Trends - SimcoIntel";
+    document.title = "SimCo Intel - VWAP Inflation";
   }, []);
 
   const [realm, setRealm] = useSharedRealm();
@@ -103,7 +103,10 @@ export function VWAPInflationPage() {
                 <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }} />
                 <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="4 4" />
-                <Line type="monotone" dataKey="overall.vw" stroke="#0284c7" strokeWidth={3} dot={false} name="Market VWAP" />
+                {vwapTab === "overall" && <Line type="monotone" dataKey="overall.vw" stroke="#0284c7" strokeWidth={3} dot={false} name="Market VWAP" />}
+                {vwapTab === "quality" && <Line type="monotone" dataKey="quality.vw" stroke="#0284c7" strokeWidth={3} dot={false} name="Quality VWAP" />}
+                {vwapTab === "product" && selectedProduct && <Line type="monotone" dataKey={`product.${selectedProduct}`} stroke="#0284c7" strokeWidth={3} dot={false} name="Product VWAP" />}
+                {vwapTab === "both" && selectedProduct && <Line type="monotone" dataKey={`both.${selectedProduct}`} stroke="#0284c7" strokeWidth={3} dot={false} name="Product VWAP" />}
               </LineChart>
             </ResponsiveContainer>
           ) : (

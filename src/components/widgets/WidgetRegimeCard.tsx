@@ -16,13 +16,13 @@ export function WidgetRegimeCard({ realm = 0 }: { realm?: number }) {
   }, [realm]);
 
   const reg = data?.reg;
-  if (!reg) return <div style={{ fontSize: 10, color: "#9ca3af", padding: 4 }}>No regime data</div>;
+  if (!reg) return <div className="text-[10px] text-gray-400 dark:text-gray-500 p-1">No regime data</div>;
 
   return (
-    <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", textAlign: "center", padding: 8 }}>
-      <div style={{ fontSize: 9, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Economic Regime</div>
+    <div className="text-center p-2">
+      <div className="text-[9px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Economic Regime</div>
       <MiniRegimeBadge regime={reg.na} />
-      <div style={{ fontSize: 9, color: "#9ca3af", marginTop: 2 }}>Score: {reg.sc}</div>
+      <div className="text-[9px] text-gray-400 dark:text-gray-500 mt-0.5">Score: {reg.sc}</div>
     </div>
   );
 }

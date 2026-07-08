@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { fetchWidget } from "../../services/widgetClient";
 
-const style: Record<string, React.CSSProperties> = {
-  shell: { fontFamily: "system-ui, sans-serif", fontSize: 12, lineHeight: 1.4, color: "#111" },
-  header: { fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, color: "#6b7280", marginBottom: 8 },
-  row: { display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #f3f4f6" },
-  label: { color: "#6b7280" },
-  value: { fontFamily: "monospace", fontWeight: 600 },
-  bar: { height: 4, borderRadius: 2, marginTop: 2 },
-};
-
 export function WidgetForecastCard({ realm = 0, compact = true }: { realm?: number; compact?: boolean }) {
   const [data, setData] = useState<Record<string, { v: number; r: number }> | null>(null);
   useEffect(() => {
@@ -17,15 +8,15 @@ export function WidgetForecastCard({ realm = 0, compact = true }: { realm?: numb
     const id = setInterval(() => fetchWidget<Record<string, { v: number; r: number }>>("forecast", realm).then((d) => setData(d)).catch(() => {}), 60000);
     return () => clearInterval(id);
   }, [realm]);
-  if (!data) return <div style={style.shell}>Loading forecast...</div>;
+  if (!data) return <div className="text-[12px] leading-[1.4] text-gray-900 dark:text-gray-100">Loading forecast...</div>;
   const entries = Object.entries(data).slice(0, 5);
   return (
-    <div style={style.shell}>
-      <div style={style.header}>Forecast Projections</div>
+    <div className="text-[12px] leading-[1.4] text-gray-900 dark:text-gray-100">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Forecast Projections</div>
       {entries.map(([k, v]) => (
-        <div key={k} style={style.row}>
-          <span style={style.label}>{k}</span>
-          <span style={style.value}>{v.v?.toFixed(2) ?? "-"}</span>
+        <div key={k} className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-800 last:border-0">
+          <span className="text-gray-500 dark:text-gray-400">{k}</span>
+          <span className="font-mono font-semibold">{v.v?.toFixed(2) ?? "-"}</span>
         </div>
       ))}
     </div>

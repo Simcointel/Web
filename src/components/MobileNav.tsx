@@ -13,7 +13,7 @@ export function MobileNav() {
   ];
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-surface-950 border-t border-surface-200 dark:border-surface-800 px-4 py-2 flex justify-between items-center z-[100] safe-area-bottom shadow-[0_-8px_30px_rgba(0,0,0,0.05)]">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-surface-950 border-t border-surface-200 dark:border-surface-800 px-4 py-2 flex justify-between items-center z-[100] safe-area-bottom shadow">
       {links.map((link) => {
         const active = location === link.to;
         return (

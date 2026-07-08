@@ -1,6 +1,10 @@
+import { useEffect } from "react";
 import { Link } from "../router";
 
 export function NotFoundPage() {
+  useEffect(() => {
+    document.title = "SimCo Intel - Not Found";
+  }, []);
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <h1 className="text-6xl font-bold text-gray-200 mb-4">404</h1>

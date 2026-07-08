@@ -5,7 +5,7 @@ import { Search, ChevronRight, Share2, Layers, Zap } from "lucide-react";
 
 export function ProductionFlowPage() {
   useEffect(() => {
-    document.title = "Visual Flow - SimcoIntel";
+    document.title = "SimCo Intel - Production Flow";
   }, []);
 
   const [targetId, setTargetId] = useState<number>(2); // Default to Apples
