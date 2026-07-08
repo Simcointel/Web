@@ -61,20 +61,20 @@ export const CONSTRUCTION_MATERIALS = [
 ];
 
 // Retail store → sellable product IDs
-// ponytail: approximate mapping based on resource categories; the game API
-// returns the authoritative mapping via resource.retailInfo
+// Game API resource IDs per retail store (from api.simcotools.com)
+// These are the ACTUAL game IDs, not the simco_static.ts local IDs.
 export const RETAIL_PRODUCT_MAP: Record<string, number[]> = {
-  G: [121, 122, 134, 27, 28, 29, 31, 32, 54], // Grocery
-  C: [24, 70, 71, 74, 83, 84],  // Electronics
-  A: [11, 12],                   // Gas station
-  2: [86, 87, 88, 89, 90],      // Car dealership
-  H: [59, 60, 61, 62, 63, 64, 65, 66], // Fashion
-  d: [101, 102, 108, 110, 111],  // Hardware
-  r: [],                         // Restaurant — uses menu/recipe system, handled separately
-  B: [],                         // Sales offices — B2B contracts, no retail products
-  t: [67, 68],                   // Halloween market
-  u: [131, 132],                 // Xmas market
-  z: [36, 37],                   // Beach market
+  G: [3,4,5,7,8,9,117,119,121,122,123,124,125,126,127,129,130,131,132,134,140,142,143,146,149,152,153,154],
+  C: [24,25,26,27,28],
+  A: [11,12],
+  2: [53,54,55,56,57],
+  H: [60,61,62,63,64,65,70,71],
+  d: [102,103,108,109,110],
+  r: [],     // Restaurant — P2P menu/rating system, not a simple retail product
+  B: [],     // Sales offices — B2B contracts
+  t: [146,147,148],
+  u: [67,144,150],
+  z: [153,154],
 };
 
 // Game reference prices for construction materials (fixed by game)

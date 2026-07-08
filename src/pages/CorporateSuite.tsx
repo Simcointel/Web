@@ -24,6 +24,8 @@ import { ExecutiveView } from "./corporate-suite/ExecutiveView";
 import { FinanceView } from "./corporate-suite/FinanceView";
 import { LogisticsView } from "./corporate-suite/LogisticsView";
 import { RiskView } from "./corporate-suite/RiskView";
+import { RankingsView } from "./corporate-suite/RankingsView";
+import { BondsView } from "./corporate-suite/BondsView";
 
 export function CorporateSuitePage() {
   useEffect(() => {
@@ -308,6 +310,8 @@ export function CorporateSuitePage() {
         </div>
       );
       case 'risk': return <RiskView core={core} phase={economyPhase} retail={retail} />;
+      case 'rankings': return <RankingsView />;
+      case 'bonds': return <BondsView />;
       case 'ledger': return <LedgerView state={state} setState={setState} />;
       default: return <CommandView state={state} core={core} phase={economyPhase} margins={margins} cycles={cycles} onSync={syncCompany} isSyncing={isSyncing} setState={setState} />;
     }
@@ -341,7 +345,9 @@ export function CorporateSuitePage() {
              <WorkstationTab active={state.activeTab === 'logistics'} onClick={() => setState({...state, activeTab: 'logistics'})} label="LOGISTICS" icon={Ship} color="bg-indigo-600" />
              <WorkstationTab active={state.activeTab === 'retail'} onClick={() => setState({...state, activeTab: 'retail'})} label="RETAIL" icon={Target} color="bg-rose-600" />
              <WorkstationTab active={state.activeTab === 'ledger'} onClick={() => setState({...state, activeTab: 'ledger'})} label="LEDGER" icon={BarChart3} color="bg-teal-600" />
-             <WorkstationTab active={state.activeTab === 'risk'} onClick={() => setState({...state, activeTab: 'risk'})} label="RISK" icon={TrendingDown} color="bg-surface-600" />
+              <WorkstationTab active={state.activeTab === 'risk'} onClick={() => setState({...state, activeTab: 'risk'})} label="RISK" icon={TrendingDown} color="bg-surface-600" />
+              <WorkstationTab active={state.activeTab === 'rankings'} onClick={() => setState({...state, activeTab: 'rankings'})} label="RANKINGS" icon={BarChart3} color="bg-amber-600" />
+              <WorkstationTab active={state.activeTab === 'bonds'} onClick={() => setState({...state, activeTab: 'bonds'})} label="BONDS" icon={DollarSign} color="bg-indigo-600" />
           </nav>
        </div>
 

@@ -13,7 +13,8 @@ import type { ComponentType } from "react";
 import {
   Activity, TrendingUp, Shield, AlertCircle,
   ChevronRight, Zap, Globe,
-  BarChart3, Layers, LayoutGrid
+  BarChart3, Layers, LayoutGrid, Calculator, HardHat,
+  Store, Building2, UserCheck, Zap as ZapIcon
 } from "lucide-react";
 
 export function HomePage() {
@@ -113,10 +114,15 @@ export function HomePage() {
           </div>
        </div>
 
-       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <HomeTool to="/corporate-suite" title="CORP SUITE" icon={Zap} color="bg-brand-500" />
-          <HomeTool to="/profit-margins" title="PROFIT MATRIX" icon={TrendingUp} color="bg-emerald-500" />
-          <HomeTool to="/production-flow" title="FLOW VISUAL" icon={LayoutGrid} color="bg-violet-500" />
+       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+          <HomeTool to="/corporate-suite" title="Corporate Suite" icon={Zap} color="bg-brand-500" />
+          <HomeTool to="/market-intel" title="Market Intel" icon={BarChart3} color="bg-indigo-500" />
+          <HomeTool to="/board-room" title="Board Room" icon={Building2} color="bg-amber-500" />
+          <HomeTool to="/profit-margins" title="Profit Margins" icon={TrendingUp} color="bg-emerald-500" />
+          <HomeTool to="/profit-calculator" title="Profit Calc" icon={Calculator} color="bg-cyan-500" />
+          <HomeTool to="/retail-calculator" title="Retail Calc" icon={Store} color="bg-rose-500" />
+          <HomeTool to="/construction-calculator" title="Construction" icon={HardHat} color="bg-orange-500" />
+          <HomeTool to="/xp-calculator" title="XP Calculator" icon={ZapIcon} color="bg-yellow-500" />
        </div>
     </div>
   );

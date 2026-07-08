@@ -18,8 +18,10 @@ const NotFoundPage = lazy(() => import("./pages/NotFound").then(m => ({ default:
 const CorporateSuitePage = lazy(() => import("./pages/CorporateSuite").then(m => ({ default: m.CorporateSuitePage })));
 const ProfitCalculatorPage = lazy(() => import("./pages/ProfitCalculator").then(m => ({ default: m.ProfitCalculatorPage })));
 const ConstructionCalculatorPage = lazy(() => import("./pages/ConstructionCalculator").then(m => ({ default: m.ConstructionCalculatorPage })));
-const ExecutiveOptimizerPage = lazy(() => import("./pages/ExecutiveOptimizer").then(m => ({ default: m.ExecutiveOptimizerPage })));
 const RetailCalculatorPage = lazy(() => import("./pages/RetailCalculator").then(m => ({ default: m.RetailCalculatorPage })));
+const MarketIntelPage = lazy(() => import("./pages/MarketIntel").then(m => ({ default: m.MarketIntelPage })));
+const XpCalculatorPage = lazy(() => import("./pages/XpCalculator").then(m => ({ default: m.XpCalculatorPage })));
+const BoardRoomPage = lazy(() => import("./pages/BoardRoom").then(m => ({ default: m.BoardRoomPage })));
 
 export function AppShell({ path }: { path: string }) {
   const { theme } = useTheme();
@@ -36,8 +38,11 @@ export function AppShell({ path }: { path: string }) {
     : path === "/encyclopedia" ? <EncyclopediaPage />
     : path === "/profit-calculator" ? <ProfitCalculatorPage />
     : path === "/construction-calculator" ? <ConstructionCalculatorPage />
-    : path === "/executive-optimizer" ? <ExecutiveOptimizerPage />
+    : path === "/executive-optimizer" ? <BoardRoomPage />
     : path === "/retail-calculator" ? <RetailCalculatorPage />
+    : path === "/market-intel" ? <MarketIntelPage />
+    : path === "/xp-calculator" ? <XpCalculatorPage />
+    : path === "/board-room" ? <BoardRoomPage />
     : path === "/about" ? <AboutPage />
     : isWidget ? <WidgetPage />
     : <NotFoundPage />;

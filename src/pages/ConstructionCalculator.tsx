@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
-import { BUILDINGS, CONSTRUCTION_MATERIALS, MAT_REF_PRICES } from "../data/simco_static";
+import { BUILDINGS, CONSTRUCTION_MATERIALS, MAT_REF_PRICES, RESOURCES } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import type { ProfitMarginsResponse } from "../types/api";
 
@@ -61,9 +61,23 @@ export function ConstructionCalculatorPage() {
     return steps;
   }, [building, currentLv, targetLv, matPrices]);
 
-  const last = upgrades[upgrades.length - 1];
   const totalTimeH = upgrades.reduce((s, u) => s + u.time, 0);
   const totalMatCost = upgrades.reduce((s, u) => s + u.matCost, 0);
+
+  // ROI: estimate daily revenue from the building at target level
+  const roi = useMemo<{ dailyRevenue: number; dailyWages: number; daysToRecoup: number; revenuePerLevel: number; outputVwap: number; dailyNet: number } | null>(() => {
+    if (!building || upgrades.length === 0) return null;
+    const res = RESOURCES.find(r => r.buildingId === building.id);
+    if (!res) return { dailyRevenue: 0, dailyWages: 0, daysToRecoup: 0, revenuePerLevel: 0, outputVwap: 0, dailyNet: 0 };
+    const outputVwap = margins.find(m => m.id === res.id)?.outputVwap ?? 0;
+    const wages = building.wages ?? 0;
+    const revenuePerLevel = (res.basePh ?? 0) * outputVwap * 24;
+    const dailyRevenue = revenuePerLevel * targetLv;
+    const dailyWages = wages * 24 * (1 + 0.1) * targetLv; // ponytail: 10% AO assumed, adjust via settings if needed
+    const dailyNet = dailyRevenue - dailyWages;
+    const daysToRecoup = dailyNet > 0 ? totalMatCost / dailyNet : Infinity;
+    return { dailyRevenue, dailyWages, daysToRecoup, revenuePerLevel, outputVwap, dailyNet };
+  }, [building, upgrades, targetLv, margins, totalMatCost]);
 
   const totalMats = useMemo(() => {
     const m: Record<number, number> = {};
@@ -121,6 +135,15 @@ export function ConstructionCalculatorPage() {
                 <div className="border border-surface-200 rounded-lg p-3"><span className="text-[10px] text-surface-400 block uppercase font-bold">Steps</span><span className="text-lg font-bold">{upgrades.length}</span></div>
                 <div className="border border-surface-200 rounded-lg p-3"><span className="text-[10px] text-surface-400 block uppercase font-bold">C. Units</span><span className="text-lg font-bold">{Math.round(totalMats[111] ?? 0)}</span></div>
               </div>
+
+              {roi && roi.dailyRevenue > 0 && (
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="border border-brand-200 dark:border-brand-800 bg-brand-50/50 dark:bg-brand-900/20 rounded-lg p-3"><span className="text-[10px] text-surface-400 block uppercase font-bold">Est. Daily Revenue</span><span className="text-lg font-bold text-brand-600">${roi.dailyRevenue.toLocaleString()}</span><span className="block text-[9px] text-surface-400">@ ${roi.outputVwap.toFixed(2)}/u</span></div>
+                  <div className="border border-surface-200 rounded-lg p-3"><span className="text-[10px] text-surface-400 block uppercase font-bold">Daily Wages (est)</span><span className="text-lg font-bold">${roi.dailyWages.toLocaleString()}</span></div>
+                  <div className="border border-surface-200 rounded-lg p-3"><span className="text-[10px] text-surface-400 block uppercase font-bold">Daily Net</span><span className={`text-lg font-bold ${roi.dailyNet > 0 ? "text-emerald-600" : "text-rose-600"}`}>${roi.dailyNet.toLocaleString()}</span></div>
+                  <div className="border border-surface-200 rounded-lg p-3"><span className="text-[10px] text-surface-400 block uppercase font-bold">Recoup Time</span><span className="text-lg font-bold">{roi.daysToRecoup === Infinity ? "∞" : `${roi.daysToRecoup.toFixed(1)}d`}</span><span className="block text-[9px] text-surface-400">materials only</span></div>
+                </div>
+              )}
 
               <div className="border border-surface-200 rounded-lg">
                 <div className="px-4 py-2 border-b border-surface-100 bg-surface-50 text-xs font-bold text-surface-500 uppercase">Material Summary (market prices)</div>

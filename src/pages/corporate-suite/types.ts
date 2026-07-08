@@ -10,7 +10,7 @@ export interface MapItem { id: string; level: number; instanceId?: number; }
 export interface InventoryItem { id: number; qty: number; }
 
 export interface SuiteStateV6 {
-  activeTab: 'command' | 'ops' | 'exec' | 'finance' | 'logistics' | 'risk' | 'retail' | 'ledger';
+  activeTab: 'command' | 'ops' | 'exec' | 'finance' | 'logistics' | 'risk' | 'retail' | 'ledger' | 'rankings' | 'bonds';
   companyId: string;
   ledgerMeta?: { type: string; header: string[] };
   companyName?: string;

@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Briefcase, DollarSign,
   TrendingUp, BookOpen, Share2, Sun, Moon,
   Bell, Settings, Info, Menu, X, ChevronRight, LayoutGrid,
-  Calculator, HardHat, UserCheck, Store
+  Calculator, HardHat, Store, BarChart3, Zap, Building2
 } from "lucide-react";
 
 const navLinks = [
@@ -21,11 +21,15 @@ const navLinks = [
     { to: "/vwap-inflation", label: "Trends", icon: <TrendingUp size={18} />, color: "text-brand-500" },
     { to: "/encyclopedia", label: "Registry", icon: <BookOpen size={18} />, color: "text-indigo-500" },
   ]},
+  { group: "INTELLIGENCE", links: [
+    { to: "/market-intel", label: "Market Intel", icon: <BarChart3 size={18} />, color: "text-indigo-500" },
+    { to: "/board-room", label: "Board Room", icon: <Building2 size={18} />, color: "text-amber-500" },
+  ]},
   { group: "TOOLS", links: [
     { to: "/profit-calculator", label: "Profit Calc", icon: <Calculator size={18} />, color: "text-emerald-500" },
     { to: "/retail-calculator", label: "Retail Calc", icon: <Store size={18} />, color: "text-cyan-500" },
     { to: "/construction-calculator", label: "Construction", icon: <HardHat size={18} />, color: "text-amber-500" },
-    { to: "/executive-optimizer", label: "Exec Optimizer", icon: <UserCheck size={18} />, color: "text-violet-500" },
+    { to: "/xp-calculator", label: "XP Calculator", icon: <Zap size={18} />, color: "text-yellow-500" },
   ]}
 ];
 
