@@ -4,113 +4,130 @@ import * as dataRepo from "../services/dataRepo";
 import { LoadingState, ErrorState } from "../components/States";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine,
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
-import type { VWAPInflationResponse } from "../types/api";
+import type { ProfitMarginsResponse } from "../types/api";
+import { Search } from "lucide-react";
+
+const CATEGORIES = ["raw-materials", "refined-materials", "food-beverage", "consumer-goods", "construction-materials", "high-tech", "transport", "luxury-goods", "aerospace-defense", "energy"];
 
 export function VWAPInflationPage() {
-  useEffect(() => {
-    document.title = "SimCo Intel - VWAP Inflation";
-  }, []);
+  useEffect(() => { document.title = "SimCo Intel - VWAP Market Prices"; }, []);
 
   const [realm, setRealm] = useSharedRealm();
-  const [vwapTab, setVwapTab] = useState<"overall" | "quality" | "product" | "both">("overall");
-  const [selectedProduct, setSelectedProduct] = useState("");
-  const [selectedQualities, setSelectedQualities] = useState("0,1,2,3,4");
+  const [search, setSearch] = useState("");
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [catFilter, setCatFilter] = useState("");
 
-  const { data, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchVWAPInflation(realm, 200), 120000, [realm]);
+  const { data: marginsData, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 120000, [realm]);
+  const margins = (marginsData as ProfitMarginsResponse | undefined)?.resources ?? [];
 
-  const vwapData = data as VWAPInflationResponse | undefined;
+  const { data: history } = useDataRepoPoll(
+    () => selectedId ? dataRepo.fetchResourcePriceHistory(realm, selectedId, 30) : Promise.resolve([]),
+    120000, [realm, selectedId]
+  );
 
-  const productList = useMemo(() => {
-    if (!vwapData?.vwapInflation) return [];
-    const seen = new Set<string>();
-    const list: { id: string; name: string }[] = [];
-    for (const item of vwapData.vwapInflation) {
-      if (!item.product) continue;
-      for (const [id, p] of Object.entries(item.product)) {
-        if (!seen.has(id)) {
-          seen.add(id);
-          const pObj = p as { nm?: string };
-          list.push({ id, name: pObj.nm ?? `Product ${id}` });
-        }
-      }
-    }
-    list.sort((a, b) => a.name.localeCompare(b.name));
-    return list;
-  }, [vwapData]);
+  const filtered = useMemo(() => {
+    let list = margins;
+    if (catFilter) list = list.filter(r => r.category === catFilter);
+    if (search) list = list.filter(r => r.name.toLowerCase().includes(search.toLowerCase()));
+    return list.sort((a, b) => (b.outputVwap ?? 0) - (a.outputVwap ?? 0));
+  }, [margins, catFilter, search]);
 
-  if (loading && !data) return <LoadingState text="SYNC_PRICES..." />;
+  const selected = useMemo(() => margins.find(r => r.id === selectedId), [margins, selectedId]);
+
+  const histData = useMemo(() => (history ?? []).map(d => ({ ...d, d: new Date(d.date).toLocaleDateString() })), [history]);
+
+  if (loading && !marginsData) return <LoadingState text="Loading market prices..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300 text-sm">
-       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-200 dark:border-surface-800 pb-4">
-        <div>
-          <h1 className="text-xl font-bold italic tracking-tight">VWAP Inflation Analytics</h1>
-          <p className="text-sm text-surface-500 mt-1 font-medium italic opacity-80 text-brand-600">Global Price Integrity Monitor</p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <select
-            value={realm}
-            onChange={(e) => setRealm(Number(e.target.value))}
-            className="bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 text-sm font-bold px-3 py-1.5 rounded-lg outline-none"
-          >
-            <option value={0}>R0</option>
-            <option value={1}>R1</option>
-          </select>
-        </div>
+    <div className="space-y-6 text-sm">
+      <div className="flex items-center justify-between border-b border-surface-200 pb-3">
+        <h1 className="text-lg font-bold">Market VWAP Prices</h1>
+        <select value={realm} onChange={e => setRealm(Number(e.target.value))} className="border border-surface-300 px-3 py-1.5 rounded-lg text-sm font-bold outline-none">
+          <option value={0}>R0</option>
+          <option value={1}>R1</option>
+        </select>
       </div>
 
-      <div className="card !shadow-none border-surface-200 dark:border-surface-800 overflow-hidden">
-        <div className="p-4 border-b border-surface-100 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 flex flex-wrap items-center justify-between gap-6">
-           <div className="flex bg-surface-200 dark:bg-surface-800 p-1 rounded-lg">
-             {(["overall", "quality", "product", "both"] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setVwapTab(t)}
-                  className={`px-4 py-1.5 text-xs font-bold uppercase rounded-md transition-all ${vwapTab === t ? "bg-white dark:bg-surface-700 text-brand-600 shadow-sm" : "text-surface-500 hover:text-surface-700"}`}
-                >
-                  {t}
+      <div className="grid grid-cols-12 gap-4">
+        <div className="col-span-12 lg:col-span-4">
+          <div className="border border-surface-200 rounded-lg overflow-hidden">
+            <div className="p-3 border-b border-surface-100 bg-surface-50">
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
+                <input type="text" placeholder="Search resources..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-9 pr-3 py-1.5 border border-surface-300 rounded-md text-sm outline-none" />
+              </div>
+              <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className="w-full mt-2 border border-surface-300 px-2 py-1.5 rounded-md text-sm outline-none">
+                <option value="">All Categories</option>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c.replace(/-/g, ' ')}</option>)}
+              </select>
+            </div>
+            <div className="h-64 overflow-y-auto divide-y divide-surface-100">
+              {filtered.map(r => (
+                <button key={r.id} onClick={() => setSelectedId(r.id)} className={`w-full text-left px-3 py-2 flex justify-between items-center hover:bg-surface-50 transition-colors ${selectedId === r.id ? 'bg-brand-50 border-l-4 border-brand-600' : ''}`}>
+                  <div>
+                    <span className="font-semibold text-sm">{r.name}</span>
+                    <span className="block text-[10px] text-surface-400 uppercase">{r.categoryName ?? r.category}</span>
+                  </div>
+                  <span className="font-bold text-sm">${r.outputVwap.toFixed(2)}</span>
                 </button>
               ))}
-           </div>
-
-            {vwapTab === "quality" && (
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-bold uppercase text-surface-400">Qualities:</span>
-                <input value={selectedQualities} onChange={(e) => setSelectedQualities(e.target.value)} className="w-32 px-3 py-1.5 bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 rounded-lg text-sm focus:ring-1 focus:ring-brand-500 outline-none" />
-              </div>
-            )}
-            {(vwapTab === "product" || vwapTab === "both") && (
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-bold uppercase text-surface-400">Resource:</span>
-                <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} className="bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 px-3 py-1.5 text-sm rounded-lg outline-none font-bold">
-                  <option value="">-- Select Product --</option>
-                  {productList.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-            )}
+              {filtered.length === 0 && <p className="p-4 text-center text-surface-400 text-sm">No results</p>}
+            </div>
+            <div className="p-2 border-t border-surface-100 bg-surface-50 text-center text-[10px] text-surface-400">{filtered.length} resources</div>
+          </div>
         </div>
 
-        <div className="p-8">
-          {vwapData?.vwapInflation && vwapData.vwapInflation.length > 1 ? (
-            <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={vwapData.vwapInflation.map(d => ({ ...d, dt: new Date(d.date).toLocaleDateString() }))}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-surface-100 dark:stroke-surface-800" />
-                <XAxis dataKey="dt" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }} />
-                <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="4 4" />
-                {vwapTab === "overall" && <Line type="monotone" dataKey="overall.vw" stroke="#0284c7" strokeWidth={3} dot={false} name="Market VWAP" />}
-                {vwapTab === "quality" && <Line type="monotone" dataKey="quality.vw" stroke="#0284c7" strokeWidth={3} dot={false} name="Quality VWAP" />}
-                {vwapTab === "product" && selectedProduct && <Line type="monotone" dataKey={`product.${selectedProduct}`} stroke="#0284c7" strokeWidth={3} dot={false} name="Product VWAP" />}
-                {vwapTab === "both" && selectedProduct && <Line type="monotone" dataKey={`both.${selectedProduct}`} stroke="#0284c7" strokeWidth={3} dot={false} name="Product VWAP" />}
-              </LineChart>
-            </ResponsiveContainer>
+        <div className="col-span-12 lg:col-span-8 space-y-4">
+          {selected ? (
+            <>
+              <div className="border border-surface-200 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <div>
+                    <h2 className="text-lg font-bold">{selected.name}</h2>
+                    <span className="text-xs text-surface-400 uppercase">{selected.categoryName ?? selected.category}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-brand-600">${selected.outputVwap.toFixed(2)}</span>
+                    <span className="block text-[10px] text-surface-400">Current VWAP</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-3 text-center">
+                  <div><span className="text-[10px] text-surface-400 block">Revenue/H</span><span className="font-bold">${selected.revenuePerHour.toFixed(0)}</span></div>
+                  <div><span className="text-[10px] text-surface-400 block">Profit/H</span><span className="font-bold">${selected.netProfitPerHour.toFixed(0)}</span></div>
+                  <div><span className="text-[10px] text-surface-400 block">Margin</span><span className="font-bold">{selected.marginPct.toFixed(1)}%</span></div>
+                  <div><span className="text-[10px] text-surface-400 block">Prod/H</span><span className="font-bold">{selected.producedPerHour.toFixed(1)}</span></div>
+                </div>
+              </div>
+
+              <div className="border border-surface-200 rounded-lg">
+                <div className="px-4 py-2 border-b border-surface-100 bg-surface-50">
+                  <span className="text-xs font-bold text-surface-500 uppercase">Price History (30D)</span>
+                </div>
+                <div className="p-4">
+                  {histData.length > 1 ? (
+                    <ResponsiveContainer width="100%" height={250}>
+                      <LineChart data={histData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="vwap" stroke="#0ea5e9" strokeWidth={2} dot={false} name="VWAP" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="py-16 text-center text-surface-400">Insufficient price history</p>
+                  )}
+                </div>
+              </div>
+            </>
           ) : (
-            <div className="py-24 text-center text-surface-300 font-bold italic text-lg uppercase tracking-widest">Waiting for sufficient data feed...</div>
+            <div className="border border-dashed border-surface-300 rounded-lg p-20 text-center">
+              <p className="text-surface-400 text-lg">Select a resource to view price history</p>
+              <p className="text-surface-300 text-sm mt-2">{margins.length} resources with price data</p>
+            </div>
           )}
         </div>
       </div>
