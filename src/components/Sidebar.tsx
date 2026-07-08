@@ -44,10 +44,10 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (o:
 
       <aside className={`
         fixed top-0 left-0 bottom-0 z-50 w-64 bg-white dark:bg-surface-950 border-r border-surface-200 dark:border-surface-800
-        transition-all duration-200 lg:translate-x-0 lg:static lg:block
+        transition-all duration-200 lg:translate-x-0 lg:sticky lg:block lg:h-screen overflow-y-auto
         ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}
       `}>
-        <div className="flex flex-col h-full min-h-0">
+        <div className="flex flex-col min-h-full">
           <div className="h-16 shrink-0 flex items-center px-6">
             <Link to="/" className="flex items-center gap-3 group">
               <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-700 rounded-lg flex items-center justify-center text-white shadow-sm">
@@ -59,7 +59,7 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (o:
             </Link>
           </div>
 
-          <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex-1">
             <nav className="py-6 px-3 space-y-8">
               {navLinks.map((group) => (
                 <div key={group.group}>
