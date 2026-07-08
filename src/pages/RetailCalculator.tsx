@@ -174,7 +174,7 @@ export function RetailCalculatorPage() {
     }
   }, [resId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Calculate
+  // Calculate single product
   const result = useMemo(() => {
     if (!store || !selected || !sellingPrice) return null;
     const pm = PHASE_MULTIPLIERS[phase] ?? 1.0;
@@ -186,13 +186,42 @@ export function RetailCalculatorPage() {
     const w = ((store as any).wages ?? 0) * bldgLevel;
     const ac = w * (ao / 100);
     let cogs = 0;
-    const r = (store as any).resources?.[0]; // placeholder for retail input structure
     if (ri && ri.modeledProductionCostPerUnit) cogs = ri.modeledProductionCostPerUnit * u;
     else cogs = vwapPrice * u;
     const np = rev - mf - w - ac - cogs;
     const mg = rev > 0 ? (np / rev) * 100 : 0;
     return { u, rev, mf, w, ac, cogs, np, mg, pm, dm, ss };
   }, [store, selected, sellingPrice, bldgLevel, ao, salesSpeed, demand, baseRate, phase, vwapPrice, ri]);
+
+  const [showTop, setShowTop] = useState(false);
+
+  const topProducts = useMemo(() => {
+    const out: Array<{ storeName: string; productName: string; demand: number; profit: number; margin: number; revenue: number }> = [];
+    const pm = PHASE_MULTIPLIERS[phase] ?? 1.0;
+    const ss = 1 + salesSpeed / 100;
+    for (const s of stores) {
+      const pids = RETAIL_PRODUCT_MAP[s.id] ?? [];
+      for (const pid of pids) {
+        const rinfo = retailInfoMap[pid];
+        if (!rinfo) continue;
+        const d = satToDemand(rinfo.saturation);
+        const dm = getDemandMult(d);
+        const br = Math.round((1 / rinfo.buildingLevelsNeededPerUnitPerHour) * 100) / 100;
+        const u = br * bldgLevel * pm * dm * ss;
+        const vwap = ds === "direct" && directVwaps ? (directVwaps[pid] ?? 0) : (margins.find(m => m.id === pid)?.outputVwap ?? 0);
+        const rev = u * vwap;
+        const mf = rev * 0.03;
+        const w = (s.wages ?? 0) * bldgLevel;
+        const ac = w * (ao / 100);
+        const cogs = rinfo.modeledProductionCostPerUnit ? rinfo.modeledProductionCostPerUnit * u : vwap * u;
+        const np = rev - mf - w - ac - cogs;
+        const mg = rev > 0 ? (np / rev) * 100 : 0;
+        const name = resNameMap[pid] ?? `#${pid}`;
+        out.push({ storeName: s.name, productName: name, demand: d, profit: np, margin: mg, revenue: rev });
+      }
+    }
+    return out.sort((a, b) => b.profit - a.profit).slice(0, 20);
+  }, [stores, retailInfoMap, resNameMap, bldgLevel, ao, salesSpeed, phase, margins, ds, directVwaps]);
 
   return (
     <div className="max-w-5xl mx-auto space-y-5 animate-slide-up">
@@ -329,8 +358,42 @@ export function RetailCalculatorPage() {
               <p className="text-surface-400 font-bold text-sm">{!store ? "Select a store" : "Choose a product"}</p>
               <p className="text-surface-300 text-xs mt-1">Adjust demand, price & parameters in the sidebar</p>
             </div>
-          ) : !result ? null : (
+          ) : (
             <>
+              {/* Top 20 toggle */}
+              <div className="flex items-center gap-2">
+                <button onClick={() => setShowTop(!showTop)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${showTop ? "bg-rose-600 text-white shadow-sm" : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200"}`}>
+                  {showTop ? "Hide Rankings" : "Top 20 Products"}
+                </button>
+                {showTop && <span className="text-[10px] text-surface-400">Ranked by profit using current parameters</span>}
+              </div>
+
+              {showTop && (
+                <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl overflow-hidden">
+                  <div className="px-5 py-3 border-b border-surface-100 dark:border-surface-800 flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><TrendingUp size={12} /> Top 20 Most Profitable Products</div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead><tr className="bg-surface-50 dark:bg-surface-900 text-[10px] font-bold uppercase text-surface-500"><th className="text-left px-4 py-2.5">#</th><th className="text-left px-4 py-2.5">Store</th><th className="text-left px-4 py-2.5">Product</th><th className="text-right px-4 py-2.5">Demand</th><th className="text-right px-4 py-2.5">Revenue</th><th className="text-right px-4 py-2.5">Profit/h</th><th className="text-right px-4 py-2.5">Margin</th></tr></thead>
+                      <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
+                        {topProducts.map((p, i) => (
+                          <tr key={`${p.storeName}-${p.productName}`} className="hover:bg-surface-50 dark:hover:bg-surface-900/50">
+                            <td className="px-4 py-2 text-surface-400 font-bold">{i + 1}</td>
+                            <td className="px-4 py-2 font-bold">{p.storeName}</td>
+                            <td className="px-4 py-2">{p.productName}</td>
+                            <td className="px-4 py-2 text-right"><span className={`font-bold ${p.demand >= 60 ? "text-emerald-600" : p.demand >= 40 ? "text-amber-500" : "text-rose-500"}`}>{p.demand}%</span></td>
+                            <td className="px-4 py-2 text-right text-surface-500">${fmt(p.revenue)}</td>
+                            <td className={`px-4 py-2 text-right font-bold ${p.profit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>${fmt(p.profit)}</td>
+                            <td className={`px-4 py-2 text-right font-bold ${p.margin >= 20 ? "text-emerald-600" : p.margin >= 0 ? "text-amber-500" : "text-rose-500"}`}>{p.margin.toFixed(1)}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {!showTop && !result ? null : !showTop && result && (
+                <>
               {/* KPI cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
@@ -377,6 +440,8 @@ export function RetailCalculatorPage() {
                   <span className="text-sm font-bold">${fmt(ri.modeledProductionCostPerUnit)} / unit</span>
                 </div>
               )}
+            </>
+          )}
             </>
           )}
         </div>

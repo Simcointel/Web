@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import {
-  DollarSign, ArrowLeft, Target, TrendingDown, Ship,
+  DollarSign, ArrowLeft, TrendingDown, Ship,
   LayoutDashboard, HardHat, Upload, Download, CheckCircle2,
   Users, BarChart3, Briefcase, AlertTriangle,
   Sun, Moon
@@ -299,16 +299,6 @@ export function CorporateSuitePage() {
       case 'exec': return <ExecutiveView state={state} core={core} setState={setState} setNotification={setNotification} />;
       case 'finance': return <FinanceView state={state} core={core} setState={setState} />;
       case 'logistics': return <LogisticsView state={state} core={core} setState={setState} />;
-      case 'retail': return (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 rounded-2xl flex items-center justify-center mb-4">
-            <Target size={32} className="text-rose-600" />
-          </div>
-          <h3 className="text-lg font-bold mb-2">Retail Calculator</h3>
-          <p className="text-sm text-surface-500 mb-6 max-w-md">Full retail profitability calculator with per-store product filtering, saturation data, and restaurant mode</p>
-          <Link to="/retail-calculator" className="px-6 py-3 bg-rose-600 text-white rounded-xl font-bold text-sm hover:bg-rose-700 transition-colors">Open Retail Calculator</Link>
-        </div>
-      );
       case 'risk': return <RiskView core={core} phase={economyPhase} retail={retail} />;
       case 'rankings': return <RankingsView />;
       case 'bonds': return <BondsView />;
@@ -343,8 +333,7 @@ export function CorporateSuitePage() {
              <WorkstationTab active={state.activeTab === 'exec'} onClick={() => setState({...state, activeTab: 'exec'})} label="EXEC" icon={Users} color="bg-amber-600" />
              <WorkstationTab active={state.activeTab === 'finance'} onClick={() => setState({...state, activeTab: 'finance'})} label="FINANCE" icon={DollarSign} color="bg-violet-600" />
              <WorkstationTab active={state.activeTab === 'logistics'} onClick={() => setState({...state, activeTab: 'logistics'})} label="LOGISTICS" icon={Ship} color="bg-indigo-600" />
-             <WorkstationTab active={state.activeTab === 'retail'} onClick={() => setState({...state, activeTab: 'retail'})} label="RETAIL" icon={Target} color="bg-rose-600" />
-             <WorkstationTab active={state.activeTab === 'ledger'} onClick={() => setState({...state, activeTab: 'ledger'})} label="LEDGER" icon={BarChart3} color="bg-teal-600" />
+                          <WorkstationTab active={state.activeTab === 'ledger'} onClick={() => setState({...state, activeTab: 'ledger'})} label="LEDGER" icon={BarChart3} color="bg-teal-600" />
               <WorkstationTab active={state.activeTab === 'risk'} onClick={() => setState({...state, activeTab: 'risk'})} label="RISK" icon={TrendingDown} color="bg-surface-600" />
               <WorkstationTab active={state.activeTab === 'rankings'} onClick={() => setState({...state, activeTab: 'rankings'})} label="RANKINGS" icon={BarChart3} color="bg-amber-600" />
               <WorkstationTab active={state.activeTab === 'bonds'} onClick={() => setState({...state, activeTab: 'bonds'})} label="BONDS" icon={DollarSign} color="bg-indigo-600" />
