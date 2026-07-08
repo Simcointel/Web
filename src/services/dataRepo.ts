@@ -154,7 +154,7 @@ function normalizeEvent(raw: any): any {
 }
 
 async function fetchEvents(realm: number, limit: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/events/realm-${realm}`, getTodayDate());
+  const data = await fetchLatest(`aggregates/events/realm-${realm}`, "");
   if (!data) return { events: [], total: 0 };
   const raw = Array.isArray(data) ? data : [];
   const events = raw.map(normalizeEvent);
@@ -314,7 +314,25 @@ function latestPerDay<T extends { t?: string }>(items: T[]): T[] {
 }
 
 export async function fetchMacroIndexes(realm: number, limit = 200): Promise<any> {
-  const items = await fetchAllFiles(`aggregates/indexes/realm-${realm}`, "price-indexes-", limit);
+  // Attempt to fetch from optimized public aggregate first
+  try {
+    const publicData = await rawFetch(`public/realm-${realm}/indexes.json`);
+    if (publicData && Array.isArray(publicData) && publicData.length > 0) {
+      return {
+        indexes: publicData.slice(0, limit).map((item: any) => ({
+          date: item.t,
+          cpi: item.ix?.cpi?.v ?? null,
+          coreCpi: item.ix?.["core-cpi"]?.v ?? null,
+          gdp: item.ix?.gdp?.v ?? null,
+        })),
+        total: publicData.length,
+      };
+    }
+  } catch (err) {
+    // Fallback to legacy
+  }
+
+  const items = await fetchAllFiles(`aggregates/indexes/realm-${realm}`, "price-indexes-", 20); // Reduce fallback limit to mitigate 429s
   return {
     indexes: latestPerDay(items).map((item: any) => ({
       date: item.t,
@@ -327,7 +345,25 @@ export async function fetchMacroIndexes(realm: number, limit = 200): Promise<any
 }
 
 export async function fetchMacroInflation(realm: number, limit = 200): Promise<any> {
-  const items = await fetchAllFiles(`aggregates/inflation/realm-${realm}`, "inflation-report-", limit);
+  // Attempt to fetch from optimized public aggregate first
+  try {
+    const publicData = await rawFetch(`public/realm-${realm}/inflation.json`);
+    if (publicData && Array.isArray(publicData) && publicData.length > 0) {
+      return {
+        inflation: publicData.slice(0, limit).map((item: any) => ({
+          date: item.t,
+          cpiRate: item.in?.["cpi"]?.ch ?? null,
+          coreCpiRate: item.in?.["core-cpi"]?.ch ?? null,
+          gdpGrowth: item.in?.["gdp"]?.ch ?? null,
+        })),
+        total: publicData.length,
+      };
+    }
+  } catch (err) {
+    // Fallback to legacy
+  }
+
+  const items = await fetchAllFiles(`aggregates/inflation/realm-${realm}`, "inflation-report-", 20); // Reduce fallback limit to mitigate 429s
   return {
     inflation: latestPerDay(items).map((item: any) => ({
       date: item.t,
@@ -443,7 +479,26 @@ export async function fetchResourcePriceHistory(realm: number, resourceId: numbe
    VWAP Inflation
    ============================================================ */
 export async function fetchVWAPInflation(realm: number, limit = 200): Promise<any> {
-  const items = await fetchAllFiles(`aggregates/vwap-inflation/realm-${realm}`, "vwap-inflation-", limit);
+  // Attempt to fetch from optimized public aggregate first
+  try {
+    const publicData = await rawFetch(`public/realm-${realm}/vwap-inflation.json`);
+    if (publicData && Array.isArray(publicData) && publicData.length > 0) {
+      return {
+        vwapInflation: publicData.slice(0, limit).map((item: any) => ({
+          date: item.t,
+          overall: item.overall,
+          quality: item.quality ?? {},
+          product: item.product ?? {},
+          both: item.both ?? {},
+        })),
+        total: publicData.length,
+      };
+    }
+  } catch (err) {
+    // Fallback to legacy
+  }
+
+  const items = await fetchAllFiles(`aggregates/vwap-inflation/realm-${realm}`, "vwap-inflation-", 20);
   return {
     vwapInflation: latestPerDay(items).map((item: any) => ({
       date: item.t,
