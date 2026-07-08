@@ -354,7 +354,7 @@ export function CorporateSuitePage() {
     switch(state.activeTab || 'command') {
       case 'command': return <CommandView state={state} core={core} phase={economyPhase} margins={margins} cycles={cycles} onSync={syncCompany} isSyncing={isSyncing} setState={setState} />;
       case 'ops': return <OperationsView state={state} core={core} setState={setState} />;
-      case 'exec': return <ExecutiveView state={state} core={core} setState={setState} />;
+      case 'exec': return <ExecutiveView state={state} core={core} setState={setState} setNotification={setNotification} />;
       case 'finance': return <FinanceView state={state} core={core} setState={setState} />;
       case 'logistics': return <LogisticsView state={state} core={core} setState={setState} />;
       case 'retail': return <RetailView state={state} core={core} setState={setState} retail={retail} />;
@@ -692,7 +692,13 @@ function OperationsView({ state, setState, core }: any) {
                          <span className="text-[10px] font-bold text-surface-400 uppercase">LVL</span>
                          <input type="number" value={m.level} onChange={(e) => { const next = [...state.map]; next[i].level = Number(e.target.value); setState({...state, map: next}); }} className="w-8 bg-transparent border-none p-0 text-sm font-bold text-center outline-none" />
                       </div>
-                      <button onClick={() => setState({...state, map: state.map.filter((_: any, idx: number) => idx !== i)})} className="p-2 text-surface-300 hover:text-rose-600 transition-colors"><Trash2 size={18} /></button>
+                      <button
+                        onClick={() => setState({...state, map: state.map.filter((_: any, idx: number) => idx !== i)})}
+                        className="p-2 text-surface-300 hover:text-rose-600 transition-colors"
+                        aria-label="Remove facility"
+                      >
+                        <Trash2 size={18} />
+                      </button>
                    </div>
                 ))}
              </div>
@@ -796,7 +802,7 @@ function OperationsView({ state, setState, core }: any) {
   );
 }
 
-function ExecutiveView({ state, setState, core }: any) {
+function ExecutiveView({ state, setState, core, setNotification }: any) {
   const [pasteData, setPasteData] = useState("");
   const handlePaste = () => {
     const lines = pasteData.split('\n');
@@ -812,7 +818,7 @@ function ExecutiveView({ state, setState, core }: any) {
     });
     setState({ ...state, board: newBoard });
     setPasteData("");
-    alert("Board Integrated Successfully");
+    setNotification({ msg: "Board Integrated Successfully", type: "success" });
   };
 
   return (

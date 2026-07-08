@@ -65,6 +65,7 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (o:
                       <Link
                         key={link.to}
                         to={link.to}
+                        aria-current={active ? "page" : undefined}
                         className={`
                           flex items-center gap-4 group px-4 py-2.5 rounded-xl transition-all duration-150
                           ${active
@@ -88,7 +89,7 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (o:
              <DarkModeToggle />
              <div className="flex items-center justify-between px-4">
                 <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest">v3.0.0-straight</span>
-                <Link to="/about" className="text-surface-400 hover:text-brand-600 transition-colors"><Info size={18} /></Link>
+                <Link to="/about" aria-label="About SimcoIntel" className="text-surface-400 hover:text-brand-600 transition-colors"><Info size={18} /></Link>
              </div>
           </div>
         </div>
