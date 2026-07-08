@@ -6,6 +6,7 @@ import { useSharedRealm } from "../hooks/useSharedRealm";
 import { Search, Info, Factory, ShoppingCart, TrendingUp, ChevronRight, BookOpen, Layers, BarChart } from "lucide-react";
 import { LoadingState } from "../components/States";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import type { ProfitMarginsResponse, PriceHistoryItem } from "../types/api";
 
 export function EncyclopediaPage() {
   useEffect(() => {
@@ -15,7 +16,7 @@ export function EncyclopediaPage() {
   const [realm] = useSharedRealm();
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<PriceHistoryItem[]>([]);
   const [hLoading, setHLoading] = useState(false);
 
   const { data: margins, loading } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 120000, [realm]);
@@ -42,7 +43,7 @@ export function EncyclopediaPage() {
   [selectedId]);
 
   const selectedMargin = useMemo(() =>
-    margins?.resources?.find((r: any) => r.id === selectedId),
+    (margins as ProfitMarginsResponse | undefined)?.resources?.find((r) => r.id === selectedId),
   [margins, selectedId]);
 
   const content = useMemo(() => {
@@ -172,7 +173,7 @@ export function EncyclopediaPage() {
                      </div>
                      <div className="p-6 space-y-4">
                         <div className="flex justify-between items-center p-3 bg-surface-50 dark:bg-surface-900 rounded-lg">
-                           <span className="font-bold">{BUILDINGS.find(b => b.id === (selected as any).buildingId)?.name || 'Extraction Facility'}</span>
+                            <span className="font-bold">{BUILDINGS.find(b => b.id === (selected as { buildingId?: string }).buildingId)?.name || 'Extraction Facility'}</span>
                            <ChevronRight size={14} className="text-surface-300" />
                         </div>
                         {selected.inputs && (
@@ -239,7 +240,7 @@ export function EncyclopediaPage() {
   );
 }
 
-function FinancialLine({ label, value, red }: any) {
+function FinancialLine({ label, value, red }: { label: string; value: string; red?: boolean }) {
    return (
       <div className="flex justify-between items-center text-[10px]">
          <span className="font-bold text-surface-400 uppercase tracking-tighter">{label}</span>
@@ -248,7 +249,7 @@ function FinancialLine({ label, value, red }: any) {
    );
 }
 
-function SpecNode({ label, value }: any) {
+function SpecNode({ label, value }: { label: string; value: string | number }) {
    return (
       <div className="bg-surface-50 dark:bg-surface-950 p-2 rounded">
          <span className="block text-[7px] font-black text-surface-400 uppercase mb-1">{label}</span>

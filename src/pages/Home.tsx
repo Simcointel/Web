@@ -1,16 +1,15 @@
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
-import { useSseConnected, useSseEvent } from "../hooks/useSse";
 import { StatCard } from "../components/StatCard";
 import { MiniSparkline } from "../components/MiniSparkline";
-import { motion } from "framer-motion";
 import { Section } from "../components/Layout";
 import { LoadingState, ErrorState } from "../components/States";
 import { SeverityBadge } from "../components/SeverityBadge";
-import React, { useCallback, useMemo, useEffect } from "react";
+import { useMemo, useEffect } from "react";
 import { useSharedRealm } from "../hooks/useSharedRealm";
-import type { RealmDashboard } from "../types/api";
+import type { RealmDashboard, DashboardMap, EventsResponse, NormalizedEvent } from "../types/api";
 import { Link } from "../router";
+import type { ComponentType } from "react";
 import {
   Activity, TrendingUp, Shield, AlertCircle,
   ChevronRight, Zap, Globe,
@@ -25,24 +24,23 @@ export function HomePage() {
   const [realm, setRealm] = useSharedRealm();
   const { data: dashState, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardState(realm), 60000, [realm]);
   const { data: alerts } = useDataRepoPoll(() => dataRepo.fetchDashboardAlerts(realm), 60000, [realm]);
-  const connected = useSseConnected();
-
-  useSseEvent("alert_generated", useCallback(() => { refresh(); }, [refresh]));
-
   const loadingOrError = useMemo(() => {
     if (loading && !dashState) return <LoadingState text="Synthesizing..." />;
     if (error) return <ErrorState message={error} onRetry={refresh} />;
     return null;
   }, [loading, dashState, error, refresh]);
 
-  const ds: RealmDashboard | undefined = realm != null ? (dashState as any)?.[String(realm)] : undefined;
+  const dashMap = dashState as DashboardMap | undefined;
+  const ds: RealmDashboard | undefined = realm != null ? dashMap?.[String(realm)] : undefined;
 
   if (loadingOrError) return loadingOrError;
   const scores = ds?.scores;
   const regime = ds?.regime;
 
   const sparkData = scores ? [scores.eh, scores.ms, scores.st, scores.ip, scores.sr] : [];
-  const alertList = alerts ? (Array.isArray(alerts) ? alerts : (alerts as any).events ?? []).slice(0, 4) : [];
+  const alertList: NormalizedEvent[] = alerts
+    ? (alerts as EventsResponse).events?.slice(0, 4) ?? []
+    : [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300 text-sm">
@@ -54,10 +52,10 @@ export function HomePage() {
           </div>
 
           <div className="flex items-center gap-4">
-             <div className="flex items-center gap-2 px-4 py-1.5 bg-surface-100 dark:bg-surface-900 rounded-lg border border-surface-200 dark:border-surface-800">
-                <div className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'bg-surface-300'}`} />
-                <span className="text-xs font-bold uppercase tracking-wide">{connected ? 'Node Connected' : 'Offline'}</span>
-             </div>
+              <div className="flex items-center gap-2 px-4 py-1.5 bg-surface-100 dark:bg-surface-900 rounded-lg border border-surface-200 dark:border-surface-800">
+                 <div className="w-2 h-2 rounded-full bg-surface-300" />
+                 <span className="text-xs font-bold uppercase tracking-wide">Polling 60s</span>
+              </div>
              <select
                value={realm}
                onChange={(e) => setRealm(Number(e.target.value))}
@@ -99,7 +97,7 @@ export function HomePage() {
                    <Link to="/alerts" className="text-xs font-bold text-brand-600 hover:underline">Full History</Link>
                 </div>
                 <div className="divide-y divide-surface-100 dark:divide-surface-800">
-                   {alertList.length > 0 ? alertList.map((a: any) => (
+                   {alertList.length > 0 ? alertList.map((a) => (
                       <div key={a.id} className="px-6 py-4 flex items-center gap-4 hover:bg-surface-50 dark:hover:bg-surface-800/30 transition-colors group">
                          <div className="flex-1 min-w-0">
                             <p className="font-bold text-surface-900 dark:text-white truncate text-base">{a.ti}</p>
@@ -124,7 +122,7 @@ export function HomePage() {
   );
 }
 
-function ColorfulStat({ title, value, icon: Icon, color, border }: any) {
+function ColorfulStat({ title, value, icon: Icon, color, border }: { title: string; value: number | undefined; icon: ComponentType<{ size: number }>; color: string; border: string }) {
    return (
       <div className={`card p-6 flex items-center justify-between border-l-4 ${border} !shadow-none`}>
          <div>
@@ -138,7 +136,7 @@ function ColorfulStat({ title, value, icon: Icon, color, border }: any) {
    );
 }
 
-function HomeTool({ to, title, icon: Icon, color }: { to: string; title: string; icon: any; color: string }) {
+function HomeTool({ to, title, icon: Icon, color }: { to: string; title: string; icon: ComponentType<{ size: number }>; color: string }) {
    return (
       <Link to={to} className={`card p-6 group hover:border-brand-600 transition-all !shadow-none border-surface-200 dark:border-surface-800`}>
          <div className="flex items-center gap-4">

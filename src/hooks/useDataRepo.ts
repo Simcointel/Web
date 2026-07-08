@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-export function useDataRepo(
-  fetcher: () => Promise<any>,
+export function useDataRepo<T>(
+  fetcher: () => Promise<T>,
   deps: unknown[] = [],
-  fallback?: () => Promise<any>,
+  fallback?: () => Promise<T>,
 ) {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const fetcherRef = useRef(fetcher);
@@ -37,11 +37,11 @@ export function useDataRepo(
   return { data, loading, error, refresh: load };
 }
 
-export function useDataRepoPoll(
-  fetcher: () => Promise<any>,
+export function useDataRepoPoll<T>(
+  fetcher: () => Promise<T>,
   intervalMs: number,
   deps: unknown[] = [],
-  fallback?: () => Promise<any>,
+  fallback?: () => Promise<T>,
 ) {
   const result = useDataRepo(fetcher, deps, fallback);
   const { refresh } = result;

@@ -1,20 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import { useTheme } from "./hooks/useTheme";
 import { Sidebar } from "./components/Sidebar";
 import { MobileNav } from "./components/MobileNav";
 import { Footer } from "./components/Footer";
-import { HomePage } from "./pages/Home";
-import { MacroPage } from "./pages/Macro";
-import { AlertsPage } from "./pages/Alerts";
-import { AboutPage } from "./pages/About";
-import { VWAPInflationPage } from "./pages/VWAPInflation";
-import { ProfitMarginsPage } from "./pages/ProfitMargins";
-import { EncyclopediaPage } from "./pages/Encyclopedia";
-import { ProductionFlowPage } from "./pages/ProductionFlow";
-import { WidgetPage } from "./pages/WidgetRenderer";
-import { NotFoundPage } from "./pages/NotFound";
-import { CorporateSuitePage } from "./pages/CorporateSuite";
-import React from "react";
+
+const HomePage = lazy(() => import("./pages/Home").then(m => ({ default: m.HomePage })));
+const MacroPage = lazy(() => import("./pages/Macro").then(m => ({ default: m.MacroPage })));
+const AlertsPage = lazy(() => import("./pages/Alerts").then(m => ({ default: m.AlertsPage })));
+const AboutPage = lazy(() => import("./pages/About").then(m => ({ default: m.AboutPage })));
+const VWAPInflationPage = lazy(() => import("./pages/VWAPInflation").then(m => ({ default: m.VWAPInflationPage })));
+const ProfitMarginsPage = lazy(() => import("./pages/ProfitMargins").then(m => ({ default: m.ProfitMarginsPage })));
+const EncyclopediaPage = lazy(() => import("./pages/Encyclopedia").then(m => ({ default: m.EncyclopediaPage })));
+const ProductionFlowPage = lazy(() => import("./pages/ProductionFlow").then(m => ({ default: m.ProductionFlowPage })));
+const WidgetPage = lazy(() => import("./pages/WidgetRenderer").then(m => ({ default: m.WidgetPage })));
+const NotFoundPage = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFoundPage })));
+const CorporateSuitePage = lazy(() => import("./pages/CorporateSuite").then(m => ({ default: m.CorporateSuitePage })));
 
 export function AppShell({ path }: { path: string }) {
   const { theme } = useTheme();
@@ -35,7 +35,7 @@ export function AppShell({ path }: { path: string }) {
     : <NotFoundPage />;
 
   if (isWidget) {
-    return <main className="bg-transparent">{page}</main>;
+    return <main className="bg-transparent"><Suspense fallback={null}>{page}</Suspense></main>;
   }
 
   return (
@@ -49,7 +49,9 @@ export function AppShell({ path }: { path: string }) {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <main className="flex-1 overflow-y-auto focus:outline-none custom-scrollbar pb-16 lg:pb-0">
           <div className={`${isSuite ? 'max-w-full px-4 lg:px-8 py-4' : 'max-w-[1600px] mx-auto p-3 sm:p-4 lg:p-6'}`}>
-            {page}
+            <Suspense fallback={<div className="flex items-center justify-center py-20 text-surface-400 font-bold">Loading...</div>}>
+              {page}
+            </Suspense>
           </div>
           {!isSuite && <Footer />}
         </main>

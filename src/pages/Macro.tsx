@@ -82,7 +82,7 @@ export function MacroPage() {
           <ChartPanel title="Market Valuation & GDP Trends">
              <ResponsiveContainer width="100%" height={240}>
                 <AreaChart data={(indexes?.indexes ? history.history.map((h) => {
-                  const ix = indexes.indexes.find((i: any) => i.date === h.date);
+                  const ix = indexes.indexes.find((i) => i.date === h.date);
                   return { ...h, gdp: ix?.gdp ?? null, d: new Date(h.date).toLocaleDateString() };
                 }) : history.history.map((h) => ({ ...h, d: new Date(h.date).toLocaleDateString() })))}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-surface-200 dark:stroke-surface-800" />

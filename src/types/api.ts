@@ -6,6 +6,119 @@ export interface ApiEnvelope<T = unknown> {
   error?: string;
 }
 
+// ============ Events ============
+export interface NormalizedEvent {
+  id: string;
+  se: string;
+  ts: string;
+  ca: string;
+  ti: string;
+  de: string;
+  da: Record<string, unknown>;
+  ty: string;
+}
+
+export interface EventsResponse {
+  events: NormalizedEvent[];
+  total: number;
+}
+
+// ============ Dashboard ============
+export type DashboardMap = Record<string, RealmDashboard>;
+
+// ============ Macro ============
+export interface MacroHistoryPoint {
+  date: string;
+  activeCompanies: number;
+  companiesValue: number;
+  totalBuildings: number;
+  bondsSold: number;
+  phase: string;
+  checkpoint: string;
+}
+
+export interface MacroHistoryResponse {
+  history: MacroHistoryPoint[];
+  total: number;
+}
+
+export interface IndexPoint {
+  date: string;
+  cpi: number | null;
+  coreCpi: number | null;
+  gdp: number | null;
+}
+
+export interface MacroIndexesResponse {
+  indexes: IndexPoint[];
+  total: number;
+}
+
+export interface InflationPoint {
+  date: string;
+  cpiRate: number | null;
+  coreCpiRate: number | null;
+  gdpGrowth: number | null;
+}
+
+export interface MacroInflationResponse {
+  inflation: InflationPoint[];
+  total: number;
+}
+
+// ============ Profit Margins ============
+export interface ProfitMarginResource {
+  id: number;
+  name: string;
+  category: string;
+  categoryName: string;
+  producedPerHour: number;
+  revenuePerHour: number;
+  inputCostPerHour: number;
+  wagesPerHour: number;
+  transportPerHour: number;
+  netProfitPerHour: number;
+  marginPct: number;
+  marginDelta: number | null;
+  profitDelta: number | null;
+  marginDirection: string | null;
+  forecastMargin: number | null;
+  trendDirection: string | null;
+  outputVwap: number;
+}
+
+export interface ProfitMarginsResponse {
+  ts: string;
+  realm: number;
+  resources: ProfitMarginResource[];
+  total: number;
+}
+
+export interface PriceHistoryItem {
+  date: string;
+  vwap: number;
+  profit: number;
+}
+
+// ============ VWAP Inflation ============
+export interface VWAPInflationEntry {
+  date: string;
+  overall: Record<string, number>;
+  quality: Record<string, number>;
+  product: Record<string, number>;
+  both: Record<string, number>;
+}
+
+export interface VWAPInflationResponse {
+  vwapInflation: VWAPInflationEntry[];
+  total: number;
+}
+
+// ============ Retail ============
+export interface RetailData {
+  retail: Record<string, { saturation: number; [key: string]: unknown }>;
+}
+
 export interface HealthReport {
   status: string;
   generatedAt: string;
@@ -33,7 +146,7 @@ export interface RealmDashboard {
   regime: DashboardRegime;
   alerts: number;
   sectors: number;
-  generatedAt: string;
+  generatedAt?: string;
 }
 
 export interface EventFeedItem {
@@ -58,8 +171,6 @@ export interface UnifiedFeed {
 }
 
 export interface MacroLatest {
-  realm: string;
-  state: { backfillStarted: string; backfillComplete: string; totalDays: number };
   latestHistory: {
     date: string;
     companiesValue: number;
@@ -67,12 +178,12 @@ export interface MacroLatest {
     bondsSold: number;
     totalBuildings: number;
   } | null;
-  latestIndexes: { date: string; cpi: number; coreCpi: number; gdp: number } | null;
-  latestInflation: { date: string; cpiRate: number; coreCpiRate: number; gdpGrowth: number } | null;
+  latestIndexes: { cpi: number | null; coreCpi: number | null; gdp: number | null } | null;
+  latestInflation: { cpiRate: number | null; coreCpiRate: number | null; gdpGrowth: number | null } | null;
 }
 
 export interface MacroHistory {
-  realm: string;
+  realm?: string;
   totalEntries: number;
   yearsAvailable: string[];
   history: {
@@ -85,13 +196,13 @@ export interface MacroHistory {
 }
 
 export interface MacroIndexes {
-  realm: string;
+  realm?: string;
   total: number;
   indexes: { date: string; cpi: number; coreCpi: number; gdp: number }[];
 }
 
 export interface MacroInflation {
-  realm: string;
+  realm?: string;
   total: number;
   inflation: { date: string; cpiRate: number; coreCpiRate: number; gdpGrowth: number }[];
 }
@@ -102,9 +213,9 @@ export interface ReferencePrice {
 }
 
 export interface MacroPhases {
-  realm: string;
+  realm?: string;
   totalDays: number;
-  currentPhase: string;
+  currentPhase: string | null;
   transitions: { from: string; to: string; date: string; reason: string }[];
   phases: { phase: string; startDate: string; endDate: string | null; days: number }[];
 }

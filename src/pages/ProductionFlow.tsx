@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { RESOURCES } from "../data/simco_static";
 import { Search, ChevronRight, Share2, Layers, Zap } from "lucide-react";
-import { motion } from "framer-motion";
+
 
 export function ProductionFlowPage() {
   useEffect(() => {
@@ -68,9 +68,9 @@ export function ProductionFlowPage() {
       </div>
 
       <div className="card !bg-transparent p-4 min-h-[60vh] overflow-x-auto flex flex-col items-center justify-start border-none">
-         <motion.div layout initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
+         <div className="animate-fade-in-scale">
             <TreeNode node={tree} isRoot />
-         </motion.div>
+         </div>
       </div>
     </div>
   );

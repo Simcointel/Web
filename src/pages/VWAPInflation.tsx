@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { LoadingState, ErrorState } from "../components/States";
@@ -6,6 +6,7 @@ import { useSharedRealm } from "../hooks/useSharedRealm";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine,
 } from "recharts";
+import type { VWAPInflationResponse } from "../types/api";
 
 export function VWAPInflationPage() {
   useEffect(() => {
@@ -19,19 +20,25 @@ export function VWAPInflationPage() {
 
   const { data, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchVWAPInflation(realm, 200), 120000, [realm]);
 
+  const vwapData = data as VWAPInflationResponse | undefined;
+
   const productList = useMemo(() => {
-    if (!data?.vwapInflation) return [];
+    if (!vwapData?.vwapInflation) return [];
     const seen = new Set<string>();
     const list: { id: string; name: string }[] = [];
-    for (const item of data.vwapInflation) {
+    for (const item of vwapData.vwapInflation) {
       if (!item.product) continue;
       for (const [id, p] of Object.entries(item.product)) {
-        if (!seen.has(id)) { seen.add(id); list.push({ id, name: (p as any).nm ?? `Product ${id}` }); }
+        if (!seen.has(id)) {
+          seen.add(id);
+          const pObj = p as { nm?: string };
+          list.push({ id, name: pObj.nm ?? `Product ${id}` });
+        }
       }
     }
     list.sort((a, b) => a.name.localeCompare(b.name));
     return list;
-  }, [data]);
+  }, [vwapData]);
 
   if (loading && !data) return <LoadingState text="SYNC_PRICES..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
@@ -88,9 +95,9 @@ export function VWAPInflationPage() {
         </div>
 
         <div className="p-8">
-          {data?.vwapInflation && data.vwapInflation.length > 1 ? (
+          {vwapData?.vwapInflation && vwapData.vwapInflation.length > 1 ? (
             <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={data.vwapInflation.map(d => ({ ...d, dt: new Date(d.date).toLocaleDateString() }))}>
+              <LineChart data={vwapData.vwapInflation.map(d => ({ ...d, dt: new Date(d.date).toLocaleDateString() }))}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-surface-100 dark:stroke-surface-800" />
                 <XAxis dataKey="dt" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />

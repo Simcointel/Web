@@ -1,0 +1,114 @@
+import { CheckCircle2, Download, TrendingUp, BarChart3 } from "lucide-react";
+import { Section } from "../../components/Layout";
+import { n } from "./types";
+
+export function WorkstationTab({ active, onClick, label, icon: Icon, color }: any) {
+  return (
+    <button onClick={onClick} className={`px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${active ? `${color} text-white shadow-sm` : 'text-surface-500 hover:bg-surface-200 dark:hover:bg-surface-800'}`}>
+       <Icon size={16} /> {label}
+    </button>
+  );
+}
+
+export function GlobalMetric({ label, value }: any) {
+  return (
+    <div className="flex flex-col">
+       <span className="text-[10px] font-bold uppercase text-surface-400 leading-none mb-1">{label}</span>
+       <span className="text-lg font-bold tabular-nums leading-none">{value}</span>
+    </div>
+  );
+}
+
+export function KPICard({ label, value, sub, icon: Icon }: any) {
+  return (
+    <div className="card p-6 flex flex-col items-center text-center !shadow-none border-surface-200 dark:border-surface-800 group">
+       <div className="w-12 h-12 bg-surface-50 dark:bg-surface-900 rounded-xl flex items-center justify-center text-brand-600 mb-4 group-hover:scale-105 transition-transform">
+          <Icon size={24} />
+       </div>
+       <span className="text-xs font-bold uppercase tracking-widest text-surface-400 mb-1">{label}</span>
+       <span className="text-2xl font-bold tabular-nums leading-none">{value}</span>
+       <p className="text-xs font-medium text-surface-500 mt-2 truncate w-full">{sub}</p>
+    </div>
+  );
+}
+
+export function SkillNode({ label, value, sub, icon: Icon, color }: any) {
+  return (
+    <div className={`card p-6 flex flex-col items-center text-center border-t-4 border-current shadow-sm ${color}`}>
+       <div className="flex items-center gap-2 mb-3">
+          <Icon size={18} />
+          <span className="text-sm font-bold uppercase tracking-wide text-surface-900 dark:text-white">{label}</span>
+       </div>
+       <span className="text-3xl font-bold text-surface-900 dark:text-white tabular-nums leading-none">{value}</span>
+       <span className="text-xs font-semibold uppercase opacity-40 mt-3 tracking-wide">{sub}</span>
+    </div>
+  );
+}
+
+export function ExecCard({ role, data, onChange, isApp }: any) {
+  return (
+    <div className={`card p-6 space-y-6 border-l-4 !shadow-none border-surface-200 dark:border-surface-800 transition-all ${isApp ? 'border-l-surface-300 dark:border-l-surface-600 opacity-80' : 'border-l-brand-600'}`}>
+       <div className="flex items-center justify-between">
+          <span className={`text-sm font-bold uppercase tracking-wide ${isApp ? 'text-surface-500' : 'text-brand-600'}`}>{role}</span>
+       </div>
+       <div className="grid grid-cols-2 gap-4">
+          <SkillLineSmall label="Management" val={data.management} onChange={(v: any) => onChange({...data, management: v})} />
+          <SkillLineSmall label="Accounting" val={data.accounting} onChange={(v: any) => onChange({...data, accounting: v})} />
+          <SkillLineSmall label="Communication" val={data.communication} onChange={(v: any) => onChange({...data, communication: v})} />
+          <SkillLineSmall label="Science" val={data.science} onChange={(v: any) => onChange({...data, science: v})} />
+       </div>
+    </div>
+  );
+}
+
+function SkillLineSmall({ label, val, onChange }: any) {
+  return (
+    <div className="flex flex-col bg-surface-50 dark:bg-surface-900 px-4 py-3 rounded-lg border border-surface-100 dark:border-surface-800">
+       <span className="text-[10px] font-bold text-surface-400 uppercase mb-1">{label}</span>
+       <input type="number" value={val} onChange={(e) => onChange(Number(e.target.value))} className="bg-transparent border-none p-0 text-lg font-bold outline-none tabular-nums" />
+    </div>
+  );
+}
+
+export function ForecastLine({ label, value, red, green }: any) {
+  return (
+    <div className="flex justify-between items-center py-3 border-b border-surface-50 dark:border-surface-800 last:border-0">
+       <span className="text-[11px] font-black uppercase text-surface-500 italic tracking-tight">{label}</span>
+       <span className={`text-base font-black tabular-nums italic ${red ? 'text-red-600' : green ? 'text-emerald-500' : 'text-surface-900 dark:text-white'}`}>{value}</span>
+    </div>
+  );
+}
+
+export function CheckItem({ label, active, light }: any) {
+  return (
+    <div className="flex items-center gap-5 py-2">
+       <div className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${active ? 'bg-emerald-500 border-emerald-500 shadow-lg' : 'border-white/20 bg-white/5'}`}>
+          {active && <CheckCircle2 size={14} className="text-white" />}
+       </div>
+       <span className={`text-[12px] font-black uppercase italic tracking-widest ${active ? (light ? 'text-white' : 'text-surface-900') : 'text-white/20'}`}>{label}</span>
+    </div>
+  );
+}
+
+export function LedgerView({ state }: any) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+       <div className="md:col-span-8">
+          <Section title="LEDGER_STREAM" icon={BarChart3} color="text-teal-500">
+             <div className="card h-[60vh] flex flex-col items-center justify-center border-dashed opacity-20">
+                <Download size={40} className="mb-4" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em]">Upload Game CSV to populate</p>
+             </div>
+          </Section>
+       </div>
+       <div className="md:col-span-4 space-y-3">
+          <Section title="STAT_EXTRACT" icon={TrendingUp} color="text-teal-500">
+             <div className="card p-4 border-l-2 border-teal-500">
+                <span className="text-[9px] font-black text-surface-400 block mb-2 uppercase">EST_DAILY_PROFIT</span>
+                <span className="text-2xl font-black italic tracking-tighter text-teal-600">$${(n(state.settings?.estDailyProfit)/1000).toFixed(1)}K</span>
+             </div>
+          </Section>
+       </div>
+    </div>
+  );
+}

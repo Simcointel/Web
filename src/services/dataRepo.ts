@@ -1,134 +1,50 @@
-const DATA_REPO_OWNER = "SimcoIntel";
-const DATA_REPO_NAME = "Data";
-const DATA_REPO_BRANCH = "main";
+// Re-exports from split modules for backward compat
+export { withCache, DATA_CACHE } from "./data-cache";
+export type { } from "./data-cache";
+export {
+  rawFetch,
+  fetchLatest,
+  fetchIndex,
+  listFiles,
+  fetchAllFiles,
+  tryDirectFetch,
+  getTodayDate,
+} from "./github-transport";
 
-const GITHUB_RAW = `https://raw.githubusercontent.com/${DATA_REPO_OWNER}/${DATA_REPO_NAME}/${DATA_REPO_BRANCH}`;
-const GITHUB_API = `https://api.github.com/repos/${DATA_REPO_OWNER}/${DATA_REPO_NAME}`;
+import { withCache } from "./data-cache";
+import {
+  rawFetch,
+  fetchLatest,
+  fetchAllFiles,
+} from "./github-transport";
 
-const DATA_CACHE = new Map<string, { data: any; expiry: number }>();
-const CACHE_TTL = 2 * 60 * 1000;
-const CACHE_FAIL_TTL = 10 * 1000;
-
-async function withCache<T>(key: string, fn: () => Promise<T>, ttl = CACHE_TTL): Promise<T> {
-  const cached = DATA_CACHE.get(key);
-  if (cached && Date.now() < cached.expiry) return cached.data;
-  try {
-    const data = await fn();
-    DATA_CACHE.set(key, { data, expiry: Date.now() + ttl });
-    return data;
-  } catch (err) {
-    DATA_CACHE.set(key, { data: null, expiry: Date.now() + CACHE_FAIL_TTL });
-    throw err;
-  }
-}
-
-async function rawFetch(path: string): Promise<any> {
-  const res = await fetch(`${GITHUB_RAW}/${path}`);
-  if (!res.ok) throw new Error(`Data repo fetch failed: ${res.status}`);
-  return res.json();
-}
-
-const INDEX_CACHE = new Map<string, { data: any; expiry: number }>();
-const INDEX_TTL = 5 * 60 * 1000;
-const INDEX_FAIL_TTL = 30 * 1000;
-
-async function fetchIndex(dir: string): Promise<{ latest: string; files: string[] } | null> {
-  const key = `index:${dir}`;
-  const cached = INDEX_CACHE.get(key);
-  if (cached && Date.now() < cached.expiry) return cached.data;
-  try {
-    const data = await rawFetch(`${dir}/index.json`);
-    if (data && Array.isArray(data.files)) {
-      INDEX_CACHE.set(key, { data, expiry: Date.now() + INDEX_TTL });
-      return data;
-    }
-    INDEX_CACHE.set(key, { data: null, expiry: Date.now() + INDEX_FAIL_TTL });
-    return null;
-  } catch {
-    INDEX_CACHE.set(key, { data: null, expiry: Date.now() + INDEX_FAIL_TTL });
-    return null;
-  }
-}
-
-async function tryDirectFetch(dir: string, prefix: string, dateStr: string): Promise<any> {
-  const path = `${dir}/${prefix}${dateStr}.json`;
-  const res = await fetch(`${GITHUB_RAW}/${path}`);
-  if (res.ok) return res.json();
-  return null;
-}
-
-async function fetchLatest(dir: string, prefix: string): Promise<any> {
-  const index = await fetchIndex(dir);
-  if (index?.latest && index.latest.startsWith(prefix)) {
-    return rawFetch(`${dir}/${index.latest}`);
-  }
-
-  const today = new Date();
-  const dates = Array.from({ length: 7 }, (_, i) =>
-    new Date(today.getTime() - i * 86400000).toISOString().slice(0, 10)
-  );
-  const results = await Promise.all(dates.map(d => tryDirectFetch(dir, prefix, d)));
-  const found = results.find(r => r !== null);
-  if (found) return found;
-
-  const files = await listFiles(dir);
-  const matches = files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).sort().reverse();
-  if (matches.length === 0) return null;
-  return rawFetch(`${dir}/${matches[0]}`);
-}
-
-const LIST_CACHE = new Map<string, { files: string[]; expiry: number }>();
-const LIST_TTL = 60 * 1000;
-
-async function listFiles(path: string): Promise<string[]> {
-  const key = path;
-  const cached = LIST_CACHE.get(key);
-  if (cached && Date.now() < cached.expiry) return cached.files;
-
-  const url = `${GITHUB_API}/contents/${path}`;
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error(`GitHub API: ${res.status}`);
-    const data = await res.json();
-    if (!Array.isArray(data)) throw new Error("Not an array");
-    const files = data.filter((f: any) => f.type === "file").map((f: any) => f.name);
-    LIST_CACHE.set(key, { files, expiry: Date.now() + LIST_TTL });
-    return files;
-  } catch {
-    LIST_CACHE.set(key, { files: [], expiry: Date.now() + LIST_TTL });
-    return [];
-  }
-}
-
-async function fetchAllFiles(dir: string, prefix: string, limit = 100): Promise<any[]> {
-  return withCache(`allfiles:${dir}:${prefix}:${limit}`, async () => {
-    const index = await fetchIndex(dir);
-    let filenames: string[];
-    if (index?.files && index.files.length >= limit) {
-      filenames = index.files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).slice(0, limit);
-    } else {
-      const files = await listFiles(dir);
-      filenames = files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).sort().reverse().slice(0, limit);
-    }
-    const results = await Promise.all(
-      filenames.map(f => rawFetch(`${dir}/${f}`).catch(() => null as any))
-    );
-    return results.filter(Boolean);
-  });
-}
-
-function getTodayDate(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+import type {
+  RealmDashboard,
+  DashboardMap,
+  EventsResponse,
+  NormalizedEvent,
+  MacroLatest,
+  MacroHistoryResponse,
+  MacroIndexesResponse,
+  MacroInflationResponse,
+  MacroPhases,
+  ProfitMarginsResponse,
+  ProfitMarginResource,
+  PriceHistoryItem,
+  VWAPInflationResponse,
+  RetailData,
+} from "../types/api";
 
 /* ============================================================
    Dashboard
    ============================================================ */
-export async function fetchDashboardState(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/dashboard/realm-${realm}`, "summary-");
+export async function fetchDashboardState(realm: number): Promise<DashboardMap> {
+  const data = await fetchLatest<{
+    scores: RealmDashboard["scores"];
+    regime: RealmDashboard["regime"];
+    alerts?: { total?: number };
+    leaders?: Record<string, unknown>;
+  }>(`aggregates/dashboard/realm-${realm}`, "summary-");
   if (!data) throw new Error("No dashboard data");
   return {
     [String(realm)]: {
@@ -140,42 +56,51 @@ export async function fetchDashboardState(realm: number): Promise<any> {
   };
 }
 
-function normalizeEvent(raw: any): any {
+function normalizeEvent(raw: Record<string, unknown>): NormalizedEvent {
   return {
-    id: raw.id ?? raw.i ?? "",
-    se: raw.se ?? raw.s ?? "info",
-    ts: raw.ts ?? raw.t ?? "",
-    ca: raw.ca ?? raw.c ?? "general",
-    ti: raw.ti ?? raw.ti ?? "",
-    de: raw.de ?? raw.d ?? "",
-    da: raw.da ?? raw.data ?? {},
-    ty: raw.ty ?? raw.type ?? "",
+    id: (raw.id ?? raw.i ?? "") as string,
+    se: (raw.se ?? raw.s ?? "info") as string,
+    ts: (raw.ts ?? raw.t ?? "") as string,
+    ca: (raw.ca ?? raw.c ?? "general") as string,
+    ti: (raw.ti ?? raw.ti ?? "") as string,
+    de: (raw.de ?? raw.d ?? "") as string,
+    da: (raw.da ?? raw.data ?? {}) as Record<string, unknown>,
+    ty: (raw.ty ?? raw.type ?? "") as string,
   };
 }
 
-async function fetchEvents(realm: number, limit: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/events/realm-${realm}`, "");
+async function fetchEvents(realm: number, limit: number): Promise<EventsResponse> {
+  const data = await fetchLatest<unknown[]>(`aggregates/events/realm-${realm}`, "");
   if (!data) return { events: [], total: 0 };
   const raw = Array.isArray(data) ? data : [];
-  const events = raw.map(normalizeEvent);
+  const events = raw.map(normalizeEvent as (v: unknown) => NormalizedEvent);
   return { events: events.slice(0, limit), total: events.length };
 }
 
-export async function fetchDashboardAlerts(realm: number): Promise<any> {
+export async function fetchDashboardAlerts(realm: number): Promise<EventsResponse> {
   return fetchEvents(realm, 5);
 }
 
-export async function fetchDashboardEvents(realm: number, limit = 200): Promise<any> {
+export async function fetchDashboardEvents(realm: number, limit = 200): Promise<EventsResponse> {
   return fetchEvents(realm, limit);
 }
 
 /* ============================================================
    Macro
    ============================================================ */
-export async function fetchMacroLatest(realm: number): Promise<any> {
-  // Attempt to fetch from optimized public aggregate first
+export async function fetchMacroLatest(realm: number): Promise<MacroLatest> {
   try {
-    const publicData = await rawFetch(`public/realm-${realm}/macro.json`);
+    const publicData = await rawFetch<{
+      generatedAt: string;
+      latest: {
+        companiesValue: number;
+        activeCompanies: number;
+        bondsSold: number;
+        totalBuildings: number;
+      };
+      latestIndexes?: { cpi?: number; coreCpi?: number; gdp?: number };
+      latestInflation?: { cpiRate?: number; coreCpiRate?: number; gdpGrowth?: number };
+    }>(`public/realm-${realm}/macro.json`);
     if (publicData && publicData.latest) {
       return {
         latestHistory: {
@@ -186,25 +111,28 @@ export async function fetchMacroLatest(realm: number): Promise<any> {
           totalBuildings: publicData.latest.totalBuildings,
         },
         latestIndexes: publicData.latestIndexes ? {
-          cpi: publicData.latestIndexes.cpi?.v ?? null,
-          coreCpi: publicData.latestIndexes["core-cpi"]?.v ?? null,
-          gdp: publicData.latestIndexes.gdp?.v ?? null,
+          cpi: publicData.latestIndexes.cpi ?? null,
+          coreCpi: publicData.latestIndexes.coreCpi ?? null,
+          gdp: publicData.latestIndexes.gdp ?? null,
         } : null,
         latestInflation: publicData.latestInflation ? {
-          cpiRate: publicData.latestInflation.cpi?.ch ?? null,
-          coreCpiRate: publicData.latestInflation["core-cpi"]?.ch ?? null,
-          gdpGrowth: publicData.latestInflation["gdp"]?.ch ?? null,
+          cpiRate: publicData.latestInflation.cpiRate ?? null,
+          coreCpiRate: publicData.latestInflation.coreCpiRate ?? null,
+          gdpGrowth: publicData.latestInflation.gdpGrowth ?? null,
         } : null,
       };
     }
-  } catch (err) {
+  } catch {
     // Fallback to legacy structure
   }
 
   const [data, ixData, infData] = await Promise.all([
-    fetchLatest(`aggregates/realm-status/realm-${realm}`, "realm-status-"),
-    fetchLatest(`aggregates/indexes/realm-${realm}`, "price-indexes-").catch(() => null),
-    fetchLatest(`aggregates/inflation/realm-${realm}`, "inflation-report-").catch(() => null),
+    fetchLatest<{ t: string; cv: number; ac: number; bs: number; tb: number }>(
+      `aggregates/realm-status/realm-${realm}`, "realm-status-"),
+    fetchLatest<{ ix: Record<string, { v: number }> }>(
+      `aggregates/indexes/realm-${realm}`, "price-indexes-").catch(() => null),
+    fetchLatest<{ in: Record<string, { ch: number }> }>(
+      `aggregates/inflation/realm-${realm}`, "inflation-report-").catch(() => null),
   ]);
   if (!data) throw new Error("No macro latest data");
   return {
@@ -228,9 +156,10 @@ export async function fetchMacroLatest(realm: number): Promise<any> {
   };
 }
 
-async function loadHistoryYearFiles(realm: number): Promise<any[]> {
+async function loadHistoryYearFiles(realm: number): Promise<Record<string, unknown>[]> {
   return withCache(`history:${realm}`, async () => {
     const dir = `aggregates/macro-history/realm-${realm}`;
+    const { fetchIndex, listFiles } = await import("./github-transport");
     const index = await fetchIndex(dir);
     let yearFiles: string[];
     if (index?.files) {
@@ -240,44 +169,47 @@ async function loadHistoryYearFiles(realm: number): Promise<any[]> {
       yearFiles = files.filter(f => /^\d{4}\.json$/.test(f)).sort();
     }
     const allChunks = await Promise.all(
-      yearFiles.map(f => rawFetch(`${dir}/${f}`).catch(() => null as any))
+      yearFiles.map(f => rawFetch<{ e: Record<string, unknown>[] }>(`${dir}/${f}`).catch(() => null))
     );
-    const allEntries: any[] = [];
+    const allEntries: Record<string, unknown>[] = [];
     for (const chunk of allChunks) {
       if (chunk?.e) {
         for (const entry of chunk.e) allEntries.push(entry);
       }
     }
     return allEntries;
-  }, CACHE_TTL);
+  });
 }
 
-export async function fetchMacroHistory(realm: number, limit = 120): Promise<any> {
+export async function fetchMacroHistory(realm: number, limit = 120): Promise<MacroHistoryResponse> {
   const allEntries = await loadHistoryYearFiles(realm);
   const step = Math.max(1, Math.floor(allEntries.length / limit));
   const sampled = allEntries.filter((_, i) => i % step === 0 || i === allEntries.length - 1);
   return {
-    history: sampled.map((e: any) => ({
-      date: e.d,
-      activeCompanies: e.ac,
-      companiesValue: e.cv,
-      totalBuildings: e.tb,
-      bondsSold: e.bs,
-      phase: e.ph,
-      checkpoint: e.cp,
+    history: sampled.map((e) => ({
+      date: e.d as string,
+      activeCompanies: e.ac as number,
+      companiesValue: e.cv as number,
+      totalBuildings: e.tb as number,
+      bondsSold: e.bs as number,
+      phase: e.ph as string,
+      checkpoint: e.cp as string,
     })),
     total: allEntries.length,
   };
 }
 
-export async function fetchMacroPhases(realm: number): Promise<any> {
+export async function fetchMacroPhases(realm: number): Promise<MacroPhases> {
+  // ponytail: realm not included in response — consumers key by realm already
   const allEntries = await loadHistoryYearFiles(realm);
   const seen = new Set<string>();
   const phases: Array<{ date: string; phase: string }> = [];
   for (const e of allEntries) {
-    if (!e.ph || e.ph === "" || seen.has(e.d)) continue;
-    seen.add(e.d);
-    phases.push({ date: e.d, phase: e.ph });
+    const ph = e.ph as string | undefined;
+    const d = e.d as string;
+    if (!ph || ph === "" || seen.has(d)) continue;
+    seen.add(d);
+    phases.push({ date: d, phase: ph });
   }
   phases.sort((a, b) => a.date.localeCompare(b.date));
   const phaseDetails = phases.map((p, i) => {
@@ -313,13 +245,13 @@ function latestPerDay<T extends { t?: string }>(items: T[]): T[] {
   return [...best.values()].sort((a, b) => (a.t ?? '').localeCompare(b.t ?? ''));
 }
 
-export async function fetchMacroIndexes(realm: number, limit = 200): Promise<any> {
-  // Attempt to fetch from optimized public aggregate first
+export async function fetchMacroIndexes(realm: number, limit = 200): Promise<MacroIndexesResponse> {
   try {
-    const publicData = await rawFetch(`public/realm-${realm}/indexes.json`);
+    const publicData = await rawFetch<Array<{ t: string; ix?: Record<string, { v: number }> }>>(
+      `public/realm-${realm}/indexes.json`);
     if (publicData && Array.isArray(publicData) && publicData.length > 0) {
       return {
-        indexes: publicData.slice(0, limit).map((item: any) => ({
+        indexes: publicData.slice(0, limit).map((item) => ({
           date: item.t,
           cpi: item.ix?.cpi?.v ?? null,
           coreCpi: item.ix?.["core-cpi"]?.v ?? null,
@@ -328,13 +260,14 @@ export async function fetchMacroIndexes(realm: number, limit = 200): Promise<any
         total: publicData.length,
       };
     }
-  } catch (err) {
+  } catch {
     // Fallback to legacy
   }
 
-  const items = await fetchAllFiles(`aggregates/indexes/realm-${realm}`, "price-indexes-", 20); // Reduce fallback limit to mitigate 429s
+  const items = await fetchAllFiles<{ t: string; ix?: Record<string, { v: number }> }>(
+    `aggregates/indexes/realm-${realm}`, "price-indexes-", 20);
   return {
-    indexes: latestPerDay(items).map((item: any) => ({
+    indexes: latestPerDay(items).map((item) => ({
       date: item.t,
       cpi: item.ix?.cpi?.v ?? null,
       coreCpi: item.ix?.["core-cpi"]?.v ?? null,
@@ -344,13 +277,13 @@ export async function fetchMacroIndexes(realm: number, limit = 200): Promise<any
   };
 }
 
-export async function fetchMacroInflation(realm: number, limit = 200): Promise<any> {
-  // Attempt to fetch from optimized public aggregate first
+export async function fetchMacroInflation(realm: number, limit = 200): Promise<MacroInflationResponse> {
   try {
-    const publicData = await rawFetch(`public/realm-${realm}/inflation.json`);
+    const publicData = await rawFetch<Array<{ t: string; in?: Record<string, { ch: number }> }>>(
+      `public/realm-${realm}/inflation.json`);
     if (publicData && Array.isArray(publicData) && publicData.length > 0) {
       return {
-        inflation: publicData.slice(0, limit).map((item: any) => ({
+        inflation: publicData.slice(0, limit).map((item) => ({
           date: item.t,
           cpiRate: item.in?.["cpi"]?.ch ?? null,
           coreCpiRate: item.in?.["core-cpi"]?.ch ?? null,
@@ -359,13 +292,14 @@ export async function fetchMacroInflation(realm: number, limit = 200): Promise<a
         total: publicData.length,
       };
     }
-  } catch (err) {
+  } catch {
     // Fallback to legacy
   }
 
-  const items = await fetchAllFiles(`aggregates/inflation/realm-${realm}`, "inflation-report-", 20); // Reduce fallback limit to mitigate 429s
+  const items = await fetchAllFiles<{ t: string; in?: Record<string, { ch: number }> }>(
+    `aggregates/inflation/realm-${realm}`, "inflation-report-", 20);
   return {
-    inflation: latestPerDay(items).map((item: any) => ({
+    inflation: latestPerDay(items).map((item) => ({
       date: item.t,
       cpiRate: item.in?.["cpi"]?.ch ?? null,
       coreCpiRate: item.in?.["core-cpi"]?.ch ?? null,
@@ -378,8 +312,8 @@ export async function fetchMacroInflation(realm: number, limit = 200): Promise<a
 /* ============================================================
    Retail
    ============================================================ */
-export async function fetchRetailData(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/retail/realm-${realm}`, "retail-summary-");
+export async function fetchRetailData(realm: number): Promise<RetailData> {
+  const data = await fetchLatest<RetailData>(`aggregates/retail/realm-${realm}`, "retail-summary-");
   if (!data) throw new Error("No retail data");
   return data;
 }
@@ -387,87 +321,86 @@ export async function fetchRetailData(realm: number): Promise<any> {
 /* ============================================================
    Profit Margins
    ============================================================ */
-function mapProfitMargins(data: any) {
+function mapProfitMargins(data: Record<string, unknown>): ProfitMarginsResponse | null {
   if (!data) return null;
   return {
-    ts: data.t,
-    realm: data.r,
-    resources: (data.rs ?? []).map((r: any) => ({
-      id: r.i,
-      name: r.n,
-      category: r.c,
-      categoryName: r.cn,
-      producedPerHour: r.ph,
-      revenuePerHour: r.rv,
-      inputCostPerHour: r.ic,
-      wagesPerHour: r.wg,
-      transportPerHour: r.tr,
-      netProfitPerHour: r.np,
-      marginPct: r.mg,
-      marginDelta: r.m1 ?? null,
-      profitDelta: r.n1 ?? null,
-      marginDirection: r.md ?? null,
-      forecastMargin: r.fp ?? null,
-      trendDirection: r.td ?? null,
-      outputVwap: r.vw,
+    ts: data.t as string,
+    realm: data.r as number,
+    resources: ((data.rs ?? []) as Array<Record<string, unknown>>).map((r) => ({
+      id: r.i as number,
+      name: r.n as string,
+      category: r.c as string,
+      categoryName: r.cn as string,
+      producedPerHour: r.ph as number,
+      revenuePerHour: r.rv as number,
+      inputCostPerHour: r.ic as number,
+      wagesPerHour: r.wg as number,
+      transportPerHour: r.tr as number,
+      netProfitPerHour: r.np as number,
+      marginPct: r.mg as number,
+      marginDelta: (r.m1 as number) ?? null,
+      profitDelta: (r.n1 as number) ?? null,
+      marginDirection: (r.md as string) ?? null,
+      forecastMargin: (r.fp as number) ?? null,
+      trendDirection: (r.td as string) ?? null,
+      outputVwap: r.vw as number,
     })),
-    total: data.rs?.length ?? 0,
+    total: ((data.rs ?? []) as unknown[]).length,
   };
 }
 
-export async function fetchProfitMargins(realm: number): Promise<any> {
-  // Attempt to fetch from optimized public aggregate first
+export async function fetchProfitMargins(realm: number): Promise<ProfitMarginsResponse> {
   try {
-    const publicData = await rawFetch(`public/realm-${realm}/margins.json`);
+    const publicData = await rawFetch<Array<Record<string, unknown>>>(`public/realm-${realm}/margins.json`);
     if (publicData && Array.isArray(publicData)) {
       return {
         ts: new Date().toISOString(),
         realm,
-        resources: publicData.map((r: any) => ({
-          id: r.i,
-          name: r.n,
-          category: r.c,
-          categoryName: r.cn,
-          producedPerHour: r.ph,
-          revenuePerHour: r.rv,
-          inputCostPerHour: r.ic,
-          wagesPerHour: r.wg,
-          transportPerHour: r.tr,
-          netProfitPerHour: r.np,
-          marginPct: r.mg,
-          marginDelta: r.m1 ?? null,
-          profitDelta: r.n1 ?? null,
-          marginDirection: r.md ?? null,
-          forecastMargin: r.fp ?? null,
-          trendDirection: r.td ?? null,
-          outputVwap: r.vw,
+        resources: publicData.map((r) => ({
+          id: r.i as number,
+          name: r.n as string,
+          category: r.c as string,
+          categoryName: r.cn as string,
+          producedPerHour: r.ph as number,
+          revenuePerHour: r.rv as number,
+          inputCostPerHour: r.ic as number,
+          wagesPerHour: r.wg as number,
+          transportPerHour: r.tr as number,
+          netProfitPerHour: r.np as number,
+          marginPct: r.mg as number,
+          marginDelta: (r.m1 as number) ?? null,
+          profitDelta: (r.n1 as number) ?? null,
+          marginDirection: (r.md as string) ?? null,
+          forecastMargin: (r.fp as number) ?? null,
+          trendDirection: (r.td as string) ?? null,
+          outputVwap: r.vw as number,
         })),
         total: publicData.length,
       };
     }
-  } catch (err) {
+  } catch {
     // Fallback to legacy structure
   }
 
-  const data = await fetchLatest(`aggregates/profit-margins/realm-${realm}`, "profit-margins-");
-  const mapped = mapProfitMargins(data);
+  const data = await fetchLatest<Record<string, unknown>>(`aggregates/profit-margins/realm-${realm}`, "profit-margins-");
+  const mapped = mapProfitMargins(data ?? {});
   if (!mapped) throw new Error("No profit margins data");
   return mapped;
 }
 
-export async function fetchResourcePriceHistory(realm: number, resourceId: number, limit = 20): Promise<any[]> {
-  const items = await fetchAllFiles(`aggregates/profit-margins/realm-${realm}`, "profit-margins-", limit);
-  const history: any[] = [];
+export async function fetchResourcePriceHistory(realm: number, resourceId: number, limit = 20): Promise<PriceHistoryItem[]> {
+  const items = await fetchAllFiles<Record<string, unknown>>(`aggregates/profit-margins/realm-${realm}`, "profit-margins-", limit);
+  const history: PriceHistoryItem[] = [];
 
   for (const item of items) {
     const mapped = mapProfitMargins(item);
     if (!mapped) continue;
-    const res = mapped.resources.find((r: any) => r.id === resourceId);
+    const res = mapped.resources.find((r) => r.id === resourceId);
     if (res) {
       history.push({
         date: mapped.ts,
         vwap: res.outputVwap,
-        profit: res.netProfitPerHour
+        profit: res.netProfitPerHour,
       });
     }
   }
@@ -478,13 +411,18 @@ export async function fetchResourcePriceHistory(realm: number, resourceId: numbe
 /* ============================================================
    VWAP Inflation
    ============================================================ */
-export async function fetchVWAPInflation(realm: number, limit = 200): Promise<any> {
-  // Attempt to fetch from optimized public aggregate first
+export async function fetchVWAPInflation(realm: number, limit = 200): Promise<VWAPInflationResponse> {
   try {
-    const publicData = await rawFetch(`public/realm-${realm}/vwap-inflation.json`);
+    const publicData = await rawFetch<Array<{
+      t: string;
+      overall: Record<string, number>;
+      quality?: Record<string, number>;
+      product?: Record<string, number>;
+      both?: Record<string, number>;
+    }>>(`public/realm-${realm}/vwap-inflation.json`);
     if (publicData && Array.isArray(publicData) && publicData.length > 0) {
       return {
-        vwapInflation: publicData.slice(0, limit).map((item: any) => ({
+        vwapInflation: publicData.slice(0, limit).map((item) => ({
           date: item.t,
           overall: item.overall,
           quality: item.quality ?? {},
@@ -494,18 +432,21 @@ export async function fetchVWAPInflation(realm: number, limit = 200): Promise<an
         total: publicData.length,
       };
     }
-  } catch (err) {
+  } catch {
     // Fallback to legacy
   }
 
-  const items = await fetchAllFiles(`aggregates/vwap-inflation/realm-${realm}`, "vwap-inflation-", 20);
+  const items = await fetchAllFiles<{
+    t: string;
+    overall: Record<string, number>;
+  }>(`aggregates/vwap-inflation/realm-${realm}`, "vwap-inflation-", 20);
   return {
-    vwapInflation: latestPerDay(items).map((item: any) => ({
+    vwapInflation: latestPerDay(items).map((item) => ({
       date: item.t,
       overall: item.overall,
-      quality: item.quality ?? {},
-      product: item.product ?? {},
-      both: item.both ?? {},
+      quality: {} as Record<string, number>,
+      product: {} as Record<string, number>,
+      both: {} as Record<string, number>,
     })),
     total: items.length,
   };
@@ -514,41 +455,43 @@ export async function fetchVWAPInflation(realm: number, limit = 200): Promise<an
 /* ============================================================
    Intelligence
    ============================================================ */
-export async function fetchMomentum(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/intelligence/realm-${realm}`, "momentum-");
+export async function fetchMomentum(realm: number): Promise<Record<string, { realm: string; momentum: number; direction: string; trend: number }>> {
+  const data = await fetchLatest<{ momentum?: Record<string, { st: number; ts: number }> }>(
+    `aggregates/intelligence/realm-${realm}`, "momentum-");
   if (!data) throw new Error("No momentum data");
   const sectors = data.momentum ?? {};
-  const values = Object.values(sectors) as any[];
-  const avgMomentum = values.length > 0 ? values.reduce((s: number, v: any) => s + (v.st ?? 0), 0) / values.length : 0;
+  const values = Object.values(sectors);
+  const avgMomentum = values.length > 0 ? values.reduce((s, v) => s + (v.st ?? 0), 0) / values.length : 0;
   return {
     [String(realm)]: {
       realm: String(realm),
       momentum: avgMomentum,
       direction: avgMomentum >= 0 ? "up" : "down",
-      trend: values.reduce((s: number, v: any) => s + (v.ts ?? 0), 0) / (values.length || 1),
+      trend: values.reduce((s, v) => s + (v.ts ?? 0), 0) / (values.length || 1),
     },
   };
 }
 
-export async function fetchVolatility(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/intelligence/realm-${realm}`, "stress-");
+export async function fetchVolatility(realm: number): Promise<Record<string, { realm: string; volatility: number; classification: string; trend: number }>> {
+  const data = await fetchLatest<{ stress?: Record<string, { scp: number; flags?: unknown[]; trend?: number }> }>(
+    `aggregates/intelligence/realm-${realm}`, "stress-");
   if (!data) throw new Error("No volatility data");
   const stress = data.stress ?? {};
-  const values = Object.values(stress) as any[];
-  const flags = values.flatMap((v: any) => v.flags ?? []);
-  const avgVol = values.length > 0 ? values.reduce((s: number, v: any) => s + (v.scp ?? 0), 0) / values.length : 0;
+  const values = Object.values(stress);
+  const avgVol = values.length > 0 ? values.reduce((s, v) => s + (v.scp ?? 0), 0) / values.length : 0;
   return {
     [String(realm)]: {
       realm: String(realm),
       volatility: avgVol,
       classification: avgVol > 0.5 ? "high" : avgVol > 0.2 ? "medium" : "low",
-      trend: values.length > 0 ? values.reduce((s: number, v: any) => s + (v.trend ?? v.scp ?? 0), 0) / values.length : 0,
+      trend: values.length > 0 ? values.reduce((s, v) => s + (v.trend ?? v.scp ?? 0), 0) / values.length : 0,
     },
   };
 }
 
-export async function fetchRegimes(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/intelligence/realm-${realm}`, "regime-");
+export async function fetchRegimes(realm: number): Promise<Record<string, { realm: string; regime: string; score: number; confidence: string }>> {
+  const data = await fetchLatest<{ cr?: string; rs?: number; rc?: number }>(
+    `aggregates/intelligence/realm-${realm}`, "regime-");
   if (!data) throw new Error("No regime data");
   return {
     [String(realm)]: {
@@ -560,11 +503,12 @@ export async function fetchRegimes(realm: number): Promise<any> {
   };
 }
 
-export async function fetchSectors(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/intelligence/realm-${realm}`, "sectors-");
+export async function fetchSectors(realm: number): Promise<Record<string, Array<{ sector: string; strength: number; momentum: number; leader: string; volatility: number }>>> {
+  const data = await fetchLatest<{ sectors?: Record<string, { momentum?: { st: number; mt: number }; leaders?: string; volatility?: { v5: number } }> }>(
+    `aggregates/intelligence/realm-${realm}`, "sectors-");
   if (!data) throw new Error("No sector data");
   const sectors = data.sectors ?? {};
-  const list = Object.entries(sectors).map(([name, s]: [string, any]) => ({
+  const list = Object.entries(sectors).map(([name, s]) => ({
     sector: name,
     strength: s.momentum?.st ?? 0,
     momentum: s.momentum?.mt ?? 0,
@@ -574,11 +518,12 @@ export async function fetchSectors(realm: number): Promise<any> {
   return { [String(realm)]: list };
 }
 
-export async function fetchCorrelations(realm = 0): Promise<any> {
-  const data = await fetchLatest(`aggregates/correlations/realm-${realm}`, "correlation-");
+export async function fetchCorrelations(realm = 0): Promise<Array<{ realm: string; pair: string; coefficient: number; strength: string }>> {
+  const data = await fetchLatest<{ m?: Record<string, Record<string, Record<string, unknown>>>; pairs?: unknown; correlations?: unknown }>(
+    `aggregates/correlations/realm-${realm}`, "correlation-");
   if (!data) throw new Error("No correlation data");
   const matrix = data.m ?? data.pairs ?? data.correlations ?? {};
-  const pairs: any[] = [];
+  const pairs: Array<{ realm: string; pair: string; coefficient: number; strength: string }> = [];
   const categories = Object.keys(matrix);
   for (let i = 0; i < categories.length; i++) {
     const a = categories[i];
@@ -588,13 +533,13 @@ export async function fetchCorrelations(realm = 0): Promise<any> {
       const b = subCategories[j];
       if (a === b) continue;
       const cell = row[b] ?? {};
-      const r = cell.r ?? cell.coefficient ?? null;
+      const r = (cell.r ?? cell.coefficient ?? null) as number | null;
       if (r === null || r === undefined) continue;
       pairs.push({
         realm: String(realm),
         pair: `${a} ↔ ${b}`,
         coefficient: r,
-        strength: cell.s ?? cell.strength ?? "weak",
+        strength: (cell.s ?? cell.strength ?? "weak") as string,
       });
     }
   }
@@ -602,110 +547,136 @@ export async function fetchCorrelations(realm = 0): Promise<any> {
   return pairs;
 }
 
-export async function fetchAnomalies(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/anomalies/realm-${realm}`, "anomaly-");
+export async function fetchAnomalies(realm: number): Promise<Array<{ category: string; zScore: number; deviation: number; direction: string; timestamp: string }>> {
+  const data = await fetchLatest<{ an?: Array<Record<string, unknown>>; t?: string }>(
+    `aggregates/anomalies/realm-${realm}`, "anomaly-");
   if (!data) throw new Error("No anomaly data");
   const anomalies = data.an ?? [];
-  return anomalies.map((a: any) => ({
-    category: a.ca ?? "unknown",
-    zScore: a.zs ?? 0,
-    deviation: a.vl ?? 0,
-    direction: a.vl >= 0 ? "above" : "below",
-    timestamp: a.ts ?? data.t,
+  return anomalies.map((a) => ({
+    category: (a.ca ?? "unknown") as string,
+    zScore: (a.zs ?? 0) as number,
+    deviation: (a.vl ?? 0) as number,
+    direction: (a.vl as number) >= 0 ? "above" : "below",
+    timestamp: (a.ts ?? data.t) as string,
   }));
 }
 
-export async function fetchDivergence(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/divergence/realm-${realm}`, "divergence-");
+export async function fetchDivergence(realm: number): Promise<Array<{ sector: string; strength: number; type: string; signal: string }>> {
+  const data = await fetchLatest<{ di?: Array<Record<string, unknown>> }>(
+    `aggregates/divergence/realm-${realm}`, "divergence-");
   if (!data) throw new Error("No divergence data");
   const divergences = data.di ?? [];
-  return divergences.map((d: any) => ({
-    sector: d.sector ?? "unknown",
-    strength: d.strength ?? 0,
-    type: d.type ?? "unknown",
-    signal: d.severity ?? "info",
+  return divergences.map((d) => ({
+    sector: (d.sector ?? "unknown") as string,
+    strength: (d.strength ?? 0) as number,
+    type: (d.type ?? "unknown") as string,
+    signal: (d.severity ?? "info") as string,
   }));
 }
 
-export async function fetchContagion(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/contagion/realm-${realm}`, "contagion-");
+export async function fetchContagion(realm: number): Promise<Array<{ origin: string; spread: number; risk: string; affected: string[] }>> {
+  const data = await fetchLatest<{ co?: Array<Record<string, unknown>> }>(
+    `aggregates/contagion/realm-${realm}`, "contagion-");
   if (!data) throw new Error("No contagion data");
   const contagions = data.co ?? [];
-  return contagions.map((c: any) => ({
-    origin: c.origin ?? "unknown",
-    spread: c.spread ?? 0,
-    risk: c.risk ?? "low",
-    affected: c.affected ?? [],
+  return contagions.map((c) => ({
+    origin: (c.origin ?? "unknown") as string,
+    spread: (c.spread ?? 0) as number,
+    risk: (c.risk ?? "low") as string,
+    affected: (c.affected ?? []) as string[],
   }));
 }
 
 /* ============================================================
    Forecasts
    ============================================================ */
-export async function fetchForecast(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/forecasts/realm-${realm}`, "forecast-");
+export async function fetchForecast(realm: number): Promise<Record<string, unknown>> {
+  const data = await fetchLatest<{ series?: Record<string, unknown> }>(
+    `aggregates/forecasts/realm-${realm}`, "forecast-");
   if (!data) throw new Error("No forecast data");
   return data.series ?? {};
 }
 
-export async function fetchSignals(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/signals/realm-${realm}`, "signals-");
+export async function fetchSignals(realm: number): Promise<Array<{
+  type: string;
+  label: string;
+  severity: string;
+  confidence: number;
+  affectedSectors: string[];
+  estimatedDurationDays: number;
+  indicators: Array<{ name: string; value: number; threshold: number }>;
+  rationale: string;
+}>> {
+  const data = await fetchLatest<{ signals?: Array<Record<string, unknown>> }>(
+    `aggregates/signals/realm-${realm}`, "signals-");
   if (!data) throw new Error("No signal data");
-  return (data.signals ?? []).map((s: any) => ({
-    type: s.type ?? "",
-    label: s.label ?? "",
-    severity: s.severity ?? "low",
-    confidence: s.confidence ?? 0,
-    affectedSectors: s.affectedSectors ?? [],
-    estimatedDurationDays: s.estimatedDurationDays ?? 0,
-    indicators: (s.indicators ?? []).map((ind: any) => {
+  return (data.signals ?? []).map((s) => ({
+    type: (s.type ?? "") as string,
+    label: (s.label ?? "") as string,
+    severity: (s.severity ?? "low") as string,
+    confidence: (s.confidence ?? 0) as number,
+    affectedSectors: (s.affectedSectors ?? []) as string[],
+    estimatedDurationDays: (s.estimatedDurationDays ?? 0) as number,
+    indicators: ((s.indicators ?? []) as Array<Record<string, unknown>>).map((ind) => {
       if (typeof ind === "string") return { name: ind, value: 0, threshold: 0 };
-      return { name: ind.name ?? "", value: ind.value ?? 0, threshold: ind.threshold ?? 0 };
+      return { name: (ind.name ?? "") as string, value: (ind.value ?? 0) as number, threshold: (ind.threshold ?? 0) as number };
     }),
-    rationale: s.rationale ?? "",
+    rationale: (s.rationale ?? "") as string,
   }));
 }
 
 /* ============================================================
    Cycles
    ============================================================ */
-export async function fetchCycles(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/cycles/realm-${realm}`, "cycle-");
+export async function fetchCycles(realm: number): Promise<{
+  current: { phase: string; confidence: number; duration: number; intensity: number; stability: number };
+  transitions: Array<{ from: string; to: string; probability: number }>;
+  history: Array<{ phase: string; startDate: string | null; endDate: string | null }>;
+  stability: number;
+  intensity: number;
+}> {
+  const data = await fetchLatest<{
+    current?: Record<string, unknown>;
+    transitionProbabilities?: Record<string, Record<string, number>>;
+    stability?: number;
+    history?: Array<Record<string, unknown>>;
+  }>(`aggregates/cycles/realm-${realm}`, "cycle-");
   if (!data) throw new Error("No cycle data");
   const current = data.current ?? {};
-  const transitions: { from: string; to: string; probability: number }[] = [];
+  const transitions: Array<{ from: string; to: string; probability: number }> = [];
   const tp = data.transitionProbabilities ?? {};
   for (const [fromPh, toPhs] of Object.entries(tp)) {
-    for (const [toPh, prob] of Object.entries(toPhs as Record<string, number>)) {
+    for (const [toPh, prob] of Object.entries(toPhs)) {
       transitions.push({ from: fromPh, to: toPh, probability: prob });
     }
   }
   return {
     current: {
-      phase: current.phase ?? "unknown",
-      confidence: current.confidence ?? 0,
-      duration: current.durationDays ?? 0,
-      intensity: current.intensity ?? 0,
+      phase: (current.phase ?? "unknown") as string,
+      confidence: (current.confidence ?? 0) as number,
+      duration: (current.durationDays ?? 0) as number,
+      intensity: (current.intensity ?? 0) as number,
       stability: data.stability ?? 0,
     },
     transitions,
-    history: (data.history ?? []).map((h: any) => ({
-      phase: h.phase ?? "unknown",
-      startDate: h.detectedAt ?? null,
-      endDate: null,
+    history: ((data.history ?? []) as Array<Record<string, unknown>>).map((h) => ({
+      phase: (h.phase ?? "unknown") as string,
+      startDate: (h.detectedAt ?? null) as string | null,
+      endDate: null as string | null,
     })),
     stability: data.stability ?? 0,
-    intensity: current.intensity ?? 0,
+    intensity: (current.intensity ?? 0) as number,
   };
 }
 
 /* ============================================================
    Player API
    ============================================================ */
-export async function fetchCompanyData(companyId: string | number, realm = 0): Promise<any> {
-  const base = realm === 1 ? "https://www.simcompanies.com/api/v3/entrepreneurs/companies/" : "https://www.simcompanies.com/api/v3/companies/";
+export async function fetchCompanyData(companyId: string | number, realm = 0): Promise<Record<string, unknown>> {
+  const base = realm === 1
+    ? "https://www.simcompanies.com/api/v3/entrepreneurs/companies/"
+    : "https://www.simcompanies.com/api/v3/companies/";
   const targetUrl = `${base}${companyId}/`;
-  // Using corsproxy.io as it is generally more stable for this use case
   const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
   if (!res.ok) throw new Error(`Proxy fetch failed: ${res.status}`);
   return res.json();
@@ -714,26 +685,38 @@ export async function fetchCompanyData(companyId: string | number, realm = 0): P
 /* ============================================================
    Dependencies
    ============================================================ */
-export async function fetchDependencies(realm: number): Promise<any> {
-  const data = await fetchLatest(`aggregates/dependencies/realm-${realm}`, "dependency-");
+export async function fetchDependencies(realm: number): Promise<{
+  risks: Array<{ sector: string; score: number; upstreamPressure: number; downstreamPressure: number; critical: boolean }>;
+  riskScores: Record<string, number>;
+  criticalResources: string[];
+  bottleneckChains: Array<{ chain: string; pressure: number; sectors: string[] }>;
+  dependencyMatrix: Record<string, number>;
+}> {
+  const data = await fetchLatest<{
+    risks?: Array<Record<string, unknown>>;
+    criticalResources?: unknown[];
+    bottleneckChains?: Array<Record<string, unknown>>;
+  }>(`aggregates/dependencies/realm-${realm}`, "dependency-");
   if (!data) throw new Error("No dependency data");
-  const risks: any[] = (data.risks ?? []).map((r: any) => ({
-    sector: r.category ?? "unknown",
-    score: r.riskScore ?? 0,
-    upstreamPressure: r.upstreamCount ?? 0,
-    downstreamPressure: r.downstreamCount ?? 0,
-    critical: r.isCritical ?? false,
-  }));
+  const risks: Array<{ sector: string; score: number; upstreamPressure: number; downstreamPressure: number; critical: boolean }> =
+    (data.risks ?? []).map((r) => ({
+      sector: (r.category ?? "unknown") as string,
+      score: (r.riskScore ?? 0) as number,
+      upstreamPressure: (r.upstreamCount ?? 0) as number,
+      downstreamPressure: (r.downstreamCount ?? 0) as number,
+      critical: (r.isCritical ?? false) as boolean,
+    }));
   const riskScores: Record<string, number> = {};
   for (const r of risks) riskScores[r.sector] = r.score;
   return {
     risks,
     riskScores,
-    criticalResources: (data.criticalResources ?? []).map((cr: any) => cr.category ?? cr),
-    bottleneckChains: (data.bottleneckChains ?? []).map((bc: any) => ({
-      chain: Array.isArray(bc.chain) ? bc.chain.join(" → ") : (bc.chain ?? ""),
-      pressure: bc.score ?? bc.pressure ?? 0,
-      sectors: Array.isArray(bc.chain) ? bc.chain : [],
+    criticalResources: (data.criticalResources ?? []).map((cr) =>
+      typeof cr === "string" ? cr : (cr as Record<string, unknown>).category ?? cr) as string[],
+    bottleneckChains: (data.bottleneckChains ?? []).map((bc) => ({
+      chain: Array.isArray(bc.chain) ? (bc.chain as string[]).join(" → ") : ((bc.chain ?? "") as string),
+      pressure: (bc.score ?? bc.pressure ?? 0) as number,
+      sectors: Array.isArray(bc.chain) ? (bc.chain as string[]) : [],
     })),
     dependencyMatrix: {},
   };

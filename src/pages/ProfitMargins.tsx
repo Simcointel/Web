@@ -1,10 +1,11 @@
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { Section } from "../components/Layout";
 import { LoadingState, ErrorState, EmptyState } from "../components/States";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import { RESOURCES } from "../data/simco_static";
+import type { ProfitMarginsResponse, ProfitMarginResource } from "../types/api";
 
 export function ProfitMarginsPage() {
   useEffect(() => {
@@ -38,12 +39,13 @@ export function ProfitMarginsPage() {
         setAdminOverhead((metrics.actualAO ?? 0) * 100);
         setAbundance(metrics.abundance ?? 100);
         setResBonus(metrics.researchBonus ?? 0);
-      } catch (e) {
-        console.error("Suite sync failed", e);
+      } catch {
+        // ignore parse errors
       }
     }
   }, [syncWithSuite]);
-  const resources = data?.resources ?? [];
+  const marginsData = data as ProfitMarginsResponse | undefined;
+  const resources: ProfitMarginResource[] = marginsData?.resources ?? [];
   const categories = useMemo(() => {
     const set = new Set<string>();
     for (const r of resources) set.add(r.categoryName);
@@ -60,7 +62,7 @@ export function ProfitMarginsPage() {
   };
 
   const filtered = useMemo(() => {
-    let list = resources.map((r: any) => {
+    let list = resources.map((r) => {
       if (!localCalc) return r;
 
       const staticRes = RESOURCES.find(sr => sr.id === r.id);
@@ -76,9 +78,8 @@ export function ProfitMarginsPage() {
       if (isExtraction) unitsPh *= (abundance / 100);
 
       const wagesPh = staticRes.baseWages * (1 + adminOverhead / 100);
-      const inputCostPh = r.inputCostPerHour; // Keep original input cost for simplicity or calculate from VWAPs
 
-      const totalCostPh = inputCostPh + wagesPh + r.transportPerHour;
+      const totalCostPh = r.inputCostPerHour + wagesPh + r.transportPerHour;
       const revenuePh = unitsPh * r.outputVwap;
       const netProfitPh = revenuePh - totalCostPh;
       const marginPct = (netProfitPh / revenuePh) * 100;
@@ -88,14 +89,14 @@ export function ProfitMarginsPage() {
         producedPerHour: unitsPh,
         revenuePerHour: revenuePh,
         netProfitPerHour: netProfitPh,
-        marginPct: marginPct
+        marginPct: marginPct,
       };
     });
 
-    if (category !== "all") list = list.filter((r: any) => r.categoryName === category);
-    if (search) list = list.filter((r: any) => r.name.toLowerCase().includes(search.toLowerCase()) || r.categoryName.toLowerCase().includes(search.toLowerCase()));
+    if (category !== "all") list = list.filter((r) => r.categoryName === category);
+    if (search) list = list.filter((r) => r.name.toLowerCase().includes(search.toLowerCase()) || r.categoryName.toLowerCase().includes(search.toLowerCase()));
 
-    list = [...list].sort((a: any, b: any) => {
+    list = [...list].sort((a, b) => {
       let valA, valB;
       if (sortBy === "mg") { valA = a.marginPct; valB = b.marginPct; }
       else if (sortBy === "np") { valA = a.netProfitPerHour; valB = b.netProfitPerHour; }
@@ -137,9 +138,9 @@ export function ProfitMarginsPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
          <SmallMetric label="Items" value={resources.length} />
-         <SmallMetric label="Profit" value={resources.filter((r: any) => r.marginPct > 0).length} />
-         <SmallMetric label="Avg Margin" value={`${(resources.reduce((s: number, r: any) => s + r.marginPct, 0) / (resources.length || 1)).toFixed(1)}%`} />
-         <SmallMetric label="Top Margin" value={`${Math.max(...resources.map((r: any) => r.marginPct), 0).toFixed(1)}%`} />
+         <SmallMetric label="Profit" value={resources.filter((r) => r.marginPct > 0).length} />
+         <SmallMetric label="Avg Margin" value={`${(resources.reduce((s, r) => s + r.marginPct, 0) / (resources.length || 1)).toFixed(1)}%`} />
+         <SmallMetric label="Top Margin" value={`${Math.max(...resources.map((r) => r.marginPct), 0).toFixed(1)}%`} />
       </div>
 
       <div className="card !shadow-none !border-surface-200 dark:!border-surface-800 p-6 space-y-6">
@@ -212,7 +213,7 @@ export function ProfitMarginsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-50 dark:divide-surface-800/50">
-              {filtered.map((r: any) => (
+              {filtered.map((r) => (
                 <tr
                   key={r.id}
                   className={`hover:bg-brand-50 dark:hover:bg-brand-900/10 transition-colors cursor-pointer ${selectedResId === r.id ? 'bg-brand-50 dark:bg-brand-900/20' : ''}`}
@@ -244,13 +245,13 @@ export function ProfitMarginsPage() {
                     if (!res || !res.inputs) return <p className="text-sm text-surface-400 italic">No inputs required for this resource.</p>;
                     return Object.entries(res.inputs).map(([id, qty]) => {
                        const input = RESOURCES.find(r => r.id === Number(id));
-                       const inputMargin = resources.find((r: any) => r.id === Number(id));
+                       const inputMargin = resources.find((r) => r.id === Number(id));
                        return (
                           <div key={id} className="flex justify-between items-center py-2 border-b border-surface-50 dark:border-surface-800 last:border-0">
                              <span className="font-medium">{input?.name || `ID_${id}`}</span>
                              <div className="flex items-center gap-4">
                                 <span className="text-surface-400 text-xs">{qty} Units</span>
-                                <span className={`font-bold text-xs ${inputMargin?.marginPct > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                <span className={`font-bold text-xs ${inputMargin && inputMargin.marginPct > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                                    {inputMargin ? `${inputMargin.marginPct.toFixed(1)}%` : '--'}
                                 </span>
                              </div>
@@ -263,9 +264,9 @@ export function ProfitMarginsPage() {
            <div className="card p-6 bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-800 flex flex-col justify-center">
               <h3 className="text-sm font-bold text-surface-500 mb-2">Operational Advice</h3>
               <p className="text-lg font-bold leading-tight">
-                 {resources.find((r: any) => r.id === selectedResId)?.marginPct > 5
-                    ? 'Recommended: Expand production capacity.'
-                    : 'Notice: Sourcing from market may be more efficient.'}
+                 {(resources.find((r) => r.id === selectedResId)?.marginPct ?? 0) > 5
+                   ? 'Recommended: Expand production capacity.'
+                   : 'Notice: Sourcing from market may be more efficient.'}
               </p>
               <p className="text-xs text-surface-400 mt-2 font-medium">Resource Database Index: {selectedResId}</p>
            </div>
@@ -284,7 +285,7 @@ function SmallMetric({ label, value }: { label: string; value: string | number }
    );
 }
 
-function InputNode({ label, val, set, unit, disabled }: any) {
+function InputNode({ label, val, set, unit, disabled }: { label: string; val: number; set: (v: number) => void; unit: string; disabled: boolean }) {
   return (
     <div className="flex items-center gap-2">
        <span className="text-xs font-bold text-surface-500">{label}</span>

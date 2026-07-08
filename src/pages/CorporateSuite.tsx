@@ -1,12 +1,9 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { motion } from "framer-motion";
 import {
-  Building2, Package, DollarSign, ArrowLeft,
-  Search, Target, TrendingDown, Ship,
-  LayoutDashboard, HardHat, Trash2, Upload, Download, CheckCircle2,
-  Users, AlertCircle, Clock, Zap, Calculator, Wallet, BarChart3,
-  Briefcase, AlertTriangle, Globe, Layers, Microscope,
-  Sun, Moon, TrendingUp, Plus
+  DollarSign, ArrowLeft, Target, TrendingDown, Ship,
+  LayoutDashboard, HardHat, Upload, Download, CheckCircle2,
+  Users, BarChart3, Briefcase, AlertTriangle,
+  Sun, Moon
 } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
@@ -16,96 +13,17 @@ import { LoadingState } from "../components/States";
 import { useNavigate, Link } from "../router";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import { Section } from "../components/Layout";
-
-// --- Types & Defaults ---
-interface Executive {
-  name: string;
-  management: number;
-  accounting: number;
-  communication: number;
-  science: number;
-}
-
-interface MapItem { id: string; level: number; instanceId?: number; }
-interface InventoryItem { id: number; qty: number; }
-
-interface SuiteStateV6 {
-  activeTab: 'command' | 'ops' | 'exec' | 'finance' | 'logistics' | 'risk' | 'retail' | 'ledger';
-  companyId: string;
-  companyName?: string;
-  companyLogo?: string;
-  companyLevel?: number;
-  companyRank?: number;
-  companyValue?: number;
-  apiAO?: number;
-  workers?: number;
-  governmentTier?: number;
-  extraSlots?: number;
-  onlineStatus?: string;
-  lastSynced?: string;
-  map: MapItem[];
-  board: {
-    coo: Executive; cfo: Executive; cmo: Executive; cto: Executive;
-    cooApp: Executive; cfoApp: Executive; cmoApp: Executive; ctoApp: Executive;
-  };
-  inventory: InventoryItem[];
-  settings: {
-    prodBonus: number; realm: number; estDailyProfit: number;
-    whatIfLevel: number;
-    bankLevel: number;
-    cash: number;
-    bondsSold: number;
-    bondsOwned: number;
-    profileSalesBonus: number;
-    recreationalBuildings: number;
-    patentStartingQuality: number;
-    patentTargetQuality: number;
-    researchUnitCost: number;
-    retailResourceId: number;
-    abundance: number;
-    researchBonus: number;
-  };
-  debt: { current: number; rate: number; };
-  ledger: any[];
-}
-
-const EMPTY_EXEC: Executive = { name: "", management: 0, accounting: 0, communication: 0, science: 0 };
-
-const DEFAULT_STATE: SuiteStateV6 = {
-  activeTab: 'command',
-  companyId: "",
-  companyLevel: 0,
-  companyRank: 0,
-  companyValue: 0,
-  apiAO: 0,
-  workers: 0,
-  governmentTier: 0,
-  extraSlots: 0,
-  onlineStatus: "n/a",
-  map: [],
-  board: {
-    coo: EMPTY_EXEC, cfo: EMPTY_EXEC, cmo: EMPTY_EXEC, cto: EMPTY_EXEC,
-    cooApp: EMPTY_EXEC, cfoApp: EMPTY_EXEC, cmoApp: EMPTY_EXEC, ctoApp: EMPTY_EXEC,
-  },
-  inventory: [],
-  settings: {
-    prodBonus: 12, realm: 0, estDailyProfit: 250000, whatIfLevel: 0,
-    bankLevel: 0, cash: 0, bondsSold: 0, bondsOwned: 0,
-    profileSalesBonus: 0, recreationalBuildings: 0,
-    patentStartingQuality: 0, patentTargetQuality: 1, researchUnitCost: 179,
-    retailResourceId: 24,
-    abundance: 100,
-    researchBonus: 0
-  },
-  debt: { current: 2000000, rate: 0.5 },
-  ledger: []
-};
-
-const n = (v: any) => {
-  if (v === undefined || v === null) return 0;
-  const num = Number(v);
-  return isNaN(num) ? 0 : num;
-};
+import type { SuiteStateV6, MapItem } from "./corporate-suite/types";
+import type { DashboardMap, ProfitMarginsResponse } from "../types/api";
+import { DEFAULT_STATE, n } from "./corporate-suite/types";
+import { WorkstationTab, GlobalMetric, LedgerView } from "./corporate-suite/components";
+import { CommandView } from "./corporate-suite/CommandView";
+import { OperationsView } from "./corporate-suite/OperationsView";
+import { ExecutiveView } from "./corporate-suite/ExecutiveView";
+import { FinanceView } from "./corporate-suite/FinanceView";
+import { LogisticsView } from "./corporate-suite/LogisticsView";
+import { RetailView } from "./corporate-suite/RetailView";
+import { RiskView } from "./corporate-suite/RiskView";
 
 export function CorporateSuitePage() {
   const { theme, toggleTheme } = useTheme();
@@ -114,7 +32,7 @@ export function CorporateSuitePage() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [notification, setNotification] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [debugData, setDebugData] = useState<any>(null);
+  const [debugData, setDebugData] = useState<Record<string, unknown> | null>(null);
   const [showDebug, setShowDebug] = useState(false);
 
   const { data: dash } = useDataRepoPoll(() => dataRepo.fetchDashboardState(realm), 60000, [realm]);
@@ -147,7 +65,7 @@ export function CorporateSuitePage() {
     }
   }, [notification]);
 
-  const economyPhase = (dash as any)?.[String(realm)]?.regime?.na || 'Normal';
+  const economyPhase = (dash as DashboardMap | undefined)?.[String(realm)]?.regime?.na || 'Normal';
 
   const core = useMemo(() => {
     const s = state || DEFAULT_STATE;
@@ -191,7 +109,8 @@ export function CorporateSuitePage() {
     const estimatedDailyTax = taxableAmount * 0.07;
 
     const inventoryValue = (s.inventory || []).reduce((sum, item) => {
-      const price = (margins?.resources as any[])?.find(m => m.id === item.id)?.outputVwap || 0;
+      const mData = margins as ProfitMarginsResponse | undefined;
+      const price = mData?.resources?.find(m => m.id === item.id)?.outputVwap || 0;
       return sum + (price * item.qty);
     }, 0);
 
@@ -210,7 +129,8 @@ export function CorporateSuitePage() {
        if (!b) return { name: 'Unknown', profit: 0, level: m.level };
 
        const res = RESOURCES.find(r => r.buildingId === b.id);
-       const mRes = (margins?.resources as any[])?.find(r => r.id === res?.id);
+       const mData = margins as ProfitMarginsResponse | undefined;
+       const mRes = mData?.resources?.find(r => r.id === res?.id);
 
        if (!mRes || !res) return { name: b.name, profit: 0, level: m.level };
 
@@ -288,62 +208,67 @@ export function CorporateSuitePage() {
     setIsSyncing(true);
     try {
       setNotification({ msg: "Establishing secure link...", type: "success" });
-      const data = await dataRepo.fetchCompanyData(id, realm);
-      setDebugData(data);
+      const companyData = await dataRepo.fetchCompanyData(id, realm);
+      setDebugData(companyData);
 
-      const newMap: MapItem[] = (data.infrastructure?.buildings || [])
-        .filter((b: any) => b && b.kind)
-        .map((b: any) => {
+      const buildings = ((companyData.infrastructure as Record<string, unknown>)?.buildings || []) as Array<Record<string, unknown>>;
+      const newMap: MapItem[] = buildings
+        .filter((b: Record<string, unknown>) => b && b.kind)
+        .map((b: Record<string, unknown>) => {
           const apiLevel = n(b.level);
           const apiSize = n(b.size);
 
-          // Prioritize size as it typically represents levels/slots in the infrastructure array
           let level = apiSize > 0 ? apiSize : (apiLevel > 0 ? apiLevel : 1);
 
-          if (b.busy && (b.busy.category === 'u' || b.busy.category === 'upgrading' || b.busy.category === 'upgrade')) {
-             if (b.busy.upkeep === false) {
+          const busy = b.busy as Record<string, unknown> | undefined;
+          if (busy && (busy.category === 'u' || busy.category === 'upgrading' || busy.category === 'upgrade')) {
+             if (busy.upkeep === false) {
                 level += 1;
              }
           }
 
           return {
-            id: b.kind,
+            id: b.kind as string,
             level: Math.max(level, 1),
-            instanceId: b.id
+            instanceId: b.id as number | undefined,
           };
         });
+
+      const inf = companyData.infrastructure as Record<string, unknown> | undefined;
+      const pub = companyData.companyPublicInfo as Record<string, unknown> | undefined;
+      const hist = companyData.history as Record<string, unknown> | undefined;
 
       setState(prev => ({
         ...prev,
         companyId: id,
-        companyName: data.companyPublicInfo?.company,
-        companyLogo: data.companyPublicInfo?.logo,
-        companyLevel: data.companyPublicInfo?.level,
-        companyRank: data.companyPublicInfo?.rank,
-        companyValue: data.history?.value,
-        apiAO: data.infrastructure?.administrationOverhead,
-        workers: data.infrastructure?.workers,
-        governmentTier: data.governmentOrderTierIndex,
-        extraSlots: data.companyPublicInfo?.extraBuildingSlots,
-        onlineStatus: data.companyPublicInfo?.online,
+        companyName: pub?.company as string | undefined,
+        companyLogo: pub?.logo as string | undefined,
+        companyLevel: pub?.level as number | undefined,
+        companyRank: pub?.rank as number | undefined,
+        companyValue: hist?.value as number | undefined,
+        apiAO: inf?.administrationOverhead as number | undefined,
+        workers: inf?.workers as number | undefined,
+        governmentTier: companyData.governmentOrderTierIndex as number | undefined,
+        extraSlots: pub?.extraBuildingSlots as number | undefined,
+        onlineStatus: pub?.online as string | undefined,
         lastSynced: new Date().toLocaleTimeString(),
         map: newMap,
         debt: {
           ...prev.debt,
-          current: data.history?.bondsPayable || 0
+          current: (hist?.bondsPayable as number) || 0
         },
         settings: {
           ...prev.settings,
-          prodBonus: 12 + (data.companyPublicInfo?.productionModifier || 0),
-          profileSalesBonus: (data.companyPublicInfo?.salesModifier || 0),
-          recreationalBuildings: data.infrastructure?.recreationBonus || 0,
+          prodBonus: 12 + ((pub?.productionModifier as number) || 0),
+          profileSalesBonus: (pub?.salesModifier as number) || 0,
+          recreationalBuildings: (inf?.recreationBonus as number) || 0,
         }
       }));
 
-      setNotification({ msg: `Synchronized: ${data.companyPublicInfo?.company}`, type: "success" });
-    } catch (e: any) {
+      setNotification({ msg: `Synchronized: ${pub?.company as string}`, type: "success" });
+    } catch (e) {
       setNotification({ msg: "Connection Failed", type: "error" });
-      setDebugData({ error: e.message || String(e) });
+      setDebugData({ error: e instanceof Error ? e.message : String(e) });
     } finally {
       setIsSyncing(false);
     }
@@ -444,708 +369,6 @@ export function CorporateSuitePage() {
             </div>
          </div>
        )}
-    </div>
-  );
-}
-
-function LedgerView({ state }: any) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-       <div className="md:col-span-8">
-          <Section title="LEDGER_STREAM" icon={BarChart3} color="text-teal-500">
-             <div className="card h-[60vh] flex flex-col items-center justify-center border-dashed opacity-20">
-                <Download size={40} className="mb-4" />
-                <p className="text-[10px] font-black uppercase tracking-[0.2em]">Upload Game CSV to populate</p>
-             </div>
-          </Section>
-       </div>
-       <div className="md:col-span-4 space-y-3">
-          <Section title="STAT_EXTRACT" icon={TrendingUp} color="text-teal-500">
-             <div className="card p-4 border-l-2 border-teal-500">
-                <span className="text-[9px] font-black text-surface-400 block mb-2 uppercase">EST_DAILY_PROFIT</span>
-                <span className="text-2xl font-black italic tracking-tighter text-teal-600">$${(n(state.settings?.estDailyProfit)/1000).toFixed(1)}K</span>
-             </div>
-          </Section>
-       </div>
-    </div>
-  );
-}
-
-function CommandView({ core, phase, margins, cycles, state, onSync, isSyncing, setState }: any) {
-  const marketAlerts = useMemo(() => {
-    if (!margins?.resources) return [];
-    return (margins.resources as any[]).filter(r => Math.abs(r.marginDelta || 0) > 5).slice(0, 5);
-  }, [margins]);
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-       <div className="md:col-span-8 space-y-6">
-          {state.companyName ? (
-             <div className="card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 !shadow-none border-surface-200 dark:border-surface-800 bg-brand-50/10 dark:bg-brand-900/5 border-l-4 border-l-brand-600">
-                <div className="flex items-center gap-6">
-                   {state.companyLogo && <img src={state.companyLogo} className="w-16 h-16 rounded-xl border-2 border-white dark:border-surface-800 shadow-md" alt="Logo" />}
-                   <div>
-                      <div className="flex items-center gap-3">
-                         <h2 className="text-2xl font-bold text-surface-900 dark:text-white leading-tight">{state.companyName}</h2>
-                         <span className="px-2 py-0.5 bg-brand-100 dark:bg-brand-900/30 text-brand-600 rounded text-[10px] font-black uppercase tracking-widest border border-brand-200 dark:border-brand-800">LVL {state.companyLevel}</span>
-                         {state.companyRank > 0 && <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded text-[10px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-800">RANK #{state.companyRank}</span>}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                         <span className="text-xs font-bold text-brand-600 uppercase tracking-widest">ID #{state.companyId}</span>
-                         <div className="w-1 h-1 rounded-full bg-surface-300" />
-                         <span className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Live Link Established</span>
-                         <div className="w-1 h-1 rounded-full bg-surface-300" />
-                         <span className={`text-xs font-bold uppercase tracking-widest ${state.onlineStatus === 'Today' || state.onlineStatus === 'Now' ? 'text-emerald-600' : 'text-surface-400'}`}>
-                            {state.onlineStatus === 'Now' ? '● Online' : `Seen ${state.onlineStatus}`}
-                         </span>
-                      </div>
-                   </div>
-                </div>
-                <div className="text-right">
-                   <p className="text-[10px] font-bold text-surface-400 uppercase mb-1">Last Transmission</p>
-                   <p className="text-sm font-black text-surface-700 dark:text-surface-300">{state.lastSynced}</p>
-                   <button
-                     onClick={() => onSync(state.companyId)}
-                     disabled={isSyncing}
-                     className={`text-[10px] font-bold text-brand-600 uppercase hover:underline mt-2 flex items-center gap-1 ml-auto ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                   >
-                      <Zap size={10} className={isSyncing ? 'animate-spin' : ''} /> {isSyncing ? 'Syncing...' : 'Re-Sync'}
-                   </button>
-                </div>
-             </div>
-          ) : (
-             <div className="card p-10 border-dashed border-2 border-surface-200 dark:border-surface-800 flex flex-col items-center justify-center text-center !shadow-none opacity-50">
-                <Globe size={40} className="text-surface-300 mb-4" />
-                <h3 className="text-lg font-bold text-surface-400 uppercase tracking-widest">Awaiting Player Link</h3>
-                <p className="text-xs text-surface-400 mt-2">Connect your Company ID in the Player Portal to begin.</p>
-             </div>
-          )}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-             <KPICard label="Warehouse Value" value={`$${(core.inventoryValue/1000).toFixed(1)}K`} sub="Current Inventory" icon={Package} />
-             <KPICard label="Asset Valuation" value={`$${(core.mapValue/1_000_000).toFixed(2)}M`} sub={`${core.totalLevels} Facility Levels`} icon={Building2} />
-             <KPICard label="Company Value" value={state.companyValue ? `$${(state.companyValue/1_000_000).toFixed(1)}M` : '--'} sub="Total Player Equity" icon={DollarSign} />
-             <KPICard label="Market Regime" value={phase} sub="Global Environment" icon={Globe} />
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-             <div className="card p-4 !shadow-none border-surface-200 dark:border-surface-800 text-center">
-                <span className="text-[10px] font-bold text-surface-400 uppercase block mb-1">Workers</span>
-                <span className="text-xl font-bold tabular-nums">{state.workers?.toLocaleString() || '--'}</span>
-             </div>
-             <div className="card p-4 !shadow-none border-surface-200 dark:border-surface-800 text-center">
-                <span className="text-[10px] font-bold text-surface-400 uppercase block mb-1">Gov. Tier</span>
-                <span className="text-xl font-bold tabular-nums">{state.governmentTier ?? '--'}</span>
-             </div>
-             <div className="card p-4 !shadow-none border-surface-200 dark:border-surface-800 text-center">
-                <span className="text-[10px] font-bold text-surface-400 uppercase block mb-1">Extra Slots</span>
-                <span className="text-xl font-bold tabular-nums">+{state.extraSlots || '0'}</span>
-             </div>
-             <div className="card p-4 !shadow-none border-surface-200 dark:border-surface-800 text-center">
-                <span className="text-[10px] font-bold text-surface-400 uppercase block mb-1">API AO Ref</span>
-                <span className="text-xl font-bold tabular-nums text-rose-600">{(n(state.apiAO)*100).toFixed(1)}%</span>
-             </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-             <div className="card !shadow-none border-surface-200 dark:border-surface-800 overflow-hidden">
-                <div className="px-6 py-4 border-b border-surface-100 dark:border-surface-800 bg-surface-50 dark:bg-surface-900">
-                   <h3 className="text-sm font-bold uppercase text-surface-500">Market Volatility</h3>
-                </div>
-                <div className="divide-y divide-surface-50 dark:divide-surface-800">
-                   {marketAlerts.map((r: any, i: number) => (
-                      <div key={i} className="flex justify-between items-center px-6 py-3 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-all">
-                         <span className="font-bold text-surface-800 dark:text-surface-200">{r.name}</span>
-                         <div className="flex gap-4 items-center">
-                            <span className="font-medium text-surface-400">$${r.outputVwap.toFixed(2)}</span>
-                            <span className={`font-bold tabular-nums ${r.marginDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                               {r.marginDelta > 0 ? '↑' : '↓'} {Math.abs(r.marginDelta).toFixed(1)}%
-                            </span>
-                         </div>
-                      </div>
-                   ))}
-                </div>
-             </div>
-             <div className="card p-6 flex flex-col justify-center space-y-6 !shadow-none border-surface-200 dark:border-surface-800">
-                <div className="flex justify-between items-end border-b border-surface-100 dark:border-surface-800 pb-4">
-                   <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">30D Forecast</span>
-                   <span className="text-2xl font-bold text-brand-600">+$${(core.netDaily * 30 / 1_000_000).toFixed(2)}M</span>
-                </div>
-                <div className="flex justify-between items-end">
-                   <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">7D Projection</span>
-                   <span className="text-xl font-bold text-emerald-600">+$${(core.netDaily * 7 / 1000).toFixed(1)}K</span>
-                </div>
-             </div>
-          </div>
-       </div>
-
-       <div className="md:col-span-4 space-y-6">
-          <div className="card bg-brand-600 text-white p-6 !shadow-none border-none">
-             <h3 className="text-sm font-bold uppercase tracking-widest mb-6 opacity-80">Strategic Integration</h3>
-             <div className="space-y-4">
-                <CheckItem label="EXECUTIVE BOARD" active={core.effMan > 0} light />
-                <CheckItem label="WAREHOUSE SYNC" active={core.inventoryValue > 0} light />
-                <CheckItem label="DEBT MANAGEMENT" active={core.dailyInterest > 0} light />
-                <CheckItem label="ECONOMY SYNC" active={true} light />
-             </div>
-          </div>
-          <div className="card p-6 border-surface-200 dark:border-surface-800 !shadow-none bg-brand-50/10 dark:bg-brand-900/5">
-             <div className="flex items-center gap-2 mb-4">
-                <div className="w-2 h-2 rounded-full bg-brand-600 animate-pulse" />
-                <h3 className="text-sm font-bold uppercase text-brand-600">Dynamic Intelligence Link</h3>
-             </div>
-             <div className="flex gap-2 mb-4">
-                <input
-                  type="text"
-                  placeholder="Company ID (e.g. 1664165)"
-                  defaultValue={state.companyId}
-                  className="flex-1 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-brand-500 font-bold"
-                  id="companyIdInput"
-                />
-                <button
-                  disabled={isSyncing}
-                  onClick={() => {
-                   const input = document.getElementById('companyIdInput') as HTMLInputElement;
-                   onSync(input.value);
-                }} className={`btn !bg-brand-600 text-white !py-2 !px-4 hover:shadow-lg hover:shadow-brand-500/20 transition-all ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                   {isSyncing ? '...' : 'CONNECT'}
-                </button>
-             </div>
-             {state.companyName && (
-                <button onClick={() => setState({ ...state, companyName: undefined, companyId: "", map: [] })} className="w-full text-[10px] font-bold text-rose-600 uppercase mb-4 text-left hover:underline">
-                   Disconnect Secure Link
-                </button>
-             )}
-             <p className="text-[10px] text-surface-500 font-medium leading-relaxed italic border-l-2 border-brand-200 dark:border-brand-800 pl-3">
-                Authorizes direct retrieval of infrastructure architecture, efficiency coefficients, and fiscal liabilities from the central SimCompanies node.
-             </p>
-          </div>
-
-          <div className="card p-6 border-surface-200 dark:border-surface-800 !shadow-none">
-             <div className="flex items-center gap-3 mb-3">
-                <Clock size={20} className="text-brand-600" />
-                <h3 className="text-sm font-bold uppercase text-surface-500">Economic Cycle</h3>
-             </div>
-             <p className="text-base font-bold text-surface-800 dark:text-surface-200">
-                {cycles?.current?.phase ? (
-                   <>Current phase stability is <span className="text-brand-600">{(cycles.stability * 100).toFixed(0)}%</span>. Detected duration: <span className="text-brand-600">{cycles.current.duration} days</span>.</>
-                ) : (
-                   "Phase stability is high (84%). Expected transition in 2.4 days."
-                )}
-             </p>
-          </div>
-       </div>
-    </div>
-  );
-}
-
-function OperationsView({ state, setState, core }: any) {
-  const [q, setQ] = useState("");
-  const filteredBuildings = useMemo(() => BUILDINGS.filter(b => b.name.toLowerCase().includes(q.toLowerCase())), [q]);
-
-  const constructionTotals = useMemo(() => {
-    const totals: Record<number, number> = { 101: 0, 102: 0, 108: 0, 111: 0, 110: 0, 0: 0 };
-    (state.map || []).forEach((m: any) => {
-      const b = BUILDINGS.find(bu => bu.id === m.id);
-      if (!b) return;
-      totals[0] += b.cost * (n(m.level) <= 1 ? 1 : n(m.level));
-      b.resources.forEach((r: any) => {
-         if (r.id !== 109) totals[r.id] = (totals[r.id] || 0) + (r.qty * (n(m.level) || 1));
-      });
-    });
-    return totals;
-  }, [state.map]);
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-       <div className="md:col-span-5 space-y-6">
-          <Section title="Facility Management" icon={Building2} color="text-emerald-600">
-             <div className="flex gap-2 mb-4">
-                <div className="relative flex-1">
-                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
-                   <input
-                     value={q}
-                     onChange={(e) => setQ(e.target.value)}
-                     placeholder="Search buildings..."
-                     className="w-full pl-9 pr-4 py-2 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-lg text-sm outline-none focus:ring-1 focus:ring-emerald-500"
-                   />
-                </div>
-                <button
-                  onClick={() => {
-                    const b = filteredBuildings[0] || BUILDINGS[0];
-                    setState({...state, map: [...(state.map || []), { id: b.id, level: 1 }]});
-                  }}
-                  className="btn !bg-emerald-600 text-white !px-4 shadow-sm font-bold"
-                >
-                  <Plus size={16} />
-                </button>
-             </div>
-             <div className="max-h-[500px] overflow-y-auto space-y-2 pr-2 scrollbar-hide">
-                {(state.map || []).map((m: any, i: number) => (
-                   <div key={i} className="card p-3 flex items-center gap-4 hover:border-emerald-600/30 transition-all border-l-4 border-emerald-600 !shadow-none border-surface-200 dark:border-surface-800">
-                      <div className="flex-1">
-                         <select value={m.id} onChange={(e) => { const next = [...state.map]; next[i].id = e.target.value; setState({...state, map: next}); }} className="bg-transparent border-none p-0 font-bold uppercase w-full outline-none text-sm">
-                            {BUILDINGS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                         </select>
-                         <p className="text-xs text-surface-400 font-medium mt-1">Instance Ref: {i+1} {m.instanceId ? `(ID: ${m.instanceId})` : ''}</p>
-                      </div>
-                      <div className="flex items-center gap-2 bg-surface-100 dark:bg-surface-900 px-3 py-1.5 rounded-lg border border-surface-200 dark:border-surface-800">
-                         <span className="text-[10px] font-bold text-surface-400 uppercase">LVL</span>
-                         <input type="number" value={m.level} onChange={(e) => { const next = [...state.map]; next[i].level = Number(e.target.value); setState({...state, map: next}); }} className="w-8 bg-transparent border-none p-0 text-sm font-bold text-center outline-none" />
-                      </div>
-                      <button
-                        onClick={() => setState({...state, map: state.map.filter((_: any, idx: number) => idx !== i)})}
-                        className="p-2 text-surface-300 hover:text-rose-600 transition-colors"
-                        aria-label="Remove facility"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                   </div>
-                ))}
-             </div>
-          </Section>
-       </div>
-       <div className="md:col-span-7 space-y-6">
-          <Section title="Construction Logistics" icon={HardHat} color="text-emerald-600">
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="card bg-emerald-600 text-white p-6 relative overflow-hidden !shadow-none border-none">
-                   <HardHat size={80} className="absolute -right-6 -bottom-6 opacity-10" />
-                   <h3 className="text-xs font-bold uppercase tracking-widest mb-6 opacity-80">Total Capital Required</h3>
-                   <span className="text-4xl font-bold tabular-nums leading-none">$${(constructionTotals[0]/1000).toFixed(1)}K</span>
-                </div>
-                <div className="card p-6 space-y-3 !shadow-none border-surface-200 dark:border-surface-800">
-                   <div className="space-y-2">
-                      {[101, 102, 108, 111, 110].map(id => (
-                        <div key={id} className="flex justify-between items-center text-sm border-b border-surface-100 dark:border-surface-800 pb-2 last:border-0">
-                           <span className="font-medium text-surface-500">{CONSTRUCTION_MATERIALS.find(m => m.id === id)?.name}</span>
-                           <span className="font-bold tabular-nums">{constructionTotals[id]?.toLocaleString()}</span>
-                        </div>
-                      ))}
-                   </div>
-                </div>
-             </div>
-          </Section>
-
-          <Section title="Economic Outlook & Scaling" icon={Zap} color="text-emerald-600">
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="card p-6 space-y-6 !shadow-none border-surface-200 dark:border-surface-800">
-                   <div className="grid grid-cols-2 gap-6">
-                      <div>
-                         <span className="text-xs font-bold text-surface-400 uppercase block mb-1">Production Bonus</span>
-                         <div className="flex items-center gap-1">
-                            <input type="number" value={state.settings?.prodBonus} onChange={(e) => setState({...state, settings: {...state.settings, prodBonus: Number(e.target.value)}})} className="w-16 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded px-2 py-1 font-bold text-emerald-600 outline-none" />
-                            <span className="text-emerald-600 font-bold">%</span>
-                         </div>
-                      </div>
-                      <div>
-                         <span className="text-xs font-bold text-surface-400 uppercase block mb-1">Admin Overhead</span>
-                         <span className="text-xl font-bold text-rose-600 block mt-1">{(core.actualAO*100).toFixed(1)}%</span>
-                      </div>
-                   </div>
-                   <div className="grid grid-cols-2 gap-6 pt-4 border-t border-surface-100 dark:border-surface-800">
-                      <div>
-                         <span className="text-xs font-bold text-surface-400 uppercase block mb-1">Resource Abundance</span>
-                         <div className="flex items-center gap-1">
-                            <input type="number" value={state.settings?.abundance} onChange={(e) => setState({...state, settings: {...state.settings, abundance: Number(e.target.value)}})} className="w-16 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded px-2 py-1 font-bold text-brand-600 outline-none" />
-                            <span className="text-brand-600 font-bold">%</span>
-                         </div>
-                      </div>
-                      <div>
-                         <span className="text-xs font-bold text-surface-400 uppercase block mb-1">Research Bonus</span>
-                         <div className="flex items-center gap-1">
-                            <input type="number" value={state.settings?.researchBonus} onChange={(e) => setState({...state, settings: {...state.settings, researchBonus: Number(e.target.value)}})} className="w-16 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded px-2 py-1 font-bold text-amber-600 outline-none" />
-                            <span className="text-amber-600 font-bold">%</span>
-                         </div>
-                      </div>
-                   </div>
-                </div>
-
-                <div className="card p-6 space-y-6 !shadow-none border-surface-200 dark:border-surface-800">
-                   <div className="flex justify-between items-end">
-                      <div>
-                         <p className="text-xs font-bold text-emerald-600 uppercase mb-1">Scaling Simulation</p>
-                         <p className="text-3xl font-bold">+{state.settings?.whatIfLevel} <span className="text-sm text-surface-400">Levels</span></p>
-                      </div>
-                      <div className="text-right">
-                         <p className="text-xs font-bold text-rose-500 uppercase mb-1">Projected AO</p>
-                         <p className="text-xl font-bold tabular-nums text-rose-600">{(core.actualAO*100).toFixed(1)}%</p>
-                      </div>
-                   </div>
-                   <input type="range" min="0" max="500" step="5" value={state.settings?.whatIfLevel} onChange={(e) => setState({...state, settings: {...state.settings, whatIfLevel: Number(e.target.value)}})} className="w-full h-2 bg-surface-100 dark:bg-surface-800 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
-                </div>
-             </div>
-          </Section>
-
-          <Section title="Profit Contribution Breakdown" icon={TrendingUp} color="text-emerald-600">
-             <div className="card overflow-hidden !shadow-none border-surface-200 dark:border-surface-800">
-                <table className="w-full text-sm">
-                   <thead>
-                      <tr className="text-surface-500 bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800">
-                         <th className="text-left px-6 py-3 font-bold uppercase text-xs">Building Type</th>
-                         <th className="text-center px-6 py-3 font-bold uppercase text-xs">Lvl</th>
-                         <th className="text-right px-6 py-3 font-bold uppercase text-xs">Est. Profit/H</th>
-                      </tr>
-                   </thead>
-                   <tbody className="divide-y divide-surface-50 dark:divide-surface-800">
-                      {core.buildingProfits.map((p: any, i: number) => (
-                         <tr key={i} className="hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors">
-                            <td className="px-6 py-4 font-medium">{p.name}</td>
-                            <td className="px-6 py-4 text-center text-surface-400 font-bold">{p.level}</td>
-                            <td className={`px-6 py-4 text-right font-bold ${p.profit > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>$${p.profit.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
-                         </tr>
-                      ))}
-                   </tbody>
-                </table>
-             </div>
-          </Section>
-       </div>
-    </div>
-  );
-}
-
-function ExecutiveView({ state, setState, core, setNotification }: any) {
-  const [pasteData, setPasteData] = useState("");
-  const handlePaste = () => {
-    const lines = pasteData.split('\n');
-    const newBoard = { ...state.board };
-    let cur: keyof typeof state.board | null = null;
-    lines.forEach(l => {
-      const t = l.trim();
-      if (['COO', 'CFO', 'CMO', 'CTO'].includes(t)) cur = t.toLowerCase() as keyof typeof state.board;
-      else if (t.includes('Management:')) { if (cur) newBoard[cur].management = parseInt(t.split(':')[1]) || 0; }
-      else if (t.includes('Accounting:')) { if (cur) newBoard[cur].accounting = parseInt(t.split(':')[1]) || 0; }
-      else if (t.includes('Communication:')) { if (cur) newBoard[cur].communication = parseInt(t.split(':')[1]) || 0; }
-      else if (t.includes('Science:')) { if (cur) newBoard[cur].science = parseInt(t.split(':')[1]) || 0; }
-    });
-    setState({ ...state, board: newBoard });
-    setPasteData("");
-    setNotification({ msg: "Board Integrated Successfully", type: "success" });
-  };
-
-  return (
-    <div className="space-y-6">
-       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <SkillNode label="Management" value={core.effMan} icon={Zap} sub="AO Reduction" color="text-amber-600" />
-          <SkillNode label="Accounting" value={core.effAcc} icon={DollarSign} sub="Tax Threshold" color="text-emerald-600" />
-          <SkillNode label="Communication" value={core.effCom} icon={Globe} sub="Sales Speed" color="text-indigo-600" />
-          <SkillNode label="Science" value={core.effSci} icon={Microscope} sub="Patent Odds" color="text-rose-600" />
-       </div>
-
-       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-12">
-          <div className="lg:col-span-8 space-y-4">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <ExecCard role="Chief Operating Officer" data={state.board.coo} onChange={(d: any) => setState({...state, board: {...state.board, coo: d}})} />
-                <ExecCard role="COO Apprentice" data={state.board.cooApp} onChange={(d: any) => setState({...state, board: {...state.board, cooApp: d}})} isApp />
-                <ExecCard role="Chief Financial Officer" data={state.board.cfo} onChange={(d: any) => setState({...state, board: {...state.board, cfo: d}})} />
-                <ExecCard role="CFO Apprentice" data={state.board.cfoApp} onChange={(d: any) => setState({...state, board: {...state.board, cfoApp: d}})} isApp />
-                <ExecCard role="Chief Marketing Officer" data={state.board.cmo} onChange={(d: any) => setState({...state, board: {...state.board, cmo: d}})} />
-                <ExecCard role="CMO Apprentice" data={state.board.cmoApp} onChange={(d: any) => setState({...state, board: {...state.board, cmoApp: d}})} isApp />
-                <ExecCard role="Chief Technical Officer" data={state.board.cto} onChange={(d: any) => setState({...state, board: {...state.board, cto: d}})} />
-                <ExecCard role="CTO Apprentice" data={state.board.ctoApp} onChange={(d: any) => setState({...state, board: {...state.board, ctoApp: d}})} isApp />
-             </div>
-          </div>
-          <div className="lg:col-span-4 space-y-6">
-             <div className="card p-6 border-surface-200 dark:border-surface-800 !shadow-none">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-amber-600 mb-4">Board Intelligence Sync</h3>
-                <p className="text-xs text-surface-500 mb-4 font-medium leading-relaxed">Paste the raw text from your Executives page to instantly update skills.</p>
-                <textarea value={pasteData} onChange={(e) => setPasteData(e.target.value)} className="w-full h-32 p-3 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-lg text-sm focus:ring-1 focus:ring-amber-500 outline-none mb-4" placeholder="COO Management: 20..." />
-                <button onClick={handlePaste} className="w-full btn !bg-amber-600 text-white !py-3 font-bold uppercase text-sm">Apply Sync</button>
-             </div>
-
-             <div className="card p-6 space-y-6 border-surface-200 dark:border-surface-800 !shadow-none">
-                <div className="flex items-center gap-2">
-                   <Calculator size={18} className="text-amber-600" />
-                   <h3 className="text-sm font-bold uppercase text-surface-500">R&D Impact Analysis</h3>
-                </div>
-                <div className="space-y-4 text-sm">
-                   <ForecastLine label="Patent Probability" value={`${(core.patentProb*100).toFixed(1)}%`} />
-                   <ForecastLine label="Research Speed" value={`${(core.effSci * 2).toFixed(0)}%`} />
-                   <ForecastLine label="Retail Sales Bonus" value={`+${(core.salesSpeedBonus * 100).toFixed(1)}%`} />
-                   <div className="flex justify-between items-center pt-2 border-t border-surface-50 dark:border-surface-800">
-                      <span className="font-bold text-surface-500 uppercase text-xs">Target Quality</span>
-                      <input type="number" value={state.settings?.patentTargetQuality} onChange={(e) => setState({...state, settings: {...state.settings, patentTargetQuality: Number(e.target.value)}})} className="w-12 bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 text-right font-bold py-1 px-2 rounded-md outline-none focus:ring-1 focus:ring-amber-500" />
-                   </div>
-                </div>
-             </div>
-          </div>
-       </div>
-    </div>
-  );
-}
-
-function FinanceView({ state, setState, core }: any) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pb-12">
-       <div className="md:col-span-4 space-y-6">
-          <Section title="Fiscal Parameters" icon={Wallet} color="text-violet-600">
-             <div className="card p-6 space-y-6 border-l-4 border-violet-600 !shadow-none border-surface-200 dark:border-surface-800">
-                <div className="space-y-4">
-                   <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-black uppercase text-surface-400">Bank Infrastructure</label>
-                      <div className="flex items-center gap-2 bg-surface-100 dark:bg-surface-800 px-2 py-1 rounded">
-                         <span className="text-[10px] font-bold">LVL</span>
-                         <input type="number" value={state.settings?.bankLevel} onChange={(e) => setState({...state, settings: {...state.settings, bankLevel: Number(e.target.value)}})} className="w-8 bg-transparent text-center font-bold outline-none" />
-                      </div>
-                   </div>
-                   <p className="text-[10px] text-surface-400 font-medium italic -mt-2">Bank level increases your tax-free threshold significantly.</p>
-                </div>
-
-                <div className="space-y-2">
-                   <label className="text-xs font-bold uppercase text-surface-500">Estimated Daily Profit</label>
-                   <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-violet-600 font-bold text-lg">$</span>
-                      <input type="number" value={state.settings?.estDailyProfit} onChange={(e) => setState({...state, settings: {...state.settings, estDailyProfit: Number(e.target.value)}})} className="w-full bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg py-3 pl-8 pr-4 text-xl font-bold outline-none focus:ring-1 focus:ring-violet-600" />
-                   </div>
-                </div>
-                <div className="space-y-2">
-                   <label className="text-xs font-bold uppercase text-surface-500">Total Liabilities (Debt)</label>
-                   <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-rose-600 font-bold text-lg">$</span>
-                      <input type="number" value={state.debt?.current} onChange={(e) => setState({...state, debt: {...state.debt, current: Number(e.target.value)}})} className="w-full bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg py-3 pl-8 pr-4 text-xl font-bold !text-rose-600 outline-none focus:ring-1 focus:ring-rose-600" />
-                   </div>
-                </div>
-             </div>
-          </Section>
-       </div>
-       <div className="md:col-span-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="card p-6 space-y-6 !shadow-none border-surface-200 dark:border-surface-800">
-             <h3 className="text-sm font-bold uppercase text-violet-600">Tax Engine Analysis</h3>
-             <div className="space-y-4">
-                <ForecastLine label="Net Tax-Free Threshold" value={`$${(core.taxThreshold/1_000_000).toFixed(2)}M`} />
-                <ForecastLine label="Daily Ceiling" value={`$${(core.taxThreshold/30/1000).toFixed(1)}K`} />
-                <ForecastLine label="Est. Effective Tax Rate" value={`${((core.estimatedDailyTax / (state.settings?.estDailyProfit || 1)) * 100).toFixed(1)}%`} />
-                <ForecastLine label="Estimated Daily Tax" value={`-$${(core.estimatedDailyTax/1000).toFixed(1)}K` } red />
-             </div>
-          </div>
-          <div className="card p-6 space-y-6 !shadow-none border-surface-200 dark:border-surface-800">
-             <h3 className="text-sm font-bold uppercase text-violet-600">Net Margin Breakdown</h3>
-             <div className="space-y-4">
-                <ForecastLine label="AO Wage Impact" value={`-$${(core.dailyWages * core.actualAO / 1000).toFixed(1)}K`} red />
-                <ForecastLine label="Daily Interest Expense" value={`-$${(core.dailyInterest / 1000).toFixed(1)}K`} red />
-                <ForecastLine label="Total Net Daily Yield" value={`+$${(core.netDaily/1000).toFixed(1)}K`} green />
-             </div>
-          </div>
-       </div>
-    </div>
-  );
-}
-
-function LogisticsView({ state, setState, core }: any) {
-  const [q, setQ] = useState("");
-  const filteredRes = useMemo(() => RESOURCES.filter(r => r.name.toLowerCase().includes(q.toLowerCase())), [q]);
-
-  const inventorySummary = useMemo(() => {
-    const totalQty = (state.inventory || []).reduce((sum: number, i: any) => sum + i.qty, 0);
-    const topItems = [...(state.inventory || [])]
-      .sort((a, b) => b.qty - a.qty)
-      .slice(0, 3)
-      .map(i => RESOURCES.find(r => r.id === i.id)?.name);
-    return { totalQty, topItems };
-  }, [state.inventory]);
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-       <div className="lg:col-span-4 space-y-6">
-          <Section title="Warehouse Inventory" icon={Package} color="text-indigo-600">
-             <div className="card p-4 flex flex-col h-[70vh] !shadow-none border-surface-200 dark:border-surface-800">
-                <div className="relative mb-4">
-                   <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
-                   <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search inventory..." className="w-full pl-10 pr-4 py-2 bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 rounded-lg text-sm focus:ring-1 focus:ring-indigo-600 outline-none" />
-                </div>
-                <div className="flex-1 overflow-y-auto divide-y divide-surface-100 dark:divide-surface-800">
-                   {filteredRes.slice(0, 100).map(r => {
-                      const item = (state.inventory || []).find(i => i.id === r.id);
-                      return (
-                         <div key={r.id} className="flex justify-between items-center py-2.5 px-2 hover:bg-surface-50 dark:hover:bg-surface-900 transition-all">
-                            <span className="font-bold text-surface-700 dark:text-surface-300">{r.name}</span>
-                            <input type="number" value={item?.qty || ""} onChange={(e) => { const v = Number(e.target.value); const next = [...state.inventory.filter(i => i.id !== r.id)]; if (v > 0) next.push({ id: r.id, qty: v }); setState({...state, inventory: next}); }} className="w-20 bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 rounded px-2 py-1 text-sm font-bold text-right outline-none focus:ring-1 focus:ring-indigo-600" />
-                         </div>
-                      )
-                   })}
-                </div>
-             </div>
-          </Section>
-       </div>
-       <div className="lg:col-span-8 space-y-6">
-          <Section title="Logistics Assessment" icon={Ship} color="text-indigo-600">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="card p-6 border-l-4 border-indigo-600 !shadow-none border-surface-200 dark:border-surface-800 bg-indigo-50/10 dark:bg-indigo-900/5">
-                   <span className="text-xs font-bold text-surface-500 block mb-2 uppercase tracking-wide">Current Stock Liquidity</span>
-                   <span className="text-4xl font-bold text-indigo-600">$${(core.inventoryValue/1000).toFixed(1)}K</span>
-                   <p className="text-[10px] text-surface-400 mt-2 font-bold uppercase">Estimated VWAP Value</p>
-                </div>
-                <div className="card p-6 border-l-4 border-indigo-600 !shadow-none border-surface-200 dark:border-surface-800 bg-indigo-50/10 dark:bg-indigo-900/5">
-                   <span className="text-xs font-bold text-surface-500 block mb-2 uppercase tracking-wide">Estimated Transport Units</span>
-                   <span className="text-4xl font-bold text-indigo-600">{Math.ceil(core.inventoryValue/500).toLocaleString()} <span className="text-lg opacity-40 font-medium">Req</span></span>
-                   <p className="text-[10px] text-surface-400 mt-2 font-bold uppercase">Based on avg. weight</p>
-                </div>
-             </div>
-          </Section>
-
-          <Section title="Inventory Insights" icon={Layers} color="text-indigo-600">
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="card p-6 !shadow-none border-surface-200 dark:border-surface-800">
-                   <span className="text-[10px] font-bold text-surface-400 uppercase block mb-1">Total Items</span>
-                   <span className="text-2xl font-bold">{inventorySummary.totalQty.toLocaleString()}</span>
-                </div>
-                <div className="card p-6 !shadow-none border-surface-200 dark:border-surface-800 md:col-span-2">
-                   <span className="text-[10px] font-bold text-surface-400 uppercase block mb-2">Major Components</span>
-                   <div className="flex flex-wrap gap-2">
-                      {inventorySummary.topItems.length > 0 ? inventorySummary.topItems.map((name, i) => (
-                        <span key={i} className="px-3 py-1 bg-surface-100 dark:bg-surface-800 rounded-full text-xs font-bold text-indigo-600">{name}</span>
-                      )) : <span className="text-xs text-surface-400 italic">No inventory recorded</span>}
-                   </div>
-                </div>
-             </div>
-          </Section>
-       </div>
-    </div>
-  );
-}
-
-function RetailView({ state, setState, retail }: any) {
-  const selectedRes = RESOURCES.find(r => r.id === state.settings?.retailResourceId) || RESOURCES.find(r => r.id === 24);
-  const retailData = retail?.retail ? Object.entries(retail.retail).find(([k]) => k.toLowerCase() === selectedRes?.name.toLowerCase()) : null;
-  const marketSat = (retailData as any)?.[1]?.saturation || 1.0;
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-       <div className="md:col-span-4 space-y-6">
-          <Section title="Retail Engine" icon={Target} color="text-rose-600">
-             <div className="card p-6 border-l-4 border-rose-600 !shadow-none border-surface-200 dark:border-surface-800">
-                <label className="text-xs font-bold text-surface-500 block mb-3 uppercase">Inventory Selection</label>
-                <select value={state.settings?.retailResourceId} onChange={(e) => setState({...state, settings: {...state.settings, retailResourceId: Number(e.target.value)}})} className="w-full bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 rounded-lg py-2.5 px-4 font-bold text-sm outline-none focus:ring-1 focus:ring-rose-600 mb-6">
-                   {RESOURCES.filter(r => r.retailInfo && r.retailInfo.length > 0).map(r => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
-                   ))}
-                </select>
-                <div className="space-y-4">
-                   <div className="flex justify-between items-end">
-                      <span className="text-sm font-bold text-surface-400 uppercase">Market Saturation</span>
-                      <span className={`text-3xl font-bold ${marketSat > 1.2 ? 'text-rose-600' : 'text-emerald-600'}`}>{marketSat.toFixed(2)}</span>
-                   </div>
-                   <div className="h-2 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
-                      <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (1/marketSat)*50)}%` }} className={`h-full ${marketSat > 1.2 ? 'bg-rose-600' : 'bg-emerald-600'}`} />
-                   </div>
-                </div>
-             </div>
-          </Section>
-       </div>
-       <div className="md:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="card p-6 border-t-4 border-rose-600 !shadow-none border-surface-200 dark:border-surface-800">
-             <span className="text-sm font-bold text-surface-500 block mb-3 uppercase tracking-wide">Velocity Sales Model</span>
-             <p className="text-base font-medium text-surface-600 dark:text-surface-300 leading-relaxed">
-                A market saturation of <span className="font-bold text-brand-600">{marketSat.toFixed(2)}</span> indicates {marketSat < 1 ? "optimal conditions for aggressive retail expansion" : "a highly competitive landscape requiring premium quality to maintain margins"}.
-             </p>
-          </div>
-       </div>
-    </div>
-  );
-}
-
-function RiskView({ phase, retail }: any) {
-  return (
-    <div className="card p-10 !shadow-none border-surface-200 dark:border-surface-800">
-       <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-surface-500 mb-10 text-center">Global Market Sentiment & Risk Matrix</h3>
-       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-6">
-          {RESOURCES.filter(r => r.retailInfo && r.retailInfo.length > 0).slice(0, 24).map(res => {
-             const retailItem: any = retail?.retail ? Object.entries(retail.retail).find(([k]) => k.toLowerCase() === res.name.toLowerCase()) : null;
-             const sat = retailItem?.[1]?.saturation || 1.0;
-             return (
-               <div key={res.id} className="card p-5 text-center border-b-4 border-indigo-600 !shadow-none border-surface-200 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-brand-900/10 transition-all">
-                  <span className="block text-xs font-bold uppercase text-surface-400 truncate mb-3">{res.name}</span>
-                  <span className={`text-2xl font-bold tabular-nums ${sat < 1 ? 'text-emerald-600' : 'text-rose-600'}`}>{sat.toFixed(2)}</span>
-               </div>
-             )
-          })}
-       </div>
-    </div>
-  );
-}
-
-function WorkstationTab({ active, onClick, label, icon: Icon, color }: any) {
-  return (
-    <button onClick={onClick} className={`px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${active ? `${color} text-white shadow-sm` : 'text-surface-500 hover:bg-surface-200 dark:hover:bg-surface-800'}`}>
-       <Icon size={16} /> {label}
-    </button>
-  );
-}
-
-function GlobalMetric({ label, value }: any) {
-  return (
-    <div className="flex flex-col">
-       <span className="text-[10px] font-bold uppercase text-surface-400 leading-none mb-1">{label}</span>
-       <span className="text-lg font-bold tabular-nums leading-none">{value}</span>
-    </div>
-  );
-}
-
-function KPICard({ label, value, sub, icon: Icon }: any) {
-  return (
-    <div className="card p-6 flex flex-col items-center text-center !shadow-none border-surface-200 dark:border-surface-800 group">
-       <div className="w-12 h-12 bg-surface-50 dark:bg-surface-900 rounded-xl flex items-center justify-center text-brand-600 mb-4 group-hover:scale-105 transition-transform">
-          <Icon size={24} />
-       </div>
-       <span className="text-xs font-bold uppercase tracking-widest text-surface-400 mb-1">{label}</span>
-       <span className="text-2xl font-bold tabular-nums leading-none">{value}</span>
-       <p className="text-xs font-medium text-surface-500 mt-2 truncate w-full">{sub}</p>
-    </div>
-  );
-}
-
-function SkillNode({ label, value, sub, icon: Icon, color }: any) {
-  return (
-    <div className={`card p-6 flex flex-col items-center text-center border-t-4 border-current shadow-sm ${color}`}>
-       <div className="flex items-center gap-2 mb-3">
-          <Icon size={18} />
-          <span className="text-sm font-bold uppercase tracking-wide text-surface-900 dark:text-white">{label}</span>
-       </div>
-       <span className="text-3xl font-bold text-surface-900 dark:text-white tabular-nums leading-none">{value}</span>
-       <span className="text-xs font-semibold uppercase opacity-40 mt-3 tracking-wide">{sub}</span>
-    </div>
-  );
-}
-
-function ExecCard({ role, data, onChange, isApp }: any) {
-  return (
-    <div className={`card p-6 space-y-6 border-l-4 !shadow-none border-surface-200 dark:border-surface-800 transition-all ${isApp ? 'border-l-surface-300 dark:border-l-surface-600 opacity-80' : 'border-l-brand-600'}`}>
-       <div className="flex items-center justify-between">
-          <span className={`text-sm font-bold uppercase tracking-wide ${isApp ? 'text-surface-500' : 'text-brand-600'}`}>{role}</span>
-       </div>
-       <div className="grid grid-cols-2 gap-4">
-          <SkillLineSmall label="Management" val={data.management} onChange={(v: any) => onChange({...data, management: v})} />
-          <SkillLineSmall label="Accounting" val={data.accounting} onChange={(v: any) => onChange({...data, accounting: v})} />
-          <SkillLineSmall label="Communication" val={data.communication} onChange={(v: any) => onChange({...data, communication: v})} />
-          <SkillLineSmall label="Science" val={data.science} onChange={(v: any) => onChange({...data, science: v})} />
-       </div>
-    </div>
-  );
-}
-
-function SkillLineSmall({ label, val, onChange }: any) {
-  return (
-    <div className="flex flex-col bg-surface-50 dark:bg-surface-900 px-4 py-3 rounded-lg border border-surface-100 dark:border-surface-800">
-       <span className="text-[10px] font-bold text-surface-400 uppercase mb-1">{label}</span>
-       <input type="number" value={val} onChange={(e) => onChange(Number(e.target.value))} className="bg-transparent border-none p-0 text-lg font-bold outline-none tabular-nums" />
-    </div>
-  );
-}
-
-function ForecastLine({ label, value, red, green }: any) {
-  return (
-    <div className="flex justify-between items-center py-3 border-b border-surface-50 dark:border-surface-800 last:border-0">
-       <span className="text-[11px] font-black uppercase text-surface-500 italic tracking-tight">{label}</span>
-       <span className={`text-base font-black tabular-nums italic ${red ? 'text-red-600' : green ? 'text-emerald-500' : 'text-surface-900 dark:text-white'}`}>{value}</span>
-    </div>
-  );
-}
-
-function CheckItem({ label, active, light }: any) {
-  return (
-    <div className="flex items-center gap-5 py-2">
-       <div className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${active ? 'bg-emerald-500 border-emerald-500 shadow-lg' : 'border-white/20 bg-white/5'}`}>
-          {active && <CheckCircle2 size={14} className="text-white" />}
-       </div>
-       <span className={`text-[12px] font-black uppercase italic tracking-widest ${active ? (light ? 'text-white' : 'text-surface-900') : 'text-white/20'}`}>{label}</span>
     </div>
   );
 }
