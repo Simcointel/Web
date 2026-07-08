@@ -64,7 +64,7 @@ export const CONSTRUCTION_MATERIALS = [
 // ponytail: approximate mapping based on resource categories; the game API
 // returns the authoritative mapping via resource.retailInfo
 export const RETAIL_PRODUCT_MAP: Record<string, number[]> = {
-  G: [121, 122, 134, 27, 28, 29, 30, 31, 32, 38, 39, 49, 53, 54, 55, 56, 57, 58], // Grocery
+  G: [121, 122, 134, 27, 28, 29, 31, 32, 54], // Grocery
   C: [24, 70, 71, 74, 83, 84],  // Electronics
   A: [11, 12],                   // Gas station
   2: [86, 87, 88, 89, 90],      // Car dealership
