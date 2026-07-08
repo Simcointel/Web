@@ -77,7 +77,7 @@ export const RETAIL_PRODUCT_MAP: Record<string, number[]> = {
   z: [153,154],
 };
 
-// Game reference prices for construction materials (fixed by game)
+// Game reference prices for construction materials (from game encyclopedia — source of truth)
 export const MAT_REF_PRICES: Record<number, number> = { 101: 500, 102: 15, 108: 30, 111: 2673.75, 110: 14.5 };
 
 // Economic phase production multipliers (game uses these internally)

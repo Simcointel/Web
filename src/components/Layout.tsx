@@ -1,10 +1,9 @@
 import React from "react";
-import { ChevronRight } from "lucide-react";
 
 export function Section({ title, subtitle, children, actions, icon: Icon, color }: { title: string; subtitle?: string; children: React.ReactNode; actions?: React.ReactNode; icon?: React.ElementType; color?: string }) {
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between px-2">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {Icon && (
             <div className={`p-2 rounded-xl ${color ? `${color.replace('text-', 'bg-')}/10 ${color}` : 'bg-brand-50 dark:bg-brand-900/20 text-brand-600'}`}>
@@ -12,15 +11,13 @@ export function Section({ title, subtitle, children, actions, icon: Icon, color 
             </div>
           )}
           <div>
-            <h2 className="text-sm font-bold text-surface-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-               {title}
-            </h2>
-            {subtitle && <p className="text-xs text-surface-400 font-semibold uppercase tracking-wide mt-1">{subtitle}</p>}
+            <h2 className="text-sm font-bold text-surface-900 dark:text-white uppercase tracking-wider">{title}</h2>
+            {subtitle && <p className="text-xs text-surface-400 font-semibold uppercase tracking-wide mt-0.5">{subtitle}</p>}
           </div>
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
-      <div className="animate-in fade-in slide-in-from-bottom-1 duration-300">
+      <div className="animate-slide-up">
         {children}
       </div>
     </section>
@@ -36,7 +33,7 @@ export function CardGrid({ children, cols = 3 }: { children: React.ReactNode; co
     5: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5",
   }[cols as 1|2|3|4|5] || "grid-cols-1 md:grid-cols-3";
 
-  return <div className={`grid ${gridCols} gap-6`}>{children}</div>;
+  return <div className={`grid ${gridCols} gap-5`}>{children}</div>;
 }
 
 export function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {

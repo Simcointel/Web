@@ -195,12 +195,11 @@ export function RetailCalculatorPage() {
   }, [store, selected, sellingPrice, bldgLevel, ao, salesSpeed, demand, baseRate, phase, vwapPrice, ri]);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4 text-sm">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="max-w-5xl mx-auto space-y-5 animate-slide-up">
+      <div className="flex items-center justify-between pb-4 border-b border-surface-200 dark:border-surface-800">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-rose-100 dark:bg-rose-900/30 rounded-xl flex items-center justify-center"><Store size={18} className="text-rose-600" /></div>
-          <div><h1 className="text-lg font-bold leading-tight">Retail Profitability</h1><p className="text-xs text-surface-400">Demand-driven profit analysis per store & product</p></div>
+          <div><h1 className="text-lg font-bold">Retail Profitability</h1><p className="text-xs text-surface-400">Demand-driven profit analysis per store & product</p></div>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex bg-surface-100 rounded-lg p-0.5">

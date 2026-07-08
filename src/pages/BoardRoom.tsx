@@ -1,12 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { Building2, Landmark, PiggyBank } from "lucide-react";
 
-// ─── Game formulas ────────────────────────────────────────
 interface ExecSkills { management: number; accounting: number; communication: number; science: number }
+
+function eff(v: number): number {
+  if (v <= 60) return v;
+  if (v <= 80) return 60 + (v - 60) / 2;
+  return 70 + (v - 80) / 4;
+}
 
 function calcAO(totalBldgLevels: number, cooMgmt: number, cfoMgmt: number, cmoMgmt: number, ctoMgmt: number): number {
   const rawAO = (totalBldgLevels - 1) / 170;
-  const totalMgmt = cooMgmt + Math.floor((cfoMgmt + cmoMgmt + ctoMgmt) / 4);
+  const totalMgmt = eff(cooMgmt) + Math.floor((eff(cfoMgmt) + eff(cmoMgmt) + eff(ctoMgmt)) / 4);
   return Math.max(0, rawAO - rawAO * (totalMgmt / 100));
 }
 
@@ -26,7 +31,6 @@ function calcResearchCost(sciAvg: number, targetQ: number, startQ: number): numb
   return (targetQ - startQ) * 50 * Math.max(1, 10 - sciAvg * 0.5);
 }
 
-// EVA = (operating profit - capital charge) / capital = ROIC - WACC
 function calcEVA(annualProfit: number, investedCapital: number, waccPct: number): number {
   if (investedCapital <= 0) return 0;
   const roic = (annualProfit / investedCapital) * 100;
@@ -43,15 +47,21 @@ export function BoardRoomPage() {
   const [tab, setTab] = useState<Tab>("execs");
 
   return (
-    <div className="space-y-4 text-sm max-w-6xl mx-auto">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center"><Building2 size={18} className="text-amber-600" /></div>
-        <div><h1 className="text-lg font-bold">Board Room</h1><p className="text-xs text-surface-400">Executives, EVA return tracking & bond analysis</p></div>
+    <div className="space-y-5 animate-slide-up max-w-6xl mx-auto">
+      <div className="flex items-center gap-3 pb-4 border-b border-surface-200 dark:border-surface-800">
+        <div className="w-9 h-9 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
+          <Building2 size={18} className="text-amber-600" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold">Board Room</h1>
+          <p className="text-xs text-surface-400">Executives, EVA returns & bond analysis</p>
+        </div>
       </div>
 
-      <div className="flex gap-1 bg-surface-100 dark:bg-surface-900 rounded-lg p-0.5 w-fit">
+      <div className="flex gap-1 bg-surface-100 dark:bg-surface-900 rounded-xl p-1 w-fit">
         {tabs.map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 rounded-md text-xs font-bold transition-all ${tab === t ? "bg-white dark:bg-surface-800 text-brand-600 shadow-sm" : "text-surface-500 hover:text-surface-700"}`}>
+          <button key={t} onClick={() => setTab(t)}
+            className={`tab-btn ${tab === t ? 'tab-btn-active' : 'tab-btn-inactive'}`}>
             {t === "execs" ? "Executive Optimizer" : t === "eva" ? "EVA Tracker" : "Bonds Calculator"}
           </button>
         ))}
@@ -64,7 +74,58 @@ export function BoardRoomPage() {
   );
 }
 
-// ─── Exec Tab (from ExecutiveOptimizer) ───────────────────
+function ExecInput({ role, label, data, color, setter }: {
+  role: 'coo' | 'cfo' | 'cmo' | 'cto';
+  label: string;
+  data: ExecSkills;
+  color: string;
+  setter: (field: keyof ExecSkills, value: number) => void;
+}) {
+  return (
+    <div className={`card p-4 border-l-4 ${color}`}>
+      <h3 className="text-xs font-bold uppercase mb-3 tracking-wider">{label}</h3>
+      <div className="grid grid-cols-2 gap-2.5">
+        {(["management","accounting","communication","science"] as const).map(f => (
+          <div key={f}>
+            <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block mb-0.5">{f.slice(0, 4)}</label>
+            <input type="number" min={0} max={100} value={data[f]}
+              onChange={e => setter(f, Number(e.target.value))}
+              className="w-full border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-2.5 py-1.5 rounded-lg text-sm font-bold outline-none focus:ring-1 focus:ring-brand-500/20" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ResultCard({ title, color, children, value }: { title: string; color: string; children: React.ReactNode; value?: string }) {
+  return (
+    <div className={`card p-4 border-l-4 ${color}`}>
+      <h3 className="text-xs font-bold uppercase mb-3 tracking-wider">{title}</h3>
+      <div className="space-y-1.5 text-xs">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function MetricRow({ label, value, highlight }: { label: string; value: string; highlight?: string }) {
+  return (
+    <div className="flex justify-between items-center py-1">
+      <span className="text-surface-500 font-semibold">{label}</span>
+      <span className={`font-bold tabular-nums ${highlight || ''}`}>{value}</span>
+    </div>
+  );
+}
+
+function ProgBar({ pct, color }: { pct: number; color: string }) {
+  return (
+    <div className="w-full h-1.5 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
+      <div className={`h-full rounded-full transition-all duration-500 ${color}`} style={{ width: `${Math.min(100, pct)}%` }} />
+    </div>
+  );
+}
+
 function ExecsTab() {
   const [coo, setCoo] = useState<ExecSkills>({ management: 10, accounting: 0, communication: 0, science: 0 });
   const [cfo, setCfo] = useState<ExecSkills>({ management: 0, accounting: 10, communication: 0, science: 0 });
@@ -76,112 +137,100 @@ function ExecsTab() {
   const [startQ, setStartQ] = useState(0);
   const [targetQ, setTargetQ] = useState(1);
 
-  const updateExec = (role: 'coo' | 'cfo' | 'cmo' | 'cto', field: keyof ExecSkills, value: number) => {
-    const setter = { coo: setCoo, cfo: setCfo, cmo: setCmo, cto: setCto }[role];
+  const updateExec = (setter: React.Dispatch<React.SetStateAction<ExecSkills>>, field: keyof ExecSkills, value: number) => {
     setter((prev: ExecSkills) => ({ ...prev, [field]: Math.max(0, Math.min(100, value)) }));
   };
 
   const results = useMemo(() => {
-    const mgmtSum = coo.management + cfo.management + cmo.management + cto.management;
-    const accMax = Math.max(coo.accounting, cfo.accounting, cmo.accounting, cto.accounting);
-    const commSum = coo.communication + cfo.communication + cmo.communication + cto.communication;
-    const sciMax = Math.max(coo.science, cfo.science, cmo.science, cto.science);
-    const sciAvg = (coo.science + cfo.science + cmo.science + cto.science) / 4;
+    const effMgmt = eff(coo.management) + eff(cfo.management) + eff(cmo.management) + eff(cto.management);
+    const effAccMax = Math.max(eff(coo.accounting), eff(cfo.accounting), eff(cmo.accounting), eff(cto.accounting));
+    const effCommSum = eff(coo.communication) + eff(cfo.communication) + eff(cmo.communication) + eff(cto.communication);
+    const effSciMax = Math.max(eff(coo.science), eff(cfo.science), eff(cmo.science), eff(cto.science));
+    const effSciAvg = (eff(coo.science) + eff(cfo.science) + eff(cmo.science) + eff(cto.science)) / 4;
     return {
-      mgmtSum, accMax, commSum, sciMax, sciAvg,
-      effectiveMgmt: coo.management + Math.floor((cfo.management + cmo.management + cto.management) / 4),
+      mgmtSum: effMgmt, accMax: effAccMax, commSum: effCommSum, sciMax: effSciMax, sciAvg: effSciAvg,
+      effectiveMgmt: eff(coo.management) + Math.floor((eff(cfo.management) + eff(cmo.management) + eff(cto.management)) / 4),
       rawAO: (totalBldgLevels - 1) / 170,
       aoPct: calcAO(totalBldgLevels, coo.management, cfo.management, cmo.management, cto.management),
-      taxThreshold: calcTaxThreshold(accMax),
-      dailyTax: calcDailyTax(dailyProfit, calcTaxThreshold(accMax), bankLevel),
-      salesSpeed: calcSalesSpeed(commSum),
-      patentProb: calcPatentProb(sciMax),
-      researchCost: calcResearchCost(sciAvg, targetQ, startQ),
+      taxThreshold: calcTaxThreshold(effAccMax),
+      dailyTax: calcDailyTax(dailyProfit, calcTaxThreshold(effAccMax), bankLevel),
+      salesSpeed: calcSalesSpeed(effCommSum),
+      patentProb: calcPatentProb(effSciMax),
+      researchCost: calcResearchCost(effSciAvg, targetQ, startQ),
     };
   }, [coo, cfo, cmo, cto, totalBldgLevels, bankLevel, dailyProfit, startQ, targetQ]);
 
-  const ExecInput = ({ role, label, data, color }: { role: 'coo' | 'cfo' | 'cmo' | 'cto'; label: string; data: ExecSkills; color: string }) => (
-    <div className={`bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 border-l-4 ${color} rounded-xl p-4`}>
-      <h3 className="text-xs font-bold uppercase mb-3">{label}</h3>
-      <div className="grid grid-cols-2 gap-3">
-        {(["management", "accounting", "communication", "science"] as const).map(f => (
-          <div key={f}>
-            <label className="text-[9px] font-bold uppercase text-surface-400 block mb-0.5">{f.slice(0, 4)}</label>
-            <input type="number" min={0} max={100} value={data[f]} onChange={e => updateExec(role, f, Number(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1.5 rounded text-sm font-bold outline-none" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div className="space-y-4">
-        <h2 className="text-xs font-bold uppercase text-surface-400">Your Board</h2>
-        <ExecInput role="coo" label="COO (full mgmt weight)" data={coo} color="border-l-brand-600" />
-        <ExecInput role="cfo" label="CFO (mgmt/4, acc focus)" data={cfo} color="border-l-emerald-500" />
-        <ExecInput role="cmo" label="CMO (mgmt/4, comm focus)" data={cmo} color="border-l-amber-500" />
-        <ExecInput role="cto" label="CTO (mgmt/4, sci focus)" data={cto} color="border-l-violet-500" />
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="space-y-3">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">Your Board</h2>
+        <ExecInput role="coo" label="COO (full mgmt weight)" data={coo} color="border-l-brand-500" setter={(f, v) => updateExec(setCoo, f, v)} />
+        <ExecInput role="cfo" label="CFO (mgmt/4, acc focus)" data={cfo} color="border-l-emerald-500" setter={(f, v) => updateExec(setCfo, f, v)} />
+        <ExecInput role="cmo" label="CMO (mgmt/4, comm focus)" data={cmo} color="border-l-amber-500" setter={(f, v) => updateExec(setCmo, f, v)} />
+        <ExecInput role="cto" label="CTO (mgmt/4, sci focus)" data={cto} color="border-l-violet-500" setter={(f, v) => updateExec(setCto, f, v)} />
 
-        <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4">
-          <h3 className="text-xs font-bold uppercase text-surface-400 mb-3">Company Profile</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">Total Building Levels</label><input type="number" min={0} max={500} value={totalBldgLevels} onChange={e => setTotalBldgLevels(Number(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 rounded text-sm font-bold outline-none" /></div>
-            <div><label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">Bank Level</label><input type="number" min={0} max={20} value={bankLevel} onChange={e => setBankLevel(Number(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 rounded text-sm font-bold outline-none" /></div>
-            <div><label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">Est. Daily Profit</label><input type="number" min={0} value={dailyProfit} onChange={e => setDailyProfit(Number(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 rounded text-sm font-bold outline-none" /></div>
+        <div className="card p-4">
+          <h3 className="text-xs font-bold uppercase text-surface-400 mb-3 tracking-wider">Company Profile</h3>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+            <div className="space-y-1">
+              <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Total Building Levels</label>
+              <input type="number" min={0} max={500} value={totalBldgLevels} onChange={e => setTotalBldgLevels(Number(e.target.value))} className="input" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Bank Level</label>
+              <input type="number" min={0} max={20} value={bankLevel} onChange={e => setBankLevel(Number(e.target.value))} className="input" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Est. Daily Profit</label>
+              <input type="number" min={0} value={dailyProfit} onChange={e => setDailyProfit(Number(e.target.value))} className="input" />
+            </div>
             <div className="grid grid-cols-2 gap-2">
-              <div><label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">Start Q</label><input type="number" min={0} max={10} value={startQ} onChange={e => setStartQ(Number(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-2 rounded text-sm font-bold outline-none" /></div>
-              <div><label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">Target Q</label><input type="number" min={0} max={10} value={targetQ} onChange={e => setTargetQ(Number(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-2 rounded text-sm font-bold outline-none" /></div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Start Q</label>
+                <input type="number" min={0} max={10} value={startQ} onChange={e => setStartQ(Number(e.target.value))} className="input" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Target Q</label>
+                <input type="number" min={0} max={10} value={targetQ} onChange={e => setTargetQ(Number(e.target.value))} className="input" />
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h2 className="text-xs font-bold uppercase text-surface-400">Impact Analysis</h2>
+      <div className="space-y-3">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">Impact Analysis</h2>
 
-        <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 border-t-4 border-t-brand-600 rounded-xl p-4">
-          <h3 className="text-sm font-bold uppercase mb-3">1. Admin Overhead</h3>
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between"><span className="text-surface-500">Raw AO</span><span className="font-bold">{(results.rawAO * 100).toFixed(2)}%</span></div>
-            <div className="flex justify-between"><span className="text-surface-500">Effective Management</span><span className="font-bold">{results.effectiveMgmt}</span></div>
-            <div className="flex justify-between border-t pt-2"><span className="font-bold">Final AO</span><span className="text-lg font-bold text-brand-600">{results.aoPct.toFixed(2)}%</span></div>
-          </div>
-        </div>
+        <ResultCard title="Admin Overhead" color="border-l-brand-500">
+          <MetricRow label="Raw AO" value={`${(results.rawAO * 100).toFixed(2)}%`} />
+          <MetricRow label="Effective Mgmt" value={String(results.effectiveMgmt)} />
+          <ProgBar pct={results.aoPct * 2} color="bg-brand-500" />
+          <MetricRow label="Final AO" value={`${results.aoPct.toFixed(2)}%`} highlight="text-lg text-brand-600" />
+        </ResultCard>
 
-        <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 border-t-4 border-t-emerald-500 rounded-xl p-4">
-          <h3 className="text-sm font-bold uppercase mb-3">2. Accounting & Tax</h3>
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between"><span className="text-surface-500">Max Accounting</span><span className="font-bold">{results.accMax}</span></div>
-            <div className="flex justify-between"><span className="text-surface-500">Tax-free Threshold</span><span className="font-bold text-emerald-600">{fmt$(results.taxThreshold)}</span></div>
-            <div className="flex justify-between"><span className="text-surface-500">Daily Threshold</span><span className="font-bold">{fmt$(results.taxThreshold / 30)}</span></div>
-            <div className="flex justify-between border-t pt-2"><span className="font-bold">Est. Daily Tax</span><span className={`text-lg font-bold ${results.dailyTax > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{fmt$(results.dailyTax)}</span></div>
-          </div>
-        </div>
+        <ResultCard title="Accounting & Tax" color="border-l-emerald-500">
+          <MetricRow label="Max Accounting" value={String(results.accMax)} />
+          <MetricRow label="Tax-free Threshold" value={fmt$(results.taxThreshold)} highlight="text-emerald-600" />
+          <MetricRow label="Est. Daily Tax" value={fmt$(results.dailyTax)} highlight={`text-lg ${results.dailyTax > 0 ? 'text-rose-600' : 'text-emerald-600'}`} />
+        </ResultCard>
 
-        <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 border-t-4 border-t-amber-500 rounded-xl p-4">
-          <h3 className="text-sm font-bold uppercase mb-3">3. Sales Speed</h3>
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between"><span className="text-surface-500">Total Communication</span><span className="font-bold">{results.commSum}</span></div>
-            <div className="flex justify-between border-t pt-2"><span className="font-bold">Sales Speed Bonus</span><span className="text-lg font-bold text-amber-600">+{results.salesSpeed.toFixed(2)}%</span></div>
-          </div>
-        </div>
+        <ResultCard title="Sales Speed" color="border-l-amber-500">
+          <MetricRow label="Total Communication" value={String(results.commSum)} />
+          <ProgBar pct={results.salesSpeed * 4} color="bg-amber-500" />
+          <MetricRow label="Sales Speed Bonus" value={`+${results.salesSpeed.toFixed(2)}%`} highlight="text-lg text-amber-600" />
+        </ResultCard>
 
-        <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 border-t-4 border-t-violet-500 rounded-xl p-4">
-          <h3 className="text-sm font-bold uppercase mb-3">4. R&D Impact</h3>
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between"><span className="text-surface-500">Max Science</span><span className="font-bold">{results.sciMax}</span></div>
-            <div className="flex justify-between"><span className="text-surface-500">Avg Science</span><span className="font-bold">{results.sciAvg.toFixed(1)}</span></div>
-            <div className="flex justify-between"><span className="font-bold">Patent Probability</span><span className="text-lg font-bold text-violet-600">{results.patentProb.toFixed(2)}%</span></div>
-            <div className="flex justify-between border-t pt-2"><span className="font-bold">Research Cost (Q{startQ}→Q{targetQ})</span><span className="text-lg font-bold">{fmt$(results.researchCost)}</span></div>
-          </div>
-        </div>
+        <ResultCard title="R&D Impact" color="border-l-violet-500">
+          <MetricRow label="Max Science" value={String(results.sciMax)} />
+          <MetricRow label="Patent Probability" value={`${results.patentProb.toFixed(2)}%`} highlight="text-lg text-violet-600" />
+          <ProgBar pct={results.patentProb * 4} color="bg-violet-500" />
+          <MetricRow label={`Research (Q${startQ}→Q${targetQ})`} value={fmt$(results.researchCost)} highlight="text-lg font-bold" />
+        </ResultCard>
       </div>
     </div>
   );
 }
 
-// ─── EVA Tab ──────────────────────────────────────────────
 function EvaTab() {
   const [capital, setCapital] = useState(10_000_000);
   const [annualProfit, setAnnualProfit] = useState(2_500_000);
@@ -195,32 +244,48 @@ function EvaTab() {
   }, [capital, annualProfit, wacc]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
-        <h2 className="text-[10px] font-bold uppercase text-surface-400 tracking-wider">Company Metrics</h2>
-        <div><label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">Invested Capital</label><input type="number" min={0} value={capital} onChange={e => setCapital(Number(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 rounded text-sm font-bold outline-none" /></div>
-        <div><label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">Annual Operating Profit</label><input type="number" min={0} value={annualProfit} onChange={e => setAnnualProfit(Number(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 rounded text-sm font-bold outline-none" /></div>
-        <div><label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">WACC (%)</label><input type="number" min={0} max={50} step={0.5} value={wacc} onChange={e => setWacc(Number(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 rounded text-sm font-bold outline-none" /></div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="card p-5 space-y-4">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">Company Metrics</h2>
+        <div className="space-y-3">
+          <Field label="Invested Capital" value={capital} onChange={setCapital} />
+          <Field label="Annual Operating Profit" value={annualProfit} onChange={setAnnualProfit} />
+          <Field label="WACC (%)" value={wacc} onChange={setWacc} min={0} max={50} step={0.5} />
+        </div>
       </div>
 
       <div className="space-y-3">
-        <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
-          <h2 className="text-[10px] font-bold uppercase text-surface-400 tracking-wider">Results</h2>
-          <div className="flex justify-between"><span className="text-xs text-surface-500">ROIC</span><span className="text-sm font-bold">{eva.roic.toFixed(2)}%</span></div>
-          <div className="flex justify-between"><span className="text-xs text-surface-500">WACC</span><span className="text-sm font-bold">{wacc}%</span></div>
-          <div className="flex justify-between border-t pt-2"><span className="text-xs font-bold">EVA Spread (ROIC - WACC)</span><span className={`text-lg font-bold ${eva.spread >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{eva.spread >= 0 ? "+" : ""}{eva.spread.toFixed(2)}%</span></div>
-          <div className="flex justify-between"><span className="text-xs text-surface-500">Economic Value Added</span><span className={`text-lg font-bold ${eva.evaDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmt$(eva.evaDollar)}</span></div>
+        <div className="card p-5 space-y-3">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">Results</h2>
+          <div className="space-y-2">
+            <MetricRow label="ROIC" value={`${eva.roic.toFixed(2)}%`} />
+            <MetricRow label="WACC" value={`${wacc}%`} />
+            <div className="border-t border-surface-100 dark:border-surface-800 pt-2 mt-2">
+              <MetricRow label="EVA Spread" value={`${eva.spread >= 0 ? '+' : ''}${eva.spread.toFixed(2)}%`} highlight={eva.spread >= 0 ? 'text-lg text-emerald-600' : 'text-lg text-rose-600'} />
+            </div>
+            <MetricRow label="Economic Value Added" value={fmt$(eva.evaDollar)} highlight={eva.evaDollar >= 0 ? 'text-lg text-emerald-600' : 'text-lg text-rose-600'} />
+          </div>
         </div>
-        <p className="text-[10px] text-surface-400 leading-relaxed">
-          EVA = ROIC - WACC. Positive means the company generates returns above its cost of capital — true value creation.
-          WACC around 10% is typical for a diversified industrial company. Lower WACC = cheaper financing = higher EVA.
+        <p className="text-[10px] text-surface-400 leading-relaxed px-1">
+          EVA = ROIC − WACC. Positive means the company generates returns above its cost of capital — true value creation.
+          WACC ~10% is typical for a diversified industrial company.
         </p>
       </div>
     </div>
   );
 }
 
-// ─── Bonds Tab ────────────────────────────────────────────
+function Field({ label, value, onChange, min, max, step }: { label: string; value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">{label}</label>
+      <input type="number" min={min} max={max} step={step} value={value}
+        onChange={e => onChange(Number(e.target.value))}
+        className="input" />
+    </div>
+  );
+}
+
 function BondsTab() {
   const [faceValue, setFaceValue] = useState(1_000_000);
   const [couponRate, setCouponRate] = useState(7);
@@ -243,30 +308,55 @@ function BondsTab() {
     return coupons + (faceValue - bondPrice);
   }, [annualIncome, years, faceValue, bondPrice]);
 
+  const priceStatus = bondPrice > faceValue ? "premium" : bondPrice < faceValue ? "discount" : "par";
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
-        <h2 className="text-[10px] font-bold uppercase text-surface-400 tracking-wider">Bond Parameters</h2>
-        <div><label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">Face Value</label><input type="number" min={0} value={faceValue} onChange={e => setFaceValue(Number(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 rounded text-sm font-bold outline-none" /></div>
-        <div className="grid grid-cols-2 gap-3">
-          <div><label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">Coupon Rate (%)</label><input type="number" min={0} max={30} step={0.5} value={couponRate} onChange={e => setCouponRate(Number(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 rounded text-sm font-bold outline-none" /></div>
-          <div><label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">Market Yield (%)</label><input type="number" min={0} max={30} step={0.5} value={marketYield} onChange={e => setMarketYield(Number(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 rounded text-sm font-bold outline-none" /></div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="card p-5 space-y-4">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">Bond Parameters</h2>
+        <div className="space-y-3">
+          <Field label="Face Value" value={faceValue} onChange={setFaceValue} />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">
+                Coupon Rate (%) <span className="text-[8px] font-normal text-surface-400">(0.5–2.0 in-game)</span>
+              </label>
+              <input type="number" min={0} max={30} step={0.1} value={couponRate}
+                onChange={e => setCouponRate(Number(e.target.value))}
+                className="input" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">
+                Market Yield (%) <span className="text-[8px] font-normal text-surface-400">(0.5–2.0 in-game)</span>
+              </label>
+              <input type="number" min={0} max={30} step={0.1} value={marketYield}
+                onChange={e => setMarketYield(Number(e.target.value))}
+                className="input" />
+            </div>
+          </div>
+          <Field label="Years to Maturity" value={years} onChange={v => setYears(Math.max(1, Math.min(30, v)))} min={1} max={30} />
         </div>
-        <div><label className="text-[10px] font-bold uppercase text-surface-400 block mb-1">Years to Maturity</label><input type="number" min={1} max={30} value={years} onChange={e => setYears(Math.max(1, Math.min(30, Number(e.target.value))))} className="w-full border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 rounded text-sm font-bold outline-none" /></div>
       </div>
 
       <div className="space-y-3">
-        <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
-          <h2 className="text-[10px] font-bold uppercase text-surface-400 tracking-wider">Pricing & Return</h2>
-          <div className="flex justify-between"><span className="text-xs text-surface-500">Bond Price</span><span className={`text-sm font-bold ${bondPrice > faceValue ? "text-amber-600" : bondPrice < faceValue ? "text-emerald-600" : ""}`}>{fmt$(bondPrice)} {bondPrice > faceValue ? "(premium)" : bondPrice < faceValue ? "(discount)" : "(par)"}</span></div>
-          <div className="flex justify-between"><span className="text-xs text-surface-500">Annual Coupon</span><span className="text-sm font-bold">{fmt$(annualIncome)}</span></div>
-          <div className="flex justify-between"><span className="text-xs text-surface-500">Effective Yield</span><span className="text-sm font-bold">{effectiveYield.toFixed(2)}%</span></div>
-          <div className="flex justify-between"><span className="text-xs text-surface-500">Coupon vs Market</span><span className={`text-sm font-bold ${couponRate > marketYield ? "text-emerald-600" : "text-rose-600"}`}>{couponRate > marketYield ? "Above market (sell at premium)" : couponRate < marketYield ? "Below market (sell at discount)" : "At market (sell at par)"}</span></div>
-          <div className="flex justify-between border-t pt-2"><span className="text-xs font-bold">{years}-Year Total Return</span><span className="text-lg font-bold text-brand-600">{fmt$(totalReturn)}</span></div>
+        <div className="card p-5 space-y-3">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">Pricing & Return</h2>
+          <div className="space-y-2">
+            <MetricRow label="Bond Price" value={`${fmt$(bondPrice)} (${priceStatus})`}
+              highlight={priceStatus === "premium" ? 'text-amber-600' : priceStatus === "discount" ? 'text-emerald-600' : ''} />
+            <MetricRow label="Annual Coupon" value={fmt$(annualIncome)} />
+            <MetricRow label="Effective Yield" value={`${effectiveYield.toFixed(2)}%`} />
+            <MetricRow label="Coupon vs Market"
+              value={couponRate > marketYield ? "Above market" : couponRate < marketYield ? "Below market" : "At market"}
+              highlight={couponRate > marketYield ? 'text-emerald-600' : couponRate < marketYield ? 'text-rose-600' : ''} />
+            <div className="border-t border-surface-100 dark:border-surface-800 pt-2 mt-2">
+              <MetricRow label={`${years}-Year Total Return`} value={fmt$(totalReturn)} highlight="text-lg text-brand-600" />
+            </div>
+          </div>
         </div>
-        <p className="text-[10px] text-surface-400 leading-relaxed">
-          In SimCo, bonds are company-issued debt securities. When your coupon rate exceeds the market yield, investors pay a premium.
-          Use this to decide whether issuing bonds or borrowing from the bank is cheaper.
+        <p className="text-[10px] text-surface-400 leading-relaxed px-1">
+          When coupon rate exceeds market yield, investors pay a premium.
+          Use this to decide whether issuing bonds or bank borrowing is cheaper.
         </p>
       </div>
     </div>

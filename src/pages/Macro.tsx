@@ -4,6 +4,7 @@ import { LoadingState, ErrorState } from "../components/States";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import { useMemo, useEffect } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area } from "recharts";
+import { Globe } from "lucide-react";
 
 interface PhaseRecord {
   phase: string;
@@ -59,10 +60,13 @@ export function MacroPage() {
   const phasesList = filteredPhases;
 
   return (
-    <div className="space-y-6 text-sm">
-      <div className="flex items-center justify-between border-b border-surface-200 pb-3">
-        <h1 className="text-lg font-bold">Macro Intelligence (R{realm})</h1>
-        <select value={realm} onChange={e => setRealm(Number(e.target.value))} className="border border-surface-300 px-3 py-1.5 rounded-lg text-sm font-bold outline-none"><option value={0}>R0</option><option value={1}>R1</option></select>
+    <div className="space-y-5 animate-slide-up">
+      <div className="flex items-center justify-between pb-4 border-b border-surface-200 dark:border-surface-800">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-violet-100 dark:bg-violet-900/30 rounded-xl flex items-center justify-center"><Globe size={18} className="text-violet-600" /></div>
+          <div><h1 className="text-lg font-bold">Macro Intelligence (R{realm})</h1><p className="text-xs text-surface-400">Company value, GDP & phase history</p></div>
+        </div>
+        <select value={realm} onChange={e => setRealm(Number(e.target.value))} className="input w-auto"><option value={0}>R0</option><option value={1}>R1</option></select>
       </div>
 
       <div className="grid grid-cols-4 gap-4">

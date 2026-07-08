@@ -7,7 +7,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import type { ProfitMarginsResponse } from "../types/api";
-import { Search } from "lucide-react";
+import { Search, TrendingUp } from "lucide-react";
 
 const CATEGORIES = ["raw-materials", "refined-materials", "food-beverage", "consumer-goods", "construction-materials", "high-tech", "transport", "luxury-goods", "aerospace-defense", "energy"];
 
@@ -42,10 +42,13 @@ export function VWAPInflationPage() {
   if (error) return <ErrorState message={error} onRetry={refresh} />;
 
   return (
-    <div className="space-y-6 text-sm">
-      <div className="flex items-center justify-between border-b border-surface-200 pb-3">
-        <h1 className="text-lg font-bold">Market VWAP Prices</h1>
-        <select value={realm} onChange={e => setRealm(Number(e.target.value))} className="border border-surface-300 px-3 py-1.5 rounded-lg text-sm font-bold outline-none">
+    <div className="space-y-5 animate-slide-up">
+      <div className="flex items-center justify-between pb-4 border-b border-surface-200 dark:border-surface-800">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-brand-100 dark:bg-brand-900/30 rounded-xl flex items-center justify-center"><TrendingUp size={18} className="text-brand-600" /></div>
+          <div><h1 className="text-lg font-bold">Market VWAP Prices</h1><p className="text-xs text-surface-400">Real-time & historical price data</p></div>
+        </div>
+        <select value={realm} onChange={e => setRealm(Number(e.target.value))} className="input w-auto">
           <option value={0}>R0</option>
           <option value={1}>R1</option>
         </select>
