@@ -705,10 +705,10 @@ export async function fetchCycles(realm: number): Promise<any> {
 export async function fetchCompanyData(companyId: string | number, realm = 0): Promise<any> {
   const base = realm === 1 ? "https://www.simcompanies.com/api/v3/entrepreneurs/companies/" : "https://www.simcompanies.com/api/v3/companies/";
   const targetUrl = `${base}${companyId}/`;
-  const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
-  if (!res.ok) throw new Error("Could not fetch company data via proxy");
-  const wrapper = await res.json();
-  return JSON.parse(wrapper.contents);
+  // Using corsproxy.io as it is generally more stable for this use case
+  const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
+  if (!res.ok) throw new Error(`Proxy fetch failed: ${res.status}`);
+  return res.json();
 }
 
 /* ============================================================
