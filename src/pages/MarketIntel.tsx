@@ -64,8 +64,8 @@ export function MarketIntelPage() {
   }, [data]);
 
   return (
-    <div className="space-y-4 text-sm max-w-6xl mx-auto">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5 animate-slide-up max-w-6xl mx-auto">
+      <div className="flex items-center justify-between pb-4 border-b border-surface-200 dark:border-surface-800">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center"><BarChart3 size={18} className="text-indigo-600" /></div>
           <div><h1 className="text-lg font-bold">Market Intelligence</h1><p className="text-xs text-surface-400">Product rankings, quality premiums & supply chains</p></div>
@@ -73,7 +73,7 @@ export function MarketIntelPage() {
         <button onClick={fetchAll} disabled={loading} className="p-2 rounded-lg hover:bg-surface-100 disabled:opacity-40"><RefreshCw size={15} className={`${loading ? "animate-spin" : ""}`} /></button>
       </div>
 
-      <div className="flex gap-1 bg-surface-100 dark:bg-surface-900 rounded-lg p-0.5 w-fit">
+      <div className="flex gap-1 bg-surface-100 dark:bg-surface-900 rounded-xl p-0.5 w-fit">
         {tabs.map(t => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 rounded-md text-xs font-bold transition-all ${tab === t ? "bg-white dark:bg-surface-800 text-brand-600 shadow-sm" : "text-surface-500 hover:text-surface-700"}`}>
             {t === "retail" ? "Top Retail Products" : t === "premiums" ? "Quality Premiums" : "Supply Chain"}
@@ -144,9 +144,9 @@ function RetailRankingsTab({ resMap, vwaps, margins }: { resMap: Record<number, 
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-xs">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
-          <input type="text" placeholder="Search product or store..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-9 pr-3 py-2 border border-surface-300 dark:border-surface-700 rounded-lg text-sm outline-none bg-white dark:bg-surface-900" />
+          <input type="text" placeholder="Search product or store..." value={search} onChange={e => setSearch(e.target.value)} className="input w-full pl-9" />
         </div>
-        <span className="text-[10px] text-surface-400">{sorted.length} combos</span>
+             <span className="text-[10px] font-bold text-surface-400 bg-surface-100 dark:bg-surface-800 px-2 py-1 rounded-lg">{sorted.length} combos</span>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-surface-200 dark:border-surface-800">
@@ -253,7 +253,7 @@ function SupplyChainTab({ resMap, vwaps, margins }: { resMap: Record<number, Api
     return (
       <div className="space-y-3">
         <p className="text-xs text-surface-400">Select a product to see its full supply chain with market prices.</p>
-        <select value={searchId} onChange={e => setSearchId(e.target.value)} className="border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm outline-none bg-white dark:bg-surface-900 max-w-sm">
+        <select value={searchId} onChange={e => setSearchId(e.target.value)} className="input max-w-sm">
           <option value="">Choose product...</option>
           {Object.entries(resMap).filter(([_, r]) => Object.keys(r.inputs).length > 0).sort(([,a], [,b]) => a.name.localeCompare(b.name)).map(([id, r]) => <option key={id} value={id}>{r.name} (#{id})</option>)}
         </select>
@@ -307,7 +307,7 @@ function SupplyChainTab({ resMap, vwaps, margins }: { resMap: Record<number, Api
   return (
     <div className="space-y-3">
       <div className="flex gap-2 items-center">
-        <select value={searchId} onChange={e => setSearchId(e.target.value)} className="border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm outline-none bg-white dark:bg-surface-900">
+        <select value={searchId} onChange={e => setSearchId(e.target.value)} className="input">
           <option value="">Change product...</option>
           {Object.entries(resMap).filter(([_, r]) => Object.keys(r.inputs).length > 0).sort(([,a], [,b]) => a.name.localeCompare(b.name)).map(([id, r]) => <option key={id} value={id}>{r.name} (#{id})</option>)}
         </select>

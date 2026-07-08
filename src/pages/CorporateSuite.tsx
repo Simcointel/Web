@@ -320,7 +320,7 @@ export function CorporateSuitePage() {
   if (mLoading && !margins) return <LoadingState text="Booting Enterprise Suite..." />;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-24 relative text-sm">
+    <div className="space-y-6 animate-slide-up max-w-7xl mx-auto pb-24 relative text-sm">
        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-surface-200 dark:border-surface-800 pb-4">
           <div className="flex items-center gap-4">
              <Link to="/" className="w-10 h-10 bg-surface-100 dark:bg-surface-800 rounded-lg flex items-center justify-center text-surface-500 hover:text-brand-600 transition-colors">

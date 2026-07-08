@@ -3,6 +3,7 @@ import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { LoadingState, ErrorState, EmptyState } from "../components/States";
 import { useSharedRealm } from "../hooks/useSharedRealm";
+import { Bell } from "lucide-react";
 import type { NormalizedEvent, EventsResponse } from "../types/api";
 
 export function AlertsPage() {
@@ -36,37 +37,27 @@ export function AlertsPage() {
   if (loadingOrError) return loadingOrError;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300 text-sm">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-200 dark:border-surface-800 pb-4">
-        <div>
-          <h1 className="text-xl font-bold italic tracking-tight">Intelligence Event Log (R{realm})</h1>
-          <p className="text-sm text-surface-500 mt-1 font-medium">
-            {allEvents.length} events analyzed &middot; <span className="text-surface-400 font-bold">POLLING 60s</span>
-          </p>
+    <div className="space-y-5 animate-slide-up">
+      <div className="flex items-center justify-between pb-4 border-b border-surface-200 dark:border-surface-800">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center"><Bell size={18} className="text-amber-600" /></div>
+          <div><h1 className="text-lg font-bold">Event Log (R{realm})</h1><p className="text-xs text-surface-400">{allEvents.length} events &middot; 60s poll</p></div>
         </div>
-        <div className="flex gap-3">
-           <select
-             value={severity}
-             onChange={(e) => setSeverity(e.target.value)}
-             className="bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 text-sm font-bold px-3 py-1.5 rounded-lg outline-none"
-           >
-             <option value="all">All Severities</option>
+        <div className="flex gap-2">
+           <select value={severity} onChange={(e) => setSeverity(e.target.value)} className="input w-auto">
+             <option value="all">All</option>
              <option value="critical">Critical</option>
              <option value="warning">Warning</option>
-             <option value="info">Information</option>
+             <option value="info">Info</option>
            </select>
-           <select
-             value={category}
-             onChange={(e) => setCategory(e.target.value)}
-             className="bg-white dark:bg-surface-900 border border-surface-300 dark:border-surface-700 text-sm font-bold px-3 py-1.5 rounded-lg outline-none"
-           >
+           <select value={category} onChange={(e) => setCategory(e.target.value)} className="input w-auto">
              <option value="all">All Categories</option>
              {categories.map((c) => <option key={c} value={c}>{c}</option>)}
            </select>
         </div>
       </div>
 
-      <div className="card !shadow-none border-surface-200 dark:border-surface-800 overflow-hidden">
+      <div className="card overflow-hidden">
         {filtered.length === 0 ? <EmptyState message="No events match your current filter." /> :
         <div className="divide-y divide-surface-100 dark:divide-surface-800">
           {filtered.slice(0, 100).map((e) => (

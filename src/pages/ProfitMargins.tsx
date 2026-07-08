@@ -4,6 +4,7 @@ import * as dataRepo from "../services/dataRepo";
 import { LoadingState, ErrorState, EmptyState } from "../components/States";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import { RESOURCES } from "../data/simco_static";
+import { BarChart3 } from "lucide-react";
 import type { ProfitMarginsResponse, ProfitMarginResource } from "../types/api";
 
 export function ProfitMarginsPage() {
@@ -81,23 +82,24 @@ export function ProfitMarginsPage() {
   if (!loading && resources.length === 0) return <EmptyState message="No data available" />;
 
   return (
-    <div className="space-y-6 text-sm">
-      <div className="flex items-center justify-between border-b border-surface-200 pb-3">
-        <h1 className="text-lg font-bold">Profit Matrix (R{realm})</h1>
-        <select value={realm} onChange={e => setRealm(Number(e.target.value))} className="border border-surface-300 px-3 py-1.5 rounded text-sm font-medium outline-none">
-          <option value={0}>R0</option><option value={1}>R1</option>
-        </select>
+    <div className="space-y-5 animate-slide-up">
+      <div className="flex items-center justify-between pb-4 border-b border-surface-200 dark:border-surface-800">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-violet-100 dark:bg-violet-900/30 rounded-xl flex items-center justify-center"><BarChart3 size={18} className="text-violet-600" /></div>
+          <div><h1 className="text-lg font-bold">Profit Matrix (R{realm})</h1><p className="text-xs text-surface-400">Margin analysis & profitability ranking</p></div>
+        </div>
+        <select value={realm} onChange={e => setRealm(Number(e.target.value))} className="input w-auto"><option value={0}>R0</option><option value={1}>R1</option></select>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        <Metric label="Items" value={resources.length} />
-        <Metric label="Profitable" value={resources.filter(r => r.marginPct > 0).length} />
-        <Metric label="Avg Margin" value={`${(resources.reduce((s, r) => s + r.marginPct, 0) / (resources.length || 1)).toFixed(1)}%`} />
-        <Metric label="Top Margin" value={`${Math.max(...resources.map(r => r.marginPct), 0).toFixed(1)}%`} />
+      <div className="grid grid-cols-4 gap-3">
+        <div className="card p-3 text-center"><p className="text-xs font-bold text-surface-400 uppercase tracking-wider">Items</p><p className="text-xl font-bold">{resources.length}</p></div>
+        <div className="card p-3 text-center"><p className="text-xs font-bold text-surface-400 uppercase tracking-wider">Profitable</p><p className="text-xl font-bold text-emerald-600">{resources.filter(r => r.marginPct > 0).length}</p></div>
+        <div className="card p-3 text-center"><p className="text-xs font-bold text-surface-400 uppercase tracking-wider">Avg Margin</p><p className="text-xl font-bold">{(resources.reduce((s, r) => s + r.marginPct, 0) / (resources.length || 1)).toFixed(1)}%</p></div>
+        <div className="card p-3 text-center"><p className="text-xs font-bold text-surface-400 uppercase tracking-wider">Top Margin</p><p className="text-xl font-bold text-brand-600">{Math.max(...resources.map(r => r.marginPct), 0).toFixed(1)}%</p></div>
       </div>
 
       <div className="card p-4 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 dark:border-surface-800 pb-3">
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 cursor-pointer text-xs font-bold">
               <input type="checkbox" checked={localCalc} onChange={e => setLocalCalc(e.target.checked)} className="accent-brand-500" />
@@ -112,33 +114,33 @@ export function ProfitMarginsPage() {
             </div></>}
           </div>
           <div className="flex gap-2">
-            <input type="text" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="border border-surface-300 px-3 py-1.5 text-sm rounded outline-none w-48" />
-            <select value={category} onChange={e => setCategory(e.target.value)} className="border border-surface-300 px-3 py-1.5 text-sm rounded outline-none">
+            <input type="text" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="input w-44" />
+            <select value={category} onChange={e => setCategory(e.target.value)} className="input w-auto">
               <option value="all">All</option>
               {categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
         </div>
 
-        <div className="overflow-x-auto border border-surface-100 rounded">
-          <table className="w-full text-left">
+        <div className="overflow-x-auto rounded-xl border border-surface-200 dark:border-surface-800">
+          <table className="w-full text-xs">
             <thead>
-              <tr className="bg-surface-50 text-xs font-bold uppercase text-surface-500 border-b border-surface-100">
-                <th className="px-3 py-2">Resource</th>
-                <th className="px-3 py-2 text-right cursor-pointer hover:text-brand-600" onClick={() => toggleSort("mg")}>Margin {sortBy === "mg" && (sortDir === "desc" ? "↓" : "↑")}</th>
-                <th className="px-3 py-2 text-right cursor-pointer hover:text-brand-600" onClick={() => toggleSort("np")}>Profit/H {sortBy === "np" && (sortDir === "desc" ? "↓" : "↑")}</th>
-                <th className="px-3 py-2 text-right cursor-pointer hover:text-brand-600" onClick={() => toggleSort("rv")}>Rev/H {sortBy === "rv" && (sortDir === "desc" ? "↓" : "↑")}</th>
-                <th className="px-3 py-2 text-right cursor-pointer hover:text-brand-600" onClick={() => toggleSort("vw")}>VWAP {sortBy === "vw" && (sortDir === "desc" ? "↓" : "↑")}</th>
+              <tr className="bg-surface-50 dark:bg-surface-900 text-[10px] font-bold uppercase text-surface-500 border-b border-surface-100 dark:border-surface-800">
+                <th className="px-3 py-2.5 text-left">Resource</th>
+                <th className="px-3 py-2.5 text-right cursor-pointer hover:text-brand-600" onClick={() => toggleSort("mg")}>Margin {sortBy === "mg" && (sortDir === "desc" ? "▼" : "▲")}</th>
+                <th className="px-3 py-2.5 text-right cursor-pointer hover:text-brand-600" onClick={() => toggleSort("np")}>Profit/H {sortBy === "np" && (sortDir === "desc" ? "▼" : "▲")}</th>
+                <th className="px-3 py-2.5 text-right cursor-pointer hover:text-brand-600" onClick={() => toggleSort("rv")}>Rev/H {sortBy === "rv" && (sortDir === "desc" ? "▼" : "▲")}</th>
+                <th className="px-3 py-2.5 text-right cursor-pointer hover:text-brand-600" onClick={() => toggleSort("vw")}>VWAP {sortBy === "vw" && (sortDir === "desc" ? "▼" : "▲")}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-50">
+            <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
               {filtered.map(r => (
-                <tr key={r.id} className={`hover:bg-surface-50 cursor-pointer ${selectedResId === r.id ? 'bg-brand-50' : ''}`} onClick={() => setSelectedResId(r.id)}>
-                  <td className="px-3 py-1.5 font-medium">{r.name}</td>
-                  <td className={`px-3 py-1.5 text-right font-bold ${r.marginPct > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{r.marginPct.toFixed(1)}%</td>
-                  <td className="px-3 py-1.5 text-right font-bold">{fmt(r.netProfitPerHour)}</td>
-                  <td className="px-3 py-1.5 text-right text-surface-400">{fmt(r.revenuePerHour)}</td>
-                  <td className="px-3 py-1.5 text-right font-medium text-brand-600">{r.outputVwap.toFixed(2)}</td>
+                <tr key={r.id} className={`hover:bg-surface-50 dark:hover:bg-surface-900/50 cursor-pointer ${selectedResId === r.id ? 'bg-brand-50 dark:bg-brand-900/10' : ''}`} onClick={() => setSelectedResId(r.id)}>
+                  <td className="px-3 py-2 font-bold">{r.name}</td>
+                  <td className={`px-3 py-2 text-right font-bold ${r.marginPct > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{r.marginPct.toFixed(1)}%</td>
+                  <td className="px-3 py-2 text-right font-bold">{fmt(r.netProfitPerHour)}</td>
+                  <td className="px-3 py-2 text-right text-surface-400">{fmt(r.revenuePerHour)}</td>
+                  <td className="px-3 py-2 text-right font-bold text-brand-600">{r.outputVwap.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -148,24 +150,24 @@ export function ProfitMarginsPage() {
 
       {selectedResId && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="card p-4">
-            <h3 className="text-sm font-bold text-surface-500 mb-3">Input Requirements</h3>
+          <div className="card p-4 space-y-3">
+            <h3 className="text-xs font-black uppercase tracking-wider text-surface-400">Input Requirements</h3>
             <div className="space-y-2">
               {(() => {
                 const res = RESOURCES.find(r => r.id === selectedResId);
-                if (!res || !res.inputs) return <p className="text-sm text-surface-400 italic">No inputs required.</p>;
+                if (!res || !res.inputs) return <p className="text-xs text-surface-400 italic">No inputs required.</p>;
                 return Object.entries(res.inputs).map(([id, qty]) => {
                   const input = RESOURCES.find(r => r.id === Number(id));
                   const im = resources.find(r => r.id === Number(id));
-                  return <div key={id} className="flex justify-between items-center py-1 border-b border-surface-50 last:border-0"><span className="font-medium">{input?.name || `ID_${id}`}</span><div className="flex items-center gap-3"><span className="text-surface-400 text-xs">{qty} units</span><span className={`font-bold text-xs ${im && im.marginPct > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{im ? `${im.marginPct.toFixed(1)}%` : '--'}</span></div></div>;
+                  return <div key={id} className="flex justify-between items-center py-1.5 border-b border-surface-100 dark:border-surface-800 last:border-0"><span className="font-bold text-xs">{input?.name || `ID_${id}`}</span><div className="flex items-center gap-3"><span className="text-surface-400 text-xs">{qty} units</span><span className={`font-bold text-xs ${im && im.marginPct > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{im ? `${im.marginPct.toFixed(1)}%` : '--'}</span></div></div>;
                 });
               })()}
             </div>
           </div>
-          <div className="card p-4 bg-surface-50 flex flex-col justify-center">
-            <h3 className="text-sm font-bold text-surface-500 mb-1">Advice</h3>
+          <div className="card p-4 bg-surface-50 dark:bg-surface-900 flex flex-col justify-center space-y-1">
+            <h3 className="text-xs font-black uppercase tracking-wider text-surface-400">Advice</h3>
             <p className="text-lg font-bold">{(resources.find(r => r.id === selectedResId)?.marginPct ?? 0) > 5 ? 'Expand production capacity.' : 'Sourcing from market may be more efficient.'}</p>
-            <p className="text-xs text-surface-400 mt-1">ID: {selectedResId}</p>
+            <p className="text-xs text-surface-400">Resource ID: {selectedResId}</p>
           </div>
         </div>
       )}
@@ -174,7 +176,7 @@ export function ProfitMarginsPage() {
 }
 
 function Metric({ label, value }: { label: string; value: string | number }) {
-  return <div className="card p-3 text-center"><p className="text-xs font-bold text-surface-500 mb-1">{label}</p><p className="text-lg font-bold">{value}</p></div>;
+  return <div className="card p-3 text-center"><p className="text-xs font-bold text-surface-400 uppercase tracking-wider mb-1">{label}</p><p className="text-xl font-bold">{value}</p></div>;
 }
 
 function InputNode({ label, val, set, unit, disabled }: { label: string; val: number; set: (v: number) => void; unit: string; disabled: boolean }) {
