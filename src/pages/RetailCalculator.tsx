@@ -1,25 +1,14 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { BUILDINGS, RETAIL_PRODUCT_MAP, PHASE_MULTIPLIERS } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
-import { Store, DollarSign, Users, BarChart3, RefreshCw, Settings2, TrendingUp } from "lucide-react";
+import { Store, DollarSign, Users, BarChart3, Settings2, TrendingUp } from "lucide-react";
 import type { ProfitMarginsResponse } from "../types/api";
 
-// ─── API data types ────────────────────────────────────────────
-interface RetailInfo {
-  quality: number;
-  buildingLevelsNeededPerUnitPerHour: number;
-  modeledProductionCostPerUnit: number;
-  modeledStoreWages: number;
-  modeledUnitsSoldAnHour: number;
-  saturation: number;
-}
-
-interface ApiResource {
-  id: number;
-  name: string;
-  retailInfo: RetailInfo | null;
+function toNum(v: unknown, fallback = 0): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
 }
 
 // ─── Helpers ───────────────────────────────────────────────────
@@ -62,27 +51,6 @@ function satToDemand(sat: number): number {
 
 function fmt(n: number): string { return n.toLocaleString(undefined, { maximumFractionDigits: 2 }); }
 
-// ─── API fetcher ───────────────────────────────────────────────
-async function fetchApiResources(realm: number): Promise<ApiResource[]> {
-  const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.simcotools.com/v1/realms/${realm}/resources?disable_pagination=True`)}`);
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  const data = await res.json() as { resources: Array<{ id: number; name: string; retailInfo: any[] | null }> };
-  return data.resources.map(r => ({
-    id: r.id,
-    name: r.name,
-    retailInfo: r.retailInfo?.[0] ?? null,
-  }));
-}
-
-async function fetchApiVwaps(realm: number): Promise<Record<number, number>> {
-  const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.simcotools.com/v1/realms/${realm}/market/vwaps`)}`);
-  if (!res.ok) throw new Error(`VWAP ${res.status}`);
-  const data = await res.json() as Array<{ resourceId: number; vwap: number; quality: number }>;
-  const m: Record<number, number> = {};
-  for (const v of data) { if (!(v.resourceId in m) || v.quality > 0) m[v.resourceId] = v.vwap; }
-  return m;
-}
-
 // ─── Page ──────────────────────────────────────────────────────
 export function RetailCalculatorPage() {
   useEffect(() => { document.title = "SimCo Intel - Retail Calculator"; }, []);
@@ -98,81 +66,20 @@ export function RetailCalculatorPage() {
   const [customPrice, setCustomPrice] = useState("");
   const [phase, setPhase] = useState("normal");
   const [quality, setQuality] = useState(0);
-  const [ds, setDs] = useState<"repo" | "direct">("repo");
-  const [loading, setLoading] = useState(false);
-  const [directVwaps, setDirectVwaps] = useState<Record<number, number> | null>(null);
-  const [apiResources, setApiResources] = useState<ApiResource[]>([]);
-  const [lastFetch, setLastFetch] = useState<Date | null>(null);
 
-  // Repo data
   const { data: marginsData } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 120000, [realm]);
-  const { data: retailData } = useDataRepoPoll(() => dataRepo.fetchRetailData(realm), 120000, [realm]);
   const margins = (marginsData as ProfitMarginsResponse | undefined)?.resources ?? [];
 
-  // Fetch API data
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [res, vw] = await Promise.all([
-        fetchApiResources(realm),
-        ds === "direct" ? fetchApiVwaps(realm) : Promise.resolve(null),
-      ]);
-      setApiResources(res);
-      if (vw) setDirectVwaps(vw);
-      setLastFetch(new Date());
-    } catch { /* ignore */ }
-    finally { setLoading(false); }
-  }, [realm, ds]);
-
-  useEffect(() => { fetchAll(); }, [fetchAll]);
-
-  // Build lookup maps from API data
-  const resNameMap = useMemo(() => {
-    const m: Record<number, string> = {};
-    for (const r of apiResources) m[r.id] = r.name;
-    return m;
-  }, [apiResources]);
-
-  const retailInfoMap = useMemo(() => {
-    const m: Record<number, RetailInfo> = {};
-    for (const r of apiResources) { if (r.retailInfo) m[r.id] = r.retailInfo; }
-    return m;
-  }, [apiResources]);
-
-  // Stores with products
   const stores = useMemo(() => BUILDINGS.filter((b: any) => b.type === "retail" && b.id !== "r" && b.id !== "B" && (RETAIL_PRODUCT_MAP[b.id]?.length ?? 0) > 0), []);
   const store = useMemo(() => stores.find((s: any) => s.id === storeId), [storeId, stores]);
   const storeProductIds = useMemo(() => RETAIL_PRODUCT_MAP[storeId] ?? [], [storeId]);
 
-  // Build product list with API name fallback
-  const storeProducts = useMemo(() => {
-    return storeProductIds.map(id => {
-      const ri = retailInfoMap[id];
-      const name = resNameMap[id] ?? `#${id}`;
-      return { id, name, retailInfo: ri, baseSalesRate: ri ? Math.round((1 / ri.buildingLevelsNeededPerUnitPerHour) * 100) / 100 : 0 };
-    });
-  }, [storeProductIds, retailInfoMap, resNameMap]);
-
-  // Reset on store change
+  const storeProducts = useMemo(() => storeProductIds.map(id => ({ id, name: `#${id}` })), [storeProductIds]);
   useEffect(() => { if (store && resId && !storeProductIds.includes(resId)) setResId(0); }, [store, storeProductIds, resId]);
 
   const selected = storeProducts.find(p => p.id === resId);
-  const ri = selected?.retailInfo;
-
-  // VWAP price
-  const vwapPrice = ds === "direct" && directVwaps
-    ? (directVwaps[resId] ?? 0)
-    : (margins.find(m => m.id === resId)?.outputVwap ?? 0);
-  const sellingPrice = customPrice ? parseFloat(customPrice) : vwapPrice;
-
-  // Auto-populate from API
-  useEffect(() => {
-    if (ri) {
-      const d = satToDemand(ri.saturation);
-      if (d > 0) setDemand(d);
-      if (selected?.baseSalesRate && selected.baseSalesRate > 0) setBaseRate(selected.baseSalesRate);
-    }
-  }, [resId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const vwapPrice = margins.find(m => m.id === resId)?.outputVwap ?? 0;
+  const sellingPrice = customPrice ? toNum(customPrice, vwapPrice) : vwapPrice;
 
   // Calculate single product
   const result = useMemo(() => {
@@ -183,15 +90,13 @@ export function RetailCalculatorPage() {
     const u = baseRate * bldgLevel * pm * dm * ss;
     const rev = u * sellingPrice;
     const mf = rev * 0.03;
-    const w = ((store as any).wages ?? 0) * bldgLevel;
+    const w = toNum((store as any).wages) * bldgLevel;
     const ac = w * (ao / 100);
-    let cogs = 0;
-    if (ri && ri.modeledProductionCostPerUnit) cogs = ri.modeledProductionCostPerUnit * u;
-    else cogs = vwapPrice * u;
+    const cogs = vwapPrice * u;
     const np = rev - mf - w - ac - cogs;
     const mg = rev > 0 ? (np / rev) * 100 : 0;
     return { u, rev, mf, w, ac, cogs, np, mg, pm, dm, ss };
-  }, [store, selected, sellingPrice, bldgLevel, ao, salesSpeed, demand, baseRate, phase, vwapPrice, ri]);
+  }, [store, selected, sellingPrice, bldgLevel, ao, salesSpeed, demand, baseRate, phase, vwapPrice]);
 
   const [showTop, setShowTop] = useState(false);
 
@@ -202,26 +107,23 @@ export function RetailCalculatorPage() {
     for (const s of stores) {
       const pids = RETAIL_PRODUCT_MAP[s.id] ?? [];
       for (const pid of pids) {
-        const rinfo = retailInfoMap[pid];
-        if (!rinfo) continue;
-        const d = satToDemand(rinfo.saturation);
+        const vwap = margins.find(m => m.id === pid)?.outputVwap ?? 0;
+        if (!vwap) continue; // ponytail: skip products without price data
+        const d = 50; // ponytail: static demand estimate when no live API
         const dm = getDemandMult(d);
-        const br = Math.round((1 / rinfo.buildingLevelsNeededPerUnitPerHour) * 100) / 100;
-        const u = br * bldgLevel * pm * dm * ss;
-        const vwap = ds === "direct" && directVwaps ? (directVwaps[pid] ?? 0) : (margins.find(m => m.id === pid)?.outputVwap ?? 0);
+        const u = 3 * bldgLevel * pm * dm * ss; // ponytail: base rate 3 when no live API
         const rev = u * vwap;
         const mf = rev * 0.03;
-        const w = (s.wages ?? 0) * bldgLevel;
+        const w = toNum((s as any).wages) * bldgLevel;
         const ac = w * (ao / 100);
-        const cogs = rinfo.modeledProductionCostPerUnit ? rinfo.modeledProductionCostPerUnit * u : vwap * u;
+        const cogs = vwap * u;
         const np = rev - mf - w - ac - cogs;
         const mg = rev > 0 ? (np / rev) * 100 : 0;
-        const name = resNameMap[pid] ?? `#${pid}`;
-        out.push({ storeName: s.name, productName: name, demand: d, profit: np, margin: mg, revenue: rev });
+        out.push({ storeName: s.name, productName: `#${pid}`, demand: d, profit: np, margin: mg, revenue: rev });
       }
     }
     return out.sort((a, b) => b.profit - a.profit).slice(0, 20);
-  }, [stores, retailInfoMap, resNameMap, bldgLevel, ao, salesSpeed, phase, margins, ds, directVwaps]);
+  }, [stores, bldgLevel, ao, salesSpeed, phase, margins]);
 
   return (
     <div className="max-w-5xl mx-auto space-y-5 animate-slide-up">
@@ -230,22 +132,8 @@ export function RetailCalculatorPage() {
           <div className="w-9 h-9 bg-rose-100 dark:bg-rose-900/30 rounded-xl flex items-center justify-center"><Store size={18} className="text-rose-600" /></div>
           <div><h1 className="text-lg font-bold">Retail Profitability</h1><p className="text-xs text-surface-400">Demand-driven profit analysis per store & product</p></div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex bg-surface-100 rounded-lg p-0.5">
-            <button onClick={() => setDs("repo")} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${ds === "repo" ? "bg-white text-brand-600 shadow-sm" : "text-surface-500 hover:text-surface-700"}`}>Repo</button>
-            <button onClick={() => setDs("direct")} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${ds === "direct" ? "bg-white text-brand-600 shadow-sm" : "text-surface-500 hover:text-surface-700"}`}>Live</button>
-          </div>
-          <button onClick={fetchAll} disabled={loading} className="p-2 rounded-lg hover:bg-surface-100 transition-colors disabled:opacity-40"><RefreshCw size={15} className={`text-surface-400 ${loading ? "animate-spin" : ""}`} /></button>
-        </div>
+        <div className="text-[10px] text-surface-400 font-bold">{margins.length} products with pricing data</div>
       </div>
-
-      {lastFetch && (
-        <div className="text-[10px] text-surface-400 flex items-center gap-3">
-          <span>{apiResources.filter(r => r.retailInfo).length} retail products from API</span>
-          <span>at {lastFetch.toLocaleTimeString()}</span>
-          {loading && <span className="text-brand-600 font-bold">refreshing…</span>}
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* ─── Sidebar ─── */}
@@ -261,12 +149,10 @@ export function RetailCalculatorPage() {
             {store && storeProducts.length > 0 && (
               <>
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider pt-2 border-t border-surface-100 dark:border-surface-800"><TrendingUp size={13} /> Product</div>
-                <select value={resId} onChange={e => setResId(Number(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900">
+                <select value={resId} onChange={e => setResId(toNum(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900">
                   <option value={0}>Choose product…</option>
                   {storeProducts.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}{p.retailInfo ? ` (demand ${satToDemand(p.retailInfo.saturation)}%)` : ""}
-                    </option>
+                    <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
               </>
@@ -280,52 +166,40 @@ export function RetailCalculatorPage() {
           <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><Settings2 size={13} /> Parameters</div>
             <div className="grid grid-cols-2 gap-2.5">
-              <div><label className="text-[10px] font-semibold text-surface-500 block mb-1">Level</label><input type="number" min={1} max={20} value={bldgLevel} onChange={e => setBldgLevel(Math.max(1, Math.min(20, Number(e.target.value))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" /></div>
-              <div><label className="text-[10px] font-semibold text-surface-500 block mb-1">Quality</label><select value={quality} onChange={e => setQuality(Number(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900">{[0,1,2,3,4,5].map(q => <option key={q} value={q}>Q{q}</option>)}</select></div>
-              <div><label className="text-[10px] font-semibold text-surface-500 block mb-1">AO %</label><input type="number" min={0} max={100} value={ao} onChange={e => setAo(Math.max(0, Math.min(100, Number(e.target.value))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" /></div>
-              <div><label className="text-[10px] font-semibold text-surface-500 block mb-1">Sales Speed %</label><input type="number" min={0} max={200} value={salesSpeed} onChange={e => setSalesSpeed(Math.max(0, Math.min(200, Number(e.target.value))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" /></div>
+              <div><label className="text-[10px] font-semibold text-surface-500 block mb-1">Level</label><input type="number" min={1} max={20} value={bldgLevel} onChange={e => setBldgLevel(Math.max(1, Math.min(20, toNum(e.target.value, 1))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" /></div>
+              <div><label className="text-[10px] font-semibold text-surface-500 block mb-1">Quality</label><select value={quality} onChange={e => setQuality(toNum(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900">{[0,1,2,3,4,5].map(q => <option key={q} value={q}>Q{q}</option>)}</select></div>
+              <div><label className="text-[10px] font-semibold text-surface-500 block mb-1">AO %</label><input type="number" min={0} max={100} value={ao} onChange={e => setAo(Math.max(0, Math.min(100, toNum(e.target.value, 25))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" /></div>
+              <div><label className="text-[10px] font-semibold text-surface-500 block mb-1">Sales Speed %</label><input type="number" min={0} max={200} value={salesSpeed} onChange={e => setSalesSpeed(Math.max(0, Math.min(200, toNum(e.target.value, 0))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" /></div>
               <div className="col-span-2"><label className="text-[10px] font-semibold text-surface-500 block mb-1">Economy</label><select value={phase} onChange={e => setPhase(e.target.value)} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900"><option value="boom">Boom ×1.25</option><option value="normal">Normal ×1.0</option><option value="recession">Recession ×0.8</option></select></div>
             </div>
           </div>
 
-          {/* Demand + Base Rate */}
-          {selected && ri && (
+          {/* Demand + Price */}
+          {selected && (
             <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><BarChart3 size={13} /> {selected.name} — Auto-detected</div>
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><BarChart3 size={13} /> {selected.name} — Manual</div>
 
               <div>
                 <div className="flex items-center justify-between mb-1"><label className="text-[10px] font-semibold text-surface-500">Demand</label><span className={`text-xs font-bold ${demandColor(demand)}`}>{demandLabel(demand)}</span></div>
                 <div className="h-2 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden mb-1.5"><div className={`h-full transition-all duration-500 ${demandBarColor(demand)}`} style={{ width: `${demand}%` }} /></div>
                 <div className="flex items-center gap-2">
-                  <input type="range" min={0} max={100} value={demand} onChange={e => setDemand(Number(e.target.value))} className="flex-1 accent-rose-500" />
-                  <input type="number" min={0} max={100} value={demand} onChange={e => setDemand(Math.max(0, Math.min(100, Number(e.target.value))))} className="w-14 border border-surface-300 rounded-md px-2 py-1 text-xs font-bold text-center outline-none" />
-                </div>
-                <div className="flex items-center gap-2 mt-1 text-[10px] text-surface-400">
-                  <span>API saturation: {(ri.saturation * 100).toFixed(0)}%</span>
-                  <span>·</span>
-                  <button onClick={() => setDemand(satToDemand(ri.saturation))} className="text-brand-600 hover:text-brand-700 font-bold">Reset</button>
+                  <input type="range" min={0} max={100} value={demand} onChange={e => setDemand(toNum(e.target.value, 50))} className="flex-1 accent-rose-500" />
+                  <input type="number" min={0} max={100} value={demand} onChange={e => setDemand(Math.max(0, Math.min(100, toNum(e.target.value, 50))))} className="w-14 border border-surface-300 rounded-md px-2 py-1 text-xs font-bold text-center outline-none" />
                 </div>
               </div>
 
               <div>
                 <label className="text-[10px] font-semibold text-surface-500 block mb-1">Base Sales Rate (units/h/level)</label>
-                <div className="flex items-center gap-2">
-                  <input type="number" min={0.01} step={0.5} value={baseRate} onChange={e => setBaseRate(Math.max(0.01, Number(e.target.value)))} className="flex-1 border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" />
-                  <button onClick={() => { if (selected.baseSalesRate > 0) setBaseRate(selected.baseSalesRate); }} className="text-[10px] text-brand-600 hover:text-brand-700 font-bold">Reset</button>
-                </div>
-                <div className="text-[10px] text-surface-400 mt-0.5">API: {selected.baseSalesRate.toFixed(2)} u/h/level</div>
+                <input type="number" min={0.01} step={0.5} value={baseRate} onChange={e => setBaseRate(Math.max(0.01, toNum(e.target.value, 3)))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" />
               </div>
 
               <div>
                 <label className="text-[10px] font-semibold text-surface-500 block mb-1">Selling Price</label>
                 <div className="flex items-center gap-2">
-                  <input type="number" step="0.01" value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder={`$${fmt(vwapPrice)}`} className="flex-1 border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" />
+                  <input type="number" step="0.01" value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder={`VWAP $${fmt(vwapPrice)}`} className="flex-1 border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" />
                   {customPrice && <button onClick={() => setCustomPrice("")} className="text-[10px] text-brand-600 font-bold">VWAP</button>}
                 </div>
-                <div className="text-[10px] text-surface-400 mt-0.5 flex gap-3">
-                  <span>VWAP: ${fmt(vwapPrice)}</span>
-                  <span>Modeled cost: ${fmt(ri.modeledProductionCostPerUnit)}</span>
-                </div>
+                <div className="text-[10px] text-surface-400 mt-0.5">VWAP: ${fmt(vwapPrice)}</div>
               </div>
 
               <div className="border-t border-surface-100 dark:border-surface-800 pt-3 mt-2">
@@ -343,11 +217,6 @@ export function RetailCalculatorPage() {
             </div>
           )}
 
-          {selected && !ri && (
-            <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 text-center text-surface-400 text-xs">
-              No API data for #{resId} — fetch API products first
-            </div>
-          )}
         </div>
 
         {/* ─── Results ─── */}
@@ -426,7 +295,6 @@ export function RetailCalculatorPage() {
                   <div className="flex justify-between"><span className="text-xs text-surface-500">COGS</span><span className="text-sm font-bold text-rose-500">-${fmt(result.cogs)}</span></div>
                   <div className="flex justify-between"><span className="text-xs text-surface-500">Wages</span><span className="text-sm font-bold text-rose-500">-${fmt(result.w)}</span><span className="text-[10px] text-surface-400 ml-auto">Lv{bldgLevel}</span></div>
                   <div className="flex justify-between"><span className="text-xs text-surface-500">Admin Overhead</span><span className="text-sm font-bold text-rose-500">-${fmt(result.ac)}</span><span className="text-[10px] text-surface-400 ml-auto">{ao}%</span></div>
-                  {ri && <div className="flex justify-between"><span className="text-xs text-surface-500">Modeled Wages</span><span className="text-sm text-surface-400">${fmt(ri.modeledStoreWages)}</span><span className="text-[10px] text-surface-400 ml-auto">API est.</span></div>}
                 </div>
                 <div className="px-5 py-4 flex items-center justify-between">
                   <span className="text-sm font-bold uppercase tracking-wide">Net Profit</span>
@@ -434,12 +302,6 @@ export function RetailCalculatorPage() {
                 </div>
               </div>
 
-              {ri && (
-                <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl px-5 py-3 flex items-center justify-between">
-                  <span className="text-xs text-surface-500">Modeled Production Cost (API)</span>
-                  <span className="text-sm font-bold">${fmt(ri.modeledProductionCostPerUnit)} / unit</span>
-                </div>
-              )}
             </>
           )}
             </>

@@ -711,32 +711,23 @@ export interface CompanyData {
   governmentOrderTierIndex?: number;
 }
 
-// ponytail: corsproxy.io is a third-party free proxy; add a local API relay when the backend
-// supports it. The retry loop handles intermittent drop-outs from the free tier.
 export async function fetchCompanyData(companyId: string | number, realm = 0): Promise<CompanyData> {
   const base = realm === 1
     ? "https://www.simcompanies.com/api/v3/entrepreneurs/companies/"
     : "https://www.simcompanies.com/api/v3/companies/";
   const targetUrl = `${base}${companyId}/`;
 
-  const proxies = [
-    (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-    // ponytail: add "api/relay?url=" when a backend endpoint exists
-  ];
-
-  for (let attempt = 0; attempt < 3; attempt++) {
-    for (const buildUrl of proxies) {
-      try {
-        const res = await fetch(buildUrl(targetUrl));
-        if (res.ok) return res.json();
-      } catch {
-        // try next proxy / retry
-      }
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(targetUrl);
+      if (res.ok) return res.json();
+    } catch {
+      // retry
     }
-    if (attempt < 2) await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+    if (attempt < 1) await new Promise((r) => setTimeout(r, 2000));
   }
 
-  throw new Error("Company data fetch failed after retries");
+  throw new Error("Company data fetch failed");
 }
 
 /* ============================================================
