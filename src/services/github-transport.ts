@@ -35,34 +35,15 @@ export async function fetchIndex(dir: string): Promise<{ latest: string; files: 
   }
 }
 
-export async function tryDirectFetch<T = unknown>(dir: string, prefix: string, dateStr: string): Promise<T | null> {
-  const path = `${dir}/${prefix}${dateStr}.json`;
-  const res = await fetch(`${GITHUB_RAW}/${path}`);
-  if (res.ok) return res.json();
-  return null;
-}
-
 export async function fetchLatest<T = unknown>(dir: string, prefix: string): Promise<T | null> {
   const index = await fetchIndex(dir);
-  if (index) {
-    if (index.latest && index.latest.startsWith(prefix)) {
-      return rawFetch<T>(`${dir}/${index.latest}`);
-    }
-    if (index.files && index.files.length > 0) {
-      const sorted = index.files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).sort().reverse();
-      if (sorted.length > 0) return rawFetch<T>(`${dir}/${sorted[0]}`);
-    }
+  if (!index) return null;
+  if (index.latest && index.latest.startsWith(prefix)) {
+    return rawFetch<T>(`${dir}/${index.latest}`);
   }
-
-  const today = new Date();
-  const dates = Array.from({ length: 7 }, (_, i) =>
-    new Date(today.getTime() - i * 86400000).toISOString().slice(0, 10)
-  );
-  const results = await Promise.all(dates.map(d => tryDirectFetch<T>(dir, prefix, d)));
-  const found = results.find(r => r !== null);
-  if (found) return found;
-
-  return null;
+  const sorted = (index.files ?? []).filter(f => f.startsWith(prefix) && f.endsWith(".json")).sort().reverse();
+  if (sorted.length === 0) return null;
+  return rawFetch<T>(`${dir}/${sorted[0]}`);
 }
 
 const LIST_CACHE = new Map<string, { files: string[]; expiry: number }>();
@@ -108,6 +89,4 @@ export async function fetchAllFiles<T = unknown>(dir: string, prefix: string, li
   });
 }
 
-export function getTodayDate(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+

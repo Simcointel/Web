@@ -1,14 +1,11 @@
 // Re-exports from split modules for backward compat
 export { withCache, DATA_CACHE } from "./data-cache";
-export type { } from "./data-cache";
 export {
   rawFetch,
   fetchLatest,
   fetchIndex,
   listFiles,
   fetchAllFiles,
-  tryDirectFetch,
-  getTodayDate,
 } from "./github-transport";
 
 import { withCache } from "./data-cache";
