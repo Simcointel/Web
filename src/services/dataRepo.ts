@@ -180,15 +180,24 @@ export async function fetchMacroPhases(realm: number): Promise<MacroPhases> {
     phases.push({ date: d, phase: ph });
   }
   phases.sort((a, b) => a.date.localeCompare(b.date));
-  const phaseDetails = phases.map((p, i) => {
-    const next = phases[i + 1];
-    const startDate = p.date;
-    const endDate = next?.date ?? null;
-    const days = next
-      ? Math.round((new Date(next.date).getTime() - new Date(p.date).getTime()) / (1000 * 60 * 60 * 24))
-      : 1;
-    return { phase: p.phase, startDate, endDate, days };
-  });
+  const phaseDetails: MacroPhases["phases"] = [];
+  for (let i = 0; i < phases.length; i++) {
+    const p = phases[i];
+    const prev = phaseDetails[phaseDetails.length - 1];
+    if (prev && prev.phase === p.phase && prev.endDate) {
+      prev.endDate = null;
+      prev.days = Math.round((new Date(p.date).getTime() - new Date(prev.startDate).getTime()) / (1000 * 60 * 60 * 24)) || 1;
+    } else {
+      phaseDetails.push({ phase: p.phase, startDate: p.date, endDate: null, days: 1 });
+    }
+  }
+  for (let i = 0; i < phaseDetails.length; i++) {
+    const next = phaseDetails[i + 1];
+    if (next) {
+      phaseDetails[i].endDate = next.startDate;
+      phaseDetails[i].days = Math.round((new Date(next.startDate).getTime() - new Date(phaseDetails[i].startDate).getTime()) / (1000 * 60 * 60 * 24)) || 1;
+    }
+  }
   const transitions: Array<{ from: string; to: string; date: string; reason: string }> = [];
   for (let i = 1; i < phases.length; i++) {
     if (phases[i].phase !== phases[i - 1].phase) {
