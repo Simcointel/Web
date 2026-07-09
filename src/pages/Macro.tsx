@@ -40,17 +40,7 @@ export function MacroPage() {
 
   const filteredPhases = useMemo<PhaseRecord[]>(() => {
     if (!phases?.phases) return [];
-    const sorted = (phases.phases as PhaseRecord[]).slice().sort((a, b) => b.startDate.localeCompare(a.startDate));
-    const result: PhaseRecord[] = [];
-    let lastDate: Date | null = null;
-    for (const p of sorted) {
-      const d = new Date(p.startDate);
-      if (!lastDate || (lastDate.getTime() - d.getTime()) >= (6 * 24 * 60 * 60 * 1000)) {
-        result.push(p);
-        lastDate = d;
-      }
-    }
-    return result;
+    return (phases.phases as PhaseRecord[]).slice().sort((a, b) => b.startDate.localeCompare(a.startDate));
   }, [phases]);
 
   if (lLoading && !latest) return <LoadingState text="Loading macro..." />;
