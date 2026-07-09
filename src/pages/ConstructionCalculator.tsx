@@ -3,7 +3,7 @@ import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { BUILDINGS, CONSTRUCTION_MATERIALS, MAT_REF_PRICES, RESOURCES } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
-import { HardHat } from "lucide-react";
+import { HardHat, ArrowRight, TrendingUp, Clock, Package, ListTree } from "lucide-react";
 import type { ProfitMarginsResponse } from "../types/api";
 
 function matName(id: number): string {
@@ -29,7 +29,6 @@ export function ConstructionCalculatorPage() {
 
   const building = useMemo(() => BUILDINGS.find(b => b.id === buildingId), [buildingId]);
 
-  // Collect all material IDs this building actually uses
   const buildingMatIds = useMemo(() => {
     if (!building) return [];
     const ids = new Set<number>();
@@ -109,7 +108,10 @@ export function ConstructionCalculatorPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-1 space-y-4">
           <div className="card p-5 space-y-4">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">Building</h2>
+            <div className="flex items-center gap-2 text-surface-500 mb-1">
+              <Package size={14} />
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em]">Building</h2>
+            </div>
             <select value={buildingId} onChange={e => setBuildingId(e.target.value)}
               className="w-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 rounded-lg text-sm font-bold outline-none focus:ring-1 focus:ring-brand-500/20">
               <option value="">-- Select Building --</option>
@@ -136,9 +138,17 @@ export function ConstructionCalculatorPage() {
             )}
             {building && (
               <div className="text-xs text-surface-500 space-y-1.5 bg-surface-50 dark:bg-surface-900 rounded-lg p-3">
-                <p className="font-semibold">Base time: <span className="font-bold text-surface-700 dark:text-surface-300">{fmtHours(building.baseTime)}</span></p>
-                <p className="font-semibold">Per level: <span className="font-bold text-surface-700 dark:text-surface-300">{building.resources.map(r => `${r.qty}× ${matName(r.id)}`).join(", ")}</span></p>
-                <p className="text-[9px] text-surface-400 italic mt-1">Lv 1-2 = base; Lv 3+ = base × (lv-1)</p>
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">Base time</span>
+                  <span className="font-bold text-surface-700 dark:text-surface-300">{fmtHours(building.baseTime)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">Per level</span>
+                  <span className="font-bold text-surface-700 dark:text-surface-300">{building.resources.map(r => `${r.qty}× ${matName(r.id)}`).join(", ")}</span>
+                </div>
+                <div className="text-[9px] text-surface-400 italic border-t border-surface-200 dark:border-surface-700 pt-1.5 mt-1.5">
+                  Lv 1-2 = base cost; Lv 3+ = base × (lv-1)
+                </div>
               </div>
             )}
           </div>
@@ -147,85 +157,131 @@ export function ConstructionCalculatorPage() {
         <div className="lg:col-span-2">
           {!building ? (
             <div className="card p-16 text-center">
+              <Package size={40} className="mx-auto text-surface-200 dark:text-surface-700 mb-3" />
               <div className="text-surface-300 dark:text-surface-600 text-sm font-bold">Select a building to begin</div>
+              <p className="text-xs text-surface-400 mt-1">Choose a production or retail building to estimate construction costs</p>
             </div>
           ) : upgrades.length === 0 ? (
             <div className="card p-16 text-center">
+              <ArrowRight size={40} className="mx-auto text-surface-200 dark:text-surface-700 mb-3" />
               <div className="text-surface-300 dark:text-surface-600 text-sm font-bold">Target must be higher than current level</div>
+              <p className="text-xs text-surface-400 mt-1">Set target level above current to see upgrade breakdown</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="grid grid-cols-5 gap-3">
-                <MetricCard label="Ref Cost" value={`$${totalRefCost.toLocaleString()}`} sub="game reference value" />
-                <MetricCard label="Market Cost" value={`$${totalMatCost.toLocaleString()}`} sub="materials at market" />
-                <MetricCard label="Total Time" value={fmtHours(totalTimeH)} />
-                <MetricCard label="Steps" value={String(upgrades.length)} />
-                <MetricCard label="Scrap Value" value={`$${(building.cost * targetLv).toLocaleString()}`} sub="at target level" />
-              </div>
+            <div className="space-y-5">
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp size={14} className="text-surface-400" />
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Cost Summary</h3>
+                </div>
+                <div className="grid grid-cols-5 gap-3">
+                  <MetricCard label="Reference Cost" value={`$${totalRefCost.toLocaleString()}`} sub="game reference prices" />
+                  <MetricCard label="Market Cost" value={`$${totalMatCost.toLocaleString()}`} sub="materials at VWAP" highlight={totalMatCost > totalRefCost ? "text-rose-600" : "text-emerald-600"} />
+                  <MetricCard label="Scrap Value" value={`$${(building.cost * targetLv).toLocaleString()}`} sub="if demolished" />
+                  <MetricCard label="Total Time" value={fmtHours(totalTimeH)} sub={`${upgrades.length} upgrade(s)`} />
+                  <MetricCard label="Cash Cost" value={roi && roi.dailyRevenue > 0 ? `$${totalMatCost.toLocaleString()}` : "—"} sub="actual cash outlay" />
+                </div>
+              </section>
 
               {roi && roi.dailyRevenue > 0 && (
-                <div className="grid grid-cols-4 gap-3">
-                  <div className="card p-3 border-l-4 border-l-brand-500 bg-brand-50/30 dark:bg-brand-900/10">
-                    <span className="metric-label">Est. Daily Revenue</span>
-                    <span className="metric-value text-brand-600">${roi.dailyRevenue.toLocaleString()}</span>
-                    <span className="block text-[9px] text-surface-400 mt-0.5">@ ${roi.outputVwap.toFixed(2)}/u</span>
+                <section>
+                  <div className="flex items-center gap-2 mb-3">
+                    <TrendingUp size={14} className="text-surface-400" />
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Revenue Analysis</h3>
                   </div>
-                  <MetricCard label="Daily Wages" value={`$${roi.dailyWages.toLocaleString()}`} />
-                  <MetricCard label="Daily Net" value={`$${roi.dailyNet.toLocaleString()}`} highlight={roi.dailyNet > 0 ? "text-emerald-600" : "text-rose-600"} />
-                  <MetricCard label="Recoup Time" value={roi.daysToRecoup === Infinity ? "∞" : `${roi.daysToRecoup.toFixed(1)}d`} sub="materials at market" />
-                </div>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="card p-3 border-l-4 border-l-brand-500">
+                      <span className="metric-label">Est. Daily Revenue</span>
+                      <span className="metric-value text-brand-600">${roi.dailyRevenue.toLocaleString()}</span>
+                      <span className="block text-[9px] text-surface-400 mt-0.5">@ ${roi.outputVwap.toFixed(2)}/u</span>
+                    </div>
+                    <MetricCard label="Daily Wages" value={`$${roi.dailyWages.toLocaleString()}`} sub="incl. 10% vacation" />
+                    <MetricCard label="Daily Net" value={`$${roi.dailyNet.toLocaleString()}`} highlight={roi.dailyNet > 0 ? "text-emerald-600" : "text-rose-600"} sub={roi.dailyNet > 0 ? "revenue − wages" : "operating at loss"} />
+                    <MetricCard label="Recoup Time" value={roi.daysToRecoup === Infinity ? "∞" : `${roi.daysToRecoup.toFixed(1)}d`} sub={roi.daysToRecoup === Infinity ? "never profitable" : "market cost ÷ daily net"} />
+                  </div>
+                </section>
               )}
 
               {buildingMatIds.length > 0 && (
-                <div className="card">
-                  <div className="card-header">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-surface-500">Material Summary</span>
-                    <span className="text-[9px] text-surface-400 font-semibold">market prices</span>
+                <section>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Package size={14} className="text-surface-400" />
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Material Requirements</h3>
                   </div>
-                  <div className="p-4 grid grid-cols-5 gap-3">
-                    {buildingMatIds.map(id => {
-                      const qty = Math.round(totalMats[id] ?? 0);
-                      if (qty === 0) return null;
-                      return (
-                        <div key={id} className="bg-surface-50 dark:bg-surface-900 p-3 rounded-lg border border-surface-100 dark:border-surface-800">
-                          <span className="metric-label">{matName(id)}</span>
-                          <span className="metric-value">{qty.toLocaleString()}</span>
-                          <span className="block text-[9px] text-surface-400 mt-0.5">@ ${(matPrices[id] ?? 0).toFixed(2)}</span>
-                        </div>
-                      );
-                    })}
+                  <div className="card">
+                    <div className="p-4 grid grid-cols-5 gap-3">
+                      {buildingMatIds.map(id => {
+                        const qty = Math.round(totalMats[id] ?? 0);
+                        if (qty === 0) return null;
+                        return (
+                          <div key={id} className="bg-surface-50 dark:bg-surface-900 p-3 rounded-lg border border-surface-100 dark:border-surface-800">
+                            <span className="metric-label">{matName(id)}</span>
+                            <span className="metric-value">{qty.toLocaleString()}</span>
+                            <span className="block text-[9px] text-surface-400 mt-0.5">@ ${(matPrices[id] ?? 0).toFixed(2)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                </section>
               )}
 
-              <div className="card overflow-hidden">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-surface-50 dark:bg-surface-900 text-[9px] font-black uppercase tracking-wider text-surface-500 border-b border-surface-100 dark:border-surface-800">
-                      <th className="px-4 py-2.5">Lv</th>
-                      <th className="px-4 py-2.5 text-right">Ref Cost</th>
-                      <th className="px-4 py-2.5 text-right">Market Cost</th>
-                      <th className="px-4 py-2.5 text-right">Time</th>
-                      {buildingMatIds.map(id => (
-                        <th key={id} className="px-4 py-2.5 text-right">{matName(id)}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-surface-100 dark:divide-surface-800 text-sm">
-                    {upgrades.map(u => (
-                      <tr key={u.lv} className="hover:bg-surface-50 dark:hover:bg-surface-900/50 transition-colors">
-                        <td className="px-4 py-2.5 font-bold">Lv {u.lv}</td>
-                        <td className="px-4 py-2.5 text-right tabular-nums">${u.refCost.toLocaleString()}</td>
-                        <td className="px-4 py-2.5 text-right tabular-nums">${u.matCost.toLocaleString()}</td>
-                        <td className="px-4 py-2.5 text-right tabular-nums">{fmtHours(u.time)}</td>
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <ListTree size={14} className="text-surface-400" />
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Upgrade Breakdown</h3>
+                </div>
+                <div className="card overflow-hidden">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-surface-50 dark:bg-surface-900 text-[9px] font-black uppercase tracking-wider text-surface-500 border-b border-surface-100 dark:border-surface-800">
+                        <th className="px-4 py-2.5">Level</th>
+                        <th className="px-4 py-2.5 text-right">Ref Cost</th>
+                        <th className="px-4 py-2.5 text-right">Market Cost</th>
+                        <th className="px-4 py-2.5 text-right">Time</th>
+                        <th className="px-4 py-2.5 text-right">Time (cum.)</th>
                         {buildingMatIds.map(id => (
-                          <td key={id} className="px-4 py-2.5 text-right tabular-nums">{Math.round(u.materials[id] ?? 0)}</td>
+                          <th key={id} className="px-4 py-2.5 text-right">{matName(id)}</th>
                         ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-surface-100 dark:divide-surface-800 text-sm">
+                      {(() => {
+                        let cumTime = 0;
+                        return upgrades.map(u => {
+                          cumTime += u.time;
+                          return (
+                            <tr key={u.lv} className="hover:bg-surface-50 dark:hover:bg-surface-900/50 transition-colors">
+                              <td className="px-4 py-2.5 font-bold whitespace-nowrap">
+                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 text-xs font-bold mr-1.5">{u.lv}</span>
+                                Lv {u.lv}
+                              </td>
+                              <td className="px-4 py-2.5 text-right tabular-nums">${u.refCost.toLocaleString()}</td>
+                              <td className="px-4 py-2.5 text-right tabular-nums">${u.matCost.toLocaleString()}</td>
+                              <td className="px-4 py-2.5 text-right tabular-nums">{fmtHours(u.time)}</td>
+                              <td className="px-4 py-2.5 text-right tabular-nums text-surface-400">{fmtHours(cumTime)}</td>
+                              {buildingMatIds.map(id => (
+                                <td key={id} className="px-4 py-2.5 text-right tabular-nums">{Math.round(u.materials[id] ?? 0)}</td>
+                              ))}
+                            </tr>
+                          );
+                        });
+                      })()}
+                    </tbody>
+                    <tfoot className="bg-surface-50 dark:bg-surface-900 text-sm font-bold border-t-2 border-surface-200 dark:border-surface-700">
+                      <tr>
+                        <td className="px-4 py-2.5">Total</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">${totalRefCost.toLocaleString()}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">${totalMatCost.toLocaleString()}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums" colSpan={2}>{fmtHours(totalTimeH)}</td>
+                        {buildingMatIds.map(id => (
+                          <td key={id} className="px-4 py-2.5 text-right tabular-nums">{Math.round(totalMats[id] ?? 0).toLocaleString()}</td>
+                        ))}
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </section>
             </div>
           )}
         </div>
