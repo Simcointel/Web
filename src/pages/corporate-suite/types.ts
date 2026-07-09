@@ -47,7 +47,7 @@ export interface SuiteStateV6 {
     researchBonus: number;
   };
   debt: { current: number; rate: number; };
-  ledger: any[];
+  ledger: string[][];
 }
 
 export const EMPTY_EXEC: Executive = { name: "", management: 0, accounting: 0, communication: 0, science: 0 };
@@ -82,8 +82,32 @@ export const DEFAULT_STATE: SuiteStateV6 = {
   ledger: []
 };
 
-export const n = (v: any) => {
+export const n = (v: unknown): number => {
   if (v === undefined || v === null) return 0;
   const num = Number(v);
   return isNaN(num) ? 0 : num;
 };
+
+import type { ProfitMarginsResponse, RetailData } from "../../types/api";
+
+export interface CoreMetrics {
+  totalLevels: number; actualAO: number; rawAO: number;
+  taxThreshold: number; salesSpeedBonus: number; patentProb: number;
+  dailyWages: number; inventoryValue: number; mapValue: number;
+  dailyInterest: number; effMan: number; effAcc: number; effCom: number; effSci: number;
+  estimatedDailyTax: number; coverageRatio: number;
+  buildingProfits: { name: string; profit: number; level: number }[];
+  totalValuation: number; netDaily: number;
+}
+
+export interface SuiteViewProps {
+  state: SuiteStateV6;
+  setState: React.Dispatch<React.SetStateAction<SuiteStateV6>>;
+  core: CoreMetrics;
+  margins?: ProfitMarginsResponse | null;
+  retail?: RetailData | null;
+  phase?: string;
+  onSync?: (id: string) => Promise<void>;
+  isSyncing?: boolean;
+  setNotification?: (n: { msg: string; type: 'success' | 'error' } | null) => void;
+}

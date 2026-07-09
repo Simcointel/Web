@@ -299,10 +299,10 @@ export function CorporateSuitePage() {
       case 'exec': return <ExecutiveView state={state} core={core} setState={setState} setNotification={setNotification} />;
       case 'finance': return <FinanceView state={state} core={core} setState={setState} />;
       case 'logistics': return <LogisticsView state={state} core={core} setState={setState} />;
-      case 'risk': return <RiskView core={core} phase={economyPhase} retail={retail} />;
+      case 'risk': return <RiskView core={core} phase={economyPhase} retail={retail} state={state} setState={setState} />;
       case 'rankings': return <RankingsView />;
       case 'bonds': return <BondsView />;
-      case 'ledger': return <LedgerView state={state} setState={setState} />;
+      case 'ledger': return <LedgerView state={state} />;
       default: return <CommandView state={state} core={core} phase={economyPhase} margins={margins} onSync={syncCompany} isSyncing={isSyncing} setState={setState} />;
     }
   };

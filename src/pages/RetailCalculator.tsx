@@ -70,8 +70,8 @@ export function RetailCalculatorPage() {
   const { data: marginsData } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 120000, [realm]);
   const margins = (marginsData as ProfitMarginsResponse | undefined)?.resources ?? [];
 
-  const stores = useMemo(() => BUILDINGS.filter((b: any) => b.type === "retail" && b.id !== "r" && b.id !== "B" && (RETAIL_PRODUCT_MAP[b.id]?.length ?? 0) > 0), []);
-  const store = useMemo(() => stores.find((s: any) => s.id === storeId), [storeId, stores]);
+  const stores = useMemo(() => BUILDINGS.filter(b => b.type === "retail" && b.id !== "r" && b.id !== "B" && (RETAIL_PRODUCT_MAP[b.id]?.length ?? 0) > 0), []);
+  const store = useMemo(() => stores.find(s => s.id === storeId), [storeId, stores]);
   const storeProductIds = useMemo(() => RETAIL_PRODUCT_MAP[storeId] ?? [], [storeId]);
 
   const storeProducts = useMemo(() => storeProductIds.map(id => ({ id, name: `#${id}` })), [storeProductIds]);
@@ -90,7 +90,7 @@ export function RetailCalculatorPage() {
     const u = baseRate * bldgLevel * pm * dm * ss;
     const rev = u * sellingPrice;
     const mf = rev * 0.03;
-    const w = toNum((store as any).wages) * bldgLevel;
+    const w = toNum(store.wages) * bldgLevel;
     const ac = w * (ao / 100);
     const cogs = vwapPrice * u;
     const np = rev - mf - w - ac - cogs;
@@ -114,7 +114,7 @@ export function RetailCalculatorPage() {
         const u = 3 * bldgLevel * pm * dm * ss; // ponytail: base rate 3 when no live API
         const rev = u * vwap;
         const mf = rev * 0.03;
-        const w = toNum((s as any).wages) * bldgLevel;
+        const w = toNum(s.wages) * bldgLevel;
         const ac = w * (ao / 100);
         const cogs = vwap * u;
         const np = rev - mf - w - ac - cogs;
@@ -143,7 +143,7 @@ export function RetailCalculatorPage() {
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><Store size={13} /> Store</div>
             <select value={storeId} onChange={e => { setStoreId(e.target.value); setResId(0); }} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900">
               <option value="">Select a store type…</option>
-              {stores.sort((a: any, b: any) => a.name.localeCompare(b.name)).map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {stores.sort((a, b) => a.name.localeCompare(b.name)).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
 
             {store && storeProducts.length > 0 && (

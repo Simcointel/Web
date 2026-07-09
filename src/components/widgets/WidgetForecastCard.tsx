@@ -4,8 +4,9 @@ import { fetchWidget } from "../../services/widgetClient";
 export function WidgetForecastCard({ realm = 0, compact = true }: { realm?: number; compact?: boolean }) {
   const [data, setData] = useState<Record<string, { v: number; r: number }> | null>(null);
   useEffect(() => {
-    fetchWidget<Record<string, { v: number; r: number }>>("forecast", realm).then((d) => setData(d)).catch(() => {});
-    const id = setInterval(() => fetchWidget<Record<string, { v: number; r: number }>>("forecast", realm).then((d) => setData(d)).catch(() => {}), 60000);
+    const fetch = () => fetchWidget<Record<string, { v: number; r: number }>>("forecast", realm).then((d) => setData(d)).catch(() => setData(null));
+    fetch();
+    const id = setInterval(fetch, 60000);
     return () => clearInterval(id);
   }, [realm]);
   if (!data) return <div className="text-[12px] leading-[1.4] text-gray-900 dark:text-gray-100">Loading forecast...</div>;

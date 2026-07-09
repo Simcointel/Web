@@ -3,7 +3,9 @@ import { CheckCircle2, Download, TrendingUp, BarChart3, FileText, DollarSign, Sh
 import { Section } from "../../components/Layout";
 import { n } from "./types";
 
-export function WorkstationTab({ active, onClick, label, icon: Icon, color }: any) {
+interface WorkstationTabProps { active: boolean; onClick: () => void; label: string; icon: React.ComponentType<{ size?: number }>; color: string; }
+
+export function WorkstationTab({ active, onClick, label, icon: Icon, color }: WorkstationTabProps) {
   return (
     <button onClick={onClick} className={`px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${active ? `${color} text-white shadow-sm` : 'text-surface-500 hover:bg-surface-200 dark:hover:bg-surface-800'}`}>
        <Icon size={16} /> {label}
@@ -11,7 +13,9 @@ export function WorkstationTab({ active, onClick, label, icon: Icon, color }: an
   );
 }
 
-export function GlobalMetric({ label, value }: any) {
+interface GlobalMetricProps { label: string; value: string | number; }
+
+export function GlobalMetric({ label, value }: GlobalMetricProps) {
   return (
     <div className="flex flex-col">
        <span className="text-[10px] font-bold uppercase text-surface-400 leading-none mb-1">{label}</span>
@@ -20,7 +24,9 @@ export function GlobalMetric({ label, value }: any) {
   );
 }
 
-export function KPICard({ label, value, sub, icon: Icon }: any) {
+interface KPICardProps { label: string; value: string | number; sub?: string; icon: React.ComponentType<{ size?: number }>; }
+
+export function KPICard({ label, value, sub, icon: Icon }: KPICardProps) {
   return (
     <div className="card p-6 flex flex-col items-center text-center !shadow-none border-surface-200 dark:border-surface-800 group">
        <div className="w-12 h-12 bg-surface-50 dark:bg-surface-900 rounded-xl flex items-center justify-center text-brand-600 mb-4 group-hover:scale-105 transition-transform">
@@ -33,7 +39,9 @@ export function KPICard({ label, value, sub, icon: Icon }: any) {
   );
 }
 
-export function SkillNode({ label, value, sub, icon: Icon, color }: any) {
+interface SkillNodeProps { label: string; value: string | number; sub?: string; icon: React.ComponentType<{ size?: number }>; color: string; }
+
+export function SkillNode({ label, value, sub, icon: Icon, color }: SkillNodeProps) {
   return (
     <div className={`card p-6 flex flex-col items-center text-center border-t-4 border-current shadow-sm ${color}`}>
        <div className="flex items-center gap-2 mb-3">
@@ -46,23 +54,27 @@ export function SkillNode({ label, value, sub, icon: Icon, color }: any) {
   );
 }
 
-export function ExecCard({ role, data, onChange, isApp }: any) {
+interface ExecCardProps { role: string; data: { name: string; management: number; accounting: number; communication: number; science: number }; onChange: (d: { name: string; management: number; accounting: number; communication: number; science: number }) => void; isApp?: boolean; }
+
+export function ExecCard({ role, data, onChange, isApp }: ExecCardProps) {
   return (
     <div className={`card p-6 space-y-6 border-l-4 !shadow-none border-surface-200 dark:border-surface-800 transition-all ${isApp ? 'border-l-surface-300 dark:border-l-surface-600 opacity-80' : 'border-l-brand-600'}`}>
        <div className="flex items-center justify-between">
           <span className={`text-sm font-bold uppercase tracking-wide ${isApp ? 'text-surface-500' : 'text-brand-600'}`}>{role}</span>
        </div>
        <div className="grid grid-cols-2 gap-4">
-          <SkillLineSmall label="Management" val={data.management} onChange={(v: any) => onChange({...data, management: v})} />
-          <SkillLineSmall label="Accounting" val={data.accounting} onChange={(v: any) => onChange({...data, accounting: v})} />
-          <SkillLineSmall label="Communication" val={data.communication} onChange={(v: any) => onChange({...data, communication: v})} />
-          <SkillLineSmall label="Science" val={data.science} onChange={(v: any) => onChange({...data, science: v})} />
+          <SkillLineSmall label="Management" val={data.management} onChange={v => onChange({...data, management: v})} />
+          <SkillLineSmall label="Accounting" val={data.accounting} onChange={v => onChange({...data, accounting: v})} />
+          <SkillLineSmall label="Communication" val={data.communication} onChange={v => onChange({...data, communication: v})} />
+          <SkillLineSmall label="Science" val={data.science} onChange={v => onChange({...data, science: v})} />
        </div>
     </div>
   );
 }
 
-function SkillLineSmall({ label, val, onChange }: any) {
+interface SkillLineSmallProps { label: string; val: number; onChange: (v: number) => void; }
+
+function SkillLineSmall({ label, val, onChange }: SkillLineSmallProps) {
   return (
     <div className="flex flex-col bg-surface-50 dark:bg-surface-900 px-4 py-3 rounded-lg border border-surface-100 dark:border-surface-800">
        <span className="text-[10px] font-bold text-surface-400 uppercase mb-1">{label}</span>
@@ -71,7 +83,9 @@ function SkillLineSmall({ label, val, onChange }: any) {
   );
 }
 
-export function ForecastLine({ label, value, red, green }: any) {
+interface ForecastLineProps { label: string; value: string | number; red?: boolean; green?: boolean; }
+
+export function ForecastLine({ label, value, red, green }: ForecastLineProps) {
   return (
     <div className="flex justify-between items-center py-3 border-b border-surface-50 dark:border-surface-800 last:border-0">
        <span className="text-[11px] font-black uppercase text-surface-500 italic tracking-tight">{label}</span>
@@ -80,7 +94,9 @@ export function ForecastLine({ label, value, red, green }: any) {
   );
 }
 
-export function CheckItem({ label, active, light }: any) {
+interface CheckItemProps { label: string; active: boolean; light?: boolean; }
+
+export function CheckItem({ label, active, light }: CheckItemProps) {
   return (
     <div className="flex items-center gap-5 py-2">
        <div className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${active ? 'bg-emerald-500 border-emerald-500 shadow-lg' : 'border-white/20 bg-white/5'}`}>
@@ -91,7 +107,11 @@ export function CheckItem({ label, active, light }: any) {
   );
 }
 
-export function LedgerView({ state }: any) {
+import type { SuiteStateV6 } from "./types";
+
+interface LedgerViewProps { state: SuiteStateV6; }
+
+export function LedgerView({ state }: LedgerViewProps) {
   const ledger = state?.ledger ?? [];
   const meta = state?.ledgerMeta as { type: string; header: string[] } | undefined;
   const [sortCol, setSortCol] = useState(-1);

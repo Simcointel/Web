@@ -4,7 +4,9 @@ import {
 } from "lucide-react";
 import { SkillNode, ExecCard, ForecastLine } from "./components";
 
-export function ExecutiveView({ state, setState, core, setNotification }: any) {
+import type { SuiteViewProps } from "./types";
+
+export function ExecutiveView({ state, setState, core, setNotification }: SuiteViewProps) {
   const [pasteData, setPasteData] = useState("");
   const handlePaste = () => {
     const lines = pasteData.split('\n');
@@ -20,7 +22,7 @@ export function ExecutiveView({ state, setState, core, setNotification }: any) {
     });
     setState({ ...state, board: newBoard });
     setPasteData("");
-    setNotification({ msg: "Board Integrated Successfully", type: "success" });
+    setNotification?.({ msg: "Board Integrated Successfully", type: "success" });
   };
 
   return (
@@ -35,14 +37,14 @@ export function ExecutiveView({ state, setState, core, setNotification }: any) {
        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-12">
           <div className="lg:col-span-8 space-y-4">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <ExecCard role="Chief Operating Officer" data={state.board.coo} onChange={(d: any) => setState({...state, board: {...state.board, coo: d}})} />
-                <ExecCard role="COO Apprentice" data={state.board.cooApp} onChange={(d: any) => setState({...state, board: {...state.board, cooApp: d}})} isApp />
-                <ExecCard role="Chief Financial Officer" data={state.board.cfo} onChange={(d: any) => setState({...state, board: {...state.board, cfo: d}})} />
-                <ExecCard role="CFO Apprentice" data={state.board.cfoApp} onChange={(d: any) => setState({...state, board: {...state.board, cfoApp: d}})} isApp />
-                <ExecCard role="Chief Marketing Officer" data={state.board.cmo} onChange={(d: any) => setState({...state, board: {...state.board, cmo: d}})} />
-                <ExecCard role="CMO Apprentice" data={state.board.cmoApp} onChange={(d: any) => setState({...state, board: {...state.board, cmoApp: d}})} isApp />
-                <ExecCard role="Chief Technical Officer" data={state.board.cto} onChange={(d: any) => setState({...state, board: {...state.board, cto: d}})} />
-                <ExecCard role="CTO Apprentice" data={state.board.ctoApp} onChange={(d: any) => setState({...state, board: {...state.board, ctoApp: d}})} isApp />
+                <ExecCard role="Chief Operating Officer" data={state.board.coo} onChange={d => setState({...state, board: {...state.board, coo: d}})} />
+                <ExecCard role="COO Apprentice" data={state.board.cooApp} onChange={d => setState({...state, board: {...state.board, cooApp: d}})} isApp />
+                <ExecCard role="Chief Financial Officer" data={state.board.cfo} onChange={d => setState({...state, board: {...state.board, cfo: d}})} />
+                <ExecCard role="CFO Apprentice" data={state.board.cfoApp} onChange={d => setState({...state, board: {...state.board, cfoApp: d}})} isApp />
+                <ExecCard role="Chief Marketing Officer" data={state.board.cmo} onChange={d => setState({...state, board: {...state.board, cmo: d}})} />
+                <ExecCard role="CMO Apprentice" data={state.board.cmoApp} onChange={d => setState({...state, board: {...state.board, cmoApp: d}})} isApp />
+                <ExecCard role="Chief Technical Officer" data={state.board.cto} onChange={d => setState({...state, board: {...state.board, cto: d}})} />
+                <ExecCard role="CTO Apprentice" data={state.board.ctoApp} onChange={d => setState({...state, board: {...state.board, ctoApp: d}})} isApp />
              </div>
           </div>
           <div className="lg:col-span-4 space-y-6">

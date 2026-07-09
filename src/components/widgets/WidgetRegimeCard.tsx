@@ -10,8 +10,9 @@ export function WidgetRegimeCard({ realm = 0 }: { realm?: number }) {
   const [data, setData] = useState<CompactRegime | null>(null);
 
   useEffect(() => {
-    fetchWidget<CompactRegime>("regime", realm, true).then(setData).catch(() => {});
-    const id = setInterval(() => fetchWidget<CompactRegime>("regime", realm, true).then(setData).catch(() => {}), 60000);
+    const fetch = () => fetchWidget<CompactRegime>("regime", realm, true).then(setData).catch(() => setData(null));
+    fetch();
+    const id = setInterval(fetch, 60000);
     return () => clearInterval(id);
   }, [realm]);
 

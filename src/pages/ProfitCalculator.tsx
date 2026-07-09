@@ -9,7 +9,7 @@ import type { ProfitMarginsResponse } from "../types/api";
 
 function getBuildingName(buildingId: string | number | undefined): string {
   if (!buildingId) return "N/A";
-  return BUILDINGS.find((x: any) => x.id === String(buildingId))?.name ?? String(buildingId);
+  return BUILDINGS.find(x => x.id === String(buildingId))?.name ?? String(buildingId);
 }
 
 export function ProfitCalculatorPage() {

@@ -2,7 +2,9 @@ import { Wallet } from "lucide-react";
 import { Section } from "../../components/Layout";
 import { ForecastLine } from "./components";
 
-export function FinanceView({ state, setState, core }: any) {
+import type { SuiteViewProps } from "./types";
+
+export function FinanceView({ state, setState, core }: SuiteViewProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pb-12">
        <div className="md:col-span-4 space-y-6">

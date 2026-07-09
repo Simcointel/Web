@@ -2,10 +2,12 @@ import { Target } from "lucide-react";
 import { Section } from "../../components/Layout";
 import { RESOURCES } from "../../data/simco_static";
 
-export function RetailView({ state, setState, retail }: any) {
+import type { SuiteViewProps } from "./types";
+
+export function RetailView({ state, setState, retail }: SuiteViewProps) {
   const selectedRes = RESOURCES.find(r => r.id === state.settings?.retailResourceId) || RESOURCES.find(r => r.id === 24);
   const retailData = retail?.retail ? Object.entries(retail.retail).find(([k]) => k.toLowerCase() === selectedRes?.name.toLowerCase()) : null;
-  const marketSat = (retailData as any)?.[1]?.saturation || 1.0;
+  const marketSat = retailData?.[1]?.saturation ?? 1.0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">

@@ -3,10 +3,12 @@ import { Globe, Package, Building2, DollarSign, Zap, Clock } from "lucide-react"
 import { KPICard, CheckItem } from "./components";
 import { n } from "./types";
 
-export function CommandView({ core, phase, margins, state, onSync, isSyncing, setState }: any) {
+import type { SuiteViewProps } from "./types";
+
+export function CommandView({ core, phase, margins, state, onSync, isSyncing, setState }: SuiteViewProps) {
   const marketAlerts = useMemo(() => {
     if (!margins?.resources) return [];
-    return (margins.resources as any[]).filter(r => Math.abs(r.marginDelta || 0) > 5).slice(0, 5);
+    return margins.resources.filter(r => Math.abs(r.marginDelta || 0) > 5).slice(0, 5);
   }, [margins]);
 
   return (
@@ -20,7 +22,7 @@ export function CommandView({ core, phase, margins, state, onSync, isSyncing, se
                       <div className="flex items-center gap-3">
                          <h2 className="text-2xl font-bold text-surface-900 dark:text-white leading-tight">{state.companyName}</h2>
                          <span className="px-2 py-0.5 bg-brand-100 dark:bg-brand-900/30 text-brand-600 rounded text-[10px] font-black uppercase tracking-widest border border-brand-200 dark:border-brand-800">LVL {state.companyLevel}</span>
-                         {state.companyRank > 0 && <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded text-[10px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-800">RANK #{state.companyRank}</span>}
+                          {(state.companyRank ?? 0) > 0 && <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded text-[10px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-800">RANK #{state.companyRank}</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                          <span className="text-xs font-bold text-brand-600 uppercase tracking-widest">ID #{state.companyId}</span>
@@ -37,7 +39,7 @@ export function CommandView({ core, phase, margins, state, onSync, isSyncing, se
                    <p className="text-[10px] font-bold text-surface-400 uppercase mb-1">Last Transmission</p>
                    <p className="text-sm font-black text-surface-700 dark:text-surface-300">{state.lastSynced}</p>
                    <button
-                     onClick={() => onSync(state.companyId)}
+                      onClick={() => onSync?.(state.companyId)}
                      disabled={isSyncing}
                      className={`text-[10px] font-bold text-brand-600 uppercase hover:underline mt-2 flex items-center gap-1 ml-auto ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
                    >
@@ -56,7 +58,7 @@ export function CommandView({ core, phase, margins, state, onSync, isSyncing, se
              <KPICard label="Warehouse Value" value={`$${(core.inventoryValue/1000).toFixed(1)}K`} sub="Current Inventory" icon={Package} />
              <KPICard label="Asset Valuation" value={`$${(core.mapValue/1_000_000).toFixed(2)}M`} sub={`${core.totalLevels} Facility Levels`} icon={Building2} />
              <KPICard label="Company Value" value={state.companyValue ? `$${(state.companyValue/1_000_000).toFixed(1)}M` : '--'} sub="Total Player Equity" icon={DollarSign} />
-             <KPICard label="Market Regime" value={phase} sub="Global Environment" icon={Globe} />
+              <KPICard label="Market Regime" value={phase ?? '--'} sub="Global Environment" icon={Globe} />
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -84,13 +86,13 @@ export function CommandView({ core, phase, margins, state, onSync, isSyncing, se
                    <h3 className="text-sm font-bold uppercase text-surface-500">Market Volatility</h3>
                 </div>
                 <div className="divide-y divide-surface-50 dark:divide-surface-800">
-                   {marketAlerts.map((r: any, i: number) => (
+                    {marketAlerts.map((r, i) => (
                       <div key={i} className="flex justify-between items-center px-6 py-3 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-all">
                          <span className="font-bold text-surface-800 dark:text-surface-200">{r.name}</span>
                          <div className="flex gap-4 items-center">
                             <span className="font-medium text-surface-400">$${r.outputVwap.toFixed(2)}</span>
-                            <span className={`font-bold tabular-nums ${r.marginDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                               {r.marginDelta > 0 ? '↑' : '↓'} {Math.abs(r.marginDelta).toFixed(1)}%
+                             <span className={`font-bold tabular-nums ${(r.marginDelta ?? 0) > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                {(r.marginDelta ?? 0) > 0 ? '↑' : '↓'} {Math.abs(r.marginDelta ?? 0).toFixed(1)}%
                             </span>
                          </div>
                       </div>
@@ -137,7 +139,7 @@ export function CommandView({ core, phase, margins, state, onSync, isSyncing, se
                   disabled={isSyncing}
                   onClick={() => {
                    const input = document.getElementById('companyIdInput') as HTMLInputElement;
-                   onSync(input.value);
+                    onSync?.(input.value);
                 }} className={`btn !bg-brand-600 text-white !py-2 !px-4 hover:shadow-lg hover:shadow-brand-500/20 transition-all ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}>
                    {isSyncing ? '...' : 'CONNECT'}
                 </button>

@@ -19,8 +19,9 @@ export function WidgetAlertList({ realm = 0, limit = 5 }: { realm?: number; limi
   const [data, setData] = useState<CompactAlerts | null>(null);
 
   useEffect(() => {
-    fetchWidget<CompactAlerts>("alerts", realm, true).then(setData).catch(() => {});
-    const id = setInterval(() => fetchWidget<CompactAlerts>("alerts", realm, true).then(setData).catch(() => {}), 30000);
+    const fetch = () => fetchWidget<CompactAlerts>("alerts", realm, true).then(setData).catch(() => setData(null));
+    fetch();
+    const id = setInterval(fetch, 30000);
     return () => clearInterval(id);
   }, [realm, limit]);
 

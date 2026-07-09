@@ -3,6 +3,7 @@ import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { RETAIL_PRODUCT_MAP, BUILDINGS, RESOURCES } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
+import type { ProfitMarginResource } from "../types/api";
 import { BarChart3, DollarSign, Search, ChevronRight, Package } from "lucide-react";
 import type { ProfitMarginsResponse } from "../types/api";
 
@@ -25,7 +26,7 @@ export function MarketIntelPage() {
   const margins = (marginsData as ProfitMarginsResponse | undefined)?.resources ?? [];
 
   const storeNames: Record<string, string> = {};
-  for (const b of BUILDINGS.filter((b: any) => b.type === "retail" && b.id !== "r" && b.id !== "B")) storeNames[b.id] = b.name;
+  for (const b of BUILDINGS.filter(b => b.type === "retail" && b.id !== "r" && b.id !== "B")) storeNames[b.id] = b.name;
 
   const resNameMap: Record<number, string> = {};
   for (const r of RESOURCES) { if (r.name) resNameMap[r.id] = r.name; }
@@ -55,13 +56,13 @@ export function MarketIntelPage() {
 }
 
 // ─── Tab 1: Retail Rankings ───────────────────────────────
-function RetailRankingsTab({ margins, storeNames, resNameMap }: { margins: any[]; storeNames: Record<string, string>; resNameMap: Record<number, string> }) {
+function RetailRankingsTab({ margins, storeNames, resNameMap }: { margins: ProfitMarginResource[]; storeNames: Record<string, string>; resNameMap: Record<number, string> }) {
   const rows = useMemo(() => {
     const out: Array<{ storeName: string; productName: string; vwap: number }> = [];
     for (const [sid, pids] of Object.entries(RETAIL_PRODUCT_MAP)) {
       const sn = storeNames[sid] ?? sid;
       for (const pid of pids) {
-        const vwap = margins.find((m: any) => m.id === pid)?.outputVwap ?? 0;
+        const vwap = margins.find(m => m.id === pid)?.outputVwap ?? 0;
         if (!vwap) continue;
         out.push({ storeName: sn, productName: resNameMap[pid] ?? `#${pid}`, vwap });
       }
@@ -120,10 +121,10 @@ function QualityPremiumsTab() {
 }
 
 // ─── Tab 3: Supply Chain ──────────────────────────────────
-function SupplyChainTab({ margins, resNameMap }: { margins: any[]; resNameMap: Record<number, string> }) {
+function SupplyChainTab({ margins, resNameMap }: { margins: ProfitMarginResource[]; resNameMap: Record<number, string> }) {
   const [searchId, setSearchId] = useState("");
 
-  const getPrice = (id: number) => margins.find((m: any) => m.id === id)?.outputVwap ?? 0;
+  const getPrice = (id: number) => margins.find(m => m.id === id)?.outputVwap ?? 0;
 
   function Tree({ nodeId }: { nodeId: number }) {
     const res = RESOURCES.find(r => r.id === nodeId);

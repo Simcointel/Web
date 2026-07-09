@@ -3,12 +3,14 @@ import { Package, Ship, Search, Layers } from "lucide-react";
 import { Section } from "../../components/Layout";
 import { RESOURCES } from "../../data/simco_static";
 
-export function LogisticsView({ state, setState, core }: any) {
+import type { SuiteViewProps } from "./types";
+
+export function LogisticsView({ state, setState, core }: SuiteViewProps) {
   const [q, setQ] = useState("");
   const filteredRes = useMemo(() => RESOURCES.filter(r => r.name.toLowerCase().includes(q.toLowerCase())), [q]);
 
   const inventorySummary = useMemo(() => {
-    const totalQty = (state.inventory || []).reduce((sum: number, i: any) => sum + i.qty, 0);
+    const totalQty = (state.inventory || []).reduce((sum, i) => sum + i.qty, 0);
     const topItems = [...(state.inventory || [])]
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 3)

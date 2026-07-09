@@ -6,17 +6,19 @@ import { Section } from "../../components/Layout";
 import { BUILDINGS, CONSTRUCTION_MATERIALS } from "../../data/simco_static";
 import { n } from "./types";
 
-export function OperationsView({ state, setState, core }: any) {
+import type { SuiteViewProps } from "./types";
+
+export function OperationsView({ state, setState, core }: SuiteViewProps) {
   const [q, setQ] = useState("");
   const filteredBuildings = useMemo(() => BUILDINGS.filter(b => b.name.toLowerCase().includes(q.toLowerCase())), [q]);
 
   const constructionTotals = useMemo(() => {
     const totals: Record<number, number> = { 101: 0, 102: 0, 108: 0, 111: 0, 110: 0, 0: 0 };
-    (state.map || []).forEach((m: any) => {
+    (state.map || []).forEach(m => {
       const b = BUILDINGS.find(bu => bu.id === m.id);
       if (!b) return;
       totals[0] += b.cost * (n(m.level) <= 1 ? 1 : n(m.level));
-      b.resources.forEach((r: any) => {
+      b.resources.forEach(r => {
          if (r.id !== 109) totals[r.id] = (totals[r.id] || 0) + (r.qty * (n(m.level) || 1));
       });
     });
@@ -48,7 +50,7 @@ export function OperationsView({ state, setState, core }: any) {
                 </button>
              </div>
              <div className="max-h-[500px] overflow-y-auto space-y-2 pr-2 scrollbar-hide">
-                {(state.map || []).map((m: any, i: number) => (
+                {(state.map || []).map((m, i) => (
                    <div key={i} className="card p-3 flex items-center gap-4 hover:border-emerald-600/30 transition-all border-l-4 border-emerald-600 !shadow-none border-surface-200 dark:border-surface-800">
                       <div className="flex-1">
                          <select value={m.id} onChange={(e) => { const next = [...state.map]; next[i].id = e.target.value; setState({...state, map: next}); }} className="bg-transparent border-none p-0 font-bold uppercase w-full outline-none text-sm">
@@ -61,7 +63,7 @@ export function OperationsView({ state, setState, core }: any) {
                          <input type="number" value={m.level} onChange={(e) => { const next = [...state.map]; next[i].level = Number(e.target.value); setState({...state, map: next}); }} className="w-8 bg-transparent border-none p-0 text-sm font-bold text-center outline-none" />
                       </div>
                       <button
-                        onClick={() => setState({...state, map: state.map.filter((_: any, idx: number) => idx !== i)})}
+                        onClick={() => setState({...state, map: state.map.filter((_, idx) => idx !== i)})}
                         className="p-2 text-surface-300 hover:text-rose-600 transition-colors"
                         aria-label="Remove facility"
                       >
@@ -154,7 +156,7 @@ export function OperationsView({ state, setState, core }: any) {
                       </tr>
                    </thead>
                    <tbody className="divide-y divide-surface-50 dark:divide-surface-800">
-                      {core.buildingProfits.map((p: any, i: number) => (
+                      {core.buildingProfits.map((p, i) => (
                          <tr key={i} className="hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors">
                             <td className="px-6 py-4 font-medium">{p.name}</td>
                             <td className="px-6 py-4 text-center text-surface-400 font-bold">{p.level}</td>

@@ -29,7 +29,7 @@ export function ConstructionCalculatorPage() {
   const { data: marginsData } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 120000, [realm]);
   const margins = (marginsData as ProfitMarginsResponse | undefined)?.resources ?? [];
 
-  const building = useMemo(() => BUILDINGS.find((b: any) => b.id === buildingId), [buildingId]);
+  const building = useMemo(() => BUILDINGS.find(b => b.id === buildingId), [buildingId]);
 
   const matPrices = useMemo(() => {
     const prices: Record<number, number> = {};
@@ -104,7 +104,7 @@ export function ConstructionCalculatorPage() {
             <select value={buildingId} onChange={e => setBuildingId(e.target.value)}
               className="w-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 rounded-lg text-sm font-bold outline-none focus:ring-1 focus:ring-brand-500/20">
               <option value="">-- Select Building --</option>
-              {BUILDINGS.filter((b: any) => b.type === "production").sort((a: any, b: any) => a.name.localeCompare(b.name)).map((b: any) => (
+              {BUILDINGS.filter(b => b.type === "production").sort((a, b) => a.name.localeCompare(b.name)).map(b => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>

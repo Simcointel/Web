@@ -15,8 +15,9 @@ export function WidgetHealthCard({ realm = 0, compact = true }: { realm?: number
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchWidget<CompactHealth>("health", realm, compact).then(setData).catch((e) => setError(e.message));
-    const id = setInterval(() => fetchWidget<CompactHealth>("health", realm, compact).then(setData).catch(() => {}), 30000);
+    const fetch = () => fetchWidget<CompactHealth>("health", realm, compact).then(setData).catch((e) => setError(e.message));
+    fetch();
+    const id = setInterval(fetch, 30000);
     return () => clearInterval(id);
   }, [realm, compact]);
 

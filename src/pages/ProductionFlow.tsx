@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { RESOURCES } from "../data/simco_static";
+import { buildResourceTree } from "../data/buildTree";
 import { Search, ChevronRight, Share2, Layers, Zap } from "lucide-react";
 
 
@@ -15,19 +16,7 @@ export function ProductionFlowPage() {
     RESOURCES.filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
   , [search]);
 
-  const tree = useMemo(() => {
-    const buildTree = (id: number, depth = 0): any => {
-      const res = RESOURCES.find(r => r.id === id);
-      if (!res || depth > 5) return { id, name: res?.name || '?', inputs: [] };
-      const inputs = res.inputs ? Object.entries(res.inputs).map(([iid, qty]) => ({
-        ...buildTree(Number(iid), depth + 1),
-        qty,
-        parentId: id
-      })) : [];
-      return { id, name: res.name, inputs, buildingId: res.buildingId };
-    };
-    return buildTree(targetId);
-  }, [targetId]);
+  const tree = useMemo(() => buildResourceTree(targetId), [targetId]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300 text-sm">
@@ -76,7 +65,9 @@ export function ProductionFlowPage() {
   );
 }
 
-function TreeNode({ node, isRoot, qty }: { node: any; isRoot?: boolean; qty?: any }) {
+import type { TreeNode } from "../data/buildTree";
+
+function TreeNode({ node, isRoot, qty }: { node: TreeNode; isRoot?: boolean; qty?: number | string }) {
   return (
     <div className="flex flex-col items-center">
        <div className={`p-4 px-6 rounded-xl border transition-all duration-300 group relative ${isRoot ? 'bg-brand-600 text-white shadow-md border-brand-700' : 'bg-white dark:bg-surface-900 border-surface-200 dark:border-surface-800 hover:border-brand-500 shadow-sm'}`}>
@@ -100,10 +91,10 @@ function TreeNode({ node, isRoot, qty }: { node: any; isRoot?: boolean; qty?: an
           </div>
        </div>
 
-       {node.inputs && node.inputs.length > 0 && (
+        {node.inputs.length > 0 && (
           <div className="flex gap-8 mt-12 relative">
              <div className="absolute -top-12 left-1/2 w-0.5 h-12 bg-surface-200 dark:bg-surface-800" />
-             {node.inputs.map((input: any, i: number) => (
+              {node.inputs.map((input, i) => (
                 <div key={i} className="relative pt-4">
                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-surface-100 dark:bg-surface-800/50" />
                    <TreeNode node={input} qty={input.qty} />
