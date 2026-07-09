@@ -42,24 +42,28 @@ export function ConstructionCalculatorPage() {
 
   const upgrades = useMemo(() => {
     if (!building || targetLv <= currentLv) return [];
-    const steps: { lv: number; materials: Record<number, number>; time: number; matCost: number }[] = [];
+    const steps: { lv: number; materials: Record<number, number>; time: number; matCost: number; cashCost: number }[] = [];
     for (let lv = currentLv + 1; lv <= targetLv; lv++) {
+      const mult = Math.max(1, lv - 1);
       const materials: Record<number, number> = {};
       for (const r of building.resources) {
-        materials[r.id] = (materials[r.id] ?? 0) + r.qty * lv;
+        materials[r.id] = (materials[r.id] ?? 0) + r.qty * mult;
       }
       let matCost = 0;
       for (const [id, qty] of Object.entries(materials)) {
         matCost += (matPrices[Number(id)] ?? 0) * qty;
       }
-      const time = building.baseTime * lv;
-      steps.push({ lv, materials, time, matCost });
+      const time = building.baseTime * mult;
+      const cashCost = building.cost * mult;
+      steps.push({ lv, materials, time, matCost, cashCost });
     }
     return steps;
   }, [building, currentLv, targetLv, matPrices]);
 
   const totalTimeH = upgrades.reduce((s, u) => s + u.time, 0);
   const totalMatCost = upgrades.reduce((s, u) => s + u.matCost, 0);
+  const totalCashCost = upgrades.reduce((s, u) => s + u.cashCost, 0);
+  const totalCost = totalMatCost + totalCashCost;
 
   const roi = useMemo<{ dailyRevenue: number; dailyWages: number; daysToRecoup: number; revenuePerLevel: number; outputVwap: number; dailyNet: number } | null>(() => {
     if (!building || upgrades.length === 0) return null;
@@ -71,9 +75,9 @@ export function ConstructionCalculatorPage() {
     const dailyRevenue = revenuePerLevel * targetLv;
     const dailyWages = wages * 24 * (1 + 0.1) * targetLv;
     const dailyNet = dailyRevenue - dailyWages;
-    const daysToRecoup = dailyNet > 0 ? totalMatCost / dailyNet : Infinity;
+    const daysToRecoup = dailyNet > 0 ? totalCost / dailyNet : Infinity;
     return { dailyRevenue, dailyWages, daysToRecoup, revenuePerLevel, outputVwap, dailyNet };
-  }, [building, upgrades, targetLv, margins, totalMatCost]);
+  }, [building, upgrades, targetLv, margins, totalCost]);
 
   const totalMats = useMemo(() => {
     const m: Record<number, number> = {};
@@ -129,7 +133,7 @@ export function ConstructionCalculatorPage() {
               <div className="text-xs text-surface-500 space-y-1.5 bg-surface-50 dark:bg-surface-900 rounded-lg p-3">
                 <p className="font-semibold">Base time: <span className="font-bold text-surface-700 dark:text-surface-300">{fmtHours(building.baseTime)}</span></p>
                 <p className="font-semibold">Per level: <span className="font-bold text-surface-700 dark:text-surface-300">{building.resources.map(r => `${r.qty}× ${matName(r.id)}`).join(", ")}</span></p>
-                <p className="text-[9px] text-surface-400 italic mt-1">Materials scale with level (lv × base)</p>
+                <p className="text-[9px] text-surface-400 italic mt-1">Lv 1-2 = base; Lv 3+ = base × (lv-1)</p>
               </div>
             )}
           </div>
@@ -146,11 +150,12 @@ export function ConstructionCalculatorPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-4 gap-3">
-                <MetricCard label="Material Cost" value={`$${totalMatCost.toLocaleString()}`} />
+              <div className="grid grid-cols-5 gap-3">
+                <MetricCard label="Total Cost" value={`$${totalCost.toLocaleString()}`} sub="cash + materials" />
+                <MetricCard label="Cash Cost" value={`$${totalCashCost.toLocaleString()}`} />
                 <MetricCard label="Total Time" value={fmtHours(totalTimeH)} />
                 <MetricCard label="Steps" value={String(upgrades.length)} />
-                <MetricCard label="Scrap Value" value={`$${(() => { let s=0; for (const [id,qty] of Object.entries(totalMats)) { s += (MAT_REF_PRICES[Number(id)] ?? 0) * qty; } return Math.round(s).toLocaleString(); })()}`} sub="at ref prices" />
+                <MetricCard label="Scrap Value" value={`$${(building.cost * targetLv).toLocaleString()}`} sub="at target level" />
               </div>
 
               {roi && roi.dailyRevenue > 0 && (
@@ -162,7 +167,7 @@ export function ConstructionCalculatorPage() {
                   </div>
                   <MetricCard label="Daily Wages" value={`$${roi.dailyWages.toLocaleString()}`} />
                   <MetricCard label="Daily Net" value={`$${roi.dailyNet.toLocaleString()}`} highlight={roi.dailyNet > 0 ? "text-emerald-600" : "text-rose-600"} />
-                  <MetricCard label="Recoup Time" value={roi.daysToRecoup === Infinity ? "∞" : `${roi.daysToRecoup.toFixed(1)}d`} sub="materials only" />
+                  <MetricCard label="Recoup Time" value={roi.daysToRecoup === Infinity ? "∞" : `${roi.daysToRecoup.toFixed(1)}d`} sub="cash + materials" />
                 </div>
               )}
 
@@ -191,7 +196,8 @@ export function ConstructionCalculatorPage() {
                   <thead>
                     <tr className="bg-surface-50 dark:bg-surface-900 text-[9px] font-black uppercase tracking-wider text-surface-500 border-b border-surface-100 dark:border-surface-800">
                       <th className="px-4 py-2.5">Lv</th>
-                      <th className="px-4 py-2.5 text-right">Cost</th>
+                      <th className="px-4 py-2.5 text-right">Mats</th>
+                      <th className="px-4 py-2.5 text-right">Cash</th>
                       <th className="px-4 py-2.5 text-right">Time</th>
                       <th className="px-4 py-2.5 text-right">Concrete</th>
                       <th className="px-4 py-2.5 text-right">Bricks</th>
@@ -204,6 +210,7 @@ export function ConstructionCalculatorPage() {
                       <tr key={u.lv} className="hover:bg-surface-50 dark:hover:bg-surface-900/50 transition-colors">
                         <td className="px-4 py-2.5 font-bold">Lv {u.lv}</td>
                         <td className="px-4 py-2.5 text-right tabular-nums">${u.matCost.toLocaleString()}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">${u.cashCost.toLocaleString()}</td>
                         <td className="px-4 py-2.5 text-right tabular-nums">{fmtHours(u.time)}</td>
                         <td className="px-4 py-2.5 text-right tabular-nums">{Math.round(u.materials[101] ?? 0)}</td>
                         <td className="px-4 py-2.5 text-right tabular-nums">{Math.round(u.materials[102] ?? 0)}</td>
