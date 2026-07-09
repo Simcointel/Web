@@ -12,7 +12,6 @@ const AboutPage = lazy(() => import("./pages/About").then(m => ({ default: m.Abo
 const VWAPInflationPage = lazy(() => import("./pages/VWAPInflation").then(m => ({ default: m.VWAPInflationPage })));
 const ProfitMarginsPage = lazy(() => import("./pages/ProfitMargins").then(m => ({ default: m.ProfitMarginsPage })));
 const EncyclopediaPage = lazy(() => import("./pages/Encyclopedia").then(m => ({ default: m.EncyclopediaPage })));
-// Production Flow merged into Encyclopedia (use "Flow" button on detail view)
 const WidgetPage = lazy(() => import("./pages/WidgetRenderer").then(m => ({ default: m.WidgetPage })));
 const NotFoundPage = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFoundPage })));
 const CorporateSuitePage = lazy(() => import("./pages/CorporateSuite").then(m => ({ default: m.CorporateSuitePage })));
@@ -22,6 +21,15 @@ const RetailCalculatorPage = lazy(() => import("./pages/RetailCalculator").then(
 const MarketIntelPage = lazy(() => import("./pages/MarketIntel").then(m => ({ default: m.MarketIntelPage })));
 const XpCalculatorPage = lazy(() => import("./pages/XpCalculator").then(m => ({ default: m.XpCalculatorPage })));
 const BoardRoomPage = lazy(() => import("./pages/BoardRoom").then(m => ({ default: m.BoardRoomPage })));
+
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center py-24">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      <span className="text-xs font-bold text-surface-400 uppercase tracking-wider">Loading</span>
+    </div>
+  </div>
+);
 
 export function AppShell({ path }: { path: string }) {
   const { theme } = useTheme();
@@ -61,8 +69,8 @@ export function AppShell({ path }: { path: string }) {
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <main className="flex-1 overflow-y-auto focus:outline-none custom-scrollbar pb-16 lg:pb-0">
-          <div className={`${isSuite ? 'max-w-full px-4 lg:px-8 py-4' : 'max-w-[1600px] mx-auto p-3 sm:p-4 lg:p-6'}`}>
-            <Suspense fallback={<div className="flex items-center justify-center py-20 text-surface-400 font-bold">Loading...</div>}>
+          <div className={`${isSuite ? 'max-w-full px-4 lg:px-8 py-4' : 'max-w-[1440px] mx-auto p-3 sm:p-4 lg:p-6'}`}>
+            <Suspense fallback={<LoadingFallback />}>
               <PageErrorBoundary>{page}</PageErrorBoundary>
             </Suspense>
           </div>

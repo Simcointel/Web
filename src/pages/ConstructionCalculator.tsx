@@ -3,7 +3,8 @@ import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { BUILDINGS, CONSTRUCTION_MATERIALS, MAT_REF_PRICES, RESOURCES } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
-import { HardHat, ArrowRight, TrendingUp, Clock, Package, ListTree } from "lucide-react";
+import { Section, CardGrid } from "../components/Layout";
+import { HardHat, Search, Layers, TrendingUp, Package, ListTree, Timer, Building2 } from "lucide-react";
 import type { ProfitMarginsResponse } from "../types/api";
 
 function matName(id: number): string {
@@ -105,197 +106,239 @@ export function ConstructionCalculatorPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-1 space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* ─── Sidebar: building & level controls ─── */}
+        <div className="lg:col-span-4 xl:col-span-3 space-y-4">
           <div className="card p-5 space-y-4">
-            <div className="flex items-center gap-2 text-surface-500 mb-1">
-              <Package size={14} />
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em]">Building</h2>
+            <div className="flex items-center gap-2 pb-2 border-b border-surface-100 dark:border-surface-800">
+              <Building2 size={16} className="text-surface-400" />
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Building</h2>
             </div>
-            <select value={buildingId} onChange={e => setBuildingId(e.target.value)}
-              className="w-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 rounded-lg text-sm font-bold outline-none focus:ring-1 focus:ring-brand-500/20">
-              <option value="">-- Select Building --</option>
-              {BUILDINGS.filter(b => b.type === "production" || b.type === "retail").sort((a, b) => a.name.localeCompare(b.name)).map(b => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
+
+            <div className="space-y-1.5">
+              <label className="stat-label">Select building</label>
+              <select value={buildingId} onChange={e => setBuildingId(e.target.value)}
+                className="w-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 rounded-lg text-sm font-bold outline-none focus:ring-1 focus:ring-brand-500/20">
+                <option value="">-- Choose a building --</option>
+                <optgroup label="Production">
+                  {BUILDINGS.filter(b => b.type === "production").sort((a, b) => a.name.localeCompare(b.name)).map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Retail">
+                  {BUILDINGS.filter(b => b.type === "retail").sort((a, b) => a.name.localeCompare(b.name)).map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
 
             {building && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Current</label>
-                  <input type="number" min={0} max={49} value={currentLv}
-                    onChange={e => setCurrentLv(Math.max(0, Math.min(49, Number(e.target.value))))}
-                    className="input" />
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="stat-label">Current Lv</label>
+                    <input type="number" min={0} max={49} value={currentLv}
+                      onChange={e => setCurrentLv(Math.max(0, Math.min(49, Number(e.target.value))))}
+                      className="input !text-sm" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="stat-label">Target Lv</label>
+                    <input type="number" min={1} max={50} value={targetLv}
+                      onChange={e => setTargetLv(Math.max(1, Math.min(50, Number(e.target.value))))}
+                      className="input !text-sm" />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Target</label>
-                  <input type="number" min={1} max={50} value={targetLv}
-                    onChange={e => setTargetLv(Math.max(1, Math.min(50, Number(e.target.value))))}
-                    className="input" />
+
+                <div className="rounded-lg bg-surface-50 dark:bg-surface-950 border border-surface-100 dark:border-surface-800 divide-y divide-surface-100 dark:divide-surface-800 text-xs">
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <span className="text-surface-500 font-semibold">Type</span>
+                    <span className="font-bold capitalize">{building.type}</span>
+                  </div>
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <span className="text-surface-500 font-semibold">Base time</span>
+                    <span className="font-bold">{fmtHours(building.baseTime)}</span>
+                  </div>
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <span className="text-surface-500 font-semibold">Per level</span>
+                    <span className="font-bold text-right">{building.resources.map(r => `${r.qty}× ${matName(r.id)}`).join(", ")}</span>
+                  </div>
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <span className="text-surface-500 font-semibold">Scaling</span>
+                    <span className="font-bold text-surface-400">Lv 1-2 = base, Lv 3+ = base × (lv-1)</span>
+                  </div>
                 </div>
-              </div>
-            )}
-            {building && (
-              <div className="text-xs text-surface-500 space-y-1.5 bg-surface-50 dark:bg-surface-900 rounded-lg p-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">Base time</span>
-                  <span className="font-bold text-surface-700 dark:text-surface-300">{fmtHours(building.baseTime)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">Per level</span>
-                  <span className="font-bold text-surface-700 dark:text-surface-300">{building.resources.map(r => `${r.qty}× ${matName(r.id)}`).join(", ")}</span>
-                </div>
-                <div className="text-[9px] text-surface-400 italic border-t border-surface-200 dark:border-surface-700 pt-1.5 mt-1.5">
-                  Lv 1-2 = base cost; Lv 3+ = base × (lv-1)
-                </div>
-              </div>
+              </>
             )}
           </div>
         </div>
 
-        <div className="lg:col-span-2">
+        {/* ─── Main dashboard ─── */}
+        <div className="lg:col-span-8 xl:col-span-9 space-y-5">
           {!building ? (
-            <div className="card p-16 text-center">
-              <Package size={40} className="mx-auto text-surface-200 dark:text-surface-700 mb-3" />
-              <div className="text-surface-300 dark:text-surface-600 text-sm font-bold">Select a building to begin</div>
-              <p className="text-xs text-surface-400 mt-1">Choose a production or retail building to estimate construction costs</p>
+            <div className="card p-14 text-center">
+              <Search size={44} className="mx-auto text-surface-200 dark:text-surface-700 mb-4" />
+              <p className="text-surface-300 dark:text-surface-600 text-sm font-bold">Select a building to begin</p>
+              <p className="text-xs text-surface-400 mt-1">Construction costs, material estimates, and ROI will appear here</p>
             </div>
           ) : upgrades.length === 0 ? (
-            <div className="card p-16 text-center">
-              <ArrowRight size={40} className="mx-auto text-surface-200 dark:text-surface-700 mb-3" />
-              <div className="text-surface-300 dark:text-surface-600 text-sm font-bold">Target must be higher than current level</div>
-              <p className="text-xs text-surface-400 mt-1">Set target level above current to see upgrade breakdown</p>
+            <div className="card p-14 text-center">
+              <Layers size={44} className="mx-auto text-surface-200 dark:text-surface-700 mb-4" />
+              <p className="text-surface-300 dark:text-surface-600 text-sm font-bold">Target must be higher than current level</p>
+              <p className="text-xs text-surface-400 mt-1">Raise the target level above current to see the upgrade breakdown</p>
             </div>
           ) : (
-            <div className="space-y-5">
-              <section>
-                <div className="flex items-center gap-2 mb-3">
-                  <TrendingUp size={14} className="text-surface-400" />
+            <>
+              {/* ── Cost Summary ── */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <TrendingUp size={15} className="text-surface-400" />
                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Cost Summary</h3>
                 </div>
-                <div className="grid grid-cols-5 gap-3">
-                  <MetricCard label="Reference Cost" value={`$${totalRefCost.toLocaleString()}`} sub="game reference prices" />
-                  <MetricCard label="Market Cost" value={`$${totalMatCost.toLocaleString()}`} sub="materials at VWAP" highlight={totalMatCost > totalRefCost ? "text-rose-600" : "text-emerald-600"} />
-                  <MetricCard label="Scrap Value" value={`$${(building.cost * targetLv).toLocaleString()}`} sub="if demolished" />
-                  <MetricCard label="Total Time" value={fmtHours(totalTimeH)} sub={`${upgrades.length} upgrade(s)`} />
-                  <MetricCard label="Cash Cost" value={roi && roi.dailyRevenue > 0 ? `$${totalMatCost.toLocaleString()}` : "—"} sub="actual cash outlay" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
+                  <div className="kpi-card card border-l-4 border-l-sky-500">
+                    <span className="stat-label">Reference Cost</span>
+                    <span className="stat-value">${totalRefCost.toLocaleString()}</span>
+                    <span className="block text-[10px] text-surface-400 mt-1">game reference prices</span>
+                  </div>
+                  <div className="kpi-card card border-l-4 border-l-violet-500">
+                    <span className="stat-label">Market Cost</span>
+                    <span className={`stat-value ${totalMatCost > totalRefCost ? 'text-rose-600' : 'text-emerald-600'}`}>${totalMatCost.toLocaleString()}</span>
+                    <span className="block text-[10px] text-surface-400 mt-1">materials at VWAP</span>
+                  </div>
+                  <div className="kpi-card card border-l-4 border-l-amber-500">
+                    <span className="stat-label">Scrap Value</span>
+                    <span className="stat-value">${(building.cost * targetLv).toLocaleString()}</span>
+                    <span className="block text-[10px] text-surface-400 mt-1">if demolished at target</span>
+                  </div>
+                  <div className="kpi-card card border-l-4 border-l-emerald-500">
+                    <span className="stat-label">Total Time</span>
+                    <span className="stat-value">{fmtHours(totalTimeH)}</span>
+                    <span className="block text-[10px] text-surface-400 mt-1">{upgrades.length} level(s)</span>
+                  </div>
+                  <div className="kpi-card card border-l-4 border-l-orange-500">
+                    <span className="stat-label">Upgrades</span>
+                    <span className="stat-value">{upgrades.length}</span>
+                    <span className="block text-[10px] text-surface-400 mt-1">Lv {currentLv} → Lv {targetLv}</span>
+                  </div>
                 </div>
               </section>
 
+              {/* ── Revenue Analysis ── */}
               {roi && roi.dailyRevenue > 0 && (
-                <section>
-                  <div className="flex items-center gap-2 mb-3">
-                    <TrendingUp size={14} className="text-surface-400" />
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp size={15} className="text-surface-400" />
                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Revenue Analysis</h3>
                   </div>
-                  <div className="grid grid-cols-4 gap-3">
-                    <div className="card p-3 border-l-4 border-l-brand-500">
-                      <span className="metric-label">Est. Daily Revenue</span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="card p-4 border-l-4 border-l-brand-500 space-y-1">
+                      <span className="metric-label">Daily Revenue</span>
                       <span className="metric-value text-brand-600">${roi.dailyRevenue.toLocaleString()}</span>
-                      <span className="block text-[9px] text-surface-400 mt-0.5">@ ${roi.outputVwap.toFixed(2)}/u</span>
+                      <span className="block text-[10px] text-surface-400">@ ${roi.outputVwap.toFixed(2)}/u</span>
                     </div>
-                    <MetricCard label="Daily Wages" value={`$${roi.dailyWages.toLocaleString()}`} sub="incl. 10% vacation" />
-                    <MetricCard label="Daily Net" value={`$${roi.dailyNet.toLocaleString()}`} highlight={roi.dailyNet > 0 ? "text-emerald-600" : "text-rose-600"} sub={roi.dailyNet > 0 ? "revenue − wages" : "operating at loss"} />
-                    <MetricCard label="Recoup Time" value={roi.daysToRecoup === Infinity ? "∞" : `${roi.daysToRecoup.toFixed(1)}d`} sub={roi.daysToRecoup === Infinity ? "never profitable" : "market cost ÷ daily net"} />
+                    <div className="card p-4 border-l-4 border-l-rose-400 space-y-1">
+                      <span className="metric-label">Daily Wages</span>
+                      <span className="metric-value">${roi.dailyWages.toLocaleString()}</span>
+                      <span className="block text-[10px] text-surface-400">incl. 10% vacation</span>
+                    </div>
+                    <div className="card p-4 border-l-4 space-y-1" style={{ borderLeftColor: roi.dailyNet > 0 ? '#10b981' : '#f43f5e' }}>
+                      <span className="metric-label">Daily Net</span>
+                      <span className={`metric-value ${roi.dailyNet > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>${roi.dailyNet.toLocaleString()}</span>
+                      <span className="block text-[10px] text-surface-400">{roi.dailyNet > 0 ? 'revenue − wages' : 'operating at loss'}</span>
+                    </div>
+                    <div className="card p-4 border-l-4 border-l-violet-500 space-y-1">
+                      <span className="metric-label">Recoup Time</span>
+                      <span className="metric-value">{roi.daysToRecoup === Infinity ? '∞' : `${roi.daysToRecoup.toFixed(1)}d`}</span>
+                      <span className="block text-[10px] text-surface-400">{roi.daysToRecoup === Infinity ? 'never profitable' : 'market cost ÷ daily net'}</span>
+                    </div>
                   </div>
                 </section>
               )}
 
+              {/* ── Material Requirements ── */}
               {buildingMatIds.length > 0 && (
-                <section>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Package size={14} className="text-surface-400" />
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Package size={15} className="text-surface-400" />
                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Material Requirements</h3>
                   </div>
-                  <div className="card">
-                    <div className="p-4 grid grid-cols-5 gap-3">
-                      {buildingMatIds.map(id => {
-                        const qty = Math.round(totalMats[id] ?? 0);
-                        if (qty === 0) return null;
-                        return (
-                          <div key={id} className="bg-surface-50 dark:bg-surface-900 p-3 rounded-lg border border-surface-100 dark:border-surface-800">
-                            <span className="metric-label">{matName(id)}</span>
-                            <span className="metric-value">{qty.toLocaleString()}</span>
-                            <span className="block text-[9px] text-surface-400 mt-0.5">@ ${(matPrices[id] ?? 0).toFixed(2)}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {buildingMatIds.map(id => {
+                      const qty = Math.round(totalMats[id] ?? 0);
+                      if (qty === 0) return null;
+                      return (
+                        <div key={id} className="card p-4 space-y-1">
+                          <span className="stat-label">{matName(id)}</span>
+                          <span className="stat-value">{qty.toLocaleString()}</span>
+                          <span className="block text-[10px] text-surface-400">@ ${(matPrices[id] ?? 0).toFixed(2)} = ${(qty * (matPrices[id] ?? 0)).toLocaleString()}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </section>
               )}
 
-              <section>
-                <div className="flex items-center gap-2 mb-3">
-                  <ListTree size={14} className="text-surface-400" />
+              {/* ── Upgrade Breakdown ── */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <ListTree size={15} className="text-surface-400" />
                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Upgrade Breakdown</h3>
                 </div>
-                <div className="card overflow-hidden">
-                  <table className="w-full text-left">
+                <div className="overflow-x-auto rounded-xl border border-surface-200 dark:border-surface-800">
+                  <table className="w-full text-xs">
                     <thead>
-                      <tr className="bg-surface-50 dark:bg-surface-900 text-[9px] font-black uppercase tracking-wider text-surface-500 border-b border-surface-100 dark:border-surface-800">
-                        <th className="px-4 py-2.5">Level</th>
-                        <th className="px-4 py-2.5 text-right">Ref Cost</th>
-                        <th className="px-4 py-2.5 text-right">Market Cost</th>
-                        <th className="px-4 py-2.5 text-right">Time</th>
-                        <th className="px-4 py-2.5 text-right">Time (cum.)</th>
+                      <tr className="bg-surface-50 dark:bg-surface-900 text-[10px] font-bold uppercase text-surface-500 border-b border-surface-100 dark:border-surface-800">
+                        <th className="px-3 py-2.5 text-left">Level</th>
+                        <th className="px-3 py-2.5 text-right">Ref Cost</th>
+                        <th className="px-3 py-2.5 text-right">Market Cost</th>
+                        <th className="px-3 py-2.5 text-right">Time</th>
+                        <th className="px-3 py-2.5 text-right">Cum. Time</th>
                         {buildingMatIds.map(id => (
-                          <th key={id} className="px-4 py-2.5 text-right">{matName(id)}</th>
+                          <th key={id} className="px-3 py-2.5 text-right">{matName(id)}</th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-surface-100 dark:divide-surface-800 text-sm">
+                    <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
                       {(() => {
                         let cumTime = 0;
-                        return upgrades.map(u => {
+                        return upgrades.map((u, i) => {
                           cumTime += u.time;
                           return (
-                            <tr key={u.lv} className="hover:bg-surface-50 dark:hover:bg-surface-900/50 transition-colors">
-                              <td className="px-4 py-2.5 font-bold whitespace-nowrap">
-                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 text-xs font-bold mr-1.5">{u.lv}</span>
-                                Lv {u.lv}
+                            <tr key={u.lv} className={`hover:bg-surface-50 dark:hover:bg-surface-900/50 transition-colors ${i % 2 === 1 ? 'bg-surface-50/30 dark:bg-surface-900/20' : ''}`}>
+                              <td className="px-3 py-2 font-bold whitespace-nowrap">
+                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 text-[10px] font-bold mr-1.5">{u.lv}</span>
                               </td>
-                              <td className="px-4 py-2.5 text-right tabular-nums">${u.refCost.toLocaleString()}</td>
-                              <td className="px-4 py-2.5 text-right tabular-nums">${u.matCost.toLocaleString()}</td>
-                              <td className="px-4 py-2.5 text-right tabular-nums">{fmtHours(u.time)}</td>
-                              <td className="px-4 py-2.5 text-right tabular-nums text-surface-400">{fmtHours(cumTime)}</td>
+                              <td className="px-3 py-2 text-right tabular-nums">${u.refCost.toLocaleString()}</td>
+                              <td className="px-3 py-2 text-right tabular-nums">${u.matCost.toLocaleString()}</td>
+                              <td className="px-3 py-2 text-right tabular-nums">{fmtHours(u.time)}</td>
+                              <td className="px-3 py-2 text-right tabular-nums text-surface-400">{fmtHours(cumTime)}</td>
                               {buildingMatIds.map(id => (
-                                <td key={id} className="px-4 py-2.5 text-right tabular-nums">{Math.round(u.materials[id] ?? 0)}</td>
+                                <td key={id} className="px-3 py-2 text-right tabular-nums">{Math.round(u.materials[id] ?? 0)}</td>
                               ))}
                             </tr>
                           );
                         });
                       })()}
                     </tbody>
-                    <tfoot className="bg-surface-50 dark:bg-surface-900 text-sm font-bold border-t-2 border-surface-200 dark:border-surface-700">
+                    <tfoot className="bg-surface-50 dark:bg-surface-900 text-xs font-bold border-t-2 border-surface-200 dark:border-surface-700">
                       <tr>
-                        <td className="px-4 py-2.5">Total</td>
-                        <td className="px-4 py-2.5 text-right tabular-nums">${totalRefCost.toLocaleString()}</td>
-                        <td className="px-4 py-2.5 text-right tabular-nums">${totalMatCost.toLocaleString()}</td>
-                        <td className="px-4 py-2.5 text-right tabular-nums" colSpan={2}>{fmtHours(totalTimeH)}</td>
+                        <td className="px-3 py-2.5">Total</td>
+                        <td className="px-3 py-2.5 text-right tabular-nums">${totalRefCost.toLocaleString()}</td>
+                        <td className="px-3 py-2.5 text-right tabular-nums">${totalMatCost.toLocaleString()}</td>
+                        <td className="px-3 py-2.5 text-right tabular-nums" colSpan={2}>{fmtHours(totalTimeH)}</td>
                         {buildingMatIds.map(id => (
-                          <td key={id} className="px-4 py-2.5 text-right tabular-nums">{Math.round(totalMats[id] ?? 0).toLocaleString()}</td>
+                          <td key={id} className="px-3 py-2.5 text-right tabular-nums">{Math.round(totalMats[id] ?? 0).toLocaleString()}</td>
                         ))}
                       </tr>
                     </tfoot>
                   </table>
                 </div>
               </section>
-            </div>
+            </>
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function MetricCard({ label, value, highlight, sub }: { label: string; value: string; highlight?: string; sub?: string }) {
-  return (
-    <div className="card p-3">
-      <span className="metric-label">{label}</span>
-      <span className={`metric-value ${highlight || ''}`}>{value}</span>
-      {sub && <span className="block text-[9px] text-surface-400 mt-0.5">{sub}</span>}
     </div>
   );
 }

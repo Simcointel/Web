@@ -13,12 +13,16 @@
     @apply text-surface-50 bg-surface-950;
   }
   body { @apply min-h-screen overflow-x-hidden; }
+  ::selection { @apply bg-brand-500/20 text-brand-900 dark:text-brand-100; }
+  :focus-visible { @apply outline-none ring-2 ring-brand-500/40 ring-offset-2 ring-offset-white dark:ring-offset-surface-950 rounded-lg; }
 }
 
 @layer components {
+  /* ── Typography ── */
   .stat-value { @apply text-xl font-black tracking-tight tabular-nums font-mono; }
   .stat-label { @apply text-[9px] font-black uppercase tracking-[0.2em] text-surface-400; }
 
+  /* ── Cards ── */
   .card {
     @apply bg-white dark:bg-surface-900 rounded-xl border border-surface-100 dark:border-surface-800 transition-all duration-200;
   }
@@ -31,11 +35,11 @@
   .card-header {
     @apply px-4 py-2.5 border-b border-surface-50 dark:border-surface-800/50 bg-surface-50/50 dark:bg-surface-800/20 flex items-center justify-between rounded-t-xl;
   }
-
   .card-accent {
     @apply border-l-4 transition-all duration-200;
   }
 
+  /* ── Buttons ── */
   .btn {
     @apply inline-flex items-center justify-center px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-200 focus:outline-none active:scale-[0.97];
   }
@@ -46,6 +50,7 @@
     @apply bg-surface-50 dark:bg-surface-800 text-surface-600 dark:text-surface-300 border border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-700;
   }
 
+  /* ── Inputs ── */
   .input {
     @apply block w-full px-3 py-2 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-lg text-xs font-bold placeholder-surface-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/20 transition-all;
   }
@@ -54,6 +59,7 @@
     @apply px-2 py-0.5 text-[10px] font-bold uppercase tracking-tight rounded-md border;
   }
 
+  /* ── Tabs ── */
   .tab-btn {
     @apply px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200;
   }
@@ -64,6 +70,7 @@
     @apply text-surface-500 hover:text-surface-700 dark:hover:text-surface-300;
   }
 
+  /* ── Metrics ── */
   .metric-card {
     @apply card p-4 space-y-1.5;
   }
@@ -74,6 +81,7 @@
     @apply text-[9px] font-black uppercase tracking-[0.15em] text-surface-400;
   }
 
+  /* ── KPI Cards ── */
   .kpi-card {
     @apply relative overflow-hidden rounded-xl p-5 transition-all duration-200;
   }
@@ -81,6 +89,31 @@
     content: '';
     @apply absolute inset-0 opacity-[0.03] rounded-xl;
     background: linear-gradient(135deg, currentColor 0%, transparent 100%);
+  }
+
+  /* ── Sidebar ── */
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-150 text-sm font-bold;
+  }
+  .sidebar-link-active {
+    @apply bg-brand-600 text-white shadow-sm;
+  }
+  .sidebar-link-inactive {
+    @apply text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-900 hover:text-surface-900 dark:hover:text-surface-200;
+  }
+  .sidebar-icon-active {
+    @apply text-white;
+  }
+  .sidebar-icon-inactive {
+    @apply text-surface-400 dark:text-surface-500 group-hover:text-brand-600;
+  }
+
+  /* ── Nav Group ── */
+  .nav-group-header {
+    @apply px-3 text-[10px] font-black uppercase tracking-[0.18em] text-surface-400 mb-2;
+  }
+  .nav-group-divider {
+    @apply border-t border-surface-100 dark:border-surface-800 mx-3 my-4;
   }
 }
 
@@ -124,4 +157,12 @@
 }
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
 }

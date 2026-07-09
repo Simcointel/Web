@@ -1,7 +1,5 @@
 import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
-import { MiniSparkline } from "../components/MiniSparkline";
-import { Section } from "../components/Layout";
 import { LoadingState, ErrorState } from "../components/States";
 import { useMemo, useEffect } from "react";
 import { useSharedRealm } from "../hooks/useSharedRealm";
@@ -10,9 +8,10 @@ import { Link } from "../router";
 import type { ComponentType } from "react";
 import {
   Activity, TrendingUp, Shield, AlertCircle,
-  ChevronRight, Zap, Globe,
+  ChevronRight, Zap,
   BarChart3, LayoutGrid, Calculator, HardHat,
-  Store, Building2, Zap as ZapIcon
+  Store, Building2, Zap as ZapIcon,
+  Clock, Sparkles
 } from "lucide-react";
 
 export function HomePage() {
@@ -35,6 +34,13 @@ export function HomePage() {
 
   const sparkData = scores ? [scores.eh, scores.ms, scores.st, scores.ip, scores.sr] : [];
 
+  const kpis = [
+    { title: "Economic Health", value: scores?.eh, icon: Activity, color: "text-brand-600", bg: "bg-brand-50 dark:bg-brand-900/10" },
+    { title: "Market Sentiment", value: scores?.ms, icon: TrendingUp, color: "text-violet-600", bg: "bg-violet-50 dark:bg-violet-900/10" },
+    { title: "System Stability", value: scores?.st, icon: Shield, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/10" },
+    { title: "Risk Assessment", value: scores?.sr, icon: AlertCircle, color: "text-rose-600", bg: "bg-rose-50 dark:bg-rose-900/10" },
+  ];
+
   return (
     <div className="space-y-6 animate-slide-up">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-surface-200 dark:border-surface-800">
@@ -46,29 +52,28 @@ export function HomePage() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-100 dark:bg-surface-900 rounded-lg border border-surface-200 dark:border-surface-800">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[10px] font-bold uppercase tracking-wide">60s</span>
           </div>
           <select value={realm} onChange={(e) => setRealm(Number(e.target.value))}
             className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wider outline-none focus:ring-1 focus:ring-brand-500/20">
-            <option value={0}>REALM 0</option>
-            <option value={1}>REALM 1</option>
+            <option value={0}>Realm 0</option>
+            <option value={1}>Realm 1</option>
           </select>
         </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPI title="Economic Health" value={scores?.eh} icon={Activity} color="text-brand-600" bg="bg-brand-50 dark:bg-brand-900/10" />
-        <KPI title="Market Sentiment" value={scores?.ms} icon={TrendingUp} color="text-violet-600" bg="bg-violet-50 dark:bg-violet-900/10" />
-        <KPI title="System Stability" value={scores?.st} icon={Shield} color="text-emerald-600" bg="bg-emerald-50 dark:bg-emerald-900/10" />
-        <KPI title="Risk Assessment" value={scores?.sr} icon={AlertCircle} color="text-rose-600" bg="bg-rose-50 dark:bg-rose-900/10" />
+        {kpis.map(k => (
+          <KPI key={k.title} {...k} />
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <div className="lg:col-span-4">
           <div className="card h-full flex flex-col overflow-hidden">
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gradient-to-b from-surface-50 to-white dark:from-surface-900 dark:to-surface-950">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400 mb-4">Current Regime</span>
+              <span className="stat-label mb-4">Current Regime</span>
               <h2 className={`text-5xl font-black uppercase tracking-tight ${
                 regime?.na === "Expansion" ? 'text-emerald-600' :
                 regime?.na === "Recession" ? 'text-rose-600' :
@@ -76,10 +81,19 @@ export function HomePage() {
               }`}>
                 {regime?.na ?? "Neutral"}
               </h2>
-              {scores && <Sparkline data={sparkData} className="mt-6 opacity-30" />}
+              {scores && (
+                <div className="mt-6 w-full max-w-[180px] opacity-30">
+                  <Sparkline data={sparkData} />
+                </div>
+              )}
+              {regime?.sc !== undefined && (
+                <span className="mt-3 text-[10px] font-bold text-surface-400 uppercase tracking-wider">
+                  Score: {regime.sc.toFixed(1)}
+                </span>
+              )}
             </div>
             <Link to="/macro" className="px-6 py-3.5 border-t border-surface-100 dark:border-surface-800 flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-all group">
-              <span className="text-xs font-bold text-surface-600 dark:text-surface-400">Macro Analysis</span>
+              <span className="text-xs font-bold text-surface-600 dark:text-surface-400">Full Macro Analysis</span>
               <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform text-brand-600" />
             </Link>
           </div>
@@ -88,23 +102,42 @@ export function HomePage() {
         <div className="lg:col-span-8">
           <div className="card h-full flex flex-col overflow-hidden">
             <div className="px-5 py-3 border-b border-surface-100 dark:border-surface-800 flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase text-surface-500 tracking-wider">Recent Events</h3>
+              <div className="flex items-center gap-2">
+                <Clock size={14} className="text-surface-400" />
+                <h3 className="text-xs font-bold uppercase text-surface-500 tracking-wider">Activity Feed</h3>
+              </div>
               <Link to="/alerts" className="text-[10px] font-bold text-brand-600 hover:text-brand-700 transition-colors">View all</Link>
             </div>
-            <div className="py-16 text-center text-surface-300 dark:text-surface-600 font-bold text-sm">Event data pending backend integration</div>
+            <div className="flex-1 flex flex-col items-center justify-center py-14 text-center">
+              <div className="w-12 h-12 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-4">
+                <Sparkles size={22} className="text-surface-300 dark:text-surface-600" />
+              </div>
+              <p className="text-sm font-bold text-surface-300 dark:text-surface-600">No recent activity</p>
+              <p className="text-xs text-surface-400 mt-1 max-w-xs">Market events, regime changes, and system alerts will appear here</p>
+              <div className="mt-5 flex gap-2">
+                <Link to="/macro" className="btn btn-secondary">Macro View</Link>
+                <Link to="/alerts" className="btn btn-secondary">Alert Logs</Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        <NavTile to="/corporate-suite" title="Corporate Suite" icon={Zap} color="bg-brand-500" />
-        <NavTile to="/market-intel" title="Market Intel" icon={BarChart3} color="bg-indigo-500" />
-        <NavTile to="/board-room" title="Board Room" icon={Building2} color="bg-amber-500" />
-        <NavTile to="/profit-margins" title="Profit Margins" icon={TrendingUp} color="bg-emerald-500" />
-        <NavTile to="/profit-calculator" title="Profit Calc" icon={Calculator} color="bg-cyan-500" />
-        <NavTile to="/retail-calculator" title="Retail Calc" icon={Store} color="bg-rose-500" />
-        <NavTile to="/construction-calculator" title="Construction" icon={HardHat} color="bg-orange-500" />
-        <NavTile to="/xp-calculator" title="XP Calculator" icon={ZapIcon} color="bg-yellow-500" />
+      <div className="pt-1">
+        <div className="flex items-center gap-2 mb-3">
+          <LayoutGrid size={14} className="text-surface-400" />
+          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Quick Access</h3>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <NavTile to="/corporate-suite" title="Corporate Suite" icon={Zap} color="bg-brand-500" />
+          <NavTile to="/market-intel" title="Market Intel" icon={BarChart3} color="bg-indigo-500" />
+          <NavTile to="/board-room" title="Board Room" icon={Building2} color="bg-amber-500" />
+          <NavTile to="/profit-margins" title="Profit Margins" icon={TrendingUp} color="bg-emerald-500" />
+          <NavTile to="/profit-calculator" title="Profit Calc" icon={Calculator} color="bg-cyan-500" />
+          <NavTile to="/retail-calculator" title="Retail Calc" icon={Store} color="bg-rose-500" />
+          <NavTile to="/construction-calculator" title="Construction" icon={HardHat} color="bg-orange-500" />
+          <NavTile to="/xp-calculator" title="XP Calculator" icon={ZapIcon} color="bg-yellow-500" />
+        </div>
       </div>
     </div>
   );
@@ -117,8 +150,8 @@ function KPI({ title, value, icon: Icon, color, bg }: { title: string; value: nu
          <span className="metric-label block mb-1">{title}</span>
          <span className="metric-value">{value ?? '--'}</span>
        </div>
-       <div className={`${color} shrink-0`}>
-         <Icon size={24} />
+       <div className={`w-10 h-10 rounded-xl ${bg} border border-surface-200/50 dark:border-surface-700/50 flex items-center justify-center ${color}`}>
+         <Icon size={20} />
        </div>
      </div>
    );
@@ -139,8 +172,8 @@ function Sparkline({ data, className }: { data: number[]; className?: string }) 
 
 function NavTile({ to, title, icon: Icon, color }: { to: string; title: string; icon: ComponentType<{ size: number }>; color: string }) {
    return (
-     <Link to={to} className="card p-4 flex items-center gap-3 hover:border-brand-500/50 transition-all group">
-       <div className={`w-10 h-10 rounded-xl ${color} text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}>
+     <Link to={to} className="card p-4 flex items-center gap-3 hover:border-brand-500/50 hover:ring-1 hover:ring-brand-500/10 transition-all group">
+       <div className={`w-10 h-10 rounded-xl ${color} text-white flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:shadow-md transition-all`}>
           <Icon size={20} />
        </div>
        <span className="text-sm font-bold text-surface-800 dark:text-white">{title}</span>
