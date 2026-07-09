@@ -44,7 +44,7 @@ export function CorporateSuitePage() {
   const { data: dash } = useDataRepoPoll(() => dataRepo.fetchDashboardState(realm), 60000, [realm]);
   const { data: margins, loading: mLoading } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 60000, [realm]);
   const { data: retail } = useDataRepoPoll(() => dataRepo.fetchRetailData(realm), 120000, [realm]);
-  const { data: cycles } = useDataRepoPoll(() => dataRepo.fetchCycles(realm), 300000, [realm]);
+  
 
   const [state, setState] = useState<SuiteStateV6>(() => {
     const saved = localStorage.getItem("simco_suite_v6");
@@ -294,7 +294,7 @@ export function CorporateSuitePage() {
   const renderTab = () => {
     if (!core || !state) return <LoadingState text="Syncing Engine..." />;
     switch(state.activeTab || 'command') {
-      case 'command': return <CommandView state={state} core={core} phase={economyPhase} margins={margins} cycles={cycles} onSync={syncCompany} isSyncing={isSyncing} setState={setState} />;
+      case 'command': return <CommandView state={state} core={core} phase={economyPhase} margins={margins} onSync={syncCompany} isSyncing={isSyncing} setState={setState} />;
       case 'ops': return <OperationsView state={state} core={core} setState={setState} />;
       case 'exec': return <ExecutiveView state={state} core={core} setState={setState} setNotification={setNotification} />;
       case 'finance': return <FinanceView state={state} core={core} setState={setState} />;
@@ -303,7 +303,7 @@ export function CorporateSuitePage() {
       case 'rankings': return <RankingsView />;
       case 'bonds': return <BondsView />;
       case 'ledger': return <LedgerView state={state} setState={setState} />;
-      default: return <CommandView state={state} core={core} phase={economyPhase} margins={margins} cycles={cycles} onSync={syncCompany} isSyncing={isSyncing} setState={setState} />;
+      default: return <CommandView state={state} core={core} phase={economyPhase} margins={margins} onSync={syncCompany} isSyncing={isSyncing} setState={setState} />;
     }
   };
 

@@ -3,10 +3,9 @@ import * as dataRepo from "../services/dataRepo";
 import { MiniSparkline } from "../components/MiniSparkline";
 import { Section } from "../components/Layout";
 import { LoadingState, ErrorState } from "../components/States";
-import { SeverityBadge } from "../components/SeverityBadge";
 import { useMemo, useEffect } from "react";
 import { useSharedRealm } from "../hooks/useSharedRealm";
-import type { RealmDashboard, DashboardMap, EventsResponse, NormalizedEvent } from "../types/api";
+import type { RealmDashboard, DashboardMap } from "../types/api";
 import { Link } from "../router";
 import type { ComponentType } from "react";
 import {
@@ -21,7 +20,6 @@ export function HomePage() {
 
   const [realm, setRealm] = useSharedRealm();
   const { data: dashState, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardState(realm), 60000, [realm]);
-  const { data: alerts } = useDataRepoPoll(() => dataRepo.fetchDashboardAlerts(realm), 60000, [realm]);
   const loadingOrError = useMemo(() => {
     if (loading && !dashState) return <LoadingState text="Synthesizing..." />;
     if (error) return <ErrorState message={error} onRetry={refresh} />;
@@ -36,9 +34,6 @@ export function HomePage() {
   const regime = ds?.regime;
 
   const sparkData = scores ? [scores.eh, scores.ms, scores.st, scores.ip, scores.sr] : [];
-  const alertList: NormalizedEvent[] = alerts
-    ? (alerts as EventsResponse).events?.slice(0, 4) ?? []
-    : [];
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -96,19 +91,7 @@ export function HomePage() {
               <h3 className="text-xs font-bold uppercase text-surface-500 tracking-wider">Recent Events</h3>
               <Link to="/alerts" className="text-[10px] font-bold text-brand-600 hover:text-brand-700 transition-colors">View all</Link>
             </div>
-            <div className="divide-y divide-surface-100 dark:divide-surface-800">
-              {alertList.length > 0 ? alertList.map((a) => (
-                <div key={a.id} className="px-5 py-3.5 flex items-center gap-4 hover:bg-surface-50 dark:hover:bg-surface-800/30 transition-colors">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-surface-900 dark:text-white truncate text-sm">{a.ti}</p>
-                    <p className="text-[11px] text-surface-400 mt-0.5">{new Date(a.ts).toLocaleString()}</p>
-                  </div>
-                  <SeverityBadge severity={a.se} />
-                </div>
-              )) : (
-                <div className="py-16 text-center text-surface-300 dark:text-surface-600 font-bold text-sm">No recent events</div>
-              )}
-            </div>
+            <div className="py-16 text-center text-surface-300 dark:text-surface-600 font-bold text-sm">Event data pending backend integration</div>
           </div>
         </div>
       </div>

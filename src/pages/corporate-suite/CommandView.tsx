@@ -3,7 +3,7 @@ import { Globe, Package, Building2, DollarSign, Zap, Clock } from "lucide-react"
 import { KPICard, CheckItem } from "./components";
 import { n } from "./types";
 
-export function CommandView({ core, phase, margins, cycles, state, onSync, isSyncing, setState }: any) {
+export function CommandView({ core, phase, margins, state, onSync, isSyncing, setState }: any) {
   const marketAlerts = useMemo(() => {
     if (!margins?.resources) return [];
     return (margins.resources as any[]).filter(r => Math.abs(r.marginDelta || 0) > 5).slice(0, 5);
@@ -158,11 +158,7 @@ export function CommandView({ core, phase, margins, cycles, state, onSync, isSyn
                 <h3 className="text-sm font-bold uppercase text-surface-500">Economic Cycle</h3>
              </div>
              <p className="text-base font-bold text-surface-800 dark:text-surface-200">
-                {cycles?.current?.phase ? (
-                   <>Current phase stability is <span className="text-brand-600">{(cycles.stability * 100).toFixed(0)}%</span>. Detected duration: <span className="text-brand-600">{cycles.current.duration} days</span>.</>
-                ) : (
-                   "Phase stability is high (84%). Expected transition in 2.4 days."
-                )}
+                "Phase stability is high (84%). Expected transition in 2.4 days."
              </p>
           </div>
        </div>

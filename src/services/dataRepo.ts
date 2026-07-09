@@ -18,17 +18,13 @@ import {
 import type {
   RealmDashboard,
   DashboardMap,
-  EventsResponse,
-  NormalizedEvent,
   MacroLatest,
   MacroHistoryResponse,
   MacroIndexesResponse,
   MacroInflationResponse,
   MacroPhases,
   ProfitMarginsResponse,
-  ProfitMarginResource,
   PriceHistoryItem,
-  VWAPInflationResponse,
   RetailData,
 } from "../types/api";
 
@@ -53,34 +49,9 @@ export async function fetchDashboardState(realm: number): Promise<DashboardMap> 
   };
 }
 
-function normalizeEvent(raw: Record<string, unknown>): NormalizedEvent {
-  return {
-    id: (raw.id ?? raw.i ?? "") as string,
-    se: (raw.se ?? raw.s ?? "info") as string,
-    ts: (raw.ts ?? raw.t ?? "") as string,
-    ca: (raw.ca ?? raw.c ?? "general") as string,
-    ti: (raw.ti ?? raw.ti ?? "") as string,
-    de: (raw.de ?? raw.d ?? "") as string,
-    da: (raw.da ?? raw.data ?? {}) as Record<string, unknown>,
-    ty: (raw.ty ?? raw.type ?? "") as string,
-  };
-}
 
-async function fetchEvents(realm: number, limit: number): Promise<EventsResponse> {
-  const data = await fetchLatest<unknown[]>(`aggregates/events/realm-${realm}`, "");
-  if (!data) return { events: [], total: 0 };
-  const raw = Array.isArray(data) ? data : [];
-  const events = raw.map(normalizeEvent as (v: unknown) => NormalizedEvent);
-  return { events: events.slice(0, limit), total: events.length };
-}
 
-export async function fetchDashboardAlerts(realm: number): Promise<EventsResponse> {
-  return fetchEvents(realm, 5);
-}
 
-export async function fetchDashboardEvents(realm: number, limit = 200): Promise<EventsResponse> {
-  return fetchEvents(realm, limit);
-}
 
 /* ============================================================
    Macro
@@ -408,266 +379,13 @@ export async function fetchResourcePriceHistory(realm: number, resourceId: numbe
   return history.reverse();
 }
 
-/* ============================================================
-   VWAP Inflation
-   ============================================================ */
-export async function fetchVWAPInflation(realm: number, limit = 200): Promise<VWAPInflationResponse> {
-  try {
-    const publicData = await rawFetch<Array<{
-      t: string;
-      overall: Record<string, number>;
-      quality?: Record<string, number>;
-      product?: Record<string, number>;
-      both?: Record<string, number>;
-    }>>(`public/realm-${realm}/vwap-inflation.json`);
-    if (publicData && Array.isArray(publicData) && publicData.length > 0) {
-      return {
-        vwapInflation: publicData.slice(0, limit).map((item) => ({
-          date: item.t,
-          overall: item.overall,
-          quality: item.quality ?? {},
-          product: item.product ?? {},
-          both: item.both ?? {},
-        })),
-        total: publicData.length,
-      };
-    }
-  } catch {
-    // Fallback to legacy
-  }
 
-  const items = await fetchAllFiles<{
-    t: string;
-    overall: Record<string, number>;
-  }>(`aggregates/vwap-inflation/realm-${realm}`, "vwap-inflation-", 20);
-  return {
-    vwapInflation: latestPerDay(items).map((item) => ({
-      date: item.t,
-      overall: item.overall,
-      quality: {} as Record<string, number>,
-      product: {} as Record<string, number>,
-      both: {} as Record<string, number>,
-    })),
-    total: items.length,
-  };
-}
 
-/* ============================================================
-   Intelligence
-   ============================================================ */
-export async function fetchMomentum(realm: number): Promise<Record<string, { realm: string; momentum: number; direction: string; trend: number }>> {
-  const data = await fetchLatest<{ momentum?: Record<string, { st: number; ts: number }> }>(
-    `aggregates/intelligence/realm-${realm}`, "momentum-");
-  if (!data) throw new Error("No momentum data");
-  const sectors = data.momentum ?? {};
-  const values = Object.values(sectors);
-  const avgMomentum = values.length > 0 ? values.reduce((s, v) => s + (v.st ?? 0), 0) / values.length : 0;
-  return {
-    [String(realm)]: {
-      realm: String(realm),
-      momentum: avgMomentum,
-      direction: avgMomentum >= 0 ? "up" : "down",
-      trend: values.reduce((s, v) => s + (v.ts ?? 0), 0) / (values.length || 1),
-    },
-  };
-}
 
-export async function fetchVolatility(realm: number): Promise<Record<string, { realm: string; volatility: number; classification: string; trend: number }>> {
-  const data = await fetchLatest<{ stress?: Record<string, { scp: number; flags?: unknown[]; trend?: number }> }>(
-    `aggregates/intelligence/realm-${realm}`, "stress-");
-  if (!data) throw new Error("No volatility data");
-  const stress = data.stress ?? {};
-  const values = Object.values(stress);
-  const avgVol = values.length > 0 ? values.reduce((s, v) => s + (v.scp ?? 0), 0) / values.length : 0;
-  return {
-    [String(realm)]: {
-      realm: String(realm),
-      volatility: avgVol,
-      classification: avgVol > 0.5 ? "high" : avgVol > 0.2 ? "medium" : "low",
-      trend: values.length > 0 ? values.reduce((s, v) => s + (v.trend ?? v.scp ?? 0), 0) / values.length : 0,
-    },
-  };
-}
 
-export async function fetchRegimes(realm: number): Promise<Record<string, { realm: string; regime: string; score: number; confidence: string }>> {
-  const data = await fetchLatest<{ cr?: string; rs?: number; rc?: number }>(
-    `aggregates/intelligence/realm-${realm}`, "regime-");
-  if (!data) throw new Error("No regime data");
-  return {
-    [String(realm)]: {
-      realm: String(realm),
-      regime: data.cr ?? "unknown",
-      score: data.rs ?? data.rc ?? 0,
-      confidence: String(data.rc ?? 0),
-    },
-  };
-}
 
-export async function fetchSectors(realm: number): Promise<Record<string, Array<{ sector: string; strength: number; momentum: number; leader: string; volatility: number }>>> {
-  const data = await fetchLatest<{ sectors?: Record<string, { momentum?: { st: number; mt: number }; leaders?: string; volatility?: { v5: number } }> }>(
-    `aggregates/intelligence/realm-${realm}`, "sectors-");
-  if (!data) throw new Error("No sector data");
-  const sectors = data.sectors ?? {};
-  const list = Object.entries(sectors).map(([name, s]) => ({
-    sector: name,
-    strength: s.momentum?.st ?? 0,
-    momentum: s.momentum?.mt ?? 0,
-    leader: s.leaders ?? "-",
-    volatility: s.volatility?.v5 ?? 0,
-  }));
-  return { [String(realm)]: list };
-}
 
-export async function fetchCorrelations(realm = 0): Promise<Array<{ realm: string; pair: string; coefficient: number; strength: string }>> {
-  const data = await fetchLatest<{ m?: Record<string, Record<string, Record<string, unknown>>>; pairs?: unknown; correlations?: unknown }>(
-    `aggregates/correlations/realm-${realm}`, "correlation-");
-  if (!data) throw new Error("No correlation data");
-  const matrix = data.m ?? data.pairs ?? data.correlations ?? {};
-  const pairs: Array<{ realm: string; pair: string; coefficient: number; strength: string }> = [];
-  const categories = Object.keys(matrix);
-  for (let i = 0; i < categories.length; i++) {
-    const a = categories[i];
-    const row = matrix[a] ?? {};
-    const subCategories = Object.keys(row);
-    for (let j = 0; j < subCategories.length; j++) {
-      const b = subCategories[j];
-      if (a === b) continue;
-      const cell = row[b] ?? {};
-      const r = (cell.r ?? cell.coefficient ?? null) as number | null;
-      if (r === null || r === undefined) continue;
-      pairs.push({
-        realm: String(realm),
-        pair: `${a} ↔ ${b}`,
-        coefficient: r,
-        strength: (cell.s ?? cell.strength ?? "weak") as string,
-      });
-    }
-  }
-  pairs.sort((a, b) => Math.abs(b.coefficient) - Math.abs(a.coefficient));
-  return pairs;
-}
 
-export async function fetchAnomalies(realm: number): Promise<Array<{ category: string; zScore: number; deviation: number; direction: string; timestamp: string }>> {
-  const data = await fetchLatest<{ an?: Array<Record<string, unknown>>; t?: string }>(
-    `aggregates/anomalies/realm-${realm}`, "anomaly-");
-  if (!data) throw new Error("No anomaly data");
-  const anomalies = data.an ?? [];
-  return anomalies.map((a) => ({
-    category: (a.ca ?? "unknown") as string,
-    zScore: (a.zs ?? 0) as number,
-    deviation: (a.vl ?? 0) as number,
-    direction: (a.vl as number) >= 0 ? "above" : "below",
-    timestamp: (a.ts ?? data.t) as string,
-  }));
-}
-
-export async function fetchDivergence(realm: number): Promise<Array<{ sector: string; strength: number; type: string; signal: string }>> {
-  const data = await fetchLatest<{ di?: Array<Record<string, unknown>> }>(
-    `aggregates/divergence/realm-${realm}`, "divergence-");
-  if (!data) throw new Error("No divergence data");
-  const divergences = data.di ?? [];
-  return divergences.map((d) => ({
-    sector: (d.sector ?? "unknown") as string,
-    strength: (d.strength ?? 0) as number,
-    type: (d.type ?? "unknown") as string,
-    signal: (d.severity ?? "info") as string,
-  }));
-}
-
-export async function fetchContagion(realm: number): Promise<Array<{ origin: string; spread: number; risk: string; affected: string[] }>> {
-  const data = await fetchLatest<{ co?: Array<Record<string, unknown>> }>(
-    `aggregates/contagion/realm-${realm}`, "contagion-");
-  if (!data) throw new Error("No contagion data");
-  const contagions = data.co ?? [];
-  return contagions.map((c) => ({
-    origin: (c.origin ?? "unknown") as string,
-    spread: (c.spread ?? 0) as number,
-    risk: (c.risk ?? "low") as string,
-    affected: (c.affected ?? []) as string[],
-  }));
-}
-
-/* ============================================================
-   Forecasts
-   ============================================================ */
-export async function fetchForecast(realm: number): Promise<Record<string, unknown>> {
-  const data = await fetchLatest<{ series?: Record<string, unknown> }>(
-    `aggregates/forecasts/realm-${realm}`, "forecast-");
-  if (!data) throw new Error("No forecast data");
-  return data.series ?? {};
-}
-
-export async function fetchSignals(realm: number): Promise<Array<{
-  type: string;
-  label: string;
-  severity: string;
-  confidence: number;
-  affectedSectors: string[];
-  estimatedDurationDays: number;
-  indicators: Array<{ name: string; value: number; threshold: number }>;
-  rationale: string;
-}>> {
-  const data = await fetchLatest<{ signals?: Array<Record<string, unknown>> }>(
-    `aggregates/signals/realm-${realm}`, "signals-");
-  if (!data) throw new Error("No signal data");
-  return (data.signals ?? []).map((s) => ({
-    type: (s.type ?? "") as string,
-    label: (s.label ?? "") as string,
-    severity: (s.severity ?? "low") as string,
-    confidence: (s.confidence ?? 0) as number,
-    affectedSectors: (s.affectedSectors ?? []) as string[],
-    estimatedDurationDays: (s.estimatedDurationDays ?? 0) as number,
-    indicators: ((s.indicators ?? []) as Array<Record<string, unknown>>).map((ind) => {
-      if (typeof ind === "string") return { name: ind, value: 0, threshold: 0 };
-      return { name: (ind.name ?? "") as string, value: (ind.value ?? 0) as number, threshold: (ind.threshold ?? 0) as number };
-    }),
-    rationale: (s.rationale ?? "") as string,
-  }));
-}
-
-/* ============================================================
-   Cycles
-   ============================================================ */
-export async function fetchCycles(realm: number): Promise<{
-  current: { phase: string; confidence: number; duration: number; intensity: number; stability: number };
-  transitions: Array<{ from: string; to: string; probability: number }>;
-  history: Array<{ phase: string; startDate: string | null; endDate: string | null }>;
-  stability: number;
-  intensity: number;
-}> {
-  const data = await fetchLatest<{
-    current?: Record<string, unknown>;
-    transitionProbabilities?: Record<string, Record<string, number>>;
-    stability?: number;
-    history?: Array<Record<string, unknown>>;
-  }>(`aggregates/cycles/realm-${realm}`, "cycle-");
-  if (!data) throw new Error("No cycle data");
-  const current = data.current ?? {};
-  const transitions: Array<{ from: string; to: string; probability: number }> = [];
-  const tp = data.transitionProbabilities ?? {};
-  for (const [fromPh, toPhs] of Object.entries(tp)) {
-    for (const [toPh, prob] of Object.entries(toPhs)) {
-      transitions.push({ from: fromPh, to: toPh, probability: prob });
-    }
-  }
-  return {
-    current: {
-      phase: (current.phase ?? "unknown") as string,
-      confidence: (current.confidence ?? 0) as number,
-      duration: (current.durationDays ?? 0) as number,
-      intensity: (current.intensity ?? 0) as number,
-      stability: data.stability ?? 0,
-    },
-    transitions,
-    history: ((data.history ?? []) as Array<Record<string, unknown>>).map((h) => ({
-      phase: (h.phase ?? "unknown") as string,
-      startDate: (h.detectedAt ?? null) as string | null,
-      endDate: null as string | null,
-    })),
-    stability: data.stability ?? 0,
-    intensity: (current.intensity ?? 0) as number,
-  };
-}
 
 /* ============================================================
    Player API
@@ -727,42 +445,4 @@ export async function fetchCompanyData(companyId: string | number, realm = 0): P
   throw new Error("Company data fetch failed");
 }
 
-/* ============================================================
-   Dependencies
-   ============================================================ */
-export async function fetchDependencies(realm: number): Promise<{
-  risks: Array<{ sector: string; score: number; upstreamPressure: number; downstreamPressure: number; critical: boolean }>;
-  riskScores: Record<string, number>;
-  criticalResources: string[];
-  bottleneckChains: Array<{ chain: string; pressure: number; sectors: string[] }>;
-  dependencyMatrix: Record<string, number>;
-}> {
-  const data = await fetchLatest<{
-    risks?: Array<Record<string, unknown>>;
-    criticalResources?: unknown[];
-    bottleneckChains?: Array<Record<string, unknown>>;
-  }>(`aggregates/dependencies/realm-${realm}`, "dependency-");
-  if (!data) throw new Error("No dependency data");
-  const risks: Array<{ sector: string; score: number; upstreamPressure: number; downstreamPressure: number; critical: boolean }> =
-    (data.risks ?? []).map((r) => ({
-      sector: (r.category ?? "unknown") as string,
-      score: (r.riskScore ?? 0) as number,
-      upstreamPressure: (r.upstreamCount ?? 0) as number,
-      downstreamPressure: (r.downstreamCount ?? 0) as number,
-      critical: (r.isCritical ?? false) as boolean,
-    }));
-  const riskScores: Record<string, number> = {};
-  for (const r of risks) riskScores[r.sector] = r.score;
-  return {
-    risks,
-    riskScores,
-    criticalResources: (data.criticalResources ?? []).map((cr) =>
-      typeof cr === "string" ? cr : (cr as Record<string, unknown>).category ?? cr) as string[],
-    bottleneckChains: (data.bottleneckChains ?? []).map((bc) => ({
-      chain: Array.isArray(bc.chain) ? (bc.chain as string[]).join(" → ") : ((bc.chain ?? "") as string),
-      pressure: (bc.score ?? bc.pressure ?? 0) as number,
-      sectors: Array.isArray(bc.chain) ? (bc.chain as string[]) : [],
-    })),
-    dependencyMatrix: {},
-  };
-}
+
