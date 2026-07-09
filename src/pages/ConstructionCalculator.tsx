@@ -7,7 +7,7 @@ import { HardHat } from "lucide-react";
 import type { ProfitMarginsResponse } from "../types/api";
 
 function matName(id: number): string {
-  return CONSTRUCTION_MATERIALS.find(c => c.id === id)?.name ?? `Mat ${id}`;
+  return CONSTRUCTION_MATERIALS.find(c => c.id === id)?.name ?? RESOURCES.find(r => r.id === id)?.name ?? `Mat ${id}`;
 }
 
 function fmtHours(h: number): string {
@@ -15,8 +15,6 @@ function fmtHours(h: number): string {
   if (h < 24) return `${h.toFixed(1)}h`;
   return `${Math.floor(h / 24)}d ${Math.round(h % 24)}h`;
 }
-
-const MAT_IDS = [101, 102, 108, 111, 110];
 
 export function ConstructionCalculatorPage() {
   useEffect(() => { document.title = "SimCo Intel - Construction Calculator"; }, []);
@@ -31,18 +29,26 @@ export function ConstructionCalculatorPage() {
 
   const building = useMemo(() => BUILDINGS.find(b => b.id === buildingId), [buildingId]);
 
+  // Collect all material IDs this building actually uses
+  const buildingMatIds = useMemo(() => {
+    if (!building) return [];
+    const ids = new Set<number>();
+    for (const r of building.resources) ids.add(r.id);
+    return [...ids];
+  }, [building]);
+
   const matPrices = useMemo(() => {
     const prices: Record<number, number> = {};
-    for (const id of MAT_IDS) {
+    for (const id of buildingMatIds) {
       const m = margins.find(r => r.id === id);
       prices[id] = m?.outputVwap ?? MAT_REF_PRICES[id] ?? 0;
     }
     return prices;
-  }, [margins]);
+  }, [margins, buildingMatIds]);
 
   const upgrades = useMemo(() => {
     if (!building || targetLv <= currentLv) return [];
-    const steps: { lv: number; materials: Record<number, number>; time: number; matCost: number; cashCost: number }[] = [];
+    const steps: { lv: number; materials: Record<number, number>; time: number; matCost: number; refCost: number }[] = [];
     for (let lv = currentLv + 1; lv <= targetLv; lv++) {
       const mult = Math.max(1, lv - 1);
       const materials: Record<number, number> = {};
@@ -54,16 +60,15 @@ export function ConstructionCalculatorPage() {
         matCost += (matPrices[Number(id)] ?? 0) * qty;
       }
       const time = building.baseTime * mult;
-      const cashCost = building.cost * mult;
-      steps.push({ lv, materials, time, matCost, cashCost });
+      const refCost = building.cost * mult;
+      steps.push({ lv, materials, time, matCost, refCost });
     }
     return steps;
   }, [building, currentLv, targetLv, matPrices]);
 
   const totalTimeH = upgrades.reduce((s, u) => s + u.time, 0);
   const totalMatCost = upgrades.reduce((s, u) => s + u.matCost, 0);
-  const totalCashCost = upgrades.reduce((s, u) => s + u.cashCost, 0);
-  const totalCost = totalMatCost + totalCashCost;
+  const totalRefCost = upgrades.reduce((s, u) => s + u.refCost, 0);
 
   const roi = useMemo<{ dailyRevenue: number; dailyWages: number; daysToRecoup: number; revenuePerLevel: number; outputVwap: number; dailyNet: number } | null>(() => {
     if (!building || upgrades.length === 0) return null;
@@ -75,9 +80,9 @@ export function ConstructionCalculatorPage() {
     const dailyRevenue = revenuePerLevel * targetLv;
     const dailyWages = wages * 24 * (1 + 0.1) * targetLv;
     const dailyNet = dailyRevenue - dailyWages;
-    const daysToRecoup = dailyNet > 0 ? totalCost / dailyNet : Infinity;
+    const daysToRecoup = dailyNet > 0 ? totalMatCost / dailyNet : Infinity;
     return { dailyRevenue, dailyWages, daysToRecoup, revenuePerLevel, outputVwap, dailyNet };
-  }, [building, upgrades, targetLv, margins, totalCost]);
+  }, [building, upgrades, targetLv, margins, totalMatCost]);
 
   const totalMats = useMemo(() => {
     const m: Record<number, number> = {};
@@ -108,7 +113,7 @@ export function ConstructionCalculatorPage() {
             <select value={buildingId} onChange={e => setBuildingId(e.target.value)}
               className="w-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 rounded-lg text-sm font-bold outline-none focus:ring-1 focus:ring-brand-500/20">
               <option value="">-- Select Building --</option>
-              {BUILDINGS.filter(b => b.type === "production").sort((a, b) => a.name.localeCompare(b.name)).map(b => (
+              {BUILDINGS.filter(b => b.type === "production" || b.type === "retail").sort((a, b) => a.name.localeCompare(b.name)).map(b => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
@@ -151,8 +156,8 @@ export function ConstructionCalculatorPage() {
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-5 gap-3">
-                <MetricCard label="Total Cost" value={`$${totalCost.toLocaleString()}`} sub="cash + materials" />
-                <MetricCard label="Cash Cost" value={`$${totalCashCost.toLocaleString()}`} />
+                <MetricCard label="Ref Cost" value={`$${totalRefCost.toLocaleString()}`} sub="game reference value" />
+                <MetricCard label="Market Cost" value={`$${totalMatCost.toLocaleString()}`} sub="materials at market" />
                 <MetricCard label="Total Time" value={fmtHours(totalTimeH)} />
                 <MetricCard label="Steps" value={String(upgrades.length)} />
                 <MetricCard label="Scrap Value" value={`$${(building.cost * targetLv).toLocaleString()}`} sub="at target level" />
@@ -167,55 +172,55 @@ export function ConstructionCalculatorPage() {
                   </div>
                   <MetricCard label="Daily Wages" value={`$${roi.dailyWages.toLocaleString()}`} />
                   <MetricCard label="Daily Net" value={`$${roi.dailyNet.toLocaleString()}`} highlight={roi.dailyNet > 0 ? "text-emerald-600" : "text-rose-600"} />
-                  <MetricCard label="Recoup Time" value={roi.daysToRecoup === Infinity ? "∞" : `${roi.daysToRecoup.toFixed(1)}d`} sub="cash + materials" />
+                  <MetricCard label="Recoup Time" value={roi.daysToRecoup === Infinity ? "∞" : `${roi.daysToRecoup.toFixed(1)}d`} sub="materials at market" />
                 </div>
               )}
 
-              <div className="card">
-                <div className="card-header">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-surface-500">Material Summary</span>
-                  <span className="text-[9px] text-surface-400 font-semibold">market prices</span>
+              {buildingMatIds.length > 0 && (
+                <div className="card">
+                  <div className="card-header">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-surface-500">Material Summary</span>
+                    <span className="text-[9px] text-surface-400 font-semibold">market prices</span>
+                  </div>
+                  <div className="p-4 grid grid-cols-5 gap-3">
+                    {buildingMatIds.map(id => {
+                      const qty = Math.round(totalMats[id] ?? 0);
+                      if (qty === 0) return null;
+                      return (
+                        <div key={id} className="bg-surface-50 dark:bg-surface-900 p-3 rounded-lg border border-surface-100 dark:border-surface-800">
+                          <span className="metric-label">{matName(id)}</span>
+                          <span className="metric-value">{qty.toLocaleString()}</span>
+                          <span className="block text-[9px] text-surface-400 mt-0.5">@ ${(matPrices[id] ?? 0).toFixed(2)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="p-4 grid grid-cols-5 gap-3">
-                  {MAT_IDS.map(id => {
-                    const qty = Math.round(totalMats[id] ?? 0);
-                    if (qty === 0) return null;
-                    return (
-                      <div key={id} className="bg-surface-50 dark:bg-surface-900 p-3 rounded-lg border border-surface-100 dark:border-surface-800">
-                        <span className="metric-label">{matName(id)}</span>
-                        <span className="metric-value">{qty.toLocaleString()}</span>
-                        <span className="block text-[9px] text-surface-400 mt-0.5">@ ${(matPrices[id] ?? 0).toFixed(2)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              )}
 
               <div className="card overflow-hidden">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="bg-surface-50 dark:bg-surface-900 text-[9px] font-black uppercase tracking-wider text-surface-500 border-b border-surface-100 dark:border-surface-800">
                       <th className="px-4 py-2.5">Lv</th>
-                      <th className="px-4 py-2.5 text-right">Mats</th>
-                      <th className="px-4 py-2.5 text-right">Cash</th>
+                      <th className="px-4 py-2.5 text-right">Ref Cost</th>
+                      <th className="px-4 py-2.5 text-right">Market Cost</th>
                       <th className="px-4 py-2.5 text-right">Time</th>
-                      <th className="px-4 py-2.5 text-right">Concrete</th>
-                      <th className="px-4 py-2.5 text-right">Bricks</th>
-                      <th className="px-4 py-2.5 text-right">Planks</th>
-                      <th className="px-4 py-2.5 text-right">C. Units</th>
+                      {buildingMatIds.map(id => (
+                        <th key={id} className="px-4 py-2.5 text-right">{matName(id)}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-surface-100 dark:divide-surface-800 text-sm">
                     {upgrades.map(u => (
                       <tr key={u.lv} className="hover:bg-surface-50 dark:hover:bg-surface-900/50 transition-colors">
                         <td className="px-4 py-2.5 font-bold">Lv {u.lv}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">${u.refCost.toLocaleString()}</td>
                         <td className="px-4 py-2.5 text-right tabular-nums">${u.matCost.toLocaleString()}</td>
-                        <td className="px-4 py-2.5 text-right tabular-nums">${u.cashCost.toLocaleString()}</td>
                         <td className="px-4 py-2.5 text-right tabular-nums">{fmtHours(u.time)}</td>
-                        <td className="px-4 py-2.5 text-right tabular-nums">{Math.round(u.materials[101] ?? 0)}</td>
-                        <td className="px-4 py-2.5 text-right tabular-nums">{Math.round(u.materials[102] ?? 0)}</td>
-                        <td className="px-4 py-2.5 text-right tabular-nums">{Math.round(u.materials[108] ?? 0)}</td>
-                        <td className="px-4 py-2.5 text-right tabular-nums font-bold">{Math.round(u.materials[111] ?? 0)}</td>
+                        {buildingMatIds.map(id => (
+                          <td key={id} className="px-4 py-2.5 text-right tabular-nums">{Math.round(u.materials[id] ?? 0)}</td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>
