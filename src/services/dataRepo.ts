@@ -41,7 +41,7 @@ export async function fetchDashboardState(realm: number): Promise<DashboardMap> 
     regime: RealmDashboard["regime"];
     alerts?: { total?: number };
     leaders?: Record<string, unknown>;
-  }>(`aggregates/dashboard/realm-${realm}`, "summary-");
+  }>(`aggregates/market/realm-${realm}`, "market-summary-");
   if (!data) throw new Error("No dashboard data");
   return {
     [String(realm)]: {
