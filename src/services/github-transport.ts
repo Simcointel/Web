@@ -44,8 +44,14 @@ export async function tryDirectFetch<T = unknown>(dir: string, prefix: string, d
 
 export async function fetchLatest<T = unknown>(dir: string, prefix: string): Promise<T | null> {
   const index = await fetchIndex(dir);
-  if (index?.latest && index.latest.startsWith(prefix)) {
-    return rawFetch<T>(`${dir}/${index.latest}`);
+  if (index) {
+    if (index.latest && index.latest.startsWith(prefix)) {
+      return rawFetch<T>(`${dir}/${index.latest}`);
+    }
+    if (index.files && index.files.length > 0) {
+      const sorted = index.files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).sort().reverse();
+      if (sorted.length > 0) return rawFetch<T>(`${dir}/${sorted[0]}`);
+    }
   }
 
   const today = new Date();
@@ -56,10 +62,7 @@ export async function fetchLatest<T = unknown>(dir: string, prefix: string): Pro
   const found = results.find(r => r !== null);
   if (found) return found;
 
-  const files = await listFiles(dir);
-  const matches = files.filter(f => f.startsWith(prefix) && f.endsWith(".json")).sort().reverse();
-  if (matches.length === 0) return null;
-  return rawFetch<T>(`${dir}/${matches[0]}`);
+  return null;
 }
 
 const LIST_CACHE = new Map<string, { files: string[]; expiry: number }>();
