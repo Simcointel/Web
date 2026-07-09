@@ -41,18 +41,18 @@ export const BUILDINGS = [
   { "id": "y", "name": "Academy", "type": "production", "cost": 65550, "baseTime": 3, "wages": 414, "resources": [{ "id": 101, "qty": 76 }, { "id": 102, "qty": 1045 }, { "id": 108, "qty": 304 }, { "id": 111, "qty": 19 }] },
   // === Resource Buildings ===
   { "id": "v", "name": "Forest nursery", "type": "production", "cost": 20700, "baseTime": 2, "wages": 103.5, "resources": [{ "id": 101, "qty": 24 }, { "id": 102, "qty": 330 }, { "id": 108, "qty": 96 }, { "id": 111, "qty": 6 }] },
-  // === Retail Buildings (Bricks/Steel/Planks/CU) ===
-  { "id": "G", "name": "Grocery store", "type": "retail", "cost": 10350, "baseTime": 1, "wages": 138, "resources": [{ "id": 102, "qty": 165 }, { "id": 43, "qty": 12 }, { "id": 108, "qty": 48 }, { "id": 111, "qty": 2 }] },
-  { "id": "C", "name": "Electronics store", "type": "retail", "cost": 17250, "baseTime": 1, "wages": 172.5, "resources": [{ "id": 102, "qty": 275 }, { "id": 43, "qty": 20 }, { "id": 108, "qty": 80 }, { "id": 111, "qty": 5 }] },
-  { "id": "d", "name": "Hardware store", "type": "retail", "cost": 13800, "baseTime": 4, "wages": 172.5, "resources": [{ "id": 102, "qty": 220 }, { "id": 43, "qty": 16 }, { "id": 108, "qty": 64 }, { "id": 111, "qty": 4 }] },
-  { "id": "A", "name": "Gas station", "type": "retail", "cost": 24150, "baseTime": 2, "wages": 345, "resources": [{ "id": 102, "qty": 385 }, { "id": 43, "qty": 28 }, { "id": 108, "qty": 112 }, { "id": 111, "qty": 7 }] },
-  { "id": "H", "name": "Fashion store", "type": "retail", "cost": 17250, "baseTime": 3, "wages": 310.5, "resources": [{ "id": 102, "qty": 275 }, { "id": 43, "qty": 20 }, { "id": 108, "qty": 80 }, { "id": 111, "qty": 5 }] },
-  { "id": "2", "name": "Car dealership", "type": "retail", "cost": 20700, "baseTime": 3, "wages": 379.5, "resources": [{ "id": 102, "qty": 330 }, { "id": 43, "qty": 24 }, { "id": 108, "qty": 96 }, { "id": 111, "qty": 6 }] },
-  { "id": "B", "name": "Sales offices", "type": "retail", "cost": 62100, "baseTime": 2, "wages": 586.5, "resources": [{ "id": 102, "qty": 990 }, { "id": 43, "qty": 72 }, { "id": 108, "qty": 288 }, { "id": 111, "qty": 18 }] },
+  // === Retail Buildings (Concrete/Bricks/Planks/CU) ===
+  { "id": "G", "name": "Grocery store", "type": "retail", "cost": 10350, "baseTime": 1, "wages": 138, "resources": [{ "id": 101, "qty": 12 }, { "id": 102, "qty": 165 }, { "id": 108, "qty": 48 }, { "id": 111, "qty": 2 }] },
+  { "id": "C", "name": "Electronics store", "type": "retail", "cost": 17250, "baseTime": 1, "wages": 172.5, "resources": [{ "id": 101, "qty": 20 }, { "id": 102, "qty": 275 }, { "id": 108, "qty": 80 }, { "id": 111, "qty": 5 }] },
+  { "id": "d", "name": "Hardware store", "type": "retail", "cost": 13800, "baseTime": 4, "wages": 172.5, "resources": [{ "id": 101, "qty": 16 }, { "id": 102, "qty": 220 }, { "id": 108, "qty": 64 }, { "id": 111, "qty": 4 }] },
+  { "id": "A", "name": "Gas station", "type": "retail", "cost": 24150, "baseTime": 2, "wages": 345, "resources": [{ "id": 101, "qty": 28 }, { "id": 102, "qty": 385 }, { "id": 108, "qty": 112 }, { "id": 111, "qty": 7 }] },
+  { "id": "H", "name": "Fashion store", "type": "retail", "cost": 17250, "baseTime": 3, "wages": 310.5, "resources": [{ "id": 101, "qty": 20 }, { "id": 102, "qty": 275 }, { "id": 108, "qty": 80 }, { "id": 111, "qty": 5 }] },
+  { "id": "2", "name": "Car dealership", "type": "retail", "cost": 20700, "baseTime": 3, "wages": 379.5, "resources": [{ "id": 101, "qty": 24 }, { "id": 102, "qty": 330 }, { "id": 108, "qty": 96 }, { "id": 111, "qty": 6 }] },
+  { "id": "B", "name": "Sales offices", "type": "retail", "cost": 62100, "baseTime": 2, "wages": 586.5, "resources": [{ "id": 101, "qty": 72 }, { "id": 102, "qty": 990 }, { "id": 108, "qty": 288 }, { "id": 111, "qty": 18 }] },
   { "id": "r", "name": "Restaurant", "type": "retail", "cost": 89700, "baseTime": 3, "wages": 655.5, "resources": [] },
-  { "id": "t", "name": "Halloween market", "type": "retail", "cost": 13800, "baseTime": 2, "wages": 207, "resources": [{ "id": 102, "qty": 220 }, { "id": 43, "qty": 16 }, { "id": 108, "qty": 64 }, { "id": 111, "qty": 4 }] },
-  { "id": "u", "name": "Xmas market", "type": "retail", "cost": 17250, "baseTime": 3, "wages": 207, "resources": [{ "id": 102, "qty": 275 }, { "id": 43, "qty": 20 }, { "id": 108, "qty": 80 }, { "id": 111, "qty": 5 }] },
-  { "id": "z", "name": "Beach market", "type": "retail", "cost": 10350, "baseTime": 1, "wages": 207, "resources": [{ "id": 102, "qty": 165 }, { "id": 43, "qty": 12 }, { "id": 108, "qty": 48 }, { "id": 111, "qty": 3 }] },
+  { "id": "t", "name": "Halloween market", "type": "retail", "cost": 13800, "baseTime": 2, "wages": 207, "resources": [{ "id": 101, "qty": 16 }, { "id": 102, "qty": 220 }, { "id": 108, "qty": 64 }, { "id": 111, "qty": 4 }] },
+  { "id": "u", "name": "Xmas market", "type": "retail", "cost": 17250, "baseTime": 3, "wages": 207, "resources": [{ "id": 101, "qty": 20 }, { "id": 102, "qty": 275 }, { "id": 108, "qty": 80 }, { "id": 111, "qty": 5 }] },
+  { "id": "z", "name": "Beach market", "type": "retail", "cost": 10350, "baseTime": 1, "wages": 207, "resources": [{ "id": 101, "qty": 12 }, { "id": 102, "qty": 165 }, { "id": 108, "qty": 48 }, { "id": 111, "qty": 3 }] },
   // === Special (Cash-only) ===
   { "id": "5", "name": "Lake", "type": "retail", "cost": 138000, "baseTime": 12, "wages": 0, "resources": [] }
 ];
@@ -61,9 +61,7 @@ export const CONSTRUCTION_MATERIALS = [
   { id: 101, name: "Reinforced concrete", basePrice: 500 },
   { id: 102, name: "Bricks", basePrice: 15 },
   { id: 108, name: "Planks", basePrice: 30 },
-  { id: 111, name: "Construction units", basePrice: 2673.75 },
-  { id: 43, name: "Steel", basePrice: 500 },
-  { id: 110, name: "Tools", basePrice: 14.5 }
+  { id: 111, name: "Construction units", basePrice: 2673.75 }
 ];
 
 // Retail store → sellable product IDs
@@ -85,9 +83,9 @@ export const RETAIL_PRODUCT_MAP: Record<string, number[]> = {
 
 // Game reference prices for construction materials (from game encyclopedia — source of truth)
 // These are the MARKET reference prices used for NPC buy/sell orders, NOT scrap prices.
-// Scrap uses lower prices (Concrete=$166.66, Bricks=$2.16, Planks=$9.08, CU=$2501.71, Steel=$166.66)
+// Scrap uses lower prices (Concrete=$166.66, Bricks=$2.16, Planks=$9.08, CU=$2501.71)
 // and is reflected in building.cost (reference value).
-export const MAT_REF_PRICES: Record<number, number> = { 101: 500, 102: 15, 108: 30, 111: 2673.75, 43: 500, 110: 14.5 };
+export const MAT_REF_PRICES: Record<number, number> = { 101: 500, 102: 15, 108: 30, 111: 2673.75 };
 
 // Economic phase production multipliers (game uses these internally)
 export const PHASE_MULTIPLIERS: Record<string, number> = { boom: 1.25, normal: 1.0, recession: 0.8 };
