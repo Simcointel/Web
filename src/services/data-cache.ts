@@ -1,5 +1,7 @@
-const CACHE_TTL = 2 * 60 * 1000;
-const CACHE_FAIL_TTL = 10 * 1000;
+// Cache TTL configuration - optimized for balance between freshness and performance
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes for successful data
+const CACHE_FAIL_TTL = 30 * 1000; // 30 seconds for failed requests (faster retry)
+const CACHE_LONG_TTL = 15 * 60 * 1000; // 15 minutes for stable reference data
 
 export const DATA_CACHE = new Map<string, { data: unknown; expiry: number }>();
 
@@ -16,4 +18,4 @@ export async function withCache<T>(key: string, fn: () => Promise<T>, ttl = CACH
   }
 }
 
-export { CACHE_TTL, CACHE_FAIL_TTL };
+export { CACHE_TTL, CACHE_FAIL_TTL, CACHE_LONG_TTL };

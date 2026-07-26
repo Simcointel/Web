@@ -1,6 +1,3 @@
-node_modules
-dist
-*.tsbuildinfo
-test-results/
-*.log
-tsconfig.tsbuildinfo
+```
+node_modules/
+```
