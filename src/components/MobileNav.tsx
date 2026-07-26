@@ -1,5 +1,5 @@
 import { Link, useLocation } from "../router";
-import { LayoutDashboard, Briefcase, BarChart3, Building2, DollarSign, Store, HardHat, Zap } from "lucide-react";
+import { LayoutDashboard, Briefcase, BarChart3, Building2, DollarSign, Store, HardHat, Zap, FileText } from "lucide-react";
 
 export function MobileNav() {
   const location = useLocation();
@@ -8,11 +8,11 @@ export function MobileNav() {
     { to: "/", icon: <LayoutDashboard size={18} />, label: "Home" },
     { to: "/corporate-suite", icon: <Briefcase size={18} />, label: "Suite" },
     { to: "/market-intel", icon: <BarChart3 size={18} />, label: "Intel" },
+    { to: "/government", icon: <FileText size={18} />, label: "Gov" },
     { to: "/board-room", icon: <Building2 size={18} />, label: "Board" },
     { to: "/profit-margins", icon: <DollarSign size={18} />, label: "Margins" },
     { to: "/retail-calculator", icon: <Store size={18} />, label: "Retail" },
     { to: "/construction-calculator", icon: <HardHat size={18} />, label: "Constr" },
-    { to: "/xp-calculator", icon: <Zap size={18} />, label: "XP" },
   ];
 
   return (

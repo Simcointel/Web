@@ -1,15 +1,10 @@
 ```
-# Build artifacts
-dist/
-build/
-*.js.map
-
 # Dependencies
 node_modules/
 
-# Development artifacts
-.tsbuildinfo
+# Build artifacts
+tsconfig.tsbuildinfo
 
-# Vite specific
+# Vite/Vitest cache
 node_modules/.vite/
 ```
