@@ -441,17 +441,32 @@ export async function fetchCompanyData(companyId: string | number, realm = 0): P
     : "https://www.simcompanies.com/api/v3/companies/";
   const targetUrl = `${base}${companyId}/`;
 
-  for (let attempt = 0; attempt < 2; attempt++) {
+  // Retry with exponential backoff for rate limiting or transient failures
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await fetch(targetUrl);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(targetUrl, { signal: controller.signal });
+      clearTimeout(timer);
       if (res.ok) return res.json();
-    } catch {
-      // retry
+      if (res.status === 429) {
+        // Rate limited - wait longer before retry
+        await new Promise((r) => setTimeout(r, 3000 * (attempt + 1)));
+        continue;
+      }
+      if (res.status >= 400 && res.status < 500) {
+        throw new Error(`Company not found or API error: ${res.status}`);
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error('Company data request timeout');
+      }
+      // Continue to retry on network errors
     }
-    if (attempt < 1) await new Promise((r) => setTimeout(r, 2000));
+    if (attempt < 2) await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
   }
 
-  throw new Error("Company data fetch failed");
+  throw new Error("Company data fetch failed after retries");
 }
 
 
