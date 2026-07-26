@@ -1,9 +1,4 @@
 ```
-# Build artifacts
-dist/
-build/
-# Dependencies
-node_modules/
-# Cache
-node_modules/.vite/
+# TypeScript build artifacts
+*.tsbuildinfo
 ```

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import {
-  DollarSign, ArrowLeft, TrendingDown, Ship,
+  DollarSign, ArrowLeft, TrendingDown, Ship, Target,
   LayoutDashboard, HardHat, Upload, Download, CheckCircle2,
   Users, BarChart3, Briefcase, AlertTriangle,
   Sun, Moon
@@ -23,6 +23,7 @@ import { OperationsView } from "./corporate-suite/OperationsView";
 import { ExecutiveView } from "./corporate-suite/ExecutiveView";
 import { FinanceView } from "./corporate-suite/FinanceView";
 import { LogisticsView } from "./corporate-suite/LogisticsView";
+import { RetailView } from "./corporate-suite/RetailView";
 import { RiskView } from "./corporate-suite/RiskView";
 import { RankingsView } from "./corporate-suite/RankingsView";
 import { BondsView } from "./corporate-suite/BondsView";
@@ -299,6 +300,7 @@ export function CorporateSuitePage() {
       case 'exec': return <ExecutiveView state={state} core={core} setState={setState} setNotification={setNotification} />;
       case 'finance': return <FinanceView state={state} core={core} setState={setState} />;
       case 'logistics': return <LogisticsView state={state} core={core} setState={setState} />;
+      case 'retail': return <RetailView state={state} core={core} setState={setState} retail={retail} />;
       case 'risk': return <RiskView core={core} phase={economyPhase} retail={retail} state={state} setState={setState} />;
       case 'rankings': return <RankingsView />;
       case 'bonds': return <BondsView />;
@@ -333,10 +335,11 @@ export function CorporateSuitePage() {
              <WorkstationTab active={state.activeTab === 'exec'} onClick={() => setState({...state, activeTab: 'exec'})} label="EXEC" icon={Users} color="bg-amber-600" />
              <WorkstationTab active={state.activeTab === 'finance'} onClick={() => setState({...state, activeTab: 'finance'})} label="FINANCE" icon={DollarSign} color="bg-violet-600" />
              <WorkstationTab active={state.activeTab === 'logistics'} onClick={() => setState({...state, activeTab: 'logistics'})} label="LOGISTICS" icon={Ship} color="bg-indigo-600" />
-                          <WorkstationTab active={state.activeTab === 'ledger'} onClick={() => setState({...state, activeTab: 'ledger'})} label="LEDGER" icon={BarChart3} color="bg-teal-600" />
-              <WorkstationTab active={state.activeTab === 'risk'} onClick={() => setState({...state, activeTab: 'risk'})} label="RISK" icon={TrendingDown} color="bg-surface-600" />
-              <WorkstationTab active={state.activeTab === 'rankings'} onClick={() => setState({...state, activeTab: 'rankings'})} label="RANKINGS" icon={BarChart3} color="bg-amber-600" />
-              <WorkstationTab active={state.activeTab === 'bonds'} onClick={() => setState({...state, activeTab: 'bonds'})} label="BONDS" icon={DollarSign} color="bg-indigo-600" />
+             <WorkstationTab active={state.activeTab === 'retail'} onClick={() => setState({...state, activeTab: 'retail'})} label="RETAIL" icon={Target} color="bg-rose-600" />
+             <WorkstationTab active={state.activeTab === 'ledger'} onClick={() => setState({...state, activeTab: 'ledger'})} label="LEDGER" icon={BarChart3} color="bg-teal-600" />
+             <WorkstationTab active={state.activeTab === 'risk'} onClick={() => setState({...state, activeTab: 'risk'})} label="RISK" icon={TrendingDown} color="bg-surface-600" />
+             <WorkstationTab active={state.activeTab === 'rankings'} onClick={() => setState({...state, activeTab: 'rankings'})} label="RANKINGS" icon={BarChart3} color="bg-amber-600" />
+             <WorkstationTab active={state.activeTab === 'bonds'} onClick={() => setState({...state, activeTab: 'bonds'})} label="BONDS" icon={DollarSign} color="bg-indigo-600" />
           </nav>
        </div>
 
