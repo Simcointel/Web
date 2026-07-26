@@ -1,4 +1,10 @@
 ```
-# TypeScript build artifacts
-*.tsbuildinfo
+# Dependencies
+node_modules/
+
+# Build artifacts
+tsconfig.tsbuildinfo
+
+# Vite/Vitest cache
+node_modules/.vite/
 ```
