@@ -8,6 +8,9 @@ export {
   fetchAllFiles,
 } from "./github-transport";
 
+// Export SimCompanies API v3 integration
+export * from "./simcompanies-api";
+
 import { withCache } from "./data-cache";
 import {
   rawFetch,
