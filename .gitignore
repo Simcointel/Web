@@ -2,28 +2,8 @@
 # Build artifacts
 dist/
 build/
-*.js
-*.css
-
 # Dependencies
 node_modules/
-
-# TypeScript
-tsconfig.tsbuildinfo
-
-# Temporary files
-*.tmp
-*.temp
-
-# Logs
-*.log
-
-# IDE
-.vscode/
-.idea/
-
-# Environment
-.env
-.env.local
-*.env.*
+# Cache
+node_modules/.vite/
 ```
