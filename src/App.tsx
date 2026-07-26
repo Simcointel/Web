@@ -19,6 +19,7 @@ const ProfitCalculatorPage = lazy(() => import("./pages/ProfitCalculator").then(
 const ConstructionCalculatorPage = lazy(() => import("./pages/ConstructionCalculator").then(m => ({ default: m.ConstructionCalculatorPage })));
 const RetailCalculatorPage = lazy(() => import("./pages/RetailCalculator").then(m => ({ default: m.RetailCalculatorPage })));
 const MarketIntelPage = lazy(() => import("./pages/MarketIntel").then(m => ({ default: m.MarketIntelPage })));
+const MarketOrdersPage = lazy(() => import("./pages/MarketOrders").then(m => ({ default: m.MarketOrdersPage })));
 const XpCalculatorPage = lazy(() => import("./pages/XpCalculator").then(m => ({ default: m.XpCalculatorPage })));
 const BoardRoomPage = lazy(() => import("./pages/BoardRoom").then(m => ({ default: m.BoardRoomPage })));
 
@@ -49,7 +50,7 @@ export function AppShell({ path }: { path: string }) {
     : path === "/executive-optimizer" ? <BoardRoomPage />
     : path === "/retail-calculator" ? <RetailCalculatorPage />
     : path === "/market-intel" ? <MarketIntelPage />
-    : path === "/xp-calculator" ? <XpCalculatorPage />
+    : path === "/market-orders" ? <MarketOrdersPage />
     : path === "/board-room" ? <BoardRoomPage />
     : path === "/about" ? <AboutPage />
     : isWidget ? <WidgetPage />
