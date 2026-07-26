@@ -1,4 +1,15 @@
 ```
-# TypeScript build artifacts
-*.tsbuildinfo
+# Build artifacts
+dist/
+build/
+*.js.map
+
+# Dependencies
+node_modules/
+
+# Development artifacts
+.tsbuildinfo
+
+# Vite specific
+node_modules/.vite/
 ```
