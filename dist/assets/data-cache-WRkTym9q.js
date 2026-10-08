@@ -1,0 +1,1 @@
+const n=new Map;async function o(a,c,r=3e5){const e=n.get(a);if(e&&Date.now()<e.expiry)return e.data;try{const t=await c();return n.set(a,{data:t,expiry:Date.now()+r}),t}catch(t){throw n.set(a,{data:null,expiry:Date.now()+3e4}),t}}export{o as w};

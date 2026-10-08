@@ -1,21 +1,25 @@
 import { useState, useMemo, useEffect } from "react";
-import { useDataRepoPoll } from "../hooks/useDataRepo";
-import * as dataRepo from "../services/dataRepo";
-import { LoadingState, ErrorState, EmptyState } from "../components/States";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import { RESOURCES } from "../data/simco_static";
 import { BarChart3 } from "lucide-react";
 import type { ProfitMarginsResponse, ProfitMarginResource } from "../types/api";
+import { LoadingState, ErrorState, EmptyState } from "../components/States";
+import { InputNode } from "../components/InputNode";
+
+import { PageHeader, MetricBox } from "../components/ui/Common";
+import { usePageTitleKey } from "../hooks/usePageTitle";
+import { useProfitMargins } from "../hooks/useDataQueries";
+import { fmtNumber, fmtPct } from "../utils/formatters";
 
 export function ProfitMarginsPage() {
-  useEffect(() => { document.title = "Profit Matrix - SimcoIntel"; }, []);
+  usePageTitleKey('profitMargins');
 
   const [realm, setRealm] = useSharedRealm();
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"mg" | "np" | "rv" | "vw">("mg");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const { data, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 60000, [realm]);
+  const { data, loading, error, refresh } = useProfitMargins(60000);
 
   const [localCalc, setLocalCalc] = useState(false);
   const [syncWithSuite, setSyncWithSuite] = useState(true);
@@ -83,19 +87,34 @@ export function ProfitMarginsPage() {
 
   return (
     <div className="space-y-5 animate-slide-up">
-      <div className="flex items-center justify-between pb-4 border-b border-surface-200 dark:border-surface-800">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-violet-100 dark:bg-violet-900/30 rounded-xl flex items-center justify-center"><BarChart3 size={18} className="text-violet-600" /></div>
-          <div><h1 className="text-lg font-bold">Profit Matrix (R{realm})</h1><p className="text-xs text-surface-400">Margin analysis & profitability ranking</p></div>
-        </div>
-        <select value={realm} onChange={e => setRealm(Number(e.target.value))} className="input w-auto"><option value={0}>R0</option><option value={1}>R1</option></select>
-      </div>
+      <PageHeader
+        title="Profit Matrix"
+        subtitle="Margin analysis & profitability ranking"
+        icon={<BarChart3 size={18} className="text-violet-600" />}
+        iconBg="bg-violet-100 dark:bg-violet-900/30"
+        realm={realm}
+        onRealmChange={setRealm}
+      />
 
       <div className="grid grid-cols-4 gap-3">
-        <div className="card p-3 text-center"><p className="text-xs font-bold text-surface-400 uppercase tracking-wider">Items</p><p className="text-xl font-bold">{resources.length}</p></div>
-        <div className="card p-3 text-center"><p className="text-xs font-bold text-surface-400 uppercase tracking-wider">Profitable</p><p className="text-xl font-bold text-emerald-600">{resources.filter(r => r.marginPct > 0).length}</p></div>
-        <div className="card p-3 text-center"><p className="text-xs font-bold text-surface-400 uppercase tracking-wider">Avg Margin</p><p className="text-xl font-bold">{(resources.reduce((s, r) => s + r.marginPct, 0) / (resources.length || 1)).toFixed(1)}%</p></div>
-        <div className="card p-3 text-center"><p className="text-xs font-bold text-surface-400 uppercase tracking-wider">Top Margin</p><p className="text-xl font-bold text-brand-600">{Math.max(...resources.map(r => r.marginPct), 0).toFixed(1)}%</p></div>
+        <MetricBox
+          label="Items"
+          value={resources.length}
+        />
+        <MetricBox
+          label="Profitable"
+          value={resources.filter(r => r.marginPct > 0).length}
+          className="text-emerald-600"
+        />
+        <MetricBox
+          label="Avg Margin"
+          value={fmtPct(resources.reduce((s, r) => s + r.marginPct, 0) / (resources.length || 1))}
+        />
+        <MetricBox
+          label="Top Margin"
+          value={fmtPct(Math.max(...resources.map(r => r.marginPct), 0))}
+          className="text-brand-600"
+        />
       </div>
 
       <div className="card p-4 space-y-4">
@@ -107,10 +126,10 @@ export function ProfitMarginsPage() {
             </label>
             {localCalc && <><label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-brand-600"><input type="checkbox" checked={syncWithSuite} onChange={e => setSyncWithSuite(e.target.checked)} className="accent-brand-500" />Sync</label>
             <div className="flex flex-wrap gap-2">
-              <InputNode label="PROD" val={prodBonus} set={setProdBonus} unit="%" disabled={syncWithSuite} />
-              <InputNode label="AO" val={adminOverhead} set={setAdminOverhead} unit="%" disabled={syncWithSuite} />
-              <InputNode label="ABUN" val={abundance} set={setAbundance} unit="%" disabled={syncWithSuite} />
-              <InputNode label="RES" val={resBonus} set={setResBonus} unit="%" disabled={syncWithSuite} />
+              <InputNode label="PROD" value={prodBonus} onChange={setProdBonus} unit="%" disabled={syncWithSuite} />
+              <InputNode label="AO" value={adminOverhead} onChange={setAdminOverhead} unit="%" disabled={syncWithSuite} />
+              <InputNode label="ABUN" value={abundance} onChange={setAbundance} unit="%" disabled={syncWithSuite} />
+              <InputNode label="RES" value={resBonus} onChange={setResBonus} unit="%" disabled={syncWithSuite} />
             </div></>}
           </div>
           <div className="flex gap-2">
@@ -137,9 +156,9 @@ export function ProfitMarginsPage() {
               {filtered.map(r => (
                 <tr key={r.id} className={`hover:bg-surface-50 dark:hover:bg-surface-900/50 cursor-pointer ${selectedResId === r.id ? 'bg-brand-50 dark:bg-brand-900/10' : ''}`} onClick={() => setSelectedResId(r.id)}>
                   <td className="px-3 py-2 font-bold">{r.name}</td>
-                  <td className={`px-3 py-2 text-right font-bold ${r.marginPct > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{r.marginPct.toFixed(1)}%</td>
-                  <td className="px-3 py-2 text-right font-bold">{fmt(r.netProfitPerHour)}</td>
-                  <td className="px-3 py-2 text-right text-surface-400">{fmt(r.revenuePerHour)}</td>
+                  <td className={`px-3 py-2 text-right font-bold ${r.marginPct > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmtPct(r.marginPct)}</td>
+                  <td className="px-3 py-2 text-right font-bold">{fmtNumber(r.netProfitPerHour)}</td>
+                  <td className="px-3 py-2 text-right text-surface-400">{fmtNumber(r.revenuePerHour)}</td>
                   <td className="px-3 py-2 text-right font-bold text-brand-600">{r.outputVwap.toFixed(2)}</td>
                 </tr>
               ))}
@@ -173,19 +192,4 @@ export function ProfitMarginsPage() {
       )}
     </div>
   );
-}
-
-function Metric({ label, value }: { label: string; value: string | number }) {
-  return <div className="card p-3 text-center"><p className="text-xs font-bold text-surface-400 uppercase tracking-wider mb-1">{label}</p><p className="text-xl font-bold">{value}</p></div>;
-}
-
-function InputNode({ label, val, set, unit, disabled }: { label: string; val: number; set: (v: number) => void; unit: string; disabled: boolean }) {
-  return <div className="flex items-center gap-1"><span className="text-xs font-bold text-surface-500">{label}</span><div className={`flex items-center border border-surface-300 rounded px-1.5 py-0.5 ${disabled ? 'opacity-50' : ''}`}><input type="number" value={val} onChange={e => !disabled && set(Number(e.target.value))} disabled={disabled} className="w-10 bg-transparent text-xs font-bold text-right outline-none" /><span className="text-xs text-surface-400">{unit}</span></div></div>;
-}
-
-function fmt(n: number): string {
-  const a = Math.abs(n);
-  if (a >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (a >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-  return n.toFixed(0);
 }

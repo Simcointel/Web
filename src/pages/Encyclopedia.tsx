@@ -7,7 +7,8 @@ import { Search, Info, Factory, ShoppingCart, TrendingUp, ChevronRight, BookOpen
 import { LoadingState } from "../components/States";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import type { ProfitMarginsResponse, PriceHistoryItem } from "../types/api";
-import { buildResourceTree } from "../data/buildTree";
+import { buildResourceTree, type TreeNode } from "../data/buildTree";
+import { InputNode } from "../components/InputNode";
 
 export function EncyclopediaPage() {
   useEffect(() => {
@@ -170,7 +171,7 @@ export function EncyclopediaPage() {
             </div>
             <div className="card !bg-transparent p-4 min-h-[60vh] overflow-x-auto flex flex-col items-center justify-start border-none">
               <div className="animate-fade-in-scale">
-                {tree && <TreeNode node={tree} isRoot />}
+                {tree && <TreeNodeComponent node={tree} isRoot />}
               </div>
             </div>
           </div>
@@ -194,9 +195,7 @@ function SpecNode({ label, value }: { label: string; value: string | number }) {
   return (<div className="bg-surface-50 dark:bg-surface-950 p-2 rounded"><span className="block text-[7px] font-black text-surface-400 uppercase mb-1">{label}</span><span className="text-[11px] font-black text-surface-900 dark:text-white uppercase">{value}</span></div>);
 }
 
-import type { TreeNode } from "../data/buildTree";
-
-function TreeNode({ node, isRoot, qty }: { node: TreeNode; isRoot?: boolean; qty?: number | string }) {
+function TreeNodeComponent({ node, isRoot, qty }: { node: TreeNode; isRoot?: boolean; qty?: number | string }) {
   return (
     <div className="flex flex-col items-center">
       <div className={`p-4 px-6 rounded-xl border transition-all duration-300 group relative ${isRoot ? 'bg-brand-600 text-white shadow-md border-brand-700' : 'bg-white dark:bg-surface-900 border-surface-200 dark:border-surface-800 hover:border-brand-500 shadow-sm'}`}>
@@ -215,7 +214,7 @@ function TreeNode({ node, isRoot, qty }: { node: TreeNode; isRoot?: boolean; qty
             {node.inputs.map((input, i) => (
             <div key={i} className="relative pt-4">
               <div className="absolute top-0 left-0 right-0 h-0.5 bg-surface-100 dark:bg-surface-800/50" />
-              <TreeNode node={input} qty={input.qty} />
+              <TreeNodeComponent node={input} qty={input.qty} />
             </div>
           ))}
         </div>

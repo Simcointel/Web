@@ -16,6 +16,8 @@ import {
   rawFetch,
   fetchLatest,
   fetchAllFiles,
+  fetchIndex,
+  listFiles,
 } from "./github-transport";
 
 import type {
@@ -130,7 +132,6 @@ export async function fetchMacroLatest(realm: number): Promise<MacroLatest> {
 async function loadHistoryYearFiles(realm: number): Promise<Record<string, unknown>[]> {
   return withCache(`history:${realm}`, async () => {
     const dir = `aggregates/macro-history/realm-${realm}`;
-    const { fetchIndex, listFiles } = await import("./github-transport");
     const index = await fetchIndex(dir);
     let yearFiles: string[];
     if (index?.files) {
