@@ -5,6 +5,7 @@ import { FileText, AlertCircle, RefreshCw, Table, Package, Clock, CheckCircle, X
 import { PageHeader, MetricBox } from "../components/ui/Common";
 import { usePageTitleKey } from "../hooks/usePageTitle";
 import { fmtNumber, fmtCurrency } from "../utils/formatters";
+import * as dataRepo from "../services/dataRepo";
 
 interface GovernmentOrder {
   id: number;
@@ -35,27 +36,16 @@ export function GovernmentPage() {
     setLoading(true);
     setError(null);
     try {
-      // Try to get from local storage first (cached by backend)
-      const response = await fetch(`/api/snapshots/${realm}?type=government-orders`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.files && data.files.length > 0) {
-          // Get the latest snapshot
-          const latestFile = data.files[0];
-          const snapshotResponse = await fetch(`/api/snapshots/${realm}/${latestFile.name}`);
-          if (snapshotResponse.ok) {
-            const snapshot = await snapshotResponse.json();
-            if (snapshot.data?.orders) {
-              setOrders(snapshot.data.orders);
-              setLastUpdated(new Date(snapshot.data.t).toLocaleString());
-              setLoading(false);
-              return;
-            }
-          }
-        }
+      // Try to get from public export (GitHub data repo) first - no API load
+      const publicData = await dataRepo.rawFetch<GovernmentOrder[]>(`public/realm-${realm}/government-orders.json`);
+      if (publicData && Array.isArray(publicData) && publicData.length > 0) {
+        setOrders(publicData);
+        setLastUpdated(new Date().toLocaleString());
+        setLoading(false);
+        return;
       }
       
-      // Fallback: try to fetch directly from backend compute endpoint
+      // Fallback: try to fetch from backend compute endpoint
       const computeResponse = await fetch(`/api/actions/government-orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
