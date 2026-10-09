@@ -1,28 +1,30 @@
 import { useState, useMemo } from "react";
-import { useDataRepoPoll } from "../hooks/useDataRepo";
-import * as dataRepo from "../services/dataRepo";
-import { RETAIL_PRODUCT_MAP, BUILDINGS, RESOURCES } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
+import { RETAIL_PRODUCT_MAP, BUILDINGS, RESOURCES } from "../data/simco_static";
 import type { ProfitMarginResource } from "../types/api";
 import { BarChart3, DollarSign, Search, ChevronRight, Package } from "lucide-react";
 import type { ProfitMarginsResponse } from "../types/api";
+
+import { useProfitMargins } from "../hooks/useDataQueries";
+import { PageHeader, MetricBox } from "../components/ui/Common";
+import { usePageTitleKey } from "../hooks/usePageTitle";
+import { fmtNumber } from "../utils/formatters";
 
 function toNum(v: unknown, fallback = 0): number {
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
 }
 
-function fmt(n: number) { return n.toLocaleString(undefined, { maximumFractionDigits: 2 }); }
-function fmt$(n: number) { return n >= 1000 ? `$${(n / 1000).toFixed(1)}K` : `$${n.toFixed(2)}`; }
-
 const tabs = ["retail", "premiums", "tree"] as const;
 type Tab = typeof tabs[number];
 
 export function MarketIntelPage() {
+  usePageTitleKey('marketIntel');
+
   const [realm] = useSharedRealm();
   const [tab, setTab] = useState<Tab>("retail");
 
-  const { data: marginsData } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 120000, [realm]);
+  const { data: marginsData } = useProfitMargins(120000);
   const margins = (marginsData as ProfitMarginsResponse | undefined)?.resources ?? [];
 
   const storeNames: Record<string, string> = {};
@@ -33,12 +35,15 @@ export function MarketIntelPage() {
 
   return (
     <div className="space-y-5 animate-slide-up max-w-6xl mx-auto">
-      <div className="flex items-center justify-between pb-4 border-b border-surface-200 dark:border-surface-800">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center"><BarChart3 size={18} className="text-indigo-600" /></div>
-          <div><h1 className="text-lg font-bold">Market Intelligence</h1><p className="text-xs text-surface-400">Product rankings, quality premiums & supply chains</p></div>
-        </div>
-      </div>
+      <PageHeader
+        title="Market Intelligence"
+        subtitle="Product rankings, quality premiums & supply chains"
+        icon={<BarChart3 size={18} />}
+        iconBg="bg-indigo-100 dark:bg-indigo-900/30"
+        iconColor="text-indigo-600"
+        realm={realm}
+        onRealmChange={() => {}}
+      />
 
       <div className="flex gap-1 bg-surface-100 dark:bg-surface-900 rounded-xl p-0.5 w-fit">
         {tabs.map(t => (
@@ -99,7 +104,7 @@ function RetailRankingsTab({ margins, storeNames, resNameMap }: { margins: Profi
               <tr key={`${r.storeName}-${r.productName}-${i}`} className="hover:bg-surface-50 dark:hover:bg-surface-900/50">
                 <td className="px-4 py-2.5 font-bold">{r.storeName}</td>
                 <td className="px-4 py-2.5">{r.productName}</td>
-                <td className="px-4 py-2.5 text-right font-bold text-brand-600">${fmt(r.vwap)}</td>
+                <td className="px-4 py-2.5 text-right font-bold text-brand-600">${fmtNumber(r.vwap)}</td>
               </tr>
             ))}
           </tbody>
@@ -137,7 +142,7 @@ function SupplyChainTab({ margins, resNameMap }: { margins: ProfitMarginResource
           <Package size={12} className="text-surface-400 shrink-0" />
           <span className="font-bold text-sm">{res.name ?? `#${nodeId}`}</span>
           <span className="text-[10px] text-surface-400">#{nodeId}</span>
-          {price > 0 && <span className="text-xs font-bold text-brand-600">${fmt(price)}</span>}
+          {price > 0 && <span className="text-xs font-bold text-brand-600">${fmtNumber(price)}</span>}
         </div>
         {inputs.length > 0 && (
           <div className="border-l-2 border-surface-200 dark:border-surface-700 ml-1 pl-4 space-y-1">
@@ -152,7 +157,7 @@ function SupplyChainTab({ margins, resNameMap }: { margins: ProfitMarginResource
                     <ChevronRight size={10} className="text-surface-300 shrink-0" />
                     <span>{subRes?.name ?? resNameMap[toNum(id)] ?? `#${id}`}</span>
                     <span className="text-surface-400">×{qty}</span>
-                    {subPrice > 0 && <><span className="text-surface-400">@</span><span className="font-bold">${fmt(subPrice)}</span><span className="text-surface-400">= ${fmt(total)}</span></>}
+                    {subPrice > 0 && <><span className="text-surface-400">@</span><span className="font-bold">${fmtNumber(subPrice)}</span><span className="text-surface-400">= ${fmtNumber(total)}</span></>}
                   </div>
                   {hasChildren && <Tree nodeId={toNum(id)} />}
                 </div>

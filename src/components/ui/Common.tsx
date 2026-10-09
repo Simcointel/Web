@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
  * Standard page header with title, subtitle, and realm selector
  */
 export interface PageHeaderProps {
-  title: string;
+  title: React.ReactNode;
   subtitle?: string;
   icon?: React.ReactElement<{ size?: number; className?: string }>;
   iconBg?: string;

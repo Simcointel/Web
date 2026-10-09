@@ -32,6 +32,7 @@ export const PAGE_TITLES = {
   boardRoom: 'Board Room',
   government: 'Government',
   about: 'About',
+  xpCalculator: 'XP Calculator',
   widgets: 'Widgets',
 } as const;
 

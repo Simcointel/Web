@@ -3,19 +3,23 @@ import { methodology } from "../data/methodology";
 import { Section } from "../components/Layout";
 import { Info } from "lucide-react";
 
+import { PageHeader, MetricBox } from "../components/ui/Common";
+import { usePageTitleKey } from "../hooks/usePageTitle";
+
 export function AboutPage() {
-  useEffect(() => { document.title = "SimCo Intel - About"; }, []);
+  usePageTitleKey('about');
+
   return (
     <div className="space-y-6 max-w-3xl animate-slide-up">
-      <div className="flex items-center gap-3 pb-4 border-b border-surface-200 dark:border-surface-800">
-        <div className="w-9 h-9 bg-brand-100 dark:bg-brand-900/30 rounded-xl flex items-center justify-center">
-          <Info size={18} className="text-brand-600" />
-        </div>
-        <div>
-          <h1 className="text-lg font-bold">Methodology & Interpretation Guide</h1>
-          <p className="text-xs text-surface-400">How scores, indexes & indicators are calculated</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Methodology & Interpretation Guide"
+        subtitle="How scores, indexes & indicators are calculated"
+        icon={<Info size={18} />}
+        iconBg="bg-brand-100 dark:bg-brand-900/30"
+        iconColor="text-brand-600"
+        realm={0}
+        onRealmChange={() => {}}
+      />
 
       <Section title="Composite Scores" subtitle="Five 0–100 scores summarizing economic health">
         <div className="space-y-4">

@@ -1,11 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
-import { useDataRepoPoll } from "../hooks/useDataRepo";
-import * as dataRepo from "../services/dataRepo";
 import { BUILDINGS, CONSTRUCTION_MATERIALS, MAT_REF_PRICES, RESOURCES } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import { Section, CardGrid } from "../components/Layout";
 import { HardHat, Search, Layers, TrendingUp, Package, ListTree, Timer, Building2 } from "lucide-react";
 import type { ProfitMarginsResponse } from "../types/api";
+
+import { useProfitMargins } from "../hooks/useDataQueries";
+import { PageHeader, MetricBox } from "../components/ui/Common";
+import { usePageTitleKey } from "../hooks/usePageTitle";
+import { fmtNumber } from "../utils/formatters";
 
 function matName(id: number): string {
   return CONSTRUCTION_MATERIALS.find(c => c.id === id)?.name ?? RESOURCES.find(r => r.id === id)?.name ?? `Mat ${id}`;
@@ -18,14 +21,14 @@ function fmtHours(h: number): string {
 }
 
 export function ConstructionCalculatorPage() {
-  useEffect(() => { document.title = "SimCo Intel - Construction Calculator"; }, []);
+  usePageTitleKey('constructionCalculator');
 
   const [realm] = useSharedRealm();
   const [buildingId, setBuildingId] = useState("");
   const [currentLv, setCurrentLv] = useState(0);
   const [targetLv, setTargetLv] = useState(1);
 
-  const { data: marginsData } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 120000, [realm]);
+  const { data: marginsData } = useProfitMargins(120000);
   const margins = (marginsData as ProfitMarginsResponse | undefined)?.resources ?? [];
 
   const building = useMemo(() => BUILDINGS.find(b => b.id === buildingId), [buildingId]);
@@ -96,15 +99,15 @@ export function ConstructionCalculatorPage() {
 
   return (
     <div className="space-y-5 animate-slide-up">
-      <div className="flex items-center gap-3 pb-4 border-b border-surface-200 dark:border-surface-800">
-        <div className="w-9 h-9 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
-          <HardHat size={18} className="text-orange-600" />
-        </div>
-        <div>
-          <h1 className="text-lg font-bold">Construction Calculator</h1>
-          <p className="text-xs text-surface-400">Building cost estimator & ROI</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Construction Calculator"
+        subtitle="Building cost estimator & ROI"
+        icon={<HardHat size={18} />}
+        iconBg="bg-orange-100 dark:bg-orange-900/30"
+        iconColor="text-orange-600"
+        realm={realm}
+        onRealmChange={() => {}}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* ─── Sidebar: building & level controls ─── */}
@@ -198,17 +201,17 @@ export function ConstructionCalculatorPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
                   <div className="kpi-card card border-l-4 border-l-sky-500">
                     <span className="stat-label">Reference Cost</span>
-                    <span className="stat-value">${totalRefCost.toLocaleString()}</span>
+                    <span className="stat-value">${fmtNumber(totalRefCost)}</span>
                     <span className="block text-[10px] text-surface-400 mt-1">game reference prices</span>
                   </div>
                   <div className="kpi-card card border-l-4 border-l-violet-500">
                     <span className="stat-label">Market Cost</span>
-                    <span className={`stat-value ${totalMatCost > totalRefCost ? 'text-rose-600' : 'text-emerald-600'}`}>${totalMatCost.toLocaleString()}</span>
+                    <span className={`stat-value ${totalMatCost > totalRefCost ? 'text-rose-600' : 'text-emerald-600'}`}>${fmtNumber(totalMatCost)}</span>
                     <span className="block text-[10px] text-surface-400 mt-1">materials at VWAP</span>
                   </div>
                   <div className="kpi-card card border-l-4 border-l-amber-500">
                     <span className="stat-label">Scrap Value</span>
-                    <span className="stat-value">${(building.cost * targetLv).toLocaleString()}</span>
+                    <span className="stat-value">${fmtNumber(building.cost * targetLv)}</span>
                     <span className="block text-[10px] text-surface-400 mt-1">if demolished at target</span>
                   </div>
                   <div className="kpi-card card border-l-4 border-l-emerald-500">
@@ -234,17 +237,17 @@ export function ConstructionCalculatorPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="card p-4 border-l-4 border-l-brand-500 space-y-1">
                       <span className="metric-label">Daily Revenue</span>
-                      <span className="metric-value text-brand-600">${roi.dailyRevenue.toLocaleString()}</span>
+                      <span className="metric-value text-brand-600">${fmtNumber(roi.dailyRevenue)}</span>
                       <span className="block text-[10px] text-surface-400">@ ${roi.outputVwap.toFixed(2)}/u</span>
                     </div>
                     <div className="card p-4 border-l-4 border-l-rose-400 space-y-1">
                       <span className="metric-label">Daily Wages</span>
-                      <span className="metric-value">${roi.dailyWages.toLocaleString()}</span>
+                      <span className="metric-value">${fmtNumber(roi.dailyWages)}</span>
                       <span className="block text-[10px] text-surface-400">incl. 10% vacation</span>
                     </div>
                     <div className="card p-4 border-l-4 space-y-1" style={{ borderLeftColor: roi.dailyNet > 0 ? '#10b981' : '#f43f5e' }}>
                       <span className="metric-label">Daily Net</span>
-                      <span className={`metric-value ${roi.dailyNet > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>${roi.dailyNet.toLocaleString()}</span>
+                      <span className={`metric-value ${roi.dailyNet > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>${fmtNumber(roi.dailyNet)}</span>
                       <span className="block text-[10px] text-surface-400">{roi.dailyNet > 0 ? 'revenue − wages' : 'operating at loss'}</span>
                     </div>
                     <div className="card p-4 border-l-4 border-l-violet-500 space-y-1">
@@ -271,7 +274,7 @@ export function ConstructionCalculatorPage() {
                         <div key={id} className="card p-4 space-y-1">
                           <span className="stat-label">{matName(id)}</span>
                           <span className="stat-value">{qty.toLocaleString()}</span>
-                          <span className="block text-[10px] text-surface-400">@ ${(matPrices[id] ?? 0).toFixed(2)} = ${(qty * (matPrices[id] ?? 0)).toLocaleString()}</span>
+                          <span className="block text-[10px] text-surface-400">@ ${(matPrices[id] ?? 0).toFixed(2)} = ${fmtNumber(qty * (matPrices[id] ?? 0))}</span>
                         </div>
                       );
                     })}
@@ -309,8 +312,8 @@ export function ConstructionCalculatorPage() {
                               <td className="px-3 py-2 font-bold whitespace-nowrap">
                                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 text-[10px] font-bold mr-1.5">{u.lv}</span>
                               </td>
-                              <td className="px-3 py-2 text-right tabular-nums">${u.refCost.toLocaleString()}</td>
-                              <td className="px-3 py-2 text-right tabular-nums">${u.matCost.toLocaleString()}</td>
+                              <td className="px-3 py-2 text-right tabular-nums">${fmtNumber(u.refCost)}</td>
+                              <td className="px-3 py-2 text-right tabular-nums">${fmtNumber(u.matCost)}</td>
                               <td className="px-3 py-2 text-right tabular-nums">{fmtHours(u.time)}</td>
                               <td className="px-3 py-2 text-right tabular-nums text-surface-400">{fmtHours(cumTime)}</td>
                               {buildingMatIds.map(id => (
@@ -324,8 +327,8 @@ export function ConstructionCalculatorPage() {
                     <tfoot className="bg-surface-50 dark:bg-surface-900 text-xs font-bold border-t-2 border-surface-200 dark:border-surface-700">
                       <tr>
                         <td className="px-3 py-2.5">Total</td>
-                        <td className="px-3 py-2.5 text-right tabular-nums">${totalRefCost.toLocaleString()}</td>
-                        <td className="px-3 py-2.5 text-right tabular-nums">${totalMatCost.toLocaleString()}</td>
+                        <td className="px-3 py-2.5 text-right tabular-nums">${fmtNumber(totalRefCost)}</td>
+                        <td className="px-3 py-2.5 text-right tabular-nums">${fmtNumber(totalMatCost)}</td>
                         <td className="px-3 py-2.5 text-right tabular-nums" colSpan={2}>{fmtHours(totalTimeH)}</td>
                         {buildingMatIds.map(id => (
                           <td key={id} className="px-3 py-2.5 text-right tabular-nums">{Math.round(totalMats[id] ?? 0).toLocaleString()}</td>

@@ -14,11 +14,17 @@ import {
   Clock, Sparkles
 } from "lucide-react";
 
+import { PageHeader, MetricBox } from "../components/ui/Common";
+import { usePageTitleKey } from "../hooks/usePageTitle";
+import { useDashboardState } from "../hooks/useDataQueries";
+import { fmtNumber } from "../utils/formatters";
+
 export function HomePage() {
-  useEffect(() => { document.title = "SimcoIntel - Economic Intelligence"; }, []);
+  usePageTitleKey('home');
 
   const [realm, setRealm] = useSharedRealm();
-  const { data: dashState, loading, error, refresh } = useDataRepoPoll(() => dataRepo.fetchDashboardState(realm), 60000, [realm]);
+  const { data: dashState, loading, error, refresh } = useDashboardState();
+
   const loadingOrError = useMemo(() => {
     if (loading && !dashState) return <LoadingState text="Synthesizing..." />;
     if (error) return <ErrorState message={error} onRetry={refresh} />;
@@ -35,37 +41,30 @@ export function HomePage() {
   const sparkData = scores ? [scores.eh, scores.ms, scores.st, scores.ip, scores.sr] : [];
 
   const kpis = [
-    { title: "Economic Health", value: scores?.eh, icon: Activity, color: "text-brand-600", bg: "bg-brand-50 dark:bg-brand-900/10" },
-    { title: "Market Sentiment", value: scores?.ms, icon: TrendingUp, color: "text-violet-600", bg: "bg-violet-50 dark:bg-violet-900/10" },
-    { title: "System Stability", value: scores?.st, icon: Shield, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/10" },
-    { title: "Risk Assessment", value: scores?.sr, icon: AlertCircle, color: "text-rose-600", bg: "bg-rose-50 dark:bg-rose-900/10" },
+    { title: "Economic Health", value: scores?.eh, color: "text-brand-600" },
+    { title: "Market Sentiment", value: scores?.ms, color: "text-violet-600" },
+    { title: "System Stability", value: scores?.st, color: "text-emerald-600" },
+    { title: "Risk Assessment", value: scores?.sr, color: "text-rose-600" },
   ];
 
   return (
     <div className="space-y-6 animate-slide-up">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-surface-200 dark:border-surface-800">
-        <div>
-          <h1 className="text-2xl font-bold text-surface-900 dark:text-white tracking-tight">
-            Simco<span className="text-brand-600">Intel</span>
-          </h1>
-          <p className="text-xs text-surface-400 font-semibold mt-0.5">Economic Intelligence Dashboard</p>
-        </div>
+      <PageHeader
+        title={<><span className="text-2xl font-bold text-surface-900 dark:text-white tracking-tight">Simco<span className="text-brand-600">Intel</span></span> <span className="text-xs text-surface-400 font-semibold mt-0.5">Economic Intelligence Dashboard</span></>}
+        realm={realm}
+        onRealmChange={setRealm}
+      >
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-100 dark:bg-surface-900 rounded-lg border border-surface-200 dark:border-surface-800">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[10px] font-bold uppercase tracking-wide">60s</span>
           </div>
-          <select value={realm} onChange={(e) => setRealm(Number(e.target.value))}
-            className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wider outline-none focus:ring-1 focus:ring-brand-500/20">
-            <option value={0}>Realm 0</option>
-            <option value={1}>Realm 1</option>
-          </select>
         </div>
-      </div>
+      </PageHeader>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map(k => (
-          <KPI key={k.title} {...k} />
+          <MetricBox key={k.title} label={k.title} value={k.value ?? '--'} className={k.color} />
         ))}
       </div>
 
@@ -143,20 +142,6 @@ export function HomePage() {
   );
 }
 
-function KPI({ title, value, icon: Icon, color, bg }: { title: string; value: number | undefined; icon: ComponentType<{ size: number }>; color: string; bg: string }) {
-   return (
-     <div className={`kpi-card card flex items-center gap-4 ${bg}`}>
-       <div className="flex-1 min-w-0">
-         <span className="metric-label block mb-1">{title}</span>
-         <span className="metric-value">{value ?? '--'}</span>
-       </div>
-       <div className={`w-10 h-10 rounded-xl ${bg} border border-surface-200/50 dark:border-surface-700/50 flex items-center justify-center ${color}`}>
-         <Icon size={20} />
-       </div>
-     </div>
-   );
-}
-
 function Sparkline({ data, className }: { data: number[]; className?: string }) {
   if (data.length < 2) return null;
   const w = 120, h = 24;
@@ -171,12 +156,12 @@ function Sparkline({ data, className }: { data: number[]; className?: string }) 
 }
 
 function NavTile({ to, title, icon: Icon, color }: { to: string; title: string; icon: ComponentType<{ size: number }>; color: string }) {
-   return (
-     <Link to={to} className="card p-4 flex items-center gap-3 hover:border-brand-500/50 hover:ring-1 hover:ring-brand-500/10 transition-all group">
-       <div className={`w-10 h-10 rounded-xl ${color} text-white flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:shadow-md transition-all`}>
-          <Icon size={20} />
-       </div>
-       <span className="text-sm font-bold text-surface-800 dark:text-white">{title}</span>
-     </Link>
-   );
+  return (
+    <Link to={to} className="card p-4 flex items-center gap-3 hover:border-brand-500/50 hover:ring-1 hover:ring-brand-500/10 transition-all group">
+      <div className={`w-10 h-10 rounded-xl ${color} text-white flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:shadow-md transition-all`}>
+        <Icon size={20} />
+      </div>
+      <span className="text-sm font-bold text-surface-800 dark:text-white">{title}</span>
+    </Link>
+  );
 }

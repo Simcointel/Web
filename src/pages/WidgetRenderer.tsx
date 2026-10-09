@@ -5,6 +5,9 @@ import { WidgetAlertList } from "../components/widgets/WidgetAlertList";
 import { WidgetRegimeCard } from "../components/widgets/WidgetRegimeCard";
 import { WidgetForecastCard } from "../components/widgets/WidgetForecastCard";
 
+import { PageHeader, MetricBox } from "../components/ui/Common";
+import { usePageTitleKey } from "../hooks/usePageTitle";
+
 type WidgetType = "health" | "alerts" | "regime" | "scores" | "macro" | "forecast" | "signals" | "cycles" | "dependencies";
 
 function queryRealm(params: SearchParams): number {
@@ -22,9 +25,7 @@ function WidgetShell({ children, title }: { children: React.ReactNode; title?: s
 }
 
 export function WidgetPage() {
-  useEffect(() => {
-    document.title = "SimCo Intel - Widgets";
-  }, []);
+  usePageTitleKey('widgets');
 
   const params = useSearchParams();
   const type = (params.get("type") || "health") as WidgetType;

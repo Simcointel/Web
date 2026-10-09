@@ -1,6 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { Building2, Landmark, PiggyBank } from "lucide-react";
 
+import { PageHeader, MetricBox } from "../components/ui/Common";
+import { usePageTitleKey } from "../hooks/usePageTitle";
+import { fmtNumber, fmtPct, fmtCurrency } from "../utils/formatters";
+
 interface ExecSkills { management: number; accounting: number; communication: number; science: number }
 
 function eff(v: number): number {
@@ -37,26 +41,24 @@ function calcEVA(annualProfit: number, investedCapital: number, waccPct: number)
   return roic - waccPct;
 }
 
-function fmt$(n: number): string { return n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(1)}K` : `$${n.toFixed(0)}`; }
-
 const tabs = ["execs", "eva", "bonds"] as const;
 type Tab = typeof tabs[number];
 
 export function BoardRoomPage() {
-  useEffect(() => { document.title = "SimCo Intel - Board Room"; }, []);
+  usePageTitleKey('boardRoom');
   const [tab, setTab] = useState<Tab>("execs");
 
   return (
     <div className="space-y-5 animate-slide-up max-w-6xl mx-auto">
-      <div className="flex items-center gap-3 pb-4 border-b border-surface-200 dark:border-surface-800">
-        <div className="w-9 h-9 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
-          <Building2 size={18} className="text-amber-600" />
-        </div>
-        <div>
-          <h1 className="text-lg font-bold">Board Room</h1>
-          <p className="text-xs text-surface-400">Executives, EVA returns & bond analysis</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Board Room"
+        subtitle="Executives, EVA returns & bond analysis"
+        icon={<Building2 size={18} />}
+        iconBg="bg-amber-100 dark:bg-amber-900/30"
+        iconColor="text-amber-600"
+        realm={0}
+        onRealmChange={() => {}}
+      />
 
       <div className="flex gap-1 bg-surface-100 dark:bg-surface-900 rounded-xl p-1 w-fit">
         {tabs.map(t => (
@@ -210,8 +212,8 @@ function ExecsTab() {
 
         <ResultCard title="Accounting & Tax" color="border-l-emerald-500">
           <MetricRow label="Max Accounting" value={String(results.accMax)} />
-          <MetricRow label="Tax-free Threshold" value={fmt$(results.taxThreshold)} highlight="text-emerald-600" />
-          <MetricRow label="Est. Daily Tax" value={fmt$(results.dailyTax)} highlight={`text-lg ${results.dailyTax > 0 ? 'text-rose-600' : 'text-emerald-600'}`} />
+          <MetricRow label="Tax-free Threshold" value={fmtCurrency(results.taxThreshold)} highlight="text-emerald-600" />
+          <MetricRow label="Est. Daily Tax" value={fmtCurrency(results.dailyTax)} highlight={`text-lg ${results.dailyTax > 0 ? 'text-rose-600' : 'text-emerald-600'}`} />
         </ResultCard>
 
         <ResultCard title="Sales Speed" color="border-l-amber-500">
@@ -224,7 +226,7 @@ function ExecsTab() {
           <MetricRow label="Max Science" value={String(results.sciMax)} />
           <MetricRow label="Patent Probability" value={`${results.patentProb.toFixed(2)}%`} highlight="text-lg text-violet-600" />
           <ProgBar pct={results.patentProb * 4} color="bg-violet-500" />
-          <MetricRow label={`Research (Q${startQ}→Q${targetQ})`} value={fmt$(results.researchCost)} highlight="text-lg font-bold" />
+          <MetricRow label={`Research (Q${startQ}→Q${targetQ})`} value={fmtCurrency(results.researchCost)} highlight="text-lg font-bold" />
         </ResultCard>
       </div>
     </div>
@@ -258,12 +260,12 @@ function EvaTab() {
         <div className="card p-5 space-y-3">
           <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">Results</h2>
           <div className="space-y-2">
-            <MetricRow label="ROIC" value={`${eva.roic.toFixed(2)}%`} />
-            <MetricRow label="WACC" value={`${wacc}%`} />
+            <MetricRow label="ROIC" value={`${fmtPct(eva.roic)}`} />
+            <MetricRow label="WACC" value={`${fmtPct(wacc)}`} />
             <div className="border-t border-surface-100 dark:border-surface-800 pt-2 mt-2">
-              <MetricRow label="EVA Spread" value={`${eva.spread >= 0 ? '+' : ''}${eva.spread.toFixed(2)}%`} highlight={eva.spread >= 0 ? 'text-lg text-emerald-600' : 'text-lg text-rose-600'} />
+              <MetricRow label="EVA Spread" value={`${eva.spread >= 0 ? '+' : ''}${fmtPct(eva.spread)}`} highlight={eva.spread >= 0 ? 'text-lg text-emerald-600' : 'text-lg text-rose-600'} />
             </div>
-            <MetricRow label="Economic Value Added" value={fmt$(eva.evaDollar)} highlight={eva.evaDollar >= 0 ? 'text-lg text-emerald-600' : 'text-lg text-rose-600'} />
+            <MetricRow label="Economic Value Added" value={fmtCurrency(eva.evaDollar)} highlight={eva.evaDollar >= 0 ? 'text-lg text-emerald-600' : 'text-lg text-rose-600'} />
           </div>
         </div>
         <p className="text-[10px] text-surface-400 leading-relaxed px-1">
@@ -342,15 +344,15 @@ function BondsTab() {
         <div className="card p-5 space-y-3">
           <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">Pricing & Return</h2>
           <div className="space-y-2">
-            <MetricRow label="Bond Price" value={`${fmt$(bondPrice)} (${priceStatus})`}
+            <MetricRow label="Bond Price" value={`${fmtCurrency(bondPrice)} (${priceStatus})`}
               highlight={priceStatus === "premium" ? 'text-amber-600' : priceStatus === "discount" ? 'text-emerald-600' : ''} />
-            <MetricRow label="Annual Coupon" value={fmt$(annualIncome)} />
-            <MetricRow label="Effective Yield" value={`${effectiveYield.toFixed(2)}%`} />
+            <MetricRow label="Annual Coupon" value={fmtCurrency(annualIncome)} />
+            <MetricRow label="Effective Yield" value={`${fmtPct(effectiveYield)}`} />
             <MetricRow label="Coupon vs Market"
               value={couponRate > marketYield ? "Above market" : couponRate < marketYield ? "Below market" : "At market"}
               highlight={couponRate > marketYield ? 'text-emerald-600' : couponRate < marketYield ? 'text-rose-600' : ''} />
             <div className="border-t border-surface-100 dark:border-surface-800 pt-2 mt-2">
-              <MetricRow label={`${years}-Year Total Return`} value={fmt$(totalReturn)} highlight="text-lg text-brand-600" />
+              <MetricRow label={`${years}-Year Total Return`} value={fmtCurrency(totalReturn)} highlight="text-lg text-brand-600" />
             </div>
           </div>
         </div>

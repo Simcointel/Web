@@ -4,8 +4,13 @@ import { Package, TrendingUp, DollarSign, ArrowUpRight, ArrowDownRight, Clock } 
 import * as api from "../services/simcompanies-api";
 import type { MarketOrder, Resource } from "../services/simcompanies-api";
 
+import { PageHeader, MetricBox } from "../components/ui/Common";
+import { usePageTitleKey } from "../hooks/usePageTitle";
+import { fmtNumber } from "../utils/formatters";
+
 export function MarketOrdersPage() {
   const [realm] = useSharedRealm();
+  usePageTitleKey('marketOrders');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedResource, setSelectedResource] = useState<number | null>(null);
@@ -77,17 +82,15 @@ export function MarketOrdersPage() {
 
   return (
     <div className="space-y-6 animate-slide-up max-w-6xl mx-auto">
-      <div className="flex items-center justify-between pb-4 border-b border-surface-200 dark:border-surface-800">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center">
-            <Package size={18} className="text-indigo-600" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold">Live Market Orders</h1>
-            <p className="text-xs text-surface-400">Real-time buy and sell orders from SimCompanies API</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Live Market Orders"
+        subtitle="Real-time buy and sell orders from SimCompanies API"
+        icon={<Package size={18} />}
+        iconBg="bg-indigo-100 dark:bg-indigo-900/30"
+        iconColor="text-indigo-600"
+        realm={realm}
+        onRealmChange={() => {}}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-1 space-y-4">
@@ -118,7 +121,7 @@ export function MarketOrdersPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-surface-400">Base Price:</span>
-                  <span className="font-bold">${selectedRes.basePrice.toFixed(2)}</span>
+                  <span className="font-bold">${fmtNumber(selectedRes.basePrice)}</span>
                 </div>
               </div>
             </div>
@@ -162,9 +165,9 @@ export function MarketOrdersPage() {
                 <tbody className="divide-y divide-surface-50 dark:divide-surface-800">
                   {sellOrders.slice(0, 10).map((order, i) => (
                     <tr key={i} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
-                      <td className="px-4 py-2 font-bold text-rose-600">${order.price.toFixed(2)}</td>
+                      <td className="px-4 py-2 font-bold text-rose-600">${fmtNumber(order.price)}</td>
                       <td className="px-4 py-2 text-right">{order.amount.toLocaleString()}</td>
-                      <td className="px-4 py-2 text-right font-bold">${(order.price * order.amount).toFixed(2)}</td>
+                      <td className="px-4 py-2 text-right font-bold">${fmtNumber(order.price * order.amount)}</td>
                     </tr>
                   ))}
                   {sellOrders.length === 0 && (
@@ -193,9 +196,9 @@ export function MarketOrdersPage() {
                 <tbody className="divide-y divide-surface-50 dark:divide-surface-800">
                   {buyOrders.slice(0, 10).map((order, i) => (
                     <tr key={i} className="hover:bg-surface-50 dark:hover:bg-surface-800/50">
-                      <td className="px-4 py-2 font-bold text-emerald-600">${order.price.toFixed(2)}</td>
+                      <td className="px-4 py-2 font-bold text-emerald-600">${fmtNumber(order.price)}</td>
                       <td className="px-4 py-2 text-right">{order.amount.toLocaleString()}</td>
-                      <td className="px-4 py-2 text-right font-bold">${(order.price * order.amount).toFixed(2)}</td>
+                      <td className="px-4 py-2 text-right font-bold">${fmtNumber(order.price * order.amount)}</td>
                     </tr>
                   ))}
                   {buyOrders.length === 0 && (

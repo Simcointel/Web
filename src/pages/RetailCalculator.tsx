@@ -1,10 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
-import { useDataRepoPoll } from "../hooks/useDataRepo";
-import * as dataRepo from "../services/dataRepo";
 import { BUILDINGS, RETAIL_PRODUCT_MAP, PHASE_MULTIPLIERS } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import { Store, DollarSign, Users, BarChart3, Settings2, TrendingUp } from "lucide-react";
 import type { ProfitMarginsResponse } from "../types/api";
+
+import { useProfitMargins } from "../hooks/useDataQueries";
+import { PageHeader, MetricBox } from "../components/ui/Common";
+import { usePageTitleKey } from "../hooks/usePageTitle";
+import { fmtNumber, fmtPct } from "../utils/formatters";
 
 function toNum(v: unknown, fallback = 0): number {
   const n = Number(v);
@@ -49,11 +52,9 @@ function satToDemand(sat: number): number {
   return Math.round((1 - sat) * 100);
 }
 
-function fmt(n: number): string { return n.toLocaleString(undefined, { maximumFractionDigits: 2 }); }
-
 // ─── Page ──────────────────────────────────────────────────────
 export function RetailCalculatorPage() {
-  useEffect(() => { document.title = "SimCo Intel - Retail Calculator"; }, []);
+  usePageTitleKey('retailCalculator');
 
   const [realm] = useSharedRealm();
   const [storeId, setStoreId] = useState("");
@@ -67,7 +68,7 @@ export function RetailCalculatorPage() {
   const [phase, setPhase] = useState("normal");
   const [quality, setQuality] = useState(0);
 
-  const { data: marginsData } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 120000, [realm]);
+  const { data: marginsData } = useProfitMargins(120000);
   const margins = (marginsData as ProfitMarginsResponse | undefined)?.resources ?? [];
 
   const stores = useMemo(() => BUILDINGS.filter(b => b.type === "retail" && b.id !== "r" && b.id !== "B" && (RETAIL_PRODUCT_MAP[b.id]?.length ?? 0) > 0), []);
@@ -127,13 +128,17 @@ export function RetailCalculatorPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-5 animate-slide-up">
-      <div className="flex items-center justify-between pb-4 border-b border-surface-200 dark:border-surface-800">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-rose-100 dark:bg-rose-900/30 rounded-xl flex items-center justify-center"><Store size={18} className="text-rose-600" /></div>
-          <div><h1 className="text-lg font-bold">Retail Profitability</h1><p className="text-xs text-surface-400">Demand-driven profit analysis per store & product</p></div>
-        </div>
+      <PageHeader
+        title="Retail Profitability"
+        subtitle="Demand-driven profit analysis per store & product"
+        icon={<Store size={18} />}
+        iconBg="bg-rose-100 dark:bg-rose-900/30"
+        iconColor="text-rose-600"
+        realm={realm}
+        onRealmChange={() => {}}
+      >
         <div className="text-[10px] text-surface-400 font-bold">{margins.length} products with pricing data</div>
-      </div>
+      </PageHeader>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* ─── Sidebar ─── */}
@@ -196,10 +201,10 @@ export function RetailCalculatorPage() {
               <div>
                 <label className="text-[10px] font-semibold text-surface-500 block mb-1">Selling Price</label>
                 <div className="flex items-center gap-2">
-                  <input type="number" step="0.01" value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder={`VWAP $${fmt(vwapPrice)}`} className="flex-1 border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" />
+                  <input type="number" step="0.01" value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder={`VWAP $${fmtNumber(vwapPrice)}`} className="flex-1 border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" />
                   {customPrice && <button onClick={() => setCustomPrice("")} className="text-[10px] text-brand-600 font-bold">VWAP</button>}
                 </div>
-                <div className="text-[10px] text-surface-400 mt-0.5">VWAP: ${fmt(vwapPrice)}</div>
+                <div className="text-[10px] text-surface-400 mt-0.5">VWAP: ${fmtNumber(vwapPrice)}</div>
               </div>
 
               <div className="border-t border-surface-100 dark:border-surface-800 pt-3 mt-2">
@@ -250,8 +255,8 @@ export function RetailCalculatorPage() {
                             <td className="px-4 py-2 font-bold">{p.storeName}</td>
                             <td className="px-4 py-2">{p.productName}</td>
                             <td className="px-4 py-2 text-right"><span className={`font-bold ${p.demand >= 60 ? "text-emerald-600" : p.demand >= 40 ? "text-amber-500" : "text-rose-500"}`}>{p.demand}%</span></td>
-                            <td className="px-4 py-2 text-right text-surface-500">${fmt(p.revenue)}</td>
-                            <td className={`px-4 py-2 text-right font-bold ${p.profit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>${fmt(p.profit)}</td>
+                            <td className="px-4 py-2 text-right text-surface-500">${fmtNumber(p.revenue)}</td>
+                            <td className={`px-4 py-2 text-right font-bold ${p.profit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>${fmtNumber(p.profit)}</td>
                             <td className={`px-4 py-2 text-right font-bold ${p.margin >= 20 ? "text-emerald-600" : p.margin >= 0 ? "text-amber-500" : "text-rose-500"}`}>{p.margin.toFixed(1)}%</td>
                           </tr>
                         ))}
@@ -266,10 +271,10 @@ export function RetailCalculatorPage() {
               {/* KPI cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { label: "Revenue", val: `$${fmt(result.rev)}`, color: "text-emerald-600", icon: DollarSign, iconColor: "text-emerald-500" },
-                  { label: "Net Profit", val: `${result.np >= 0 ? "+" : ""}$${fmt(result.np)}`, color: result.np >= 0 ? "text-emerald-600" : "text-rose-600", icon: DollarSign, iconColor: result.np >= 0 ? "text-emerald-500" : "text-rose-500" },
-                  { label: "Margin", val: `${result.mg.toFixed(1)}%`, color: result.mg >= 0 ? "text-emerald-600" : "text-rose-600", icon: BarChart3, iconColor: "text-blue-500" },
-                  { label: "Volume", val: fmt(result.u), color: "text-surface-700 dark:text-surface-300", icon: Users, iconColor: "text-violet-500" },
+                  { label: "Revenue", val: `$${fmtNumber(result.rev)}`, color: "text-emerald-600", icon: DollarSign, iconColor: "text-emerald-500" },
+                  { label: "Net Profit", val: `${result.np >= 0 ? "+" : ""}$${fmtNumber(result.np)}`, color: result.np >= 0 ? "text-emerald-600" : "text-rose-600", icon: DollarSign, iconColor: result.np >= 0 ? "text-emerald-500" : "text-rose-500" },
+                  { label: "Margin", val: `${fmtPct(result.mg)}`, color: result.mg >= 0 ? "text-emerald-600" : "text-rose-600", icon: BarChart3, iconColor: "text-blue-500" },
+                  { label: "Volume", val: fmtNumber(result.u), color: "text-surface-700 dark:text-surface-300", icon: Users, iconColor: "text-violet-500" },
                 ].map(c => (
                   <div key={c.label} className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4">
                     <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-surface-400 mb-1"><c.icon size={12} className={c.iconColor} /> {c.label}</div>
@@ -290,15 +295,15 @@ export function RetailCalculatorPage() {
                   <Mt label="Level" val={String(bldgLevel)} />
                 </div>
                 <div className="px-5 py-3 space-y-2">
-                  <div className="flex justify-between"><span className="text-xs text-surface-500">Gross Revenue</span><span className="text-sm font-bold text-emerald-600">${fmt(result.rev)}</span></div>
-                  <div className="flex justify-between"><span className="text-xs text-surface-500">Market Fee</span><span className="text-sm font-bold text-rose-500">-${fmt(result.mf)}</span><span className="text-[10px] text-surface-400 ml-auto">3%</span></div>
-                  <div className="flex justify-between"><span className="text-xs text-surface-500">COGS</span><span className="text-sm font-bold text-rose-500">-${fmt(result.cogs)}</span></div>
-                  <div className="flex justify-between"><span className="text-xs text-surface-500">Wages</span><span className="text-sm font-bold text-rose-500">-${fmt(result.w)}</span><span className="text-[10px] text-surface-400 ml-auto">Lv{bldgLevel}</span></div>
-                  <div className="flex justify-between"><span className="text-xs text-surface-500">Admin Overhead</span><span className="text-sm font-bold text-rose-500">-${fmt(result.ac)}</span><span className="text-[10px] text-surface-400 ml-auto">{ao}%</span></div>
+                  <div className="flex justify-between"><span className="text-xs text-surface-500">Gross Revenue</span><span className="text-sm font-bold text-emerald-600">${fmtNumber(result.rev)}</span></div>
+                  <div className="flex justify-between"><span className="text-xs text-surface-500">Market Fee</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.mf)}</span><span className="text-[10px] text-surface-400 ml-auto">3%</span></div>
+                  <div className="flex justify-between"><span className="text-xs text-surface-500">COGS</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.cogs)}</span></div>
+                  <div className="flex justify-between"><span className="text-xs text-surface-500">Wages</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.w)}</span><span className="text-[10px] text-surface-400 ml-auto">Lv{bldgLevel}</span></div>
+                  <div className="flex justify-between"><span className="text-xs text-surface-500">Admin Overhead</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.ac)}</span><span className="text-[10px] text-surface-400 ml-auto">{ao}%</span></div>
                 </div>
                 <div className="px-5 py-4 flex items-center justify-between">
                   <span className="text-sm font-bold uppercase tracking-wide">Net Profit</span>
-                  <span className={`text-xl font-bold ${result.np >= 0 ? "text-emerald-600" : "text-rose-600}"}`}>{result.np >= 0 ? "+" : ""}${fmt(result.np)}/h</span>
+                  <span className={`text-xl font-bold ${result.np >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{result.np >= 0 ? "+" : ""}${fmtNumber(result.np)}/h</span>
                 </div>
               </div>
 

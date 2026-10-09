@@ -1,11 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
-import { useDataRepoPoll } from "../hooks/useDataRepo";
-import * as dataRepo from "../services/dataRepo";
 import { LoadingState } from "../components/States";
 import { RESOURCES, BUILDINGS, PHASE_MULTIPLIERS } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import { Calculator } from "lucide-react";
 import type { ProfitMarginsResponse } from "../types/api";
+
+import { useProfitMargins } from "../hooks/useDataQueries";
+import { PageHeader, MetricBox } from "../components/ui/Common";
+import { usePageTitleKey } from "../hooks/usePageTitle";
+import { fmtNumber, fmtPct } from "../utils/formatters";
 
 function getBuildingName(buildingId: string | number | undefined): string {
   if (!buildingId) return "N/A";
@@ -13,7 +16,7 @@ function getBuildingName(buildingId: string | number | undefined): string {
 }
 
 export function ProfitCalculatorPage() {
-  useEffect(() => { document.title = "SimCo Intel - Profit Calculator"; }, []);
+  usePageTitleKey('profitCalculator');
 
   const [realm] = useSharedRealm();
   const [resId, setResId] = useState(0);
@@ -27,7 +30,7 @@ export function ProfitCalculatorPage() {
   const [inputOverrides, setInputOverrides] = useState<Record<number, string>>({});
   const [phase, setPhase] = useState<string>("normal");
 
-  const { data: marginsData, loading } = useDataRepoPoll(() => dataRepo.fetchProfitMargins(realm), 120000, [realm]);
+  const { data: marginsData } = useProfitMargins(120000);
   const margins = (marginsData as ProfitMarginsResponse | undefined)?.resources ?? [];
 
   const selected = useMemo(() => RESOURCES.find(r => r.id === resId), [resId]);
@@ -92,15 +95,15 @@ export function ProfitCalculatorPage() {
 
   return (
     <div className="space-y-5 animate-slide-up">
-      <div className="flex items-center gap-3 pb-4 border-b border-surface-200 dark:border-surface-800">
-        <div className="w-9 h-9 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
-          <Calculator size={18} className="text-emerald-600" />
-        </div>
-        <div>
-          <h1 className="text-lg font-bold">Profit Calculator</h1>
-          <p className="text-xs text-surface-400">Production cost & profit analysis</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Profit Calculator"
+        subtitle="Production cost & profit analysis"
+        icon={<Calculator size={18} />}
+        iconBg="bg-emerald-100 dark:bg-emerald-900/30"
+        iconColor="text-emerald-600"
+        realm={realm}
+        onRealmChange={() => {}}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-1 space-y-4">
@@ -183,19 +186,19 @@ export function ProfitCalculatorPage() {
               <div className="grid grid-cols-4 gap-3">
                 <div className="card p-3 border-l-4 border-emerald-500">
                   <span className="metric-label">Revenue/H</span>
-                  <span className="metric-value">${result.grossRevenue.toFixed(2)}</span>
+                  <span className="metric-value">${fmtNumber(result.grossRevenue)}</span>
                 </div>
                 <div className={`card p-3 border-l-4 ${result.netProfit >= 0 ? 'border-l-emerald-500' : 'border-l-rose-500'}`}>
                   <span className="metric-label">Net Profit/H</span>
-                  <span className={`metric-value ${result.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>${result.netProfit.toFixed(2)}</span>
+                  <span className={`metric-value ${result.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>${fmtNumber(result.netProfit)}</span>
                 </div>
                 <div className="card p-3 border-l-4 border-blue-500">
                   <span className="metric-label">Margin</span>
-                  <span className={`metric-value ${result.marginPct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{result.marginPct.toFixed(1)}%</span>
+                  <span className={`metric-value ${result.marginPct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmtPct(result.marginPct)}</span>
                 </div>
                 <div className="card p-3 border-l-4 border-violet-500">
                   <span className="metric-label">Prod/H</span>
-                  <span className="metric-value">{result.ph.toFixed(2)}</span>
+                  <span className="metric-value">{fmtNumber(result.ph)}</span>
                 </div>
               </div>
 
@@ -205,12 +208,12 @@ export function ProfitCalculatorPage() {
                   <span className="text-[9px] font-bold text-brand-600">3% market fee</span>
                 </div>
                 <div className="p-5 space-y-3">
-                  <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-800"><span className="text-xs font-bold text-surface-500">Revenue</span><span className="text-sm font-bold text-emerald-600">+${result.grossRevenue.toFixed(2)}</span></div>
-                  <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-800"><span className="text-xs font-bold text-surface-500">Market Fee (3%)</span><span className="text-sm font-bold text-rose-500">-${result.marketFee.toFixed(2)}</span></div>
+                  <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-800"><span className="text-xs font-bold text-surface-500">Revenue</span><span className="text-sm font-bold text-emerald-600">+${fmtNumber(result.grossRevenue)}</span></div>
+                  <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-800"><span className="text-xs font-bold text-surface-500">Market Fee (3%)</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.marketFee)}</span></div>
 
                   {result.inputDetails.length > 0 && (
                     <>
-                      <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-800"><span className="text-xs font-bold text-surface-500">Input Costs</span><span className="text-sm font-bold text-rose-500">-${result.inputCost.toFixed(2)}</span></div>
+                      <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-800"><span className="text-xs font-bold text-surface-500">Input Costs</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.inputCost)}</span></div>
                       <div className="space-y-2 pl-4">
                         {result.inputDetails.map(inp => (
                           <div key={inp.id} className="flex items-center justify-between gap-2 text-xs">
@@ -220,17 +223,17 @@ export function ProfitCalculatorPage() {
                               onChange={e => setInputOverrides(prev => ({ ...prev, [inp.id]: e.target.value }))}
                               placeholder={`VWAP $${inp.vwap.toFixed(2)}`}
                               className="w-24 border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-2 py-1 rounded text-right text-xs font-bold outline-none focus:ring-1 focus:ring-brand-500/20" />
-                            <span className="font-bold w-16 text-right">${inp.cost.toFixed(2)}</span>
+                            <span className="font-bold w-16 text-right">${fmtNumber(inp.cost)}</span>
                           </div>
                         ))}
                       </div>
                     </>
                   )}
 
-                  <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-800"><span className="text-xs font-bold text-surface-500">Wages (Lv{buildingLevel})</span><span className="text-sm font-bold text-rose-500">-${result.wageTotal.toFixed(2)}</span></div>
-                  <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-800"><span className="text-xs font-bold text-surface-500">Admin Overhead ({overhead}%)</span><span className="text-sm font-bold text-rose-500">-${result.overheadCost.toFixed(2)}</span></div>
-                  <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-800"><span className="text-xs font-bold text-surface-500">Transport{contractMode ? ' (50%)' : ''}</span><span className="text-sm font-bold text-rose-500">-${result.transportActual.toFixed(2)}</span></div>
-                  <div className="flex justify-between pt-3"><span className="text-sm font-bold uppercase">Net Profit</span><span className={`text-lg font-bold ${result.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>${result.netProfit.toFixed(2)}/h</span></div>
+                  <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-800"><span className="text-xs font-bold text-surface-500">Wages (Lv{buildingLevel})</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.wageTotal)}</span></div>
+                  <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-800"><span className="text-xs font-bold text-surface-500">Admin Overhead ({overhead}%)</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.overheadCost)}</span></div>
+                  <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-800"><span className="text-xs font-bold text-surface-500">Transport{contractMode ? ' (50%)' : ''}</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.transportActual)}</span></div>
+                  <div className="flex justify-between pt-3"><span className="text-sm font-bold uppercase">Net Profit</span><span className={`text-lg font-bold ${result.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>${fmtNumber(result.netProfit)}/h</span></div>
                 </div>
               </div>
             </>
