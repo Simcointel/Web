@@ -53,9 +53,12 @@ export function GovernmentPage() {
       });
       if (computeResponse.ok) {
         const result = await computeResponse.json();
-        if (result.ok && result.report?.orders) {
-          setOrders(result.report.orders);
-          setLastUpdated(new Date().toLocaleString());
+        if (result.ok && result.data) {
+          const reports = result.data.report;
+          if (Array.isArray(reports)) {
+            const match = reports.find((r) => r.r === realm);
+            if (match) setOrders(match.orders);
+          }
         }
       }
     } catch (err) {
