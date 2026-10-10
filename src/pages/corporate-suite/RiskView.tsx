@@ -12,7 +12,11 @@ export function RiskView({ phase, retail }: SuiteViewProps) {
              return (
                <div key={res.id} className="card p-5 text-center border-b-4 border-indigo-600 !shadow-none border-surface-200 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-brand-900/10 transition-all">
                   <span className="block text-xs font-bold uppercase text-surface-400 truncate mb-3">{res.name}</span>
-                  <span className={`text-2xl font-bold tabular-nums ${sat < 1 ? 'text-emerald-600' : 'text-rose-600'}`}>{sat.toFixed(2)}</span>
+                  {sat === null ? (
+                    <span className="text-2xl font-bold tabular-nums text-surface-400">No data</span>
+                  ) : (
+                    <span className={`text-2xl font-bold tabular-nums ${sat < 1 ? 'text-emerald-600' : 'text-rose-600'}`}>{sat.toFixed(2)}</span>
+                  )}
                </div>
              )
           })}
