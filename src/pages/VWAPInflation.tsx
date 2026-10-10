@@ -4,7 +4,7 @@ import { useSharedRealm } from "../hooks/useSharedRealm";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
-import type { ProfitMarginsResponse } from "../types/api";
+import type { ProfitMarginsResponse, PriceHistoryItem } from "../types/api";
 import { Search, TrendingUp } from "lucide-react";
 
 import { useProfitMargins } from "../hooks/useDataQueries";

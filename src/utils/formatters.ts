@@ -14,11 +14,12 @@
  * @returns Formatted string
  */
 export function fmtNumber(n: number, prefix = ''): string {
+  const sign = n < 0 ? '-' : '';
   const a = Math.abs(n);
-  if (a >= 1_000_000_000) return `${prefix}${(n / 1_000_000_000).toFixed(1)}B`;
-  if (a >= 1_000_000) return `${prefix}${(n / 1_000_000).toFixed(1)}M`;
-  if (a >= 1_000) return `${prefix}${(n / 1_000).toFixed(1)}K`;
-  return `${prefix}${n.toFixed(0)}`;
+  if (a >= 1_000_000_000) return `${sign}${prefix}${(a / 1_000_000_000).toFixed(1)}B`;
+  if (a >= 1_000_000) return `${sign}${prefix}${(a / 1_000_000).toFixed(1)}M`;
+  if (a >= 1_000) return `${sign}${prefix}${(a / 1_000).toFixed(1)}K`;
+  return `${sign}${prefix}${a.toFixed(0)}`;
 }
 
 /**

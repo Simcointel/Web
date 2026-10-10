@@ -30,7 +30,7 @@ export function ProfitMarginsPage() {
   const [selectedResId, setSelectedResId] = useState<number | null>(null);
 
   // Sync with Corporate Suite
-  useMemo(() => {
+  useEffect(() => {
     if (!syncWithSuite) return;
     const saved = localStorage.getItem("simco_suite_metrics");
     if (saved) {
