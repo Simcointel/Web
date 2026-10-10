@@ -6,8 +6,9 @@ import { usePageTitleKey } from "../hooks/usePageTitle";
 import { fmtNumber } from "../utils/formatters";
 
 const XP_TABLE: number[] = [
-  130, 210, 340, 550, 890, 1430, 2320, 3750, 6000, 10000,
-  16000, 26000, 42000, 68000, 110000, 170000, 280000,
+  5, 10, 20, 30, 50, 80, 130, 210, 340, 550, 890, 1430,
+  2320, 3750, 6000, 10000, 16000, 26000, 42000, 68000,
+  110000, 170000, 280000,
 ];
 
 function xpForLevel(lv: number): number {
@@ -17,7 +18,7 @@ function xpForLevel(lv: number): number {
 }
 
 const OP_XP = 12;
-const REC_XP = 40;
+const REC_XP = Math.round(20160 / 168);
 
 export function XpCalculatorPage() {
   usePageTitleKey('xpCalculator');
@@ -34,7 +35,7 @@ export function XpCalculatorPage() {
   let totalNeeded = remaining;
   for (let lv = currentLv; lv < targetLv - 1; lv++) totalNeeded += xpForLevel(lv + 1);
 
-  const hourlyXp = opBldgs * OP_XP + recLvls * REC_XP + (prospecting ? 36.5 : 0);
+  const hourlyXp = opBldgs * OP_XP + recLvls * REC_XP + (prospecting ? 36 : 0);
   const hours = hourlyXp > 0 ? totalNeeded / hourlyXp : Infinity;
   const days = hours / 24;
   const eta = isFinite(hours) && hours > 0 ? new Date(Date.now() + hours * 3600_000) : null;
@@ -47,7 +48,7 @@ export function XpCalculatorPage() {
     }
     return total;
   })();
-  const progressPct = totalXpForLevels > 0 ? Math.min(100, (currentXp / totalXpForLevels) * 100) : 0;
+  const progressPct = totalXpForLevels > 0 ? Math.min(100, (currentXp * progress / 100 / totalXpForLevels) * 100) : 0;
 
   return (
     <div className="max-w-3xl mx-auto space-y-5 animate-slide-up">
@@ -116,7 +117,7 @@ export function XpCalculatorPage() {
         </div>
       </div>
       <p className="text-[10px] text-surface-400 text-center max-w-xl mx-auto">
-        Rates from official guide: 12 XP/h per operating building, 40 XP/h per recreation level. Prospecting ~36.5 XP/h.
+        Rates: 12 XP/h per operating building, 20,160 XP/week per recreation level, 36 XP/h prospecting.
       </p>
     </div>
   );
