@@ -47,11 +47,6 @@ function demandBarColor(d: number): string {
   return "bg-rose-400";
 }
 
-// API saturation (0-1, lower = less saturated), invert to demand
-function satToDemand(sat: number): number {
-  return Math.round((1 - sat) * 100);
-}
-
 // ─── Page ──────────────────────────────────────────────────────
 export function RetailCalculatorPage() {
   usePageTitleKey('retailCalculator');
@@ -94,7 +89,8 @@ export function RetailCalculatorPage() {
     const w = toNum(store.wages) * bldgLevel;
     const ac = w * (ao / 100);
     const cogs = vwapPrice * u;
-    const np = rev - mf - w - ac - cogs;
+    const transportCost = margins.find(m => m.id === resId)?.transportPerHour ?? 0;
+    const np = rev - mf - w - ac - cogs - transportCost;
     const mg = rev > 0 ? (np / rev) * 100 : 0;
     return { u, rev, mf, w, ac, cogs, np, mg, pm, dm, ss };
   }, [store, selected, sellingPrice, bldgLevel, ao, salesSpeed, demand, baseRate, phase, vwapPrice]);
@@ -118,7 +114,8 @@ export function RetailCalculatorPage() {
         const w = toNum(s.wages) * bldgLevel;
         const ac = w * (ao / 100);
         const cogs = vwap * u;
-        const np = rev - mf - w - ac - cogs;
+        const transportCost = margins.find(m => m.id === pid)?.transportPerHour ?? 0;
+        const np = rev - mf - w - ac - cogs - transportCost;
         const mg = rev > 0 ? (np / rev) * 100 : 0;
         out.push({ storeName: s.name, productName: `#${pid}`, demand: d, profit: np, margin: mg, revenue: rev });
       }
