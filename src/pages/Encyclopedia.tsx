@@ -3,6 +3,7 @@ import { useDataRepoPoll } from "../hooks/useDataRepo";
 import * as dataRepo from "../services/dataRepo";
 import { RESOURCES, BUILDINGS } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
+import { usePageTitleKey } from "../hooks/usePageTitle";
 import { Search, Info, Factory, ShoppingCart, TrendingUp, ChevronRight, BookOpen, Layers, BarChart, Share2, Zap } from "lucide-react";
 import { LoadingState } from "../components/States";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -11,9 +12,7 @@ import { buildResourceTree, type TreeNode } from "../data/buildTree";
 import { InputNode } from "../components/InputNode";
 
 export function EncyclopediaPage() {
-  useEffect(() => {
-    document.title = "Encyclopedia - SimcoIntel";
-  }, []);
+  usePageTitleKey('encyclopedia');
 
   const [realm] = useSharedRealm();
   const [search, setSearch] = useState("");

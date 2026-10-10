@@ -351,14 +351,15 @@ export function CorporateSuitePage() {
 
     };
 
-    localStorage.setItem("simco_suite_metrics", JSON.stringify(metrics));
-
-
-
-    return result;
+    return { result, metrics };
 
   }, [state, margins]);
 
+  useEffect(() => {
+
+    if (state) localStorage.setItem("simco_suite_metrics", JSON.stringify(metrics));
+
+  }, [state, margins]);
 
 
   useEffect(() => {

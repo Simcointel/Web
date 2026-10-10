@@ -149,7 +149,7 @@ export function HomePage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           <NavTile to="/corporate-suite" title="Corporate Suite" icon={Zap} color="bg-brand-500" />
           <NavTile to="/market-intel" title="Market Intel" icon={BarChart3} color="bg-indigo-500" />
-          <NavTile to="/board-room" title="Board Room" icon={Building2} color="bg-amber-500" />
+          <NavTile to="/corporate-suite" title="Corporate Suite" icon={Building2} color="bg-amber-500" />
           <NavTile to="/profit-margins" title="Profit Margins" icon={TrendingUp} color="bg-emerald-500" />
           <NavTile to="/profit-calculator" title="Profit Calc" icon={Calculator} color="bg-cyan-500" />
           <NavTile to="/retail-calculator" title="Retail Calc" icon={Store} color="bg-rose-500" />

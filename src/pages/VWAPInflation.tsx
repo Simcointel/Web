@@ -8,7 +8,8 @@ import type { ProfitMarginsResponse, PriceHistoryItem } from "../types/api";
 import { Search, TrendingUp } from "lucide-react";
 
 import { useProfitMargins } from "../hooks/useDataQueries";
-import { PageHeader, MetricBox } from "../components/ui/Common";
+import { fetchResourcePriceHistory } from "../services/dataRepo";
+import { PageHeader } from "../components/ui/Common";
 import { usePageTitleKey } from "../hooks/usePageTitle";
 import { fmtNumber, fmtPct } from "../utils/formatters";
 
@@ -21,13 +22,22 @@ export function VWAPInflationPage() {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [catFilter, setCatFilter] = useState("");
+  const [history, setHistory] = useState<PriceHistoryItem[]>([]);
+  const [hLoading, setHLoading] = useState(false);
 
   const { data: marginsData, loading, error, refresh } = useProfitMargins(120000);
   const margins = (marginsData as ProfitMarginsResponse | undefined)?.resources ?? [];
 
-  // Note: price history fetching would need a dedicated hook
-  // For now, we'll keep it simple - could add useResourcePriceHistory later
-  const history = [] as any[];
+  useEffect(() => {
+    if (selectedId != null) {
+      setHLoading(true);
+      fetchResourcePriceHistory(realm, selectedId, 30)
+        .then(data => { setHistory(data.map(d => ({ ...d, d: new Date(d.date).toLocaleDateString() }))); })
+        .finally(() => setHLoading(false));
+    } else {
+      setHistory([]);
+    }
+  }, [selectedId, realm]);
 
   const filtered = useMemo(() => {
     let list = margins;
@@ -37,8 +47,6 @@ export function VWAPInflationPage() {
   }, [margins, catFilter, search]);
 
   const selected = useMemo(() => margins.find(r => r.id === selectedId), [margins, selectedId]);
-
-  const histData = useMemo(() => (history ?? []).map(d => ({ ...d, d: new Date(d.date).toLocaleDateString() })), [history]);
 
   if (loading && !marginsData) return <LoadingState text="Loading market prices..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
