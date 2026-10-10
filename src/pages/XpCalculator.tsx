@@ -40,8 +40,14 @@ export function XpCalculatorPage() {
   const eta = isFinite(hours) && hours > 0 ? new Date(Date.now() + hours * 3600_000) : null;
 
   const levelGap = targetLv - currentLv;
-  const totalXpForLevels = Array.from({ length: levelGap }, (_, i) => xpForLevel(currentLv + i)).reduce((a, b) => a + b, 0);
-  const progressPct = totalXpForLevels > 0 ? Math.min(100, (1 - remaining / totalXpForLevels) * 100) : 0;
+  const totalXpForLevels = ((): number => {
+    let total = 0;
+    for (let lv = currentLv; lv < targetLv; lv++) {
+      total += xpForLevel(lv);
+    }
+    return total;
+  })();
+  const progressPct = totalXpForLevels > 0 ? Math.min(100, (currentXp / totalXpForLevels) * 100) : 0;
 
   return (
     <div className="max-w-3xl mx-auto space-y-5 animate-slide-up">
