@@ -37,7 +37,11 @@ export function ProfitCalculatorPage() {
   const marginRec = useMemo(() => margins.find(m => m.id === resId), [margins, resId]);
 
   const vwapPrice = marginRec?.outputVwap ?? 0;
-  const sellingPrice = customPrice ? parseFloat(customPrice) : vwapPrice;
+  const qualityMult = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5][quality] ?? 1.0;
+  const demandMult = marginRec && marginRec.producedPerHour > 0 && vwapPrice > 0
+    ? marginRec.revenuePerHour / (marginRec.producedPerHour * vwapPrice)
+    : 1.0;
+  const sellingPrice = customPrice ? parseFloat(customPrice) : vwapPrice * qualityMult * demandMult;
 
   const result = useMemo(() => {
     if (!selected || !sellingPrice) return null;
@@ -89,7 +93,7 @@ export function ProfitCalculatorPage() {
     const marginPct = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0;
 
     return { grossRevenue, marketFee, inputCost, wageTotal, overheadCost, transportActual, netProfit, marginPct, inputDetails, ph, phaseMult };
-  }, [selected, sellingPrice, buildingLevel, robots, overhead, margins, contractMode, inputOverrides, abundance, phase]);
+  }, [selected, sellingPrice, buildingLevel, robots, overhead, margins, contractMode, inputOverrides, abundance, phase, quality]);
 
   const isExtraction = selected?.buildingId && ["M","O","Q"].includes(String(selected.buildingId));
 

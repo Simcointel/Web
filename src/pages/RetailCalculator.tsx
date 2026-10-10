@@ -75,7 +75,12 @@ export function RetailCalculatorPage() {
 
   const selected = storeProducts.find(p => p.id === resId);
   const vwapPrice = margins.find(m => m.id === resId)?.outputVwap ?? 0;
-  const sellingPrice = customPrice ? toNum(customPrice, vwapPrice) : vwapPrice;
+  const qualityMult = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5][quality] ?? 1.0;
+  const marginRec = margins.find(m => m.id === resId);
+  const demandMult = marginRec && marginRec.producedPerHour > 0 && vwapPrice > 0
+    ? marginRec.revenuePerHour / (marginRec.producedPerHour * vwapPrice)
+    : 1.0;
+  const sellingPrice = customPrice ? toNum(customPrice, vwapPrice) : vwapPrice * qualityMult * demandMult;
 
   // Calculate single product
   const result = useMemo(() => {
