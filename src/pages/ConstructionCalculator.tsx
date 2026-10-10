@@ -74,18 +74,27 @@ export function ConstructionCalculatorPage() {
   const totalRefCost = upgrades.reduce((s, u) => s + u.refCost, 0);
 
   const roi = useMemo<{ dailyRevenue: number; dailyWages: number; daysToRecoup: number; revenuePerLevel: number; outputVwap: number; dailyNet: number } | null>(() => {
-    if (!building || upgrades.length === 0) return null;
-    const res = RESOURCES.find(r => r.buildingId === building.id);
-    if (!res) return { dailyRevenue: 0, dailyWages: 0, daysToRecoup: 0, revenuePerLevel: 0, outputVwap: 0, dailyNet: 0 };
-    const outputVwap = margins.find(m => m.id === res.id)?.outputVwap ?? 0;
-    const wages = building.wages ?? 0;
-    const revenuePerLevel = (res.basePh ?? 0) * outputVwap * 24;
-    const dailyRevenue = revenuePerLevel * targetLv;
-    const dailyWages = wages * 24 * (1 + 0.1) * targetLv;
-    const dailyNet = dailyRevenue - dailyWages;
-    const daysToRecoup = dailyNet > 0 ? totalMatCost / dailyNet : Infinity;
-    return { dailyRevenue, dailyWages, daysToRecoup, revenuePerLevel, outputVwap, dailyNet };
-  }, [building, upgrades, targetLv, margins, totalMatCost]);
+  if (!building || upgrades.length === 0) return null;
+  const res = RESOURCES.find(r => r.buildingId === building.id);
+  if (!res) return { dailyRevenue: 0, dailyWages: 0, daysToRecoup: 0, revenuePerLevel: 0, outputVwap: 0, dailyNet: 0 };
+  const outputVwap = margins.find(m => m.id === res.id)?.outputVwap ?? 0;
+  const wages = building.wages ?? 0;
+  const levelMult = Math.max(1, targetLv - 1);
+  const revenuePerLevel = (res.basePh ?? 0) * outputVwap * 24;
+  const dailyRevenue = revenuePerLevel * levelMult;
+  const dailyWages = wages * 24 * (1 + 0.1) * levelMult;
+  const adminOverheadCost = dailyWages * (levelMult / 170);
+  let dailyInputCost = 0;
+  if (res.inputs) {
+    for (const [inputId, qtyPerUnit] of Object.entries(res.inputs)) {
+      dailyInputCost += (matPrices[Number(inputId)] ?? 0) * qtyPerUnit;
+    }
+    dailyInputCost *= (res.basePh ?? 0) * levelMult * 24;
+  }
+  const dailyNet = dailyRevenue - dailyWages - adminOverheadCost - dailyInputCost;
+  const daysToRecoup = dailyNet > 0 ? totalMatCost / dailyNet : Infinity;
+  return { dailyRevenue, dailyWages, daysToRecoup, revenuePerLevel, outputVwap, dailyNet };
+  }, [building, upgrades, targetLv, margins, totalMatCost, matPrices]);
 
   const totalMats = useMemo(() => {
     const m: Record<number, number> = {};
@@ -211,7 +220,7 @@ export function ConstructionCalculatorPage() {
                   </div>
                   <div className="kpi-card card border-l-4 border-l-amber-500">
                     <span className="stat-label">Scrap Value</span>
-                    <span className="stat-value">${fmtNumber(building.cost * targetLv)}</span>
+                    <span className="stat-value">${fmtNumber(building.cost * Math.max(1, targetLv - 1))}</span>
                     <span className="block text-[10px] text-surface-400 mt-1">if demolished at target</span>
                   </div>
                   <div className="kpi-card card border-l-4 border-l-emerald-500">
