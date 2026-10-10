@@ -48,6 +48,8 @@ export function VWAPInflationPage() {
 
   const selected = useMemo(() => margins.find(r => r.id === selectedId), [margins, selectedId]);
 
+  const histData = useMemo(() => (history ?? []).map(d => ({ ...d, d: new Date(d.date).toLocaleDateString() })), [history]);
+
   if (loading && !marginsData) return <LoadingState text="Loading market prices..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
 
@@ -60,13 +62,8 @@ export function VWAPInflationPage() {
         iconBg="bg-brand-100 dark:bg-brand-900/30"
         iconColor="text-brand-600"
         realm={realm}
-        onRealmChange={() => {}}
-      >
-        <select value={realm} onChange={e => setRealm(Number(e.target.value))} className="input w-auto">
-          <option value={0}>R0</option>
-          <option value={1}>R1</option>
-        </select>
-      </PageHeader>
+        onRealmChange={(r) => setRealm(r)}
+      />
 
       <div className="grid grid-cols-12 gap-4">
         <div className="col-span-12 lg:col-span-4">

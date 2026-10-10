@@ -15,7 +15,7 @@ export function RiskView({ phase, retail }: SuiteViewProps) {
                   {sat === null ? (
                     <span className="text-2xl font-bold tabular-nums text-surface-400">No data</span>
                   ) : (
-                    <span className={`text-2xl font-bold tabular-nums ${sat < 1 ? 'text-emerald-600' : 'text-rose-600'}`}>{sat!.toFixed(2)}</span>
+                    <span className={`text-2xl font-bold tabular-nums ${sat < 1 ? 'text-emerald-600' : 'text-rose-600'}`}>{sat.toFixed(2)}</span>
                   )}
                </div>
              )

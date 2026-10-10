@@ -16,11 +16,11 @@ import { useTheme } from "../hooks/useTheme";
 
 import { useSharedRealm } from "../hooks/useSharedRealm";
 
-import { BUILDINGS, RESOURCES, CONSTRUCTION_MATERIALS } from "../data/simco_static";
+import { BUILDINGS, RESOURCES } from "../data/simco_static";
 
 import { LoadingState } from "../components/States";
 
-import { useNavigate, Link } from "../router";
+import { Link } from "../router";
 
 import { Section } from "../components/Layout";
 import * as dataRepo from "../services/dataRepo";
@@ -54,14 +54,13 @@ import { BondsView } from "./corporate-suite/BondsView";
 
 
 
-import { PageHeader, MetricBox } from "../components/ui/Common";
+import { PageHeader } from "../components/ui/Common";
 
 import { usePageTitleKey } from "../hooks/usePageTitle";
 
 import { useDashboardState, useProfitMargins, useRetailData } from "../hooks/useDataQueries";
 
-import { fmtNumber, fmtPct, fmtCurrency } from "../utils/formatters";
-import { Building2, Landmark, PiggyBank } from "lucide-react";
+import { fmtPct, fmtCurrency } from "../utils/formatters";
 
 
 
