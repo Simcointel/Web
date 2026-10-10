@@ -23,7 +23,7 @@ const navLinks = [
     { to: "/market-intel", label: "Market Intel", icon: <BarChart3 size={18} /> },
     { to: "/market-orders", label: "Market Orders", icon: <DollarSign size={18} /> },
     { to: "/government", label: "Government", icon: <FileText size={18} /> },
-    { to: "/board-room", label: "Board Room", icon: <Building2 size={18} /> },
+    { to: "/corporate-suite", label: "Corporate Suite", icon: <Building2 size={18} /> },
   ]},
   { group: "TOOLS", links: [
     { to: "/profit-calculator", label: "Profit Calc", icon: <Calculator size={18} /> },

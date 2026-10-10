@@ -9,7 +9,7 @@ export function MobileNav() {
     { to: "/corporate-suite", icon: <Briefcase size={18} />, label: "Suite" },
     { to: "/market-intel", icon: <BarChart3 size={18} />, label: "Intel" },
     { to: "/government", icon: <FileText size={18} />, label: "Gov" },
-    { to: "/board-room", icon: <Building2 size={18} />, label: "Board" },
+    { to: "/corporate-suite", icon: <Building2 size={18} />, label: "Suite" },
     { to: "/profit-margins", icon: <DollarSign size={18} />, label: "Margins" },
     { to: "/retail-calculator", icon: <Store size={18} />, label: "Retail" },
     { to: "/construction-calculator", icon: <HardHat size={18} />, label: "Constr" },

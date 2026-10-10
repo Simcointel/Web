@@ -22,7 +22,7 @@ const MarketIntelPage = lazy(() => import("./pages/MarketIntel").then(m => ({ de
 const MarketOrdersPage = lazy(() => import("./pages/MarketOrders").then(m => ({ default: m.MarketOrdersPage })));
 const GovernmentPage = lazy(() => import("./pages/Government").then(m => ({ default: m.GovernmentPage })));
 const XpCalculatorPage = lazy(() => import("./pages/XpCalculator").then(m => ({ default: m.XpCalculatorPage })));
-const BoardRoomPage = lazy(() => import("./pages/BoardRoom").then(m => ({ default: m.BoardRoomPage })));
+
 
 const LoadingFallback = () => (
   <div className="flex items-center justify-center py-24">
@@ -48,12 +48,11 @@ export function AppShell({ path }: { path: string }) {
     : path === "/encyclopedia" ? <EncyclopediaPage />
     : path === "/profit-calculator" ? <ProfitCalculatorPage />
     : path === "/construction-calculator" ? <ConstructionCalculatorPage />
-    : path === "/executive-optimizer" ? <BoardRoomPage />
+    : path === "/executive-optimizer" ? <CorporateSuitePage />
     : path === "/retail-calculator" ? <RetailCalculatorPage />
     : path === "/market-intel" ? <MarketIntelPage />
     : path === "/market-orders" ? <MarketOrdersPage />
     : path === "/government" ? <GovernmentPage />
-    : path === "/board-room" ? <BoardRoomPage />
     : path === "/about" ? <AboutPage />
     : isWidget ? <WidgetPage />
     : <NotFoundPage />;
