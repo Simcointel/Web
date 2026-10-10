@@ -151,7 +151,7 @@ export function CorporateSuitePage() {
 
 
 
-  const { result: core, metrics } = useMemo(() => {
+  const { result: core, metrics } = useMemo((): { result: typeof result; metrics: typeof metrics } => {
 
     const s = state || DEFAULT_STATE;
 
