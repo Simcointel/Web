@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { BUILDINGS, RETAIL_PRODUCT_MAP, PHASE_MULTIPLIERS } from "../data/simco_static";
+import { BUILDINGS, RETAIL_PRODUCT_MAP, PHASE_MULTIPLIERS, RESOURCES } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import { Store, DollarSign, Users, BarChart3, Settings2, TrendingUp } from "lucide-react";
 import type { ProfitMarginsResponse } from "../types/api";
@@ -70,7 +70,7 @@ export function RetailCalculatorPage() {
   const store = useMemo(() => stores.find(s => s.id === storeId), [storeId, stores]);
   const storeProductIds = useMemo(() => RETAIL_PRODUCT_MAP[storeId] ?? [], [storeId]);
 
-  const storeProducts = useMemo(() => storeProductIds.map(id => ({ id, name: `#${id}` })), [storeProductIds]);
+  const storeProducts = useMemo(() => storeProductIds.map(id => ({ id, name: RESOURCES.find(r => r.id === id)?.name ?? `#${id}` })), [storeProductIds]);
   useEffect(() => { if (store && resId && !storeProductIds.includes(resId)) setResId(0); }, [store, storeProductIds, resId]);
 
   const selected = storeProducts.find(p => p.id === resId);

@@ -8,4 +8,5 @@ dist/
 
 # Vite/Vitest cache
 node_modules/.vite/
+extension/
 ```

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import { Package, TrendingUp, DollarSign, ArrowUpRight, ArrowDownRight, Clock } from "lucide-react";
 import * as api from "../services/simcompanies-api";
@@ -31,7 +31,7 @@ export function MarketOrdersPage() {
         setResources(resData);
         setSellOrders(sellData);
         setBuyOrders(buyData);
-        
+
         // Auto-select first resource if none selected
         if (resData.length > 0 && !selectedResource) {
           setSelectedResource(resData[0].id);
@@ -43,9 +43,9 @@ export function MarketOrdersPage() {
       }
     }
     loadData();
-  }, []);
+  }, [selectedResource]);
 
-  const handleResourceChange = async (resourceId: number) => {
+  const handleResourceChange = useCallback(async (resourceId: number) => {
     setSelectedResource(resourceId);
     try {
       const [sellData, buyData] = await Promise.all([
@@ -57,7 +57,7 @@ export function MarketOrdersPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load orders");
     }
-  };
+  }, []);
 
   if (loading) {
     return (

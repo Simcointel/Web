@@ -10,6 +10,13 @@ export function LogisticsView({ state, setState, core }: SuiteViewProps) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const filteredRes = useMemo(() => RESOURCES.filter(r => r.name.toLowerCase().includes(q.toLowerCase())), [q]);
 
+  useEffect(() => {
+    if (feedback) {
+      const timer = setTimeout(() => setFeedback(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
+
   const inventorySummary = useMemo(() => {
     const totalQty = (state.inventory || []).reduce((sum, i) => sum + i.qty, 0);
     const topItems = [...(state.inventory || [])]
@@ -27,6 +34,7 @@ export function LogisticsView({ state, setState, core }: SuiteViewProps) {
                 <div className="relative mb-4">
                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
                    <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search inventory..." className="w-full pl-10 pr-4 py-2 bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 rounded-lg text-sm focus:ring-1 focus:ring-indigo-600 outline-none" />
+                   {feedback && <p className="mt-2 text-xs font-bold text-amber-600">{feedback}</p>}
                 </div>
                 <div className="flex-1 overflow-y-auto divide-y divide-surface-100 dark:divide-surface-800">
                    {filteredRes.slice(0, 100).map(r => {
@@ -34,7 +42,7 @@ export function LogisticsView({ state, setState, core }: SuiteViewProps) {
                       return (
                          <div key={r.id} className="flex justify-between items-center py-2.5 px-2 hover:bg-surface-50 dark:hover:bg-surface-900 transition-all">
                             <span className="font-bold text-surface-700 dark:text-surface-300">{r.name}</span>
-                            <input type="number" value={item?.qty || ""} onChange={(e) => { const v = Number(e.target.value); const next = [...state.inventory.filter(i => i.id !== r.id)]; if (v > 0) next.push({ id: r.id, qty: v }); setState({...state, inventory: next}); }} className="w-20 bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 rounded px-2 py-1 text-sm font-bold text-right outline-none focus:ring-1 focus:ring-indigo-600" />
+                            <input type="number" value={item?.qty || ""} onChange={(e) => { const v = Number(e.target.value); const next = [...state.inventory.filter(i => i.id !== r.id)]; if (v > 0) { next.push({ id: r.id, qty: v }); } else if (item) { setFeedback(`${r.name} removed — quantity must be positive`); } setState({...state, inventory: next}); }} className="w-20 bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 rounded px-2 py-1 text-sm font-bold text-right outline-none focus:ring-1 focus:ring-indigo-600" />
                          </div>
                       )
                    })}

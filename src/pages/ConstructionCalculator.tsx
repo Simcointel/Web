@@ -87,7 +87,8 @@ export function ConstructionCalculatorPage() {
   let dailyInputCost = 0;
   if (res.inputs) {
     for (const [inputId, qtyPerUnit] of Object.entries(res.inputs)) {
-      dailyInputCost += (matPrices[Number(inputId)] ?? 0) * qtyPerUnit;
+      const inputPrice = matPrices[Number(inputId)] ?? margins.find(m => m.id === Number(inputId))?.outputVwap ?? MAT_REF_PRICES[Number(inputId)] ?? 0;
+      dailyInputCost += inputPrice * qtyPerUnit;
     }
     dailyInputCost *= (res.basePh ?? 0) * levelMult * 24;
   }
