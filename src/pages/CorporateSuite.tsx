@@ -74,7 +74,6 @@ export function CorporateSuitePage() {
 
   const [realm] = useSharedRealm();
 
-  const navigate = useNavigate();
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 

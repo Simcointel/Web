@@ -1,12 +1,14 @@
 import React from "react";
 
 export function Section({ title, subtitle, children, actions, icon: Icon, color }: { title: string; subtitle?: string; children: React.ReactNode; actions?: React.ReactNode; icon?: React.ElementType; color?: string }) {
+  const bgColor = color && color.startsWith('text-') ? color.replace('text-', 'bg-') + '/10' : 'bg-surface-100';
+  const textColor = color && color.startsWith('text-') ? color : 'text-surface-500';
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {Icon && (
-            <div className={`p-2 rounded-xl ${color ? `${color.replace('text-', 'bg-')}/10 ${color}` : 'bg-brand-50 dark:bg-brand-900/20 text-brand-600'}`}>
+            <div className={`p-2 rounded-xl ${bgColor} ${textColor}`}>
                <Icon size={20} />
             </div>
           )}

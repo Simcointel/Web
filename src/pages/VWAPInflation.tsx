@@ -48,8 +48,6 @@ export function VWAPInflationPage() {
 
   const selected = useMemo(() => margins.find(r => r.id === selectedId), [margins, selectedId]);
 
-  const histData = useMemo(() => (history ?? []).map(d => ({ ...d, d: new Date(d.date).toLocaleDateString() })), [history]);
-
   if (loading && !marginsData) return <LoadingState text="Loading market prices..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
 

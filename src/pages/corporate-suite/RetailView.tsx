@@ -25,9 +25,11 @@ export function RetailView({ state, setState, retail }: SuiteViewProps) {
                       <span className="text-sm font-bold text-surface-400 uppercase">Market Saturation</span>
                       <span className={`text-3xl font-bold ${marketSat > 1.2 ? 'text-rose-600' : 'text-emerald-600'}`}>{marketSat.toFixed(2)}</span>
                    </div>
+                   {(() => { const width = marketSat > 0 ? Math.min(100, (1 / marketSat) * 50) : 0; return (
                    <div className="h-2 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
-                      <div className={`h-full ${marketSat > 1.2 ? 'bg-rose-600' : 'bg-emerald-600'}`} style={{ width: `${Math.min(100, (1/marketSat)*50)}%`, transition: 'width 0.7s ease-out' }} />
+                      <div className={`h-full ${marketSat > 1.2 ? 'bg-rose-600' : 'bg-emerald-600'}`} style={{ width: `${width}%`, transition: 'width 0.7s ease-out' }} />
                    </div>
+                   ); })()}
                 </div>
              </div>
           </Section>
