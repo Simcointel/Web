@@ -156,6 +156,13 @@ export function LedgerView({ state }: LedgerViewProps) {
     </div>
   );
 
+  const safeFmt = (val: string | undefined, divisor = 1e6, suffix = 'M') => {
+    if (!val) return 'N/A';
+    const n = parseFloat(val);
+    if (isNaN(n)) return 'N/A';
+    return `$${(n / divisor).toFixed(2)}${suffix}`;
+  };
+
   const renderSummary = () => {
     if (!meta || !ledger.length) return null;
     const rows = ledger as string[][];

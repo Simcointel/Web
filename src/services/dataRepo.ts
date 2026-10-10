@@ -188,8 +188,7 @@ export async function fetchMacroPhases(realm: number): Promise<MacroPhases> {
   for (let i = 0; i < phases.length; i++) {
     const p = phases[i];
     const prev = phaseDetails[phaseDetails.length - 1];
-    if (prev && prev.phase === p.phase && prev.endDate) {
-      prev.endDate = null;
+    if (prev && prev.phase === p.phase) {
       prev.days = Math.round((new Date(p.date).getTime() - new Date(prev.startDate).getTime()) / (1000 * 60 * 60 * 24)) || 1;
     } else {
       phaseDetails.push({ phase: p.phase, startDate: p.date, endDate: null, days: 1 });

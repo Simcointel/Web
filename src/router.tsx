@@ -57,7 +57,10 @@ export function Link({
 }
 
 const BASE = import.meta.env.BASE_URL; // "/Web/"
-const stripBase = (p: string) => p.replace(new RegExp("^" + BASE.replace(/\/$/, "") + "(/|$|\\?)"), "$1") || "/";
+const stripBase = (p: string) => {
+  const stripped = p.replace(new RegExp("^" + BASE.replace(/\/$/, "") + "(/|$|\\?)"), "$1") || "/";
+  return stripped;
+};
 
 export function createRouter() {
   const initialPath = (() => {
@@ -66,17 +69,17 @@ export function createRouter() {
       sessionStorage.removeItem("redirect");
       try {
         const url = new URL(redirect);
-        return stripBase(url.pathname);
+        return stripBase(url.pathname + url.search);
       } catch { /* fall through */ }
     }
-    return stripBase(window.location.pathname);
+    return stripBase(window.location.pathname + window.location.search);
   })();
 
   const [path, setPath] = useState(initialPath);
 
   useEffect(() => {
     const handler = () => {
-      setPath(stripBase(window.location.pathname));
+      setPath(stripBase(window.location.pathname + window.location.search));
     };
     window.addEventListener("popstate", handler);
     return () => window.removeEventListener("popstate", handler);

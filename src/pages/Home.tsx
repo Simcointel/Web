@@ -38,7 +38,26 @@ export function HomePage() {
   const scores = ds?.scores;
   const regime = ds?.regime;
 
-  const sparkData = scores ? [scores.eh, scores.ms, scores.st, scores.ip, scores.sr] : [];
+  if (!scores) {
+    return (
+      <div className="space-y-6 animate-slide-up">
+        <PageHeader
+          title={<><span className="text-2xl font-bold text-surface-900 dark:text-white tracking-tight">Simco<span className="text-brand-600">Intel</span></span> <span className="text-xs text-surface-400 font-semibold mt-0.5">Economic Intelligence Dashboard</span></>}
+          realm={realm}
+          onRealmChange={setRealm}
+        />
+        <div className="card flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-12 h-12 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-4">
+            <Sparkles size={22} className="text-surface-300 dark:text-surface-600" />
+          </div>
+          <p className="text-sm font-bold text-surface-300 dark:text-surface-600">No score data available</p>
+          <p className="text-xs text-surface-400 mt-1 max-w-xs">Economic scores will appear here once data is loaded</p>
+        </div>
+      </div>
+    );
+  }
+
+  const sparkData = scores ? [scores?.eh, scores?.ms, scores?.st, scores?.ip, scores?.sr] : [];
 
   const kpis = [
     { title: "Economic Health", value: scores?.eh, color: "text-brand-600" },
