@@ -58,8 +58,10 @@ export function Link({
 
 const BASE = import.meta.env.BASE_URL; // "/Web/"
 const stripBase = (p: string) => {
-  const stripped = p.replace(new RegExp("^" + BASE.replace(/\/$/, "") + "(/|$|\\?)"), "$1") || "/";
-  return stripped;
+  const search = window.location.search;
+  const pathOnly = p.split("?")[0];
+  const stripped = pathOnly.replace(new RegExp("^" + BASE.replace(/\/$/, "") + "(/|$)"), "$1") || "/";
+  return stripped + search;
 };
 
 export function createRouter() {
@@ -88,7 +90,7 @@ export function createRouter() {
   const navigate = useCallback((to: string) => {
     const full = to.startsWith("/") ? BASE.replace(/\/$/, "") + to : to;
     window.history.pushState({}, "", full);
-    setPath(to);
+    setPath(to.includes("?") ? to : to + (window.location.search || ""));
   }, []);
 
   return { path, navigate };
