@@ -326,7 +326,7 @@ function mapProfitMargins(data: Record<string, unknown>): ProfitMarginsResponse 
       marginDirection: (r.md as string) ?? null,
       forecastMargin: (r.fp as number) ?? null,
       trendDirection: (r.td as string) ?? null,
-      outputVwap: r.vw as number,
+      outputVwap: (r.vw as number) ?? 0,
     })),
     total: ((data.rs ?? []) as unknown[]).length,
   };
@@ -356,7 +356,7 @@ export async function fetchProfitMargins(realm: number): Promise<ProfitMarginsRe
           marginDirection: (r.md as string) ?? null,
           forecastMargin: (r.fp as number) ?? null,
           trendDirection: (r.td as string) ?? null,
-          outputVwap: r.vw as number,
+          outputVwap: (r.vw as number) ?? 0,
         })),
         total: publicData.length,
       };
