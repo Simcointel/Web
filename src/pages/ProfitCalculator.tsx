@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { LoadingState } from "../components/States";
-import { RESOURCES, BUILDINGS, PHASE_MULTIPLIERS } from "../data/simco_static";
+import { RESOURCES, BUILDINGS, PHASE_MULTIPLIERS, MAT_REF_PRICES } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import { Calculator } from "lucide-react";
 import type { ProfitMarginsResponse } from "../types/api";
@@ -46,7 +46,7 @@ export function ProfitCalculatorPage() {
 
     // Production quantity = basePh * phase * buildingLevel (scales linearly)
     let ph = basePh * phaseMult * buildingLevel;
-    if (selected.buildingId && ["M","O","Q","P","v"].includes(String(selected.buildingId))) {
+    if (selected.buildingId && ["M","O","Q"].includes(String(selected.buildingId))) {
       ph *= abundance / 100;
     }
 
@@ -65,7 +65,7 @@ export function ProfitCalculatorPage() {
       for (const [inpId, qty] of Object.entries(selected.inputs)) {
         const inpRes = RESOURCES.find(r => r.id === Number(inpId));
         const inpMargin = margins.find(m => m.id === Number(inpId));
-        const vwap = inpMargin?.outputVwap ?? 0;
+        const vwap = inpMargin?.outputVwap ?? MAT_REF_PRICES[Number(inpId)] ?? 0;
         const overrideStr = inputOverrides[Number(inpId)];
         const overridePrice = overrideStr ? parseFloat(overrideStr) : 0;
         const effectivePrice = overridePrice > 0 ? overridePrice : vwap;
@@ -81,8 +81,8 @@ export function ProfitCalculatorPage() {
     // Market fee = 3% (not 4%!) per game guides
     const marketFee = contractMode ? 0 : grossRevenue * 0.03;
 
-    // Transport cost: (transport * ph * 0.01). Contracts = 50% transport
-    const transportCost = (selected.transport ?? 0) * ph * 0.01;
+    // Transport cost = grossRevenue * transportRating * 0.01. Contracts = 50% transport
+    const transportCost = grossRevenue * (selected.transport ?? 0) * 0.01;
     const transportActual = contractMode ? transportCost * 0.5 : transportCost;
 
     const netProfit = grossRevenue - marketFee - inputCost - wageTotal - overheadCost - transportActual;
@@ -91,7 +91,7 @@ export function ProfitCalculatorPage() {
     return { grossRevenue, marketFee, inputCost, wageTotal, overheadCost, transportActual, netProfit, marginPct, inputDetails, ph, phaseMult };
   }, [selected, sellingPrice, buildingLevel, robots, overhead, margins, contractMode, inputOverrides, abundance, phase]);
 
-  const isExtraction = selected?.buildingId && ["M","O","Q","P","v"].includes(String(selected.buildingId));
+  const isExtraction = selected?.buildingId && ["M","O","Q"].includes(String(selected.buildingId));
 
   return (
     <div className="space-y-5 animate-slide-up">
@@ -148,14 +148,14 @@ export function ProfitCalculatorPage() {
               {isExtraction && (
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Abundance %</label>
-                  <input type="number" min={1} max={200} value={abundance} onChange={e => setAbundance(Number(e.target.value))} className="input" />
+                  <input type="number" min={1} max={200} value={abundance} onChange={e => setAbundance(Math.max(1, Math.min(200, Number(e.target.value))))} className="input" />
                 </div>
               )}
             </div>
 
             <div className="space-y-1">
               <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Admin Overhead %</label>
-              <input type="number" min={0} max={100} value={overhead} onChange={e => setOverhead(Number(e.target.value))} className="input" placeholder="e.g. 44.26" />
+              <input type="number" min={0} max={100} value={overhead} onChange={e => setOverhead(Math.max(0, Math.min(100, Number(e.target.value))))} className="input" placeholder="e.g. 44.26" />
             </div>
 
             <div className="flex items-center gap-4 pt-1">
@@ -171,7 +171,7 @@ export function ProfitCalculatorPage() {
 
             <div className="space-y-1">
               <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Selling Price (blank = VWAP)</label>
-              <input type="number" step="0.01" value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder={`VWAP: $${vwapPrice.toFixed(2)}`} className="input" />
+              <input type="number" min={0} step="0.01" value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder={`VWAP: $${vwapPrice.toFixed(2)}`} className="input" />
             </div>
           </div>
         </div>
