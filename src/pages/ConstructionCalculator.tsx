@@ -74,6 +74,8 @@ export function ConstructionCalculatorPage() {
   const totalRefCost = upgrades.reduce((s, u) => s + u.refCost, 0);
 
   const roi = useMemo<{ dailyRevenue: number; dailyWages: number; daysToRecoup: number; revenuePerLevel: number; outputVwap: number; dailyNet: number } | null>(() => {
+  const totalMatCost = upgrades.reduce((s, u) => s + u.matCost, 0);
+  const totalTimeH = upgrades.reduce((s, u) => s + u.time, 0);
   if (!building || upgrades.length === 0) return null;
   const res = RESOURCES.find(r => r.buildingId === building.id);
   if (!res) return { dailyRevenue: 0, dailyWages: 0, daysToRecoup: 0, revenuePerLevel: 0, outputVwap: 0, dailyNet: 0 };

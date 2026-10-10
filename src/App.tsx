@@ -22,6 +22,7 @@ const MarketIntelPage = lazy(() => import("./pages/MarketIntel").then(m => ({ de
 const MarketOrdersPage = lazy(() => import("./pages/MarketOrders").then(m => ({ default: m.MarketOrdersPage })));
 const GovernmentPage = lazy(() => import("./pages/Government").then(m => ({ default: m.GovernmentPage })));
 const XpCalculatorPage = lazy(() => import("./pages/XpCalculator").then(m => ({ default: m.XpCalculatorPage })));
+const ExtensionPage = lazy(() => import("./pages/Extension").then(m => ({ default: m.ExtensionPage })));
 
 
 const LoadingFallback = () => (
@@ -54,6 +55,7 @@ export function AppShell({ path }: { path: string }) {
     : path === "/market-orders" ? <MarketOrdersPage />
     : path === "/government" ? <GovernmentPage />
     : path === "/about" ? <AboutPage />
+    : path === "/extension" ? <ExtensionPage />
     : isWidget ? <WidgetPage />
     : <NotFoundPage />;
 
