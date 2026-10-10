@@ -193,24 +193,7 @@ export function LoadingOverlay({ text = 'Loading...', fullScreen = false }: Load
   return <div className="flex items-center justify-center py-12">{content}</div>;
 }
 
-/**
- * Empty state
- */
-export interface EmptyStateProps {
-  message?: string;
-  icon?: React.ReactNode;
-  action?: React.ReactNode;
-}
-
-export function EmptyState({ message = 'No data available', icon, action }: EmptyStateProps) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      {icon && <div className="w-12 h-12 text-surface-300 dark:text-surface-700 mb-3">{icon}</div>}
-      <p className="text-surface-500">{message}</p>
-      {action && <div className="mt-4">{action}</div>}
-    </div>
-  );
-}
+export { EmptyState } from './States';
 
 /**
  * Confirmation dialog

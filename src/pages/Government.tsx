@@ -254,18 +254,4 @@ export function GovernmentPage() {
   );
 }
 
-// Badge component
-const badge = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
-  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${className}`}>
-    {children}
-  </span>
-);
 
-const badgeStyles = {
-  badge: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold',
-  badge_active: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
-  badge_completed: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
-  badge_expired: 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
-  badge_unknown: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
-  badge_overdue: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
-};
