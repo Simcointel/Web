@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimcoIntel</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 360px;
+      min-height: 400px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-size: 13px;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      padding: 16px;
+      border-bottom: 1px solid #334155;
+    }
+    .header h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header h1 span { color: #3b82f6; }
+    .header .subtitle {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+    .realm-selector {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .realm-btn {
+      flex: 1;
+      padding: 6px 12px;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      background: #1e293b;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .realm-btn.active {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: #fff;
+    }
+    .realm-btn:hover:not(.active) {
+      border-color: #475569;
+      color: #e2e8f0;
+    }
+    .content { padding: 12px; }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+      border-bottom: 1px solid #334155;
+    }
+    .metric-row:last-child { border-bottom: none; }
+    .metric-label { color: #94a3b8; font-size: 12px; }
+    .metric-value { font-weight: 600; font-size: 13px; }
+    .metric-value.positive { color: #22c55e; }
+    .metric-value.negative { color: #ef4444; }
+    .metric-value.neutral { color: #e2e8f0; }
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: #64748b;
+    }
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #334155;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error {
+      text-align: center;
+      padding: 20px;
+      color: #ef4444;
+      font-size: 12px;
+    }
+    .footer {
+      padding: 8px 16px;
+      border-top: 1px solid #334155;
+      text-align: center;
+      font-size: 10px;
+      color: #475569;
+    }
+    .footer a {
+      color: #3b82f6;
+      text-decoration: none;
+    }
+    .footer a:hover { text-decoration: underline; }
+    .refresh-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: none;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #94a3b8;
+      padding: 4px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .refresh-btn:hover { border-color: #475569; color: #e2e8f0; }
+    .refresh-btn.loading { opacity: 0.5; pointer-events: none; }
+    .position-relative { position: relative; }
+  </style>
+</head>
+<body>
+  <div class="header position-relative">
+    <button class="refresh-btn" id="refreshBtn" title="Refresh data">Refresh</button>
+    <h1>Simco<span>Intel</span></h1>
+    <div class="subtitle">Real-time SimCompanies market data</div>
+    <div class="realm-selector">
+      <button class="realm-btn active" data-realm="0">Realm 0</button>
+      <button class="realm-btn" data-realm="1">Realm 1</button>
+    </div>
+  </div>
+  <div class="content" id="content">
+    <div class="loading">Loading data</div>
+  </div>
+  <div class="footer">
+    <a href="https://simcointel.github.io" target="_blank">Open Dashboard</a>
+    &middot;
+    <span id="lastUpdate">Never updated</span>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

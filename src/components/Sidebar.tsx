@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Briefcase, DollarSign,
   TrendingUp, BookOpen, Bell, Info,
   Sun, Moon, ChevronRight, LayoutGrid,
-  Calculator, HardHat, Store, BarChart3, Zap, Building2, FileText
+  Calculator, HardHat, Store, BarChart3, Zap, FileText
 } from "lucide-react";
 
 const navLinks = [

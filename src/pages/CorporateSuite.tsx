@@ -22,13 +22,10 @@ import { LoadingState } from "../components/States";
 
 import { Link } from "../router";
 
-import { Section } from "../components/Layout";
 import * as dataRepo from "../services/dataRepo";
 import type { SuiteStateV6, MapItem, SuiteViewProps } from "./corporate-suite/types";
 
 import type { DashboardMap, ProfitMarginsResponse } from "../types/api";
-
-import type { CompanyData } from "../services/dataRepo";
 
 import { DEFAULT_STATE, n } from "./corporate-suite/types";
 
@@ -149,7 +146,7 @@ export function CorporateSuitePage() {
 
 
 
-  const { result: core, metrics } = useMemo((): { result: typeof result; metrics: typeof metrics } => {
+  const { result: core, metrics } = useMemo(() => {
 
     const s = state || DEFAULT_STATE;
 
@@ -357,7 +354,7 @@ export function CorporateSuitePage() {
 
     if (state) localStorage.setItem("simco_suite_metrics", JSON.stringify(metrics));
 
-  }, [state, margins]);
+  }, [state, margins, metrics]);
 
 
   useEffect(() => {

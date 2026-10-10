@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Landmark, TrendingDown, TrendingUp } from "lucide-react";
 
-function fmt$(n: number): string { return n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(1)}K` : `$${n.toFixed(0)}`; }
+function formatCurrency(n: number): string { return n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(1)}K` : `$${n.toFixed(0)}`; }
 
 export function BondsView() {
   const [faceValue, setFaceValue] = useState(1_000_000);
@@ -57,8 +57,8 @@ export function BondsView() {
       <div className="space-y-3">
         <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
           <h2 className="text-[10px] font-bold uppercase text-surface-400 tracking-wider">Cost of Capital Comparison</h2>
-          <div className="flex justify-between"><span className="text-xs text-surface-500">Bond Price</span><span className={`text-sm font-bold ${bondPrice > faceValue ? "text-amber-600" : bondPrice < faceValue ? "text-emerald-600" : ""}`}>{fmt$(bondPrice)} {bondPrice > faceValue ? "(premium)" : bondPrice < faceValue ? "(discount)" : "(par)"}</span></div>
-          <div className="flex justify-between"><span className="text-xs text-surface-500">Annual Coupon</span><span className="text-sm font-bold">{fmt$(annualIncome)}</span></div>
+          <div className="flex justify-between"><span className="text-xs text-surface-500">Bond Price</span><span className={`text-sm font-bold ${bondPrice > faceValue ? "text-amber-600" : bondPrice < faceValue ? "text-emerald-600" : ""}`}>{formatCurrency(bondPrice)} {bondPrice > faceValue ? "(premium)" : bondPrice < faceValue ? "(discount)" : "(par)"}</span></div>
+          <div className="flex justify-between"><span className="text-xs text-surface-500">Annual Coupon</span><span className="text-sm font-bold">{formatCurrency(annualIncome)}</span></div>
           <div className="flex justify-between"><span className="text-xs text-surface-500">Effective Yield</span><span className="text-sm font-bold">{effectiveYield.toFixed(2)}%</span></div>
           <div className="flex justify-between"><span className="text-xs text-surface-500">Yield to Maturity</span><span className="text-sm font-bold">{yieldToMaturity.toFixed(2)}%</span></div>
           <div className="border-t pt-2">
@@ -72,9 +72,9 @@ export function BondsView() {
 
         <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-2">
           <h2 className="text-[10px] font-bold uppercase text-surface-400 tracking-wider">Total Return ({years}y)</h2>
-          <div className="flex justify-between"><span className="text-xs text-surface-500">Coupon Income ({years}×{fmt$(annualIncome)})</span><span className="text-sm font-bold">{fmt$(totalCoupons)}</span></div>
-          <div className="flex justify-between"><span className="text-xs text-surface-500">Capital Gain/Loss</span><span className={`text-sm font-bold ${faceValue - bondPrice >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmt$(faceValue - bondPrice)}</span></div>
-          <div className="flex justify-between border-t pt-2"><span className="text-xs font-bold">Total Bondholder Return</span><span className="text-lg font-bold text-brand-600">{fmt$(totalReturn)}</span></div>
+          <div className="flex justify-between"><span className="text-xs text-surface-500">Coupon Income ({years}×{formatCurrency(annualIncome)})</span><span className="text-sm font-bold">{formatCurrency(totalCoupons)}</span></div>
+          <div className="flex justify-between"><span className="text-xs text-surface-500">Capital Gain/Loss</span><span className={`text-sm font-bold ${faceValue - bondPrice >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{formatCurrency(faceValue - bondPrice)}</span></div>
+          <div className="flex justify-between border-t pt-2"><span className="text-xs font-bold">Total Bondholder Return</span><span className="text-lg font-bold text-brand-600">{formatCurrency(totalReturn)}</span></div>
         </div>
       </div>
     </div>

@@ -13,7 +13,7 @@ export function useSharedRealm() {
   }, [realm]);
 
   useEffect(() => {
-    const handler = (e: any) => setRealm(e.detail);
+    const handler = (e: Event) => setRealm((e as CustomEvent<number>).detail);
     window.addEventListener("realm_change", handler);
     return () => window.removeEventListener("realm_change", handler);
   }, []);

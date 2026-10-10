@@ -119,15 +119,6 @@ export interface RetailData {
   retail: Record<string, { saturation: number; [key: string]: unknown }>;
 }
 
-export interface HealthReport {
-  status: string;
-  generatedAt: string;
-  projects: { name: string; status: string; dataPoints: number; errors: number; lastOk: string }[];
-  pipelines: { name: string; status: string; lastRun: string; lastOk: string; failures: number }[];
-  schedulers: { name: string; running: boolean; uptimeMs: number }[];
-  storage: { path: string; totalFiles: number; totalSizeBytes: number };
-}
-
 export interface DashboardScores {
   eh: number;
   ms: number;
@@ -147,27 +138,6 @@ export interface RealmDashboard {
   alerts: number;
   sectors: number;
   generatedAt?: string;
-}
-
-export interface EventFeedItem {
-  id: string;
-  ts: string;
-  se: "info" | "warning" | "critical";
-  ca: string;
-  re: string;
-  ti: string;
-  de?: string;
-  ex: string;
-  sr?: string;
-}
-
-export interface UnifiedFeed {
-  events: EventFeedItem[];
-  total: number;
-  filtered: number;
-  severityCounts: Record<string, number>;
-  categoryCounts: Record<string, number>;
-  generatedAt: string;
 }
 
 export interface MacroLatest {

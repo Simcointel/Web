@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef } from "react";
 import { Globe, Package, Building2, DollarSign, Zap, Clock } from "lucide-react";
 import { KPICard, CheckItem } from "./components";
 import { n } from "./types";
@@ -6,6 +6,7 @@ import { n } from "./types";
 import type { SuiteViewProps } from "./types";
 
 export function CommandView({ core, phase, margins, state, onSync, isSyncing, setState }: SuiteViewProps) {
+  const companyIdInputRef = useRef<HTMLInputElement>(null);
   const marketAlerts = useMemo(() => {
     if (!margins?.resources) return [];
     return margins.resources.filter(r => Math.abs(r.marginDelta || 0) > 5).slice(0, 5);
@@ -129,18 +130,18 @@ export function CommandView({ core, phase, margins, state, onSync, isSyncing, se
              </div>
              <div className="flex gap-2 mb-4">
                 <input
-                  type="text"
-                  placeholder="Company ID (e.g. 1664165)"
-                  defaultValue={state.companyId}
-                  className="flex-1 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-brand-500 font-bold"
-                  id="companyIdInput"
-                />
-                <button
-                  disabled={isSyncing}
-                  onClick={() => {
-                   const input = document.getElementById('companyIdInput') as HTMLInputElement;
-                    onSync?.(input.value);
-                }} className={`btn !bg-brand-600 text-white !py-2 !px-4 hover:shadow-lg hover:shadow-brand-500/20 transition-all ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                   ref={companyIdInputRef}
+                   key={state.companyId}
+                   type="text"
+                   placeholder="Company ID (e.g. 1664165)"
+                   defaultValue={state.companyId}
+                   className="flex-1 bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-brand-500 font-bold"
+                 />
+                 <button
+                   disabled={isSyncing}
+                   onClick={() => {
+                     onSync?.(companyIdInputRef.current?.value ?? '');
+                 }} className={`btn !bg-brand-600 text-white !py-2 !px-4 hover:shadow-lg hover:shadow-brand-500/20 transition-all ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}>
                    {isSyncing ? '...' : 'CONNECT'}
                 </button>
              </div>

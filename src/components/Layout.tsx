@@ -1,8 +1,9 @@
 import React from "react";
 
 export function Section({ title, subtitle, children, actions, icon: Icon, color }: { title: string; subtitle?: string; children: React.ReactNode; actions?: React.ReactNode; icon?: React.ElementType; color?: string }) {
-  const bgColor = color && color.startsWith('text-') ? color.replace('text-', 'bg-') + '/10' : 'bg-surface-100';
-  const textColor = color && color.startsWith('text-') ? color : 'text-surface-500';
+  const isValidColor = color && /^text-[a-z]+-\d+$/.test(color);
+  const bgColor = isValidColor ? color.replace('text-', 'bg-') + '/10' : 'bg-surface-100';
+  const textColor = isValidColor ? color : 'text-surface-500';
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Package, Ship, Search, Layers } from "lucide-react";
 import { Section } from "../../components/Layout";
 import { RESOURCES } from "../../data/simco_static";
@@ -7,6 +7,7 @@ import type { SuiteViewProps } from "./types";
 
 export function LogisticsView({ state, setState, core }: SuiteViewProps) {
   const [q, setQ] = useState("");
+  const [feedback, setFeedback] = useState<string | null>(null);
   const filteredRes = useMemo(() => RESOURCES.filter(r => r.name.toLowerCase().includes(q.toLowerCase())), [q]);
 
   const inventorySummary = useMemo(() => {

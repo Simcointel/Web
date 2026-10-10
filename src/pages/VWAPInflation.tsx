@@ -132,7 +132,10 @@ export function VWAPInflationPage() {
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (
-                    <p className="py-16 text-center text-surface-400">No price history available</p>
+                    <div className="py-16 text-center">
+                      <p className="text-surface-400 mb-2">No price history available</p>
+                      <p className="text-surface-300 text-xs">Select another resource or try again later</p>
+                    </div>
                   )}
                 </div>
               </div>
