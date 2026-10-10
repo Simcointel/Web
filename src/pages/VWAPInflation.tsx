@@ -121,9 +121,11 @@ export function VWAPInflationPage() {
                   <span className="text-xs font-bold text-surface-500 uppercase">Price History (30D)</span>
                 </div>
                 <div className="p-4">
-                  {histData.length > 1 ? (
+                  {hLoading ? (
+                    <p className="py-16 text-center text-surface-400">Loading price history...</p>
+                  ) : history.length > 1 ? (
                     <ResponsiveContainer width="100%" height={250}>
-                      <LineChart data={histData}>
+                      <LineChart data={history}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                         <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                         <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
@@ -132,7 +134,7 @@ export function VWAPInflationPage() {
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (
-                    <p className="py-16 text-center text-surface-400">Insufficient price history</p>
+                    <p className="py-16 text-center text-surface-400">No price history available</p>
                   )}
                 </div>
               </div>
