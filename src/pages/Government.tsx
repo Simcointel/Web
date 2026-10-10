@@ -7,15 +7,26 @@ import { usePageTitleKey } from "../hooks/usePageTitle";
 import { fmtNumber, fmtCurrency } from "../utils/formatters";
 import * as dataRepo from "../services/dataRepo";
 
+interface GovernmentOrderResource {
+  resourceId: number;
+  quality: number;
+  resourceName: string;
+}
+
 interface GovernmentOrder {
   id: number;
-  name: string;
-  description: string;
-  resourceId: number;
-  quantity: number;
-  reward: number;
-  deadline: string;
-  status: "active" | "completed" | "expired";
+  projectName: string;
+  created: string;
+  daysToFulfill: number;
+  resources: GovernmentOrderResource[];
+  // Legacy fields (may not exist in API response)
+  name?: string;
+  description?: string;
+  resourceId?: number;
+  quantity?: number;
+  reward?: number;
+  deadline?: string;
+  status?: string;
 }
 
 interface GovernmentOrdersReport {
@@ -72,12 +83,17 @@ export function GovernmentPage() {
     fetchOrders();
   }, [realm]);
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (order: GovernmentOrder) => {
+    // Compute status from daysToFulfill and created date
+    const created = new Date(order.created);
+    const deadline = new Date(created.getTime() + order.daysToFulfill * 24 * 60 * 60 * 1000);
+    const now = new Date();
+    const isExpired = now > deadline;
+    const status = isExpired ? 'expired' : 'active';
+
     switch (status) {
       case 'active':
         return <span className="badge badge-active"><CheckCircle size={12} /> Active</span>;
-      case 'completed':
-        return <span className="badge badge-completed"><CheckCircle size={12} /> Completed</span>;
       case 'expired':
         return <span className="badge badge-expired"><XCircle size={12} /> Expired</span>;
       default:
@@ -97,6 +113,25 @@ export function GovernmentPage() {
     } catch {
       return dateStr;
     }
+  };
+
+  const getResourceName = (order: GovernmentOrder) => {
+    if (order.resources && order.resources.length > 0) {
+      return order.resources.map(r => r.resourceName).join(', ');
+    }
+    return order.resourceId?.toString() ?? '-';
+  };
+
+  const getQuantity = (order: GovernmentOrder) => {
+    if (order.resources && order.resources.length > 0) {
+      return order.resources.length;
+    }
+    return order.quantity ?? 0;
+  };
+
+  const getReward = (order: GovernmentOrder) => {
+    // API doesn't return reward directly, show days to fulfill instead
+    return `${order.daysToFulfill} days`;
   };
 
   return (
@@ -123,24 +158,35 @@ export function GovernmentPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="card p-4 border-l-4 border-l-amber-500">
-          <span className="metric-label">Total Orders</span>
-          <span className="metric-value">{orders.length}</span>
-        </div>
-        <div className="card p-4 border-l-4 border-l-emerald-500">
-          <span className="metric-label">Active</span>
-          <span className="metric-value text-emerald-600">{orders.filter(o => o.status === 'active').length}</span>
-        </div>
-        <div className="card p-4 border-l-4 border-l-blue-500">
-          <span className="metric-label">Completed</span>
-          <span className="metric-value text-blue-600">{orders.filter(o => o.status === 'completed').length}</span>
-        </div>
-        <div className="card p-4 border-l-4 border-l-rose-500">
-          <span className="metric-label">Expired</span>
-          <span className="metric-value text-rose-600">{orders.filter(o => o.status === 'expired').length}</span>
-        </div>
-      </div>
+      {(() => {
+        const now = new Date();
+        const active = orders.filter(o => {
+          const created = new Date(o.created);
+          const deadline = new Date(created.getTime() + o.daysToFulfill * 24 * 60 * 60 * 1000);
+          return now <= deadline;
+        }).length;
+        const expired = orders.length - active;
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="card p-4 border-l-4 border-l-amber-500">
+              <span className="metric-label">Total Orders</span>
+              <span className="metric-value">{orders.length}</span>
+            </div>
+            <div className="card p-4 border-l-4 border-l-emerald-500">
+              <span className="metric-label">Active</span>
+              <span className="metric-value text-emerald-600">{active}</span>
+            </div>
+            <div className="card p-4 border-l-4 border-l-blue-500">
+              <span className="metric-label">Resources</span>
+              <span className="metric-value text-blue-600">{orders.reduce((s, o) => s + (o.resources?.length ?? 0), 0)}</span>
+            </div>
+            <div className="card p-4 border-l-4 border-l-rose-500">
+              <span className="metric-label">Expired</span>
+              <span className="metric-value text-rose-600">{expired}</span>
+            </div>
+          </div>
+        );
+      })()}
 
       {lastUpdated && (
         <p className="text-xs text-surface-400 mb-4">Last updated: {lastUpdated}</p>
@@ -175,27 +221,30 @@ export function GovernmentPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
-                {orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-surface-50 dark:hover:bg-surface-900/50">
-                    <td className="px-4 py-3">
-                      <div className="font-bold">{order.name}</div>
-                      <div className="text-[10px] text-surface-400">ID: {order.id}</div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium">{order.resourceId}</div>
-                      <div className="text-[10px] text-surface-400 line-clamp-1">{order.description}</div>
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold tabular-nums">{fmtNumber(order.quantity)}</td>
-                    <td className="px-4 py-3 text-right font-bold text-amber-600">{fmtCurrency(order.reward)}</td>
-                    <td className="px-4 py-3 text-center">{getStatusBadge(order.status)}</td>
-                    <td className="px-4 py-3 text-center text-xs">
-                      {formatDate(order.deadline)}
-                      {order.status === 'active' && new Date(order.deadline) < new Date() && (
-                        <span className="badge badge-expired ml-2">Overdue</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {orders.map((order) => {
+                  const created = new Date(order.created);
+                  const deadline = new Date(created.getTime() + order.daysToFulfill * 24 * 60 * 60 * 1000);
+                  return (
+                    <tr key={order.id} className="hover:bg-surface-50 dark:hover:bg-surface-900/50">
+                      <td className="px-4 py-3">
+                        <div className="font-bold">{order.projectName}</div>
+                        <div className="text-[10px] text-surface-400">ID: {order.id}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium">{getResourceName(order)}</div>
+                        <div className="text-[10px] text-surface-400 line-clamp-1">
+                          {order.resources?.map(r => `Q${r.quality}`).join(', ') ?? ''}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold tabular-nums">{fmtNumber(getQuantity(order))}</td>
+                      <td className="px-4 py-3 text-right font-bold text-amber-600">{getReward(order)}</td>
+                      <td className="px-4 py-3 text-center">{getStatusBadge(order)}</td>
+                      <td className="px-4 py-3 text-center text-xs">
+                        {formatDate(deadline.toISOString())}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
