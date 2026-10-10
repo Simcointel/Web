@@ -111,7 +111,7 @@ export function GovernmentPage() {
         minute: '2-digit'
       });
     } catch {
-      return dateStr;
+      return 'Invalid date';
     }
   };
 
