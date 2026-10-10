@@ -174,8 +174,8 @@ export function LedgerView({ state }: LedgerViewProps) {
       const totalNet = rows.reduce((s, r) => s + (parseFloat(r[netIdx]) || 0), 0);
       return (
         <div className="space-y-2">
-          <div className="flex justify-between"><span>Total Sales</span><span className="font-bold text-emerald-600">${(totalSales/1e6).toFixed(2)}M</span></div>
-          <div className="flex justify-between"><span>Total Net Income</span><span className={`font-bold ${totalNet >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>${(totalNet/1e6).toFixed(2)}M</span></div>
+          <div className="flex justify-between"><span>Total Sales</span><span className="font-bold text-emerald-600">{safeFmt(totalSales.toString())}</span></div>
+          <div className="flex justify-between"><span>Total Net Income</span><span className={`font-bold ${totalNet >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{safeFmt(totalNet.toString())}</span></div>
           <div className="flex justify-between"><span>Margin</span><span className="font-bold">{totalSales ? ((totalNet/totalSales)*100).toFixed(1) : '0'}%</span></div>
           <div className="flex justify-between"><span>Entries</span><span className="font-bold">{rows.length}</span></div>
         </div>
