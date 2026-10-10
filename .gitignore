@@ -4,6 +4,7 @@ node_modules/
 
 # Build artifacts
 tsconfig.tsbuildinfo
+dist/
 
 # Vite/Vitest cache
 node_modules/.vite/
