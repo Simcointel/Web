@@ -33,6 +33,7 @@ export const PAGE_TITLES = {
   government: 'Government',
   about: 'About',
   xpCalculator: 'XP Calculator',
+  extension: 'Browser Extension',
   widgets: 'Widgets',
 } as const;
 

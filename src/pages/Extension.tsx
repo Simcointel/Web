@@ -1,5 +1,5 @@
 import { PageHeader } from "../components/ui/Common";
-import { usePageTitleKey } from "../hooks/usePageTitleKey";
+import { usePageTitleKey } from "../hooks/usePageTitle";
 import { Download, Chrome, Globe, Shield, Zap, BarChart3 } from "lucide-react";
 
 export function ExtensionPage() {
