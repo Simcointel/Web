@@ -1,11 +1,11 @@
 import React, { useMemo, useRef } from "react";
-import { Globe, Package, Building2, DollarSign, Zap, Clock } from "lucide-react";
+import { Globe, Package, Building2, DollarSign, Zap, Clock, Upload, Key } from "lucide-react";
 import { KPICard, CheckItem } from "./components";
 import { n } from "./types";
 
 import type { SuiteViewProps } from "./types";
 
-export function CommandView({ core, phase, margins, state, onSync, isSyncing, setState }: SuiteViewProps) {
+export function CommandView({ core, phase, margins, state, onSync, isSyncing, setState, onImportFromExtension, onShowPairingCode }: SuiteViewProps) {
   const companyIdInputRef = useRef<HTMLInputElement>(null);
   const marketAlerts = useMemo(() => {
     if (!margins?.resources) return [];
@@ -152,6 +152,27 @@ export function CommandView({ core, phase, margins, state, onSync, isSyncing, se
              )}
              <p className="text-[10px] text-surface-500 font-medium leading-relaxed italic border-l-2 border-brand-200 dark:border-brand-800 pl-3">
                 Authorizes direct retrieval of infrastructure architecture, efficiency coefficients, and fiscal liabilities from the central SimCompanies node.
+             </p>
+          </div>
+
+          <div className="card p-6 border-surface-200 dark:border-surface-800 !shadow-none">
+             <h3 className="text-sm font-bold uppercase text-surface-500 mb-4">Extension Bridge</h3>
+             <div className="space-y-3">
+                <button
+                   onClick={onImportFromExtension}
+                   className="w-full btn !bg-brand-600 text-white !py-2.5 !px-4 hover:shadow-lg hover:shadow-brand-500/20 transition-all flex items-center justify-center gap-2"
+                >
+                   <Upload size={14} /> Import from Extension
+                </button>
+                <button
+                   onClick={onShowPairingCode}
+                   className="w-full btn !bg-white dark:!bg-surface-800 !text-current border border-surface-300 dark:border-surface-700 !py-2.5 !px-4 transition-all flex items-center justify-center gap-2"
+                >
+                   <Key size={14} /> Generate Pairing Code
+                </button>
+             </div>
+             <p className="text-[10px] text-surface-500 mt-3 leading-relaxed">
+                Import company data synced from the browser extension, or generate a pairing code to link your extension.
              </p>
           </div>
 

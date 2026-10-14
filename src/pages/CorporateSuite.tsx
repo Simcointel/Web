@@ -8,7 +8,7 @@ import {
 
   Users, BarChart3, Briefcase, AlertTriangle,
 
-  Sun, Moon
+  Sun, Moon, Key
 
 } from "lucide-react";
 
@@ -56,6 +56,7 @@ import { PageHeader } from "../components/ui/Common";
 import { usePageTitleKey } from "../hooks/usePageTitle";
 
 import { useDashboardState, useProfitMargins, useRetailData } from "../hooks/useDataQueries";
+import { requestExtensionData, isExtensionAvailable, getPairingCode } from "../services/extensionBridge";
 
 import { fmtPct, fmtCurrency } from "../utils/formatters";
 
@@ -81,6 +82,9 @@ export function CorporateSuitePage() {
   const [debugData, setDebugData] = useState<Record<string, unknown> | null>(null);
 
   const [showDebug, setShowDebug] = useState(false);
+
+  const [showPairingCode, setShowPairingCode] = useState(false);
+  const [pairingCode, setPairingCode] = useState('');
 
 
 
@@ -581,7 +585,43 @@ export function CorporateSuitePage() {
 
   };
 
+  const importFromExtension = async () => {
+    setShowPairingCode(false);
+    try {
+      const available = await isExtensionAvailable();
+      if (!available) {
+        setNotification({ msg: 'Extension not detected', type: 'error' });
+        return;
+      }
+      setNotification({ msg: 'Requesting data from extension...', type: 'success' });
+      const data = await requestExtensionData();
+      const newMap: MapItem[] = (data.buildings || [])
+        .filter(b => b?.id)
+        .map(b => ({ id: b.id!, level: n(b.level) || 1 }));
+      setState(prev => ({
+        ...prev,
+        companyId: data.companyId || prev.companyId,
+        companyName: data.companyName || prev.companyName,
+        companyLevel: data.companyLevel || prev.companyLevel,
+        companyRank: data.companyRank || prev.companyRank,
+        companyValue: data.companyValue || prev.companyValue,
+        apiAO: data.apiAO ?? prev.apiAO,
+        workers: data.workers ?? prev.workers,
+        map: newMap,
+        lastSynced: new Date().toLocaleTimeString(),
+      }));
+      setNotification({ msg: `Imported: ${data.companyName || 'Company data'}`, type: 'success' });
+    } catch (e) {
+      setNotification({ msg: 'Extension not detected', type: 'error' });
+      setDebugData({ error: e instanceof Error ? e.message : String(e) });
+    }
+  };
 
+  const showPairingCodeHandler = () => {
+    const code = getPairingCode();
+    setPairingCode(code);
+    setShowPairingCode(prev => !prev);
+  };
 
   const renderTab = () => {
 
@@ -589,7 +629,7 @@ export function CorporateSuitePage() {
 
     switch(state.activeTab || 'command') {
 
-      case 'command': return <CommandView state={state} core={core} phase={economyPhase} margins={margins} onSync={syncCompany} isSyncing={isSyncing} setState={setState} />;
+      case 'command': return <CommandView state={state} core={core} phase={economyPhase} margins={margins} onSync={syncCompany} isSyncing={isSyncing} setState={setState} onImportFromExtension={importFromExtension} onShowPairingCode={showPairingCodeHandler} />;
 
       case 'ops': return <OperationsView state={state} core={core} setState={setState} />;
 
@@ -610,7 +650,7 @@ export function CorporateSuitePage() {
 
       case 'ledger': return <LedgerView state={state} />;
 
-      default: return <CommandView state={state} core={core} phase={economyPhase} margins={margins} onSync={syncCompany} isSyncing={isSyncing} setState={setState} />;
+      default: return <CommandView state={state} core={core} phase={economyPhase} margins={margins} onSync={syncCompany} isSyncing={isSyncing} setState={setState} onImportFromExtension={importFromExtension} onShowPairingCode={showPairingCodeHandler} />;
 
     }
 
@@ -728,7 +768,20 @@ export function CorporateSuitePage() {
 
 
 
-     {notification && (
+     {showPairingCode && (
+      <div className="fixed top-20 right-6 z-[100] animate-in slide-in-from-right duration-300">
+        <div className="px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 border-2 bg-white dark:bg-surface-900 border-brand-200 dark:border-brand-800">
+          <Key size={16} className="text-brand-600" />
+          <div>
+            <p className="text-[10px] font-bold text-surface-400 uppercase tracking-widest">Pairing Code</p>
+            <p className="text-sm font-mono font-bold text-surface-800 dark:text-surface-200">{pairingCode}</p>
+          </div>
+          <button onClick={() => setShowPairingCode(false)} className="ml-2 text-[10px] font-bold text-surface-400 hover:text-surface-600">✕</button>
+        </div>
+      </div>
+    )}
+
+    {notification && (
 
        <div className="fixed top-20 right-6 z-[100] animate-in slide-in-from-right duration-300">
 

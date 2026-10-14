@@ -1,9 +1,38 @@
+import { useState, useEffect } from "react";
 import { PageHeader } from "../components/ui/Common";
 import { usePageTitleKey } from "../hooks/usePageTitle";
-import { Download, Chrome, Globe, Shield, Zap, BarChart3 } from "lucide-react";
+import { Download, Chrome, Globe, Shield, Zap, BarChart3, Copy, Check, Key } from "lucide-react";
+import { getPairingCode, isExtensionAvailable } from "../services/extensionBridge";
 
 export function ExtensionPage() {
   usePageTitleKey('extension');
+  const [pairingCode, setPairingCode] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [extensionStatus, setExtensionStatus] = useState<'checking' | 'installed' | 'not-installed'>('checking');
+
+  useEffect(() => {
+    setPairingCode(getPairingCode());
+    isExtensionAvailable().then(available => {
+      setExtensionStatus(available ? 'installed' : 'not-installed');
+    });
+  }, []);
+
+  const copyPairingCode = async () => {
+    try {
+      await navigator.clipboard.writeText(pairingCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = pairingCode;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-slide-up">
@@ -39,6 +68,61 @@ export function ExtensionPage() {
             <p className="text-xs text-surface-500">No tracking, no accounts. Data from public GitHub CDN</p>
           </div>
         </div>
+      </div>
+
+      <div className="card p-6 space-y-4">
+        <h2 className="text-lg font-bold text-surface-800 dark:text-surface-200">Pairing Code</h2>
+        <p className="text-sm text-surface-600 dark:text-surface-400">
+          Enter this code in the extension popup to link your company data with the Corporate Suite dashboard.
+        </p>
+        <div className="flex items-center gap-3">
+          <div className="flex-1 flex items-center gap-2 px-4 py-3 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-lg">
+            <Key size={16} className="text-brand-600 shrink-0" />
+            <code className="text-sm font-mono font-bold text-surface-800 dark:text-surface-200 truncate">{pairingCode}</code>
+          </div>
+          <button
+            onClick={copyPairingCode}
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-bold transition-colors ${
+              copied
+                ? 'bg-emerald-600 text-white'
+                : 'bg-brand-600 text-white hover:bg-brand-700'
+            }`}
+          >
+            {copied ? <Check size={16} /> : <Copy size={16} />}
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+        </div>
+      </div>
+
+      <div className="card p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-bold text-surface-800 dark:text-surface-200">Extension Status</h2>
+          {extensionStatus === 'checking' && (
+            <span className="px-2 py-0.5 bg-surface-100 dark:bg-surface-800 text-surface-500 rounded text-[10px] font-bold uppercase tracking-widest animate-pulse">
+              Checking
+            </span>
+          )}
+          {extensionStatus === 'installed' && (
+            <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded text-[10px] font-bold uppercase tracking-widest">
+              Detected
+            </span>
+          )}
+          {extensionStatus === 'not-installed' && (
+            <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded text-[10px] font-bold uppercase tracking-widest">
+              Not Detected
+            </span>
+          )}
+        </div>
+        {extensionStatus === 'installed' && (
+          <p className="text-sm text-emerald-600 dark:text-emerald-500">
+            Extension detected. You can use the "Import from Extension" feature in the Corporate Suite.
+          </p>
+        )}
+        {extensionStatus === 'not-installed' && (
+          <p className="text-sm text-surface-500">
+            Extension not detected on this page. Make sure the extension is installed and active, then refresh.
+          </p>
+        )}
       </div>
 
       <div className="card p-6 space-y-4">

@@ -9,7 +9,7 @@ async function fetchJSON(path) {
 }
 
 function fmtNumber(n) {
-  if (n == null || isNaN(n)) return '—';
+  if (n == null || isNaN(n)) return '\u2014';
   const a = Math.abs(n);
   if (a >= 1e9) return (n / 1e9).toFixed(1) + 'B';
   if (a >= 1e6) return (n / 1e6).toFixed(1) + 'M';
@@ -18,12 +18,12 @@ function fmtNumber(n) {
 }
 
 function fmtCurrency(n) {
-  if (n == null || isNaN(n)) return '—';
+  if (n == null || isNaN(n)) return '\u2014';
   return '$' + fmtNumber(n);
 }
 
 function fmtPct(n) {
-  if (n == null || isNaN(n)) return '—';
+  if (n == null || isNaN(n)) return '\u2014';
   return n.toFixed(1) + '%';
 }
 
@@ -44,7 +44,6 @@ async function loadDashboard() {
 
     let html = '';
 
-    // Top movers from margins
     if (margins.status === 'fulfilled' && margins.value?.length) {
       const top = margins.value
         .filter(r => r.outputVwap > 0)
@@ -54,11 +53,10 @@ async function loadDashboard() {
       html += '<div class="card"><div class="card-title">Top 5 Most Profitable</div>';
       top.forEach(r => {
         const type = r.marginPct >= 0 ? 'positive' : 'negative';
-        html += metricRow(r.name, `${fmtCurrency(r.outputVwap)} · ${fmtPct(r.marginPct)}`, type);
+        html += metricRow(r.name, `${fmtCurrency(r.outputVwap)} \u00b7 ${fmtPct(r.marginPct)}`, type);
       });
       html += '</div>';
 
-      // Biggest losers
       const losers = margins.value
         .filter(r => r.outputVwap > 0)
         .sort((a, b) => a.marginPct - b.marginPct)
@@ -66,12 +64,11 @@ async function loadDashboard() {
 
       html += '<div class="card"><div class="card-title">Biggest Losses</div>';
       losers.forEach(r => {
-        html += metricRow(r.name, `${fmtCurrency(r.outputVwap)} · ${fmtPct(r.marginPct)}`, 'negative');
+        html += metricRow(r.name, `${fmtCurrency(r.outputVwap)} \u00b7 ${fmtPct(r.marginPct)}`, 'negative');
       });
       html += '</div>';
     }
 
-    // Retail saturation
     if (retail.status === 'fulfilled' && retail.value?.retail) {
       const entries = Object.entries(retail.value.retail)
         .filter(([, v]) => v.saturation != null)
@@ -88,7 +85,6 @@ async function loadDashboard() {
       }
     }
 
-    // Dashboard scores
     if (dashboard.status === 'fulfilled' && dashboard.value?.scores) {
       const s = dashboard.value.scimes;
       const regime = dashboard.value.regime?.na || 'Normal';
@@ -111,6 +107,85 @@ async function loadDashboard() {
   }
 }
 
+function updateSyncStatus(connected, text) {
+  const dot = document.getElementById('syncDot');
+  const statusText = document.getElementById('syncStatusText');
+  if (dot) {
+    dot.className = 'sync-dot ' + (connected ? 'connected' : 'disconnected');
+  }
+  if (statusText) statusText.textContent = text;
+}
+
+async function loadSyncStatus() {
+  try {
+    const result = await new Promise((resolve) => {
+      chrome.storage.local.get(['simcointel-company-data', 'simcointel-pairing-code'], resolve);
+    });
+
+    const data = result['simcointel-company-data'];
+    const pairingCode = result['simcointel-pairing-code'];
+
+    if (data) {
+      const syncedAt = data.syncedAt ? new Date(data.syncedAt) : null;
+      const lastSyncEl = document.getElementById('lastSyncTime');
+      if (lastSyncEl) {
+        lastSyncEl.textContent = syncedAt
+          ? 'Last synced: ' + syncedAt.toLocaleString()
+          : 'Never synced';
+      }
+
+      const companyInfoEl = document.getElementById('companyInfo');
+      if (companyInfoEl && data.companyName) {
+        let info = `<strong>${data.companyName}</strong>`;
+        if (data.companyId) info += ` (#${data.companyId})`;
+        if (data.level) info += ` \u00b7 Lv ${data.level}`;
+        if (data.rank) info += ` \u00b7 Rank ${data.rank}`;
+        if (data.workers) info += ` \u00b7 ${data.workers} workers`;
+        companyInfoEl.innerHTML = info;
+      }
+
+      updateSyncStatus(true, 'Dashboard: Connected');
+    } else {
+      updateSyncStatus(false, 'Dashboard: Not connected');
+    }
+  } catch (err) {
+    console.error('Failed to load sync status:', err);
+    updateSyncStatus(false, 'Dashboard: Error');
+  }
+}
+
+async function triggerManualSync() {
+  const btn = document.getElementById('syncNowBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Syncing...';
+  }
+
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.url?.includes('simcompanies.com')) {
+      const response = await chrome.tabs.sendMessage(tab.id, { type: 'simcointel:trigger-sync' });
+      if (response?.success) {
+        if (btn) btn.textContent = 'Synced!';
+      } else {
+        if (btn) btn.textContent = 'Not on company page';
+      }
+    } else {
+      if (btn) btn.textContent = 'Not on SimCompanies';
+    }
+  } catch (err) {
+    if (btn) btn.textContent = 'Sync failed';
+  }
+
+  setTimeout(async () => {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Sync Now';
+    }
+    await loadSyncStatus();
+  }, 2000);
+}
+
 document.querySelectorAll('.realm-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.realm-btn').forEach(b => b.classList.remove('active'));
@@ -122,6 +197,24 @@ document.querySelectorAll('.realm-btn').forEach(btn => {
 
 document.getElementById('refreshBtn').addEventListener('click', loadDashboard);
 
+document.getElementById('syncNowBtn').addEventListener('click', triggerManualSync);
+
+document.getElementById('pairingSaveBtn').addEventListener('click', async () => {
+  const input = document.getElementById('pairingCodeInput');
+  const code = input.value.trim();
+  if (!code) return;
+
+  await new Promise((resolve) => {
+    chrome.storage.local.set({ 'simcointel-pairing-code': code }, resolve);
+  });
+
+  input.value = '';
+  input.placeholder = 'Code saved!';
+  setTimeout(() => { input.placeholder = 'Pairing code from dashboard'; }, 2000);
+
+  await loadSyncStatus();
+});
+
 chrome.storage.local.get(['realm'], (result) => {
   if (result.realm != null) {
     currentRealm = result.realm;
@@ -130,4 +223,5 @@ chrome.storage.local.get(['realm'], (result) => {
     });
   }
   loadDashboard();
+  loadSyncStatus();
 });

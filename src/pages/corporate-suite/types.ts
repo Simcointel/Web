@@ -110,4 +110,6 @@ export interface SuiteViewProps {
   onSync?: (id: string) => Promise<void>;
   isSyncing?: boolean;
   setNotification?: (n: { msg: string; type: 'success' | 'error' } | null) => void;
+  onImportFromExtension?: () => void;
+  onShowPairingCode?: () => void;
 }

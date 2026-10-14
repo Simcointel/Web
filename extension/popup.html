@@ -140,6 +140,85 @@
     .refresh-btn:hover { border-color: #475569; color: #e2e8f0; }
     .refresh-btn.loading { opacity: 0.5; pointer-events: none; }
     .position-relative { position: relative; }
+    .sync-section {
+      padding: 12px;
+      border-top: 1px solid #334155;
+    }
+    .sync-status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .sync-status-text {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .sync-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+    }
+    .sync-dot.connected { background: #22c55e; }
+    .sync-dot.disconnected { background: #64748b; }
+    .sync-btn {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #3b82f6;
+      border-radius: 6px;
+      background: #3b82f6;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 8px;
+    }
+    .sync-btn:hover { background: #2563eb; }
+    .sync-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .pairing-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .pairing-input {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-size: 12px;
+      outline: none;
+    }
+    .pairing-input:focus { border-color: #3b82f6; }
+    .pairing-save-btn {
+      padding: 6px 12px;
+      border: 1px solid #3b82f6;
+      border-radius: 6px;
+      background: transparent;
+      color: #3b82f6;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pairing-save-btn:hover { background: #3b82f6; color: #fff; }
+    .last-sync {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    .company-info {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+    .company-info strong {
+      color: #e2e8f0;
+    }
   </style>
 </head>
 <body>
@@ -154,6 +233,21 @@
   </div>
   <div class="content" id="content">
     <div class="loading">Loading data</div>
+  </div>
+  <div class="sync-section">
+    <div class="sync-status">
+      <span class="sync-status-text">
+        <span id="syncDot" class="sync-dot disconnected"></span>
+        <span id="syncStatusText">Dashboard: Not connected</span>
+      </span>
+    </div>
+    <button class="sync-btn" id="syncNowBtn">Sync Now</button>
+    <div class="pairing-row">
+      <input type="text" class="pairing-input" id="pairingCodeInput" placeholder="Pairing code from dashboard" />
+      <button class="pairing-save-btn" id="pairingSaveBtn">Save</button>
+    </div>
+    <div class="last-sync" id="lastSyncTime">Never synced</div>
+    <div class="company-info" id="companyInfo"></div>
   </div>
   <div class="footer">
     <a href="https://simcointel.github.io" target="_blank">Open Dashboard</a>
