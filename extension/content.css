@@ -1,0 +1,8 @@
+#simcointel-overlay {
+  cursor: pointer;
+  user-select: none;
+}
+
+#simcointel-overlay:hover {
+  border-color: #3b82f6 !important;
+}
