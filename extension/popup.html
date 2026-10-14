@@ -219,6 +219,50 @@
     .company-info strong {
       color: #e2e8f0;
     }
+    .log-section {
+      padding: 12px;
+      border-top: 1px solid #334155;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+    }
+    .log-clear-btn {
+      background: none;
+      border: 1px solid #334155;
+      border-radius: 4px;
+      color: #94a3b8;
+      padding: 2px 6px;
+      font-size: 9px;
+      cursor: pointer;
+    }
+    .log-clear-btn:hover { border-color: #475569; color: #e2e8f0; }
+    .log-entries {
+      font-size: 10px;
+      font-family: monospace;
+      space-y: 2px;
+    }
+    .log-entry {
+      padding: 2px 0;
+      border-bottom: 1px solid #1e293b;
+    }
+    .log-entry.info { color: #94a3b8; }
+    .log-entry.success { color: #22c55e; }
+    .log-entry.error { color: #ef4444; }
+    .log-entry.warn { color: #f59e0b; }
+    .log-entry .log-time {
+      color: #475569;
+      margin-right: 6px;
+    }
   </style>
 </head>
 <body>
@@ -249,8 +293,17 @@
     <div class="last-sync" id="lastSyncTime">Never synced</div>
     <div class="company-info" id="companyInfo"></div>
   </div>
+  <div class="log-section">
+    <div class="log-header">
+      <span>Activity Log</span>
+      <button id="clearLogBtn" class="log-clear-btn">Clear</button>
+    </div>
+    <div class="log-entries" id="logEntries">
+      <div class="log-entry info">Extension loaded</div>
+    </div>
+  </div>
   <div class="footer">
-    <a href="https://simcointel.github.io" target="_blank">Open Dashboard</a>
+    <a href="https://simcointel.github.io/web" target="_blank">Open Dashboard</a>
     &middot;
     <span id="lastUpdate">Never updated</span>
   </div>

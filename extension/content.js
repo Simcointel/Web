@@ -4,6 +4,13 @@
 (function() {
   'use strict';
 
+  function log(message, type = 'info') {
+    const prefix = '[SimcoIntel]';
+    if (type === 'error') console.error(prefix, message);
+    else if (type === 'warn') console.warn(prefix, message);
+    else console.log(prefix, message);
+  }
+
   const API_BASE = 'https://raw.githubusercontent.com/SimcoIntel/Data/main';
   const STORAGE_KEY = 'simcointel-company-data';
 
@@ -24,13 +31,14 @@
       <div style="margin-top:6px;font-size:10px;color:#64748b;text-align:right">Click to open dashboard</div>
     `;
     div.addEventListener('click', () => {
-      window.open('https://simcointel.github.io', '_blank');
+      window.open('https://simcointel.github.io/web', '_blank');
     });
     document.body.appendChild(div);
     return div;
   }
 
   async function loadData() {
+    log('Loading market data overlay...');
     const overlay = document.getElementById('simcointel-overlay') || createOverlay();
     const dataDiv = document.getElementById('simcointel-data');
     try {
@@ -196,6 +204,7 @@
   }
 
   async function syncCompanyData() {
+    log('Starting company data sync...');
     updateSyncButton('syncing', 'Syncing...');
 
     try {
@@ -227,15 +236,18 @@
       });
 
       updateSyncButton('success', 'Synced!');
+      log('Company data synced successfully', 'success');
       setTimeout(() => updateSyncButton('default', 'Sync to Dashboard'), 2000);
     } catch (err) {
       console.error('[SimcoIntel] Sync failed:', err);
+      log('Sync failed: ' + err.message, 'error');
       updateSyncButton('error', 'Sync failed');
       setTimeout(() => updateSyncButton('default', 'Sync to Dashboard'), 3000);
     }
   }
 
   function init() {
+    log('Extension initialized');
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => setTimeout(loadData, 3000));
     } else {
@@ -243,6 +255,7 @@
     }
 
     if (isCompanyPage()) {
+      log('Company page detected, auto-syncing...');
       const addSyncUI = () => {
         if (!document.getElementById('simcointel-sync-btn')) {
           createSyncButton();

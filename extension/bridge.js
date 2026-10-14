@@ -1,8 +1,14 @@
-/* Bridge content script — injected into simcointel.github.io */
+/* Bridge content script — injected into simcointel.github.io/web */
 /* Reads chrome.storage.local and exposes data to the web page via DOM + CustomEvents */
 
 (function() {
   'use strict';
+
+  function log(message, type = 'info') {
+    const prefix = '[SimcoIntel Bridge]';
+    if (type === 'error') console.error(prefix, message);
+    else console.log(prefix, message);
+  }
 
   const STORAGE_KEY = 'simcointel-company-data';
   const PAIRING_KEY = 'simcointel-pairing-code';
@@ -35,6 +41,7 @@
   }
 
   async function refreshAndPublish() {
+    log('Refreshing storage data...');
     try {
       const { companyData, pairingCode } = await getStorageData();
       lastData = companyData;
@@ -52,6 +59,7 @@
   }
 
   async function handleDataRequest(event) {
+    log('Data request received from web page');
     const { companyData, pairingCode } = await getStorageData();
     const response = {
       companyData,
@@ -70,6 +78,7 @@
 
   // Web page can verify extension is installed via runtime.sendMessage
   chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
+    log('External message received: ' + message?.type);
     if (message?.type === 'simcointel:ping') {
       sendResponse({ installed: true, id: chrome.runtime.id });
       return false;
