@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "SimcoIntel — SimCo Market Data",
-  "version": "1.0.0",
+  "name": "SimcoIntel \u2014 SimCo Market Data",
+  "version": "1.1.0",
   "description": "Real-time SimCompanies market data, profit margins, retail saturation, and macro indicators at a glance.",
-  "permissions": ["storage", "alarms"],
+  "permissions": ["storage"],
   "host_permissions": [
     "https://raw.githubusercontent.com/SimcoIntel/Data/*",
     "https://simcointel.github.io/*"
@@ -24,13 +24,22 @@
     "128": "icons/icon128.png"
   },
   "background": {
-    "service_worker": "background.js"
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": true
   },
   "content_scripts": [
     {
-      "matches": ["https://www.simcompanies.com/*"],
-      "js": ["content.js"],
-      "css": ["content.css"]
+      "matches": [
+        "https://www.simcompanies.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ]
     }
   ],
   "browser_specific_settings": {
