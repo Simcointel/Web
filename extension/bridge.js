@@ -41,12 +41,11 @@
   }
 
   function notifyPage(data) {
-    window.postMessage({
-      type: 'simcointel:data-response',
-      detail: data,
-      source: 'simcointel-extension',
-      extensionId: chrome.runtime.id,
-    }, '*');
+    document.dispatchEvent(new CustomEvent('simcointel:data-response', {
+      detail: { ...data, source: 'simcointel-extension', extensionId: chrome.runtime.id },
+      bubbles: true,
+      composed: true,
+    }));
   }
 
   async function refreshAndPublish() {
@@ -67,19 +66,20 @@
     }
   }
 
-  async function handleDataRequest(event) {
-    if (event.data?.type !== 'simcointel:data-request') return;
-    log('Data request received from web page via postMessage');
-    const { companyData, pairingCode } = await getStorageData();
-    notifyPage({
-      companyData,
-      pairingCode,
-      extensionId: chrome.runtime.id,
-      timestamp: Date.now(),
+  function handleDataRequest(event) {
+    if (event.detail?.type !== 'simcointel:data-request') return;
+    log('Data request received from web page via DOM event');
+    getStorageData().then(({ companyData, pairingCode }) => {
+      notifyPage({
+        companyData,
+        pairingCode,
+        extensionId: chrome.runtime.id,
+        timestamp: Date.now(),
+      });
     });
   }
 
-  window.addEventListener('message', handleDataRequest);
+  document.addEventListener('simcointel:data-request', handleDataRequest);
 
   // Initial publish and periodic refresh
   refreshAndPublish();
