@@ -595,6 +595,10 @@ export function CorporateSuitePage() {
       }
       setNotification({ msg: 'Requesting data from extension...', type: 'success' });
       const data = await requestExtensionData();
+      if (!data) {
+        setNotification({ msg: 'No data received from extension', type: 'error' });
+        return;
+      }
       const newMap: MapItem[] = (data.buildings || [])
         .filter(b => b?.id)
         .map(b => ({ id: b.id!, level: n(b.level) || 1 }));

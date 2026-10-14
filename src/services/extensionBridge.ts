@@ -1,9 +1,4 @@
-const STORAGE_KEY = 'simcointel-company-data';
 const PAIRING_KEY = 'simcointel-pairing-code';
-const REQUEST_EVENT = 'simcointel:data-request';
-const RESPONSE_EVENT = 'simcointel:data-response';
-const PING_EVENT = 'simcointel:ping';
-const PONG_EVENT = 'simcointel:pong';
 const TIMEOUT_MS = 2000;
 
 export interface ExtensionCompanyData {
@@ -18,38 +13,40 @@ export interface ExtensionCompanyData {
   [key: string]: unknown;
 }
 
-function dispatchCustomEvent(name: string, detail?: unknown): void {
-  window.dispatchEvent(new CustomEvent(name, { detail }));
-}
-
-function waitForResponse<T>(eventName: string, timeoutMs: number): Promise<T> {
+function waitForPostMessage(timeoutMs: number): Promise<{ companyData: ExtensionCompanyData | null; pairingCode: string | null }> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      window.removeEventListener(eventName, handler);
-      reject(new Error(`Timeout waiting for ${eventName}`));
+      window.removeEventListener('message', handler);
+      reject(new Error('Timeout waiting for extension response'));
     }, timeoutMs);
 
-    function handler(e: Event) {
+    function handler(e: MessageEvent) {
+      if (e.data?.type !== 'simcointel:data-response') return;
+      if (e.data?.source !== 'simcointel-extension') return;
       clearTimeout(timer);
-      window.removeEventListener(eventName, handler);
-      resolve((e as CustomEvent<T>).detail);
+      window.removeEventListener('message', handler);
+      resolve({
+        companyData: e.data?.detail?.companyData ?? null,
+        pairingCode: e.data?.detail?.pairingCode ?? null,
+      });
     }
 
-    window.addEventListener(eventName, handler);
+    window.addEventListener('message', handler);
   });
 }
 
-export async function requestExtensionData(): Promise<ExtensionCompanyData> {
-  const responsePromise = waitForResponse<ExtensionCompanyData>(RESPONSE_EVENT, TIMEOUT_MS);
-  dispatchCustomEvent(REQUEST_EVENT);
-  return responsePromise;
+export async function requestExtensionData(): Promise<ExtensionCompanyData | null> {
+  const responsePromise = waitForPostMessage(TIMEOUT_MS);
+  window.postMessage({ type: 'simcointel:data-request', source: 'simcointel-web' }, '*');
+  const response = await responsePromise;
+  return response.companyData;
 }
 
 export async function isExtensionAvailable(): Promise<boolean> {
   try {
-    const pongPromise = waitForResponse<unknown>(PONG_EVENT, 500);
-    dispatchCustomEvent(PING_EVENT);
-    await pongPromise;
+    const responsePromise = waitForPostMessage(500);
+    window.postMessage({ type: 'simcointel:data-request', source: 'simcointel-web' }, '*');
+    await responsePromise;
     return true;
   } catch {
     return false;

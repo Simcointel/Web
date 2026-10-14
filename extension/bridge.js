@@ -33,11 +33,20 @@
       el = document.createElement('div');
       el.id = 'simcointel-extension-data';
       el.style.display = 'none';
-      el.setAttribute('data-simcointel-extension', chrome.runtime.id);
+      el.setAttribute('data-extension-id', chrome.runtime.id);
       document.documentElement.appendChild(el);
     }
     el.textContent = JSON.stringify(data);
     return el;
+  }
+
+  function notifyPage(data) {
+    window.postMessage({
+      type: 'simcointel:data-response',
+      detail: data,
+      source: 'simcointel-extension',
+      extensionId: chrome.runtime.id,
+    }, '*');
   }
 
   async function refreshAndPublish() {
@@ -59,45 +68,18 @@
   }
 
   async function handleDataRequest(event) {
-    log('Data request received from web page');
+    if (event.data?.type !== 'simcointel:data-request') return;
+    log('Data request received from web page via postMessage');
     const { companyData, pairingCode } = await getStorageData();
-    const response = {
+    notifyPage({
       companyData,
       pairingCode,
       extensionId: chrome.runtime.id,
       timestamp: Date.now(),
-    };
-
-    const responseEvent = new CustomEvent('simcointel:data-response', {
-      detail: response,
-      bubbles: true,
-      composed: true,
     });
-    event.target.dispatchEvent(responseEvent);
   }
 
-  // Web page can verify extension is installed via runtime.sendMessage
-  chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
-    log('External message received: ' + message?.type);
-    if (message?.type === 'simcointel:ping') {
-      sendResponse({ installed: true, id: chrome.runtime.id });
-      return false;
-    }
-    if (message?.type === 'simcointel:get-company-data') {
-      getStorageData().then(({ companyData, pairingCode }) => {
-        sendResponse({
-          companyData,
-          pairingCode,
-          extensionId: chrome.runtime.id,
-          timestamp: Date.now(),
-        });
-      });
-      return true; // async response
-    }
-    return false;
-  });
-
-  document.addEventListener('simcointel:data-request', handleDataRequest);
+  window.addEventListener('message', handleDataRequest);
 
   // Initial publish and periodic refresh
   refreshAndPublish();

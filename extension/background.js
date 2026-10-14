@@ -14,7 +14,11 @@ async function refreshData() {
   }
 }
 
-setInterval(refreshData, 5 * 60 * 1000);
+chrome.alarms.create('simcointel-refresh', { periodInMinutes: 5 });
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'simcointel-refresh') refreshData();
+});
 
 chrome.runtime.onInstalled.addListener(() => {
   refreshData();
