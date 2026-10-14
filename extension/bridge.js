@@ -1,4 +1,4 @@
-/* Bridge content script — injected into simcointel.github.io/web */
+/* Bridge content script — injected into simcointel.github.io/Web */
 /* Reads chrome.storage.local and exposes data to the web page via DOM + CustomEvents */
 
 (function() {

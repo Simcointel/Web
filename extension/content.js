@@ -31,7 +31,7 @@
       <div style="margin-top:6px;font-size:10px;color:#64748b;text-align:right">Click to open dashboard</div>
     `;
     div.addEventListener('click', () => {
-      window.open('https://simcointel.github.io/web', '_blank');
+      window.open('https://simcointel.github.io/Web', '_blank');
     });
     document.body.appendChild(div);
     return div;

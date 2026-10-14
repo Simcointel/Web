@@ -6,13 +6,13 @@
   "permissions": ["storage", "alarms"],
   "host_permissions": [
     "https://raw.githubusercontent.com/SimcoIntel/Data/*",
-    "https://simcointel.github.io/web",
-    "https://simcointel.github.io/web/*"
+    "https://simcointel.github.io/Web",
+    "https://simcointel.github.io/Web/*"
   ],
   "externally_connectable": {
     "matches": [
-      "https://simcointel.github.io/web",
-      "https://simcointel.github.io/web/*"
+      "https://simcointel.github.io/Web",
+      "https://simcointel.github.io/Web/*"
     ]
   },
   "action": {
@@ -47,8 +47,8 @@
     },
     {
       "matches": [
-        "https://simcointel.github.io/web",
-        "https://simcointel.github.io/web/*"
+        "https://simcointel.github.io/Web",
+        "https://simcointel.github.io/Web/*"
       ],
       "js": [
         "bridge.js"
