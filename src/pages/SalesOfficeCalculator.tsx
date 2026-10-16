@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { PageHeader } from "../components/ui/Common";
 import { usePageTitleKey } from "../hooks/usePageTitle";
 import { fmtCurrency, fmtPct } from "../utils/formatters";
-import { Calculator, Plus, Trash2, Copy, ArrowLeftRight } from "lucide-react";
+import { Calculator, Plus, Trash2, Copy, ArrowLeftRight, ChevronDown, ChevronUp, TrendingUp, TrendingDown } from "lucide-react";
 
 interface OrderItem {
   id: number;
@@ -55,6 +55,255 @@ function calcContract(contract: Contract) {
   const marginPct = totalWithBonus > 0 ? (netProfit / totalWithBonus) * 100 : 0;
   const totalQty = contract.items.reduce((s, i) => s + i.quantity, 0);
   return { totalRevenue, totalSourcing, bonusAmount, totalWithBonus, overheadCost, totalCosts, netProfit, marginPct, totalQty };
+}
+
+function NumberInput({ value, onChange, min = 0, max, step = 1, prefix = "", className = "" }: {
+  value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number; prefix?: string; className?: string;
+}) {
+  return (
+    <div className={`relative ${className}`}>
+      {prefix && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-surface-400">{prefix}</span>}
+      <input
+        type="number"
+        value={value}
+        min={min}
+        step={step}
+        onChange={e => onChange(Math.min(max ?? Infinity, Math.max(min, Number(e.target.value))))}
+        className={`w-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 rounded-lg py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all ${prefix ? 'pl-7 pr-3' : 'px-3'}`}
+      />
+    </div>
+  );
+}
+
+function ContractPanel({ contract, result, isBest, onUpdate, onUpdateItem, onAddItem, onRemoveItem, onRemove, onDuplicate }: {
+  contract: Contract;
+  result: ReturnType<typeof calcContract>;
+  isBest: boolean;
+  onUpdate: (field: keyof Contract, value: string | number) => void;
+  onUpdateItem: (itemId: number, field: keyof OrderItem, value: string | number) => void;
+  onAddItem: () => void;
+  onRemoveItem: (itemId: number) => void;
+  onRemove: () => void;
+  onDuplicate: () => void;
+}) {
+  const [expanded, setExpanded] = useState(true);
+
+  return (
+    <div className={`card overflow-hidden transition-all ${isBest ? 'ring-2 ring-emerald-500/50' : ''}`}>
+      {/* Contract Header */}
+      <div className="flex items-center justify-between px-5 py-4 bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800">
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            value={contract.name}
+            onChange={e => onUpdate('name', e.target.value)}
+            placeholder="Contract name"
+            className="text-sm font-bold bg-transparent border-none outline-none text-surface-800 dark:text-surface-200 placeholder:text-surface-400 w-40"
+          />
+          {isBest && (
+            <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full text-[10px] font-bold uppercase tracking-wider">
+              Best
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={onDuplicate} className="p-2 text-surface-400 hover:text-brand-600 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg transition-colors" title="Duplicate">
+            <Copy size={16} />
+          </button>
+          <button onClick={() => setExpanded(!expanded)} className="p-2 text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg transition-colors">
+            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+          <button onClick={onRemove} className="p-2 text-surface-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors" title="Remove">
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="p-5 space-y-6">
+          {/* Items Table */}
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-surface-500 mb-3">Order Items</h3>
+            <div className="space-y-2">
+              {/* Header */}
+              <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-surface-50 dark:bg-surface-900 rounded-lg text-[10px] font-bold uppercase tracking-wider text-surface-400">
+                <div className="col-span-4">Item</div>
+                <div className="col-span-1 text-center">Qty</div>
+                <div className="col-span-2 text-center">Quality</div>
+                <div className="col-span-2 text-right">Unit Price</div>
+                <div className="col-span-2 text-right">Sourcing</div>
+                <div className="col-span-1"></div>
+              </div>
+              {/* Rows */}
+              {contract.items.map(item => (
+                <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
+                  <div className="col-span-4">
+                    <input
+                      type="text"
+                      value={item.name}
+                      onChange={e => onUpdateItem(item.id, 'name', e.target.value)}
+                      placeholder="Item name"
+                      className="w-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 rounded-lg px-3 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <input
+                      type="number"
+                      min={1}
+                      value={item.quantity}
+                      onChange={e => onUpdateItem(item.id, 'quantity', Math.max(1, Number(e.target.value)))}
+                      className="w-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 rounded-lg px-2 py-2.5 text-sm text-center font-semibold outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <select
+                      value={item.quality}
+                      onChange={e => onUpdateItem(item.id, 'quality', Number(e.target.value))}
+                      className="w-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 rounded-lg px-2 py-2.5 text-sm text-center font-semibold outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+                    >
+                      {QUALITIES.map(q => <option key={q} value={q}>Q{q}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <NumberInput value={item.unitPrice} onChange={v => onUpdateItem(item.id, 'unitPrice', v)} step={0.01} prefix="$" />
+                  </div>
+                  <div className="col-span-2">
+                    <NumberInput value={item.sourcingCost} onChange={v => onUpdateItem(item.id, 'sourcingCost', v)} step={0.01} prefix="$" />
+                  </div>
+                  <div className="col-span-1 flex justify-end">
+                    <button onClick={() => onRemoveItem(item.id)} className="p-2 text-surface-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button onClick={onAddItem} className="mt-3 flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors">
+              <Plus size={16} /> Add Item
+            </button>
+          </div>
+
+          {/* Terms */}
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-surface-500 mb-3">Contract Terms</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-surface-500 mb-1.5">Quality Bonus %</label>
+                <NumberInput value={contract.qualityBonus} onChange={v => onUpdate('qualityBonus', v)} min={0} max={100} step={0.01} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-surface-500 mb-1.5">Wages</label>
+                <NumberInput value={contract.wages} onChange={v => onUpdate('wages', v)} step={1} prefix="$" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-surface-500 mb-1.5">Admin Overhead %</label>
+                <NumberInput value={contract.adminOverhead} onChange={v => onUpdate('adminOverhead', v)} min={0} max={100} step={0.01} />
+              </div>
+            </div>
+          </div>
+
+          {/* Results */}
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-surface-500 mb-3">Financial Summary</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">Revenue</div>
+                <div className="text-lg font-black text-emerald-700 dark:text-emerald-300">{fmtCurrency(result.totalRevenue)}</div>
+              </div>
+              <div className="bg-violet-50 dark:bg-violet-900/20 rounded-xl p-4">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400 mb-1">Bonus</div>
+                <div className="text-lg font-black text-violet-700 dark:text-violet-300">+{fmtCurrency(result.bonusAmount)}</div>
+              </div>
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1">Total</div>
+                <div className="text-lg font-black text-blue-700 dark:text-blue-300">{fmtCurrency(result.totalWithBonus)}</div>
+              </div>
+              <div className="bg-rose-50 dark:bg-rose-900/20 rounded-xl p-4">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-1">Costs</div>
+                <div className="text-lg font-black text-rose-700 dark:text-rose-300">-{fmtCurrency(result.totalCosts)}</div>
+              </div>
+            </div>
+
+            {/* Net Profit */}
+            <div className={`mt-3 rounded-xl p-5 ${result.netProfit >= 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-rose-500 to-rose-600'}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-white/70 mb-1">Net Profit</div>
+                  <div className="text-3xl font-black text-white">{fmtCurrency(result.netProfit)}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-white/70 mb-1">Margin</div>
+                  <div className="text-2xl font-black text-white">{fmtPct(result.marginPct)}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Cost Breakdown */}
+            <div className="mt-3 rounded-xl border border-surface-200 dark:border-surface-700 overflow-hidden">
+              <div className="px-4 py-3 bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800">
+                <span className="text-xs font-bold uppercase tracking-wider text-surface-500">Cost Breakdown</span>
+              </div>
+              <div className="divide-y divide-surface-100 dark:divide-surface-800">
+                <div className="flex justify-between px-4 py-3">
+                  <span className="text-sm text-surface-600 dark:text-surface-400">Base Revenue</span>
+                  <span className="text-sm font-bold text-emerald-600">+{fmtCurrency(result.totalRevenue)}</span>
+                </div>
+                <div className="flex justify-between px-4 py-3">
+                  <span className="text-sm text-surface-600 dark:text-surface-400">Quality Bonus</span>
+                  <span className="text-sm font-bold text-violet-600">+{fmtCurrency(result.bonusAmount)}</span>
+                </div>
+                <div className="flex justify-between px-4 py-3">
+                  <span className="text-sm text-surface-600 dark:text-surface-400">Sourcing Cost</span>
+                  <span className="text-sm font-bold text-rose-500">-{fmtCurrency(result.totalSourcing)}</span>
+                </div>
+                <div className="flex justify-between px-4 py-3">
+                  <span className="text-sm text-surface-600 dark:text-surface-400">Wages</span>
+                  <span className="text-sm font-bold text-rose-500">-{fmtCurrency(contract.wages)}</span>
+                </div>
+                <div className="flex justify-between px-4 py-3">
+                  <span className="text-sm text-surface-600 dark:text-surface-400">Admin Overhead ({fmtPct(contract.adminOverhead)})</span>
+                  <span className="text-sm font-bold text-rose-500">-{fmtCurrency(result.overheadCost)}</span>
+                </div>
+                <div className="flex justify-between px-4 py-3 bg-surface-50 dark:bg-surface-900">
+                  <span className="text-sm font-bold uppercase text-surface-700 dark:text-surface-300">Net Profit</span>
+                  <span className={`text-sm font-black ${result.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmtCurrency(result.netProfit)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Per-Item Profit */}
+            <div className="mt-3 rounded-xl border border-surface-200 dark:border-surface-700 overflow-hidden">
+              <div className="px-4 py-3 bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800">
+                <span className="text-xs font-bold uppercase tracking-wider text-surface-500">Per-Item Profit</span>
+              </div>
+              <div className="divide-y divide-surface-100 dark:divide-surface-800">
+                {contract.items.filter(i => i.name).map(item => {
+                  const itemRevenue = item.quantity * item.unitPrice;
+                  const itemBonus = item.quality >= 2 ? itemRevenue * (contract.qualityBonus / 100) : 0;
+                  const itemSourcing = item.quantity * item.sourcingCost;
+                  const itemWages = contract.wages / contract.items.reduce((s, i) => s + i.quantity, 0) * item.quantity;
+                  const itemOverhead = itemWages * (contract.adminOverhead / 100);
+                  const itemProfit = itemRevenue + itemBonus - itemSourcing - itemWages - itemOverhead;
+                  return (
+                    <div key={item.id} className="flex justify-between items-center px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-surface-700 dark:text-surface-300">{item.name}</span>
+                        <span className="px-1.5 py-0.5 bg-surface-100 dark:bg-surface-800 rounded text-[10px] font-bold text-surface-500">Q{item.quality}</span>
+                        {item.quality < 2 && (
+                          <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded text-[10px] font-bold text-amber-600">No bonus</span>
+                        )}
+                      </div>
+                      <span className={`text-sm font-bold ${itemProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmtCurrency(itemProfit)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function SalesOfficeCalculatorPage() {
@@ -110,7 +359,7 @@ export function SalesOfficeCalculatorPage() {
   const bestContract = results.length > 1 ? results.reduce((best, r) => r.result.netProfit > best.result.netProfit ? r : best) : null;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-5 animate-slide-up">
+    <div className="max-w-4xl mx-auto space-y-5 animate-slide-up">
       <PageHeader
         title="Sales Office Calculator"
         subtitle="Contract profitability analysis with quality bonus and sourcing costs"
@@ -120,219 +369,103 @@ export function SalesOfficeCalculatorPage() {
       />
 
       <div className="flex items-center gap-3">
-        <button onClick={addContract} className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-xs font-bold rounded-lg hover:bg-brand-700 transition-colors">
-          <Plus size={14} /> Add Contract
+        <button onClick={addContract} className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-bold rounded-xl hover:bg-brand-700 transition-colors shadow-sm">
+          <Plus size={16} /> Add Contract
         </button>
         {contracts.length > 1 && (
-          <button onClick={() => setCompareMode(!compareMode)} className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-colors ${compareMode ? 'bg-violet-600 text-white' : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200'}`}>
-            <ArrowLeftRight size={14} /> {compareMode ? 'Hide Comparison' : 'Compare Contracts'}
+          <button onClick={() => setCompareMode(!compareMode)} className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-xl transition-colors ${compareMode ? 'bg-violet-600 text-white shadow-sm' : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200'}`}>
+            <ArrowLeftRight size={16} /> {compareMode ? 'Hide Comparison' : 'Compare Contracts'}
           </button>
         )}
       </div>
 
       {compareMode && contracts.length > 1 && (
-        <div className="card p-5 overflow-x-auto">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400 mb-4">Contract Comparison</h2>
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="text-[9px] font-bold uppercase text-surface-400 tracking-wider border-b border-surface-200 dark:border-surface-700">
-                <th className="text-left py-2 pr-4">Metric</th>
-                {results.map(r => (
-                  <th key={r.contract.id} className="text-right py-2 px-3">{r.contract.name || `Contract ${r.contract.id}`}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
-              <tr>
-                <td className="py-2 pr-4 font-bold text-surface-500">Revenue</td>
-                {results.map(r => <td key={r.contract.id} className="text-right py-2 px-3 font-bold text-emerald-600">{fmtCurrency(r.result.totalRevenue)}</td>)}
-              </tr>
-              <tr>
-                <td className="py-2 pr-4 font-bold text-surface-500">Bonus</td>
-                {results.map(r => <td key={r.contract.id} className="text-right py-2 px-3 font-bold text-violet-600">+{fmtCurrency(r.result.bonusAmount)}</td>)}
-              </tr>
-              <tr>
-                <td className="py-2 pr-4 font-bold text-surface-500">Total w/ Bonus</td>
-                {results.map(r => <td key={r.contract.id} className="text-right py-2 px-3 font-bold">{fmtCurrency(r.result.totalWithBonus)}</td>)}
-              </tr>
-              <tr>
-                <td className="py-2 pr-4 font-bold text-surface-500">Sourcing Cost</td>
-                {results.map(r => <td key={r.contract.id} className="text-right py-2 px-3 font-bold text-rose-500">-{fmtCurrency(r.result.totalSourcing)}</td>)}
-              </tr>
-              <tr>
-                <td className="py-2 pr-4 font-bold text-surface-500">Wages</td>
-                {results.map(r => <td key={r.contract.id} className="text-right py-2 px-3 font-bold text-rose-500">-{fmtCurrency(r.contract.wages)}</td>)}
-              </tr>
-              <tr>
-                <td className="py-2 pr-4 font-bold text-surface-500">Overhead</td>
-                {results.map(r => <td key={r.contract.id} className="text-right py-2 px-3 font-bold text-rose-500">-{fmtCurrency(r.result.overheadCost)}</td>)}
-              </tr>
-              <tr className="border-t-2 border-surface-200 dark:border-surface-700">
-                <td className="py-3 pr-4 font-black uppercase text-surface-600 dark:text-surface-300">Net Profit</td>
-                {results.map(r => (
-                  <td key={r.contract.id} className={`text-right py-3 px-3 text-lg font-black ${r.result.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'} ${bestContract?.contract.id === r.contract.id ? 'bg-emerald-50 dark:bg-emerald-900/20 rounded' : ''}`}>
-                    {fmtCurrency(r.result.netProfit)}
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <td className="py-2 pr-4 font-bold text-surface-500">Margin</td>
-                {results.map(r => <td key={r.contract.id} className="text-right py-2 px-3 font-bold">{fmtPct(r.result.marginPct)}</td>)}
-              </tr>
-              <tr>
-                <td className="py-2 pr-4 font-bold text-surface-500">Items</td>
-                {results.map(r => <td key={r.contract.id} className="text-right py-2 px-3">{r.result.totalQty}</td>)}
-              </tr>
-            </tbody>
-          </table>
+        <div className="card overflow-hidden">
+          <div className="px-5 py-4 bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-surface-500">Contract Comparison</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-surface-200 dark:border-surface-700">
+                  <th className="text-left py-3 px-5 text-xs font-bold uppercase tracking-wider text-surface-400">Metric</th>
+                  {results.map(r => (
+                    <th key={r.contract.id} className="text-right py-3 px-4 text-xs font-bold uppercase tracking-wider text-surface-400">
+                      {r.contract.name || `Contract ${r.contract.id}`}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
+                <tr>
+                  <td className="py-3 px-5 text-sm font-medium text-surface-500">Revenue</td>
+                  {results.map(r => <td key={r.contract.id} className="text-right py-3 px-4 text-sm font-bold text-emerald-600">{fmtCurrency(r.result.totalRevenue)}</td>)}
+                </tr>
+                <tr>
+                  <td className="py-3 px-5 text-sm font-medium text-surface-500">Bonus</td>
+                  {results.map(r => <td key={r.contract.id} className="text-right py-3 px-4 text-sm font-bold text-violet-600">+{fmtCurrency(r.result.bonusAmount)}</td>)}
+                </tr>
+                <tr>
+                  <td className="py-3 px-5 text-sm font-medium text-surface-500">Total w/ Bonus</td>
+                  {results.map(r => <td key={r.contract.id} className="text-right py-3 px-4 text-sm font-bold">{fmtCurrency(r.result.totalWithBonus)}</td>)}
+                </tr>
+                <tr>
+                  <td className="py-3 px-5 text-sm font-medium text-surface-500">Sourcing Cost</td>
+                  {results.map(r => <td key={r.contract.id} className="text-right py-3 px-4 text-sm font-bold text-rose-500">-{fmtCurrency(r.result.totalSourcing)}</td>)}
+                </tr>
+                <tr>
+                  <td className="py-3 px-5 text-sm font-medium text-surface-500">Wages</td>
+                  {results.map(r => <td key={r.contract.id} className="text-right py-3 px-4 text-sm font-bold text-rose-500">-{fmtCurrency(r.contract.wages)}</td>)}
+                </tr>
+                <tr>
+                  <td className="py-3 px-5 text-sm font-medium text-surface-500">Overhead</td>
+                  {results.map(r => <td key={r.contract.id} className="text-right py-3 px-4 text-sm font-bold text-rose-500">-{fmtCurrency(r.result.overheadCost)}</td>)}
+                </tr>
+                <tr className="bg-surface-50 dark:bg-surface-900">
+                  <td className="py-4 px-5 text-sm font-black uppercase text-surface-700 dark:text-surface-300">Net Profit</td>
+                  {results.map(r => (
+                    <td key={r.contract.id} className={`text-right py-4 px-4 text-lg font-black ${r.result.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'} ${bestContract?.contract.id === r.contract.id ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}`}>
+                      {fmtCurrency(r.result.netProfit)}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className="py-3 px-5 text-sm font-medium text-surface-500">Margin</td>
+                  {results.map(r => <td key={r.contract.id} className="text-right py-3 px-4 text-sm font-bold">{fmtPct(r.result.marginPct)}</td>)}
+                </tr>
+                <tr>
+                  <td className="py-3 px-5 text-sm font-medium text-surface-500">Items</td>
+                  {results.map(r => <td key={r.contract.id} className="text-right py-3 px-4 text-sm">{r.result.totalQty}</td>)}
+                </tr>
+              </tbody>
+            </table>
+          </div>
           {bestContract && (
-            <p className="text-xs text-emerald-600 font-bold mt-3">
-              Best: {bestContract.contract.name || `Contract ${bestContract.contract.id}`} — {fmtCurrency(bestContract.result.netProfit)} profit
-            </p>
+            <div className="px-5 py-3 bg-emerald-50 dark:bg-emerald-900/20 border-t border-emerald-100 dark:border-emerald-800">
+              <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                Best: {bestContract.contract.name || `Contract ${bestContract.contract.id}`} — {fmtCurrency(bestContract.result.netProfit)} profit
+              </p>
+            </div>
           )}
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="space-y-5">
         {contracts.map(contract => {
           const r = results.find(x => x.contract.id === contract.id)!;
           return (
-            <div key={contract.id} className="space-y-4">
-              <div className="card p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <input
-                    type="text"
-                    value={contract.name}
-                    onChange={e => updateContract(contract.id, 'name', e.target.value)}
-                    placeholder="Contract name"
-                    className="text-xs font-bold border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-1.5 rounded-lg outline-none focus:ring-1 focus:ring-brand-500/20 w-40"
-                  />
-                  <div className="flex gap-1">
-                    <button onClick={() => duplicateContract(contract.id)} className="p-1.5 text-surface-400 hover:text-brand-600 hover:bg-surface-50 dark:hover:bg-surface-800 rounded transition-colors" title="Duplicate">
-                      <Copy size={14} />
-                    </button>
-                    {contracts.length > 1 && (
-                      <button onClick={() => removeContract(contract.id)} className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded transition-colors" title="Remove">
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="grid grid-cols-12 gap-2 text-[9px] font-bold uppercase text-surface-400 tracking-wider">
-                    <div className="col-span-3">Item</div>
-                    <div className="col-span-1 text-right">Qty</div>
-                    <div className="col-span-2 text-center">Quality</div>
-                    <div className="col-span-3 text-right">Unit Price</div>
-                    <div className="col-span-3 text-right">Sourcing</div>
-                  </div>
-                  {contract.items.map(item => (
-                    <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
-                      <div className="col-span-3">
-                        <input type="text" value={item.name} onChange={e => updateItem(contract.id, item.id, 'name', e.target.value)} placeholder="Item name"
-                          className="w-full text-xs border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1.5 rounded outline-none focus:ring-1 focus:ring-brand-500/20" />
-                      </div>
-                      <div className="col-span-1">
-                        <input type="number" min={1} value={item.quantity} onChange={e => updateItem(contract.id, item.id, 'quantity', Math.max(1, Number(e.target.value)))}
-                          className="w-full text-xs text-right border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1.5 rounded outline-none focus:ring-1 focus:ring-brand-500/20" />
-                      </div>
-                      <div className="col-span-2">
-                        <select value={item.quality} onChange={e => updateItem(contract.id, item.id, 'quality', Number(e.target.value))}
-                          className="w-full text-xs text-center border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-1 py-1.5 rounded outline-none focus:ring-1 focus:ring-brand-500/20">
-                          {QUALITIES.map(q => <option key={q} value={q}>Q{q}</option>)}
-                        </select>
-                      </div>
-                      <div className="col-span-3">
-                        <input type="number" min={0} step="0.01" value={item.unitPrice} onChange={e => updateItem(contract.id, item.id, 'unitPrice', Math.max(0, Number(e.target.value)))}
-                          className="w-full text-xs text-right border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1.5 rounded outline-none focus:ring-1 focus:ring-brand-500/20" />
-                      </div>
-                      <div className="col-span-3 flex gap-1">
-                        <input type="number" min={0} step="0.01" value={item.sourcingCost} onChange={e => updateItem(contract.id, item.id, 'sourcingCost', Math.max(0, Number(e.target.value)))}
-                          placeholder="Cost" className="w-full text-xs text-right border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1.5 rounded outline-none focus:ring-1 focus:ring-brand-500/20" />
-                        <button onClick={() => removeItem(contract.id, item.id)} className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded transition-colors">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <button onClick={() => addItem(contract.id)} className="flex items-center gap-2 text-xs font-bold text-brand-600 hover:text-brand-700 transition-colors">
-                  <Plus size={14} /> Add Item
-                </button>
-              </div>
-
-              <div className="card p-5 space-y-4">
-                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">Terms</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Quality Bonus %</label>
-                    <input type="number" min={0} max={100} step="0.01" value={contract.qualityBonus}
-                      onChange={e => updateContract(contract.id, 'qualityBonus', Math.max(0, Math.min(100, Number(e.target.value))))} className="input" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Wages ($)</label>
-                    <input type="number" min={0} step="1" value={contract.wages}
-                      onChange={e => updateContract(contract.id, 'wages', Math.max(0, Number(e.target.value)))} className="input" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Admin Overhead %</label>
-                    <input type="number" min={0} max={100} step="0.01" value={contract.adminOverhead}
-                      onChange={e => updateContract(contract.id, 'adminOverhead', Math.max(0, Math.min(100, Number(e.target.value))))} className="input" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="card p-3 border-l-4 border-emerald-500">
-                  <span className="metric-label">Revenue</span>
-                  <span className="metric-value">{fmtCurrency(r.result.totalRevenue)}</span>
-                </div>
-                <div className="card p-3 border-l-4 border-violet-500">
-                  <span className="metric-label">Bonus ({fmtPct(contract.qualityBonus)})</span>
-                  <span className="metric-value text-violet-600">+{fmtCurrency(r.result.bonusAmount)}</span>
-                </div>
-                <div className="card p-3 border-l-4 border-blue-500">
-                  <span className="metric-label">Total w/ Bonus</span>
-                  <span className="metric-value">{fmtCurrency(r.result.totalWithBonus)}</span>
-                </div>
-                <div className="card p-3 border-l-4 border-rose-500">
-                  <span className="metric-label">Total Costs</span>
-                  <span className="metric-value text-rose-600">-{fmtCurrency(r.result.totalCosts)}</span>
-                </div>
-              </div>
-
-              <div className={`card p-5 border-l-4 ${r.result.netProfit >= 0 ? 'border-l-emerald-500' : 'border-l-rose-500'}`}>
-                <span className="metric-label">Net Profit</span>
-                <span className={`text-2xl font-black ${r.result.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {fmtCurrency(r.result.netProfit)}
-                </span>
-                <span className={`text-sm font-bold ${r.result.marginPct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {fmtPct(r.result.marginPct)} margin
-                </span>
-              </div>
-
-              <div className="card p-4">
-                <h3 className="text-[10px] font-black uppercase tracking-wider text-surface-500 mb-3">Per-Item Profit</h3>
-                <div className="space-y-2">
-                  {contract.items.filter(i => i.name).map(item => {
-                    const itemRevenue = item.quantity * item.unitPrice;
-                    const itemBonus = item.quality >= 2 ? itemRevenue * (contract.qualityBonus / 100) : 0;
-                    const itemSourcing = item.quantity * item.sourcingCost;
-                    const itemWages = contract.wages / contract.items.reduce((s, i) => s + i.quantity, 0) * item.quantity;
-                    const itemOverhead = itemWages * (contract.adminOverhead / 100);
-                    const itemProfit = itemRevenue + itemBonus - itemSourcing - itemWages - itemOverhead;
-                    return (
-                      <div key={item.id} className="flex justify-between items-center text-xs">
-                        <span className="font-bold text-surface-600 dark:text-surface-400 truncate mr-2">{item.name} <span className="text-surface-400">Q{item.quality}</span></span>
-                        <span className={`font-bold ${itemProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmtCurrency(itemProfit)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+            <ContractPanel
+              key={contract.id}
+              contract={contract}
+              result={r.result}
+              isBest={bestContract?.contract.id === contract.id}
+              onUpdate={(field, value) => updateContract(contract.id, field, value)}
+              onUpdateItem={(itemId, field, value) => updateItem(contract.id, itemId, field, value)}
+              onAddItem={() => addItem(contract.id)}
+              onRemoveItem={(itemId) => removeItem(contract.id, itemId)}
+              onRemove={() => removeContract(contract.id)}
+              onDuplicate={() => duplicateContract(contract.id)}
+            />
           );
         })}
       </div>
