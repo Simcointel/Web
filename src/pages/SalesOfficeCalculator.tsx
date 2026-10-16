@@ -10,11 +10,12 @@ interface OrderItem {
   quantity: number;
   unitPrice: number;
   sourcingCost: number;
+  quality: number;
 }
 
 const DEFAULT_ITEMS: OrderItem[] = [
-  { id: 1, name: "Sub-orbital rocket", quantity: 3, unitPrice: 109283, sourcingCost: 0 },
-  { id: 2, name: "Single engine plane", quantity: 4, unitPrice: 37888, sourcingCost: 0 },
+  { id: 1, name: "Sub-orbital rocket", quantity: 3, unitPrice: 109283, sourcingCost: 0, quality: 2 },
+  { id: 2, name: "Single engine plane", quantity: 4, unitPrice: 37888, sourcingCost: 0, quality: 2 },
 ];
 
 export function SalesOfficeCalculatorPage() {
@@ -29,19 +30,23 @@ export function SalesOfficeCalculatorPage() {
   const result = useMemo(() => {
     const totalRevenue = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     const totalSourcing = items.reduce((sum, item) => sum + item.quantity * item.sourcingCost, 0);
-    const bonusAmount = totalRevenue * (qualityBonus / 100);
+    // Quality bonus is only applied to items at or above quality 2 (meets buyer standard)
+    const bonusAmount = items
+      .filter(item => item.quality >= 2)
+      .reduce((sum, item) => sum + item.quantity * item.unitPrice * (qualityBonus / 100), 0);
     const totalWithBonus = totalRevenue + bonusAmount;
     const overheadCost = wages * (adminOverhead / 100);
     const totalCosts = totalSourcing + wages + overheadCost;
     const netProfit = totalWithBonus - totalCosts;
     const marginPct = totalWithBonus > 0 ? (netProfit / totalWithBonus) * 100 : 0;
-    const profitPerItem = items.length > 0 ? netProfit / items.reduce((s, i) => s + i.quantity, 0) : 0;
+    const totalQty = items.reduce((s, i) => s + i.quantity, 0);
+    const profitPerItem = totalQty > 0 ? netProfit / totalQty : 0;
 
     return { totalRevenue, totalSourcing, bonusAmount, totalWithBonus, overheadCost, totalCosts, netProfit, marginPct, profitPerItem };
   }, [items, qualityBonus, wages, adminOverhead]);
 
   const addItem = () => {
-    setItems([...items, { id: Date.now(), name: "", quantity: 1, unitPrice: 0, sourcingCost: 0 }]);
+    setItems([...items, { id: Date.now(), name: "", quantity: 1, unitPrice: 0, sourcingCost: 0, quality: 2 }]);
   };
 
   const removeItem = (id: number) => {
@@ -78,15 +83,16 @@ export function SalesOfficeCalculatorPage() {
 
             <div className="space-y-2">
               <div className="grid grid-cols-12 gap-2 text-[9px] font-bold uppercase text-surface-400 tracking-wider">
-                <div className="col-span-4">Item</div>
-                <div className="col-span-2 text-right">Qty</div>
+                <div className="col-span-3">Item</div>
+                <div className="col-span-1 text-right">Qty</div>
+                <div className="col-span-2 text-center">Quality</div>
                 <div className="col-span-3 text-right">Unit Price</div>
                 <div className="col-span-3 text-right">Sourcing Cost</div>
               </div>
 
               {items.map(item => (
                 <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
-                  <div className="col-span-4">
+                  <div className="col-span-3">
                     <input
                       type="text"
                       value={item.name}
@@ -95,7 +101,7 @@ export function SalesOfficeCalculatorPage() {
                       className="w-full text-xs border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1.5 rounded outline-none focus:ring-1 focus:ring-brand-500/20"
                     />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1">
                     <input
                       type="number"
                       min={1}
@@ -103,6 +109,15 @@ export function SalesOfficeCalculatorPage() {
                       onChange={e => updateItem(item.id, 'quantity', Math.max(1, Number(e.target.value)))}
                       className="w-full text-xs text-right border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-2 py-1.5 rounded outline-none focus:ring-1 focus:ring-brand-500/20"
                     />
+                  </div>
+                  <div className="col-span-2">
+                    <select
+                      value={item.quality}
+                      onChange={e => updateItem(item.id, 'quality', Number(e.target.value))}
+                      className="w-full text-xs text-center border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-1 py-1.5 rounded outline-none focus:ring-1 focus:ring-brand-500/20"
+                    >
+                      {[0,1,2,3,4,5].map(q => <option key={q} value={q}>Q{q}</option>)}
+                    </select>
                   </div>
                   <div className="col-span-3">
                     <input
@@ -248,14 +263,14 @@ export function SalesOfficeCalculatorPage() {
             <div className="space-y-2">
               {items.filter(i => i.name).map(item => {
                 const itemRevenue = item.quantity * item.unitPrice;
-                const itemBonus = itemRevenue * (qualityBonus / 100);
+                const itemBonus = item.quality >= 2 ? itemRevenue * (qualityBonus / 100) : 0;
                 const itemSourcing = item.quantity * item.sourcingCost;
                 const itemWages = items.length > 0 ? wages / items.reduce((s, i) => s + i.quantity, 0) * item.quantity : 0;
                 const itemOverhead = itemWages * (adminOverhead / 100);
                 const itemProfit = itemRevenue + itemBonus - itemSourcing - itemWages - itemOverhead;
                 return (
                   <div key={item.id} className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-surface-600 dark:text-surface-400 truncate mr-2">{item.name}</span>
+                    <span className="font-bold text-surface-600 dark:text-surface-400 truncate mr-2">{item.name} <span className="text-surface-400">Q{item.quality}</span></span>
                     <span className={`font-bold ${itemProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {fmtCurrency(itemProfit)}
                     </span>
