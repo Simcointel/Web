@@ -42,11 +42,11 @@ function createContract(id: number, name = ""): Contract {
   };
 }
 
-// Quality bonus multiplier: Q0=0%, Q1=100% (base), Q2=125%, Q3=150%, Q4=175%...
-// Each quality level above Q1 adds 25% of the base bonus. Q0 gets nothing.
+// Quality bonus multiplier: Q0=0%, Q1=1x base, Q2=2x base, Q3=3x base, etc.
+// The base bonus % is multiplied by the quality level directly.
 const QUALITY_MULTIPLIER = (q: number) => {
   if (q <= 0) return 0;
-  return 1 + (q - 1) * 0.25;
+  return q;
 };
 
 function calcContract(contract: Contract) {
