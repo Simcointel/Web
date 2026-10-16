@@ -34,6 +34,7 @@ export const PAGE_TITLES = {
   about: 'About',
   xpCalculator: 'XP Calculator',
   extension: 'Browser Extension',
+  salesOffice: 'Sales Office Calculator',
   widgets: 'Widgets',
 } as const;
 

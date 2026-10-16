@@ -31,6 +31,7 @@ const navLinks = [
     { to: "/construction-calculator", label: "Construction", icon: <HardHat size={18} /> },
     { to: "/xp-calculator", label: "XP Calculator", icon: <Zap size={18} /> },
     { to: "/extension", label: "Extension", icon: <Chrome size={18} /> },
+    { to: "/sales-office", label: "Sales Office", icon: <Calculator size={18} /> },
   ]},
 ];
 

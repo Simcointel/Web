@@ -41,11 +41,10 @@
   }
 
   function notifyPage(data) {
-    document.dispatchEvent(new CustomEvent('simcointel:data-response', {
+    window.postMessage({
+      type: 'simcointel:data-response',
       detail: { ...data, source: 'simcointel-extension', extensionId: chrome.runtime.id },
-      bubbles: true,
-      composed: true,
-    }));
+    }, '*');
   }
 
   async function refreshAndPublish() {
@@ -67,8 +66,9 @@
   }
 
   function handleDataRequest(event) {
-    if (event.detail?.type !== 'simcointel:data-request') return;
-    log('Data request received from web page via DOM event');
+    if (event.data?.type !== 'simcointel:data-request') return;
+    if (event.data?.source !== 'simcointel-web') return;
+    log('Data request received from web page via postMessage');
     getStorageData().then(({ companyData, pairingCode }) => {
       notifyPage({
         companyData,
@@ -79,9 +79,7 @@
     });
   }
 
-  document.addEventListener('simcointel:data-request', handleDataRequest);
+  window.addEventListener('message', handleDataRequest);
 
-  // Initial publish and periodic refresh
   refreshAndPublish();
-  setInterval(refreshAndPublish, 5000);
 })();

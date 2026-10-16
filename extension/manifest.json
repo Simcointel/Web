@@ -9,12 +9,6 @@
     "https://simcointel.github.io/Web",
     "https://simcointel.github.io/Web/*"
   ],
-  "externally_connectable": {
-    "matches": [
-      "https://simcointel.github.io/Web",
-      "https://simcointel.github.io/Web/*"
-    ]
-  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
