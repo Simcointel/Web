@@ -45,9 +45,7 @@ function createContract(id: number, name = ""): Contract {
 function calcContract(contract: Contract) {
   const totalRevenue = contract.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const totalSourcing = contract.items.reduce((s, i) => s + i.quantity * i.sourcingCost, 0);
-  const bonusAmount = contract.items
-    .filter(i => i.quality >= 2)
-    .reduce((s, i) => s + i.quantity * i.unitPrice * (contract.qualityBonus / 100), 0);
+  const bonusAmount = totalRevenue * (contract.qualityBonus / 100);
   const totalWithBonus = totalRevenue + bonusAmount;
   const overheadCost = contract.wages * (contract.adminOverhead / 100);
   const totalCosts = totalSourcing + contract.wages + overheadCost;
@@ -279,7 +277,7 @@ function ContractPanel({ contract, result, isBest, onUpdate, onUpdateItem, onAdd
               <div className="divide-y divide-surface-100 dark:divide-surface-800">
                 {contract.items.filter(i => i.name).map(item => {
                   const itemRevenue = item.quantity * item.unitPrice;
-                  const itemBonus = item.quality >= 2 ? itemRevenue * (contract.qualityBonus / 100) : 0;
+                  const itemBonus = itemRevenue * (contract.qualityBonus / 100);
                   const itemSourcing = item.quantity * item.sourcingCost;
                   const itemProfit = itemRevenue + itemBonus - itemSourcing;
                   return (
@@ -287,9 +285,6 @@ function ContractPanel({ contract, result, isBest, onUpdate, onUpdateItem, onAdd
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold text-surface-700 dark:text-surface-300">{item.name}</span>
                         <span className="px-1.5 py-0.5 bg-surface-100 dark:bg-surface-800 rounded text-[10px] font-bold text-surface-500">Q{item.quality}</span>
-                        {item.quality < 2 && (
-                          <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded text-[10px] font-bold text-amber-600">No bonus</span>
-                        )}
                       </div>
                       <span className={`text-sm font-bold ${itemProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmtCurrency(itemProfit)}</span>
                     </div>
