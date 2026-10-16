@@ -25,7 +25,7 @@ interface Contract {
 const QUALITIES = Array.from({ length: 13 }, (_, i) => i);
 
 function createItem(id: number): OrderItem {
-  return { id, name: "", quantity: 1, unitPrice: 0, sourcingCost: 0, quality: 2 };
+  return { id, name: "", quantity: 1, unitPrice: 0, sourcingCost: 0, quality: 1 };
 }
 
 function createContract(id: number, name = ""): Contract {
@@ -33,8 +33,8 @@ function createContract(id: number, name = ""): Contract {
     id,
     name,
     items: [
-      { ...createItem(1), name: "Sub-orbital rocket", quantity: 3, unitPrice: 109283 },
-      { ...createItem(2), name: "Single engine plane", quantity: 4, unitPrice: 37888 },
+      { ...createItem(1), name: "Sub-orbital rocket", quantity: 3, unitPrice: 109283, quality: 1 },
+      { ...createItem(2), name: "Single engine plane", quantity: 4, unitPrice: 37888, quality: 1 },
     ],
     qualityBonus: 2.23,
     wages: 37217,
@@ -42,10 +42,22 @@ function createContract(id: number, name = ""): Contract {
   };
 }
 
+// Quality bonus multiplier: Q0=0%, Q1=100% (base), Q2=125%, Q3=150%, Q4=175%...
+// Each quality level above Q1 adds 25% of the base bonus. Q0 gets nothing.
+const QUALITY_MULTIPLIER = (q: number) => {
+  if (q <= 0) return 0;
+  return 1 + (q - 1) * 0.25;
+};
+
 function calcContract(contract: Contract) {
   const totalRevenue = contract.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const totalSourcing = contract.items.reduce((s, i) => s + i.quantity * i.sourcingCost, 0);
-  const bonusAmount = totalRevenue * (contract.qualityBonus / 100);
+  // Bonus scales per item based on quality: higher quality = higher bonus %
+  const bonusAmount = contract.items.reduce((s, i) => {
+    const itemRevenue = i.quantity * i.unitPrice;
+    const effectiveBonusPct = contract.qualityBonus * QUALITY_MULTIPLIER(i.quality);
+    return s + itemRevenue * (effectiveBonusPct / 100);
+  }, 0);
   const totalWithBonus = totalRevenue + bonusAmount;
   const overheadCost = contract.wages * (contract.adminOverhead / 100);
   const totalCosts = totalSourcing + contract.wages + overheadCost;
@@ -277,7 +289,8 @@ function ContractPanel({ contract, result, isBest, onUpdate, onUpdateItem, onAdd
               <div className="divide-y divide-surface-100 dark:divide-surface-800">
                 {contract.items.filter(i => i.name).map(item => {
                   const itemRevenue = item.quantity * item.unitPrice;
-                  const itemBonus = itemRevenue * (contract.qualityBonus / 100);
+                  const effectiveBonusPct = contract.qualityBonus * QUALITY_MULTIPLIER(item.quality);
+                  const itemBonus = itemRevenue * (effectiveBonusPct / 100);
                   const itemSourcing = item.quantity * item.sourcingCost;
                   const itemProfit = itemRevenue + itemBonus - itemSourcing;
                   return (
@@ -285,6 +298,9 @@ function ContractPanel({ contract, result, isBest, onUpdate, onUpdateItem, onAdd
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold text-surface-700 dark:text-surface-300">{item.name}</span>
                         <span className="px-1.5 py-0.5 bg-surface-100 dark:bg-surface-800 rounded text-[10px] font-bold text-surface-500">Q{item.quality}</span>
+                        {effectiveBonusPct !== contract.qualityBonus && (
+                          <span className="px-1.5 py-0.5 bg-violet-50 dark:bg-violet-900/30 rounded text-[10px] font-bold text-violet-600">{fmtPct(effectiveBonusPct)}</span>
+                        )}
                       </div>
                       <span className={`text-sm font-bold ${itemProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmtCurrency(itemProfit)}</span>
                     </div>
