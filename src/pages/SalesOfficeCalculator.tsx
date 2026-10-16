@@ -271,19 +271,17 @@ function ContractPanel({ contract, result, isBest, onUpdate, onUpdateItem, onAdd
               </div>
             </div>
 
-            {/* Per-Item Profit */}
+            {/* Per-Item Profit (revenue + bonus - sourcing only; wages deducted separately) */}
             <div className="mt-3 rounded-xl border border-surface-200 dark:border-surface-700 overflow-hidden">
               <div className="px-4 py-3 bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800">
-                <span className="text-xs font-bold uppercase tracking-wider text-surface-500">Per-Item Profit</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-surface-500">Per-Item Profit (before wages)</span>
               </div>
               <div className="divide-y divide-surface-100 dark:divide-surface-800">
                 {contract.items.filter(i => i.name).map(item => {
                   const itemRevenue = item.quantity * item.unitPrice;
                   const itemBonus = item.quality >= 2 ? itemRevenue * (contract.qualityBonus / 100) : 0;
                   const itemSourcing = item.quantity * item.sourcingCost;
-                  const itemWages = contract.wages / contract.items.reduce((s, i) => s + i.quantity, 0) * item.quantity;
-                  const itemOverhead = itemWages * (contract.adminOverhead / 100);
-                  const itemProfit = itemRevenue + itemBonus - itemSourcing - itemWages - itemOverhead;
+                  const itemProfit = itemRevenue + itemBonus - itemSourcing;
                   return (
                     <div key={item.id} className="flex justify-between items-center px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -297,6 +295,15 @@ function ContractPanel({ contract, result, isBest, onUpdate, onUpdateItem, onAdd
                     </div>
                   );
                 })}
+              </div>
+              {/* Wages as single combined deduction */}
+              <div className="flex justify-between items-center px-4 py-3 bg-surface-50 dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700">
+                <span className="text-sm font-bold text-surface-600 dark:text-surface-400">Wages (combined)</span>
+                <span className="text-sm font-bold text-rose-500">-{fmtCurrency(contract.wages)}</span>
+              </div>
+              <div className="flex justify-between items-center px-4 py-3 bg-surface-100 dark:bg-surface-800 border-t border-surface-200 dark:border-surface-700">
+                <span className="text-sm font-black uppercase text-surface-700 dark:text-surface-300">Net Profit</span>
+                <span className={`text-sm font-black ${result.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmtCurrency(result.netProfit)}</span>
               </div>
             </div>
           </div>
