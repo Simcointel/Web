@@ -1,0 +1,20 @@
+Privacy Policy for SimcoIntel Extension
+=========================================
+
+Last updated: 2026-10-18
+
+Data Collection: None. This extension does not collect, transmit, or share any personal data.
+
+Data Storage: The extension stores only:
+• Your selected realm number (0 or 1)
+• Company data synced from SimCompanies pages (company name, buildings, workers, admin overhead)
+
+This data is stored exclusively in your browser's local chrome.storage.local and never sent to any server.
+
+Network Requests: The extension only makes GET requests to:
+• raw.githubusercontent.com/SimcoIntel/Data — public market data
+• simcointel.github.io/Web — your own dashboard
+
+No POST requests. No authentication. No tracking.
+
+Contact: For privacy concerns, open an issue on the GitHub repository.

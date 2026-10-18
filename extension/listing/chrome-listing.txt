@@ -1,0 +1,24 @@
+Chrome Web Store Listing
+=======================
+
+Extension name: SimcoIntel — SimCo Market Data
+Short description (132 chars max):
+Real-time SimCompanies market data, profit margins, and contract analysis in your browser popup.
+
+Long description:
+SimcoIntel is a free browser extension that gives you real-time SimCompanies market data without leaving your browser.
+
+Features:
+• Popup dashboard with top 5 most profitable resources and retail saturation
+• Auto-refresh every 5 minutes via background alarm
+• Content overlay on SimCompanies pages showing top movers
+• Company data sync to the SimcoIntel web dashboard via chrome.storage.local
+• Realm selector (Realm 0 / Realm 1)
+• No tracking, no accounts, no POST requests — data from public GitHub CDN
+
+Permissions:
+• Storage — saves your selected realm and synced company data
+• Alarms — triggers the 5-minute auto-refresh
+• Host permissions — reads public GitHub CDN data and injects overlay on SimCompanies pages
+
+Privacy: No data leaves your browser. No analytics. No tracking.

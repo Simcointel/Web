@@ -1,0 +1,34 @@
+Extension Store Submission Checklist
+=====================================
+
+Chrome Web Store
+----------------
+1. Go to https://chrome.google.com/webstore/devconsole
+2. Pay one-time $5 developer registration fee
+3. Click "New Item" and upload: extension/simcointel-extension.zip
+4. Fill in:
+   - Name: SimcoIntel — SimCo Market Data
+   - Short description: (from chrome-listing.txt)
+   - Long description: (from chrome-listing.txt)
+   - Screenshots: (take 1280x800 screenshots of popup + overlay)
+   - Icon: icons/icon128.png
+   - Category: Productivity
+   - Language: English
+5. Privacy: (from privacy-policy.txt)
+6. Submit for review
+
+Firefox Add-ons
+---------------
+1. Go to https://addons.mozilla.org/developers/
+2. Sign in with Firefox Account
+3. Click "Submit a New Add-on" → "On your own"
+4. Upload: extension/simcointel-extension.zip
+5. Fill in:
+   - Name: SimcoIntel — SimCo Market Data
+   - Description: (from firefox-listing.txt)
+   - Icon: icons/icon128.png
+   - Categories: Productivity
+6. Privacy: (from privacy-policy.txt)
+7. Submit for review
+
+Note: Firefox accepts unlisted distribution for testing first.
