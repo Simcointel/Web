@@ -17,7 +17,8 @@ interface Contract {
   id: number;
   name: string;
   items: OrderItem[];
-  qualityBonus: number;       // Base quality bonus % from contract terms
+  qualityBonusBase: number;   // Base quality bonus % from contract terms (randomized per contract)
+  qualityBonusVariance: number; // ±% variance on base bonus (randomization)
   wages: number;              // Hourly wages (affected by sales speed bonus)
   adminOverhead: number;      // Admin overhead %
   buildingLevel: number;      // SO building level = order slots
@@ -39,7 +40,8 @@ function createContract(id: number, name = ""): Contract {
       { ...createItem(1), name: "Sub-orbital rocket", quantity: 3, unitPrice: 109283, quality: 1 },
       { ...createItem(2), name: "Single engine plane", quantity: 4, unitPrice: 37888, quality: 1 },
     ],
-    qualityBonus: 2.23,
+    qualityBonusBase: 2.23,
+    qualityBonusVariance: 0.5, // ±0.5% randomization per contract
     wages: 37217,
     adminOverhead: 0,
     buildingLevel: 1,
@@ -103,6 +105,11 @@ interface CalcResult {
 }
 
 function calcContract(contract: Contract): CalcResult {
+  // Quality bonus is randomized per contract within variance range
+  // Base ± variance (e.g., 2.23% ± 0.5% = 1.73% to 2.73%)
+  const qualityBonus = contract.qualityBonusBase + 
+    (Math.random() * 2 - 1) * contract.qualityBonusVariance;
+  
   // Calculate effective wages with sales speed bonus
   const effectiveWages = effectiveHourlyWages(contract.wages, contract.salesSpeedBonus);
   
@@ -115,7 +122,7 @@ function calcContract(contract: Contract): CalcResult {
     .filter(i => i.name)
     .map(item => {
       const itemRevenue = item.quantity * item.unitPrice;
-      const effectiveBonusPct = contract.qualityBonus * qualityMultiplier(item.quality);
+      const effectiveBonusPct = qualityBonus * qualityMultiplier(item.quality);
       const itemBonus = itemRevenue * (effectiveBonusPct / 100);
       const itemSourcing = item.quantity * item.sourcingCost;
       const itemProfit = itemRevenue + itemBonus - itemSourcing;
@@ -258,8 +265,18 @@ function ContractPanel({ contract, result, isBest, onUpdate, onUpdateItem, onAdd
                 <NumberInput value={contract.salesSpeedBonus} onChange={v => onUpdate('salesSpeedBonus', v)} min={0} max={90} step={0.1} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-surface-500 mb-1.5">Quality Bonus %</label>
-                <NumberInput value={contract.qualityBonus} onChange={v => onUpdate('qualityBonus', v)} min={0} max={100} step={0.01} />
+                <label className="block text-xs font-medium text-surface-500 mb-1.5 flex items-center gap-1">
+                  Quality Bonus Base %
+                  <span className="text-surface-400 cursor-help" title="Base quality bonus from contract terms. Randomized per contract ± variance."><Info className="inline w-3 h-3" /></span>
+                </label>
+                <NumberInput value={contract.qualityBonusBase} onChange={v => onUpdate('qualityBonusBase', v)} min={0} max={100} step={0.01} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-surface-500 mb-1.5 flex items-center gap-1">
+                  Quality Bonus Variance ±%
+                  <span className="text-surface-400 cursor-help" title="Randomization range applied to base bonus per contract offer."><Info className="inline w-3 h-3" /></span>
+                </label>
+                <NumberInput value={contract.qualityBonusVariance} onChange={v => onUpdate('qualityBonusVariance', v)} min={0} max={10} step={0.01} />
               </div>
               <div>
                 <label className="block text-xs font-medium text-surface-500 mb-1.5">Admin Overhead %</label>
@@ -460,7 +477,8 @@ function ContractPanel({ contract, result, isBest, onUpdate, onUpdateItem, onAdd
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-surface-700 dark:text-surface-300">{item.name}</span>
                       <span className="px-1.5 py-0.5 bg-surface-100 dark:bg-surface-800 rounded text-[10px] font-bold text-surface-500">Q{item.quality}</span>
-                      {item.effectiveBonusPct !== contract.qualityBonus && (
+                      {/* Show effective bonus % when it differs from base (due to quality multiplier) */}
+                      {item.effectiveBonusPct !== contract.qualityBonusBase && (
                         <span className="px-1.5 py-0.5 bg-violet-50 dark:bg-violet-900/30 rounded text-[10px] font-bold text-violet-600">{fmtPct(item.effectiveBonusPct)}</span>
                       )}
                     </div>
@@ -575,6 +593,7 @@ export function SalesOfficeCalculatorPage() {
           <p>• <strong>47-hour fixed cycle</strong> to find each order (cannot be reduced)</p>
           <p>• <strong>Building level = order slots</strong> — Level 2 = 2 parallel orders</p>
           <p>• <strong>Quality bonus scales linearly</strong> — Q1=1×base, Q2=2×base, Q3=3×base…</p>
+          <p>• <strong>Quality bonus is randomized per contract</strong> — Base ± variance (e.g., 2.23% ± 0.5%)</p>
           <p>• <strong>Sales speed bonus</strong> reduces hourly wages during search phase</p>
           <p>• Wages paid for full 47h even if order rejected; reject → wait another 47h</p>
           <p>• Contract terms vary based on server-wide delivery demand</p>
