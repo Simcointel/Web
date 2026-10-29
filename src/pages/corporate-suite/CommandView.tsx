@@ -91,7 +91,7 @@ export function CommandView({ core, phase, margins, state, onSync, isSyncing, se
                       <div key={i} className="flex justify-between items-center px-6 py-3 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-all">
                          <span className="font-bold text-surface-800 dark:text-surface-200">{r.name}</span>
                          <div className="flex gap-4 items-center">
-                            <span className="font-medium text-surface-400">$${r.outputVwap.toFixed(2)}</span>
+                            <span className="font-medium text-surface-400">$${(r.outputVwap ?? 0).toFixed(2)}</span>
                              <span className={`font-bold tabular-nums ${(r.marginDelta ?? 0) > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                                 {(r.marginDelta ?? 0) > 0 ? '↑' : '↓'} {Math.abs(r.marginDelta ?? 0).toFixed(1)}%
                             </span>

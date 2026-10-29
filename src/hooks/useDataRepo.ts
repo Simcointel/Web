@@ -10,30 +10,45 @@ export function useDataRepo<T>(
   const [error, setError] = useState<string | null>(null);
   const fetcherRef = useRef(fetcher);
   const fallbackRef = useRef(fallback);
+  const abortControllerRef = useRef<AbortController | null>(null);
   fetcherRef.current = fetcher;
   fallbackRef.current = fallback;
 
   const load = useCallback(async () => {
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     setError(null);
     try {
-      setData(await fetcherRef.current());
-    } catch {
+      const result = await fetcherRef.current();
+      if (!controller.signal.aborted) {
+        setData(result);
+      }
+    } catch (err) {
+      if (controller.signal.aborted) return;
       if (fallbackRef.current) {
         try {
           setData(await fallbackRef.current());
-        } catch (err) {
-          setError(err instanceof Error ? err.message : "Request failed");
+        } catch (fallbackErr) {
+          setError(fallbackErr instanceof Error ? fallbackErr.message : "Request failed");
         }
       } else {
         setError("Data repo unavailable");
       }
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
     }
   }, deps);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    return () => abortControllerRef.current?.abort();
+  }, [load]);
+
   return { data, loading, error, refresh: load };
 }
 

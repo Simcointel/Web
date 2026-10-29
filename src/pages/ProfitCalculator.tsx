@@ -36,12 +36,9 @@ export function ProfitCalculatorPage() {
   const selected = useMemo(() => RESOURCES.find(r => r.id === resId), [resId]);
   const marginRec = useMemo(() => margins.find(m => m.id === resId), [margins, resId]);
 
-  const vwapPrice = marginRec?.outputVwap ?? 0;
-  const qualityMult = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5][quality] ?? 1.0;
-  const demandMult = marginRec && marginRec.producedPerHour > 0 && vwapPrice > 0
-    ? marginRec.revenuePerHour / (marginRec.producedPerHour * vwapPrice)
-    : 1.0;
-  const sellingPrice = customPrice ? parseFloat(customPrice) : vwapPrice * qualityMult * demandMult;
+  const vwapPrice = marginRec?.outputVwap ?? MAT_REF_PRICES[resId] ?? 0;
+  const qualityMult = 1 + quality * 0.05; // Q0=1.0, Q12=1.6
+  const sellingPrice = customPrice ? parseFloat(customPrice) : vwapPrice * qualityMult;
 
   const result = useMemo(() => {
     if (!selected || !sellingPrice) return null;
@@ -113,7 +110,8 @@ export function ProfitCalculatorPage() {
         <div className="lg:col-span-1 space-y-4">
           <div className="card p-5 space-y-4">
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">Resource</h2>
-            <select value={resId} onChange={e => { setResId(Number(e.target.value)); setInputOverrides({}); }}
+            <label htmlFor="profit-resource" className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Resource</label>
+            <select id="profit-resource" value={resId} onChange={e => { setResId(Number(e.target.value)); setInputOverrides({}); }}
               className="w-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 rounded-lg text-sm font-bold outline-none focus:ring-1 focus:ring-brand-500/20">
               <option value={0}>-- Select Resource --</option>
               {RESOURCES.filter(r => r.basePh).sort((a, b) => a.name.localeCompare(b.name)).map(r => (
@@ -132,18 +130,18 @@ export function ProfitCalculatorPage() {
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">Parameters</h2>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
               <div className="space-y-1">
-                <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Quality</label>
-                <select value={quality} onChange={e => setQuality(Number(e.target.value))} className="input">
-                  {[0,1,2,3,4,5].map(q => <option key={q} value={q}>Q{q}</option>)}
+                <label htmlFor="profit-quality" className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Quality</label>
+                <select id="profit-quality" value={quality} onChange={e => setQuality(Math.max(0, Math.min(12, Number(e.target.value))))} className="input">
+                  {[...Array(13).keys()].map(q => <option key={q} value={q}>Q{q}</option>)}
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Building Lv</label>
-                <input type="number" min={1} max={20} value={buildingLevel} onChange={e => setBuildingLevel(Math.max(1, Math.min(20, Number(e.target.value))))} className="input" />
+                <label htmlFor="profit-building-level" className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Building Lv</label>
+                <input id="profit-building-level" type="number" min={1} max={20} value={buildingLevel} onChange={e => setBuildingLevel(Math.max(1, Math.min(20, Number(e.target.value))))} className="input" />
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Economy</label>
-                <select value={phase} onChange={e => setPhase(e.target.value)} className="input">
+                <label htmlFor="profit-economy" className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Economy</label>
+                <select id="profit-economy" value={phase} onChange={e => setPhase(e.target.value)} className="input">
                   <option value="boom">Boom (×1.25)</option>
                   <option value="normal">Normal (×1.0)</option>
                   <option value="recession">Recession (×0.8)</option>
@@ -151,31 +149,31 @@ export function ProfitCalculatorPage() {
               </div>
               {isExtraction && (
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Abundance %</label>
-                  <input type="number" min={1} max={200} value={abundance} onChange={e => setAbundance(Math.max(1, Math.min(200, Number(e.target.value))))} className="input" />
+                  <label htmlFor="profit-abundance" className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Abundance %</label>
+                  <input id="profit-abundance" type="number" min={1} max={200} value={abundance} onChange={e => setAbundance(Math.max(1, Math.min(200, Number(e.target.value))))} className="input" />
                 </div>
               )}
             </div>
 
             <div className="space-y-1">
-              <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Admin Overhead %</label>
-              <input type="number" min={0} max={100} value={overhead} onChange={e => setOverhead(Math.max(0, Math.min(100, Number(e.target.value))))} className="input" placeholder="e.g. 44.26" />
+              <label htmlFor="profit-overhead" className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Admin Overhead %</label>
+              <input id="profit-overhead" type="number" min={0} max={100} value={overhead} onChange={e => setOverhead(Math.max(0, Math.min(100, Number(e.target.value))))} className="input" placeholder="e.g. 44.26" />
             </div>
 
             <div className="flex items-center gap-4 pt-1">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={robots} onChange={e => setRobots(e.target.checked)} className="rounded border-surface-300 dark:border-surface-700 text-brand-600 focus:ring-brand-500/20" />
+                <input id="profit-robots" type="checkbox" checked={robots} onChange={e => setRobots(e.target.checked)} className="rounded border-surface-300 dark:border-surface-700 text-brand-600 focus:ring-brand-500/20" />
                 <span className="text-xs font-bold uppercase text-surface-600 dark:text-surface-400">Robots (-3%)</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={contractMode} onChange={e => setContractMode(e.target.checked)} className="rounded border-surface-300 dark:border-surface-700 text-brand-600 focus:ring-brand-500/20" />
+                <input id="profit-contract" type="checkbox" checked={contractMode} onChange={e => setContractMode(e.target.checked)} className="rounded border-surface-300 dark:border-surface-700 text-brand-600 focus:ring-brand-500/20" />
                 <span className="text-xs font-bold uppercase text-surface-600 dark:text-surface-400">Contract</span>
               </label>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Selling Price (blank = VWAP)</label>
-              <input type="number" min={0} step="0.01" value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder={`VWAP: $${vwapPrice.toFixed(2)}`} className="input" />
+              <label htmlFor="profit-custom-price" className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Selling Price (blank = VWAP)</label>
+              <input id="profit-custom-price" type="number" min={0} step="0.01" value={customPrice} onChange={e => setCustomPrice(String(Math.max(0, Number(e.target.value))))} placeholder={`VWAP: $${vwapPrice.toFixed(2)}`} className="input" />
             </div>
           </div>
         </div>
@@ -224,7 +222,7 @@ export function ProfitCalculatorPage() {
                             <span className="text-surface-500 w-20 truncate font-semibold" title={inp.name}>{inp.name}</span>
                             <span className="text-surface-400">×{inp.qty.toFixed(2)}</span>
                             <input type="number" step="0.01" value={inputOverrides[inp.id] ?? ''}
-                              onChange={e => setInputOverrides(prev => ({ ...prev, [inp.id]: e.target.value }))}
+                              onChange={e => setInputOverrides(prev => ({ ...prev, [inp.id]: String(Math.max(0, Number(e.target.value))) }))}
                               placeholder={`VWAP $${inp.vwap.toFixed(2)}`}
                               className="w-24 border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-2 py-1 rounded text-right text-xs font-bold outline-none focus:ring-1 focus:ring-brand-500/20" />
                             <span className="font-bold w-16 text-right">${fmtNumber(inp.cost)}</span>

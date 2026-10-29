@@ -1,17 +1,24 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { LoadingState, ErrorState } from "../components/States";
 import { useSharedRealm } from "../hooks/useSharedRealm";
-import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-} from "recharts";
 import type { ProfitMarginsResponse, PriceHistoryItem } from "../types/api";
 import { Search, TrendingUp } from "lucide-react";
 
 import { useProfitMargins } from "../hooks/useDataQueries";
 import { fetchResourcePriceHistory } from "../services/dataRepo";
-import { PageHeader } from "../components/ui/Common";
-import { usePageTitleKey } from "../hooks/usePageTitle";
-import { fmtNumber, fmtPct } from "../utils/formatters";
+import { PageHeader } from "@components/ui/Common";
+import { usePageTitleKey } from "@hooks/usePageTitle";
+import { fmtNumber, fmtPct } from "@utils/formatters";
+
+// Lazy-load recharts to reduce bundle size
+const Recharts = lazy(() => import("recharts").then(m => ({
+  default: ({ children }: { children: React.ReactNode }) => (
+    <Suspense fallback={<LoadingState text="Loading charts..." />}>{children}</Suspense>
+  )
+})));
+
+// Runtime imports for lazy-loaded Recharts (types are included)
+import { ResponsiveContainer as RC, LineChart as LC, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 const CATEGORIES = ["raw-materials", "refined-materials", "food-beverage", "consumer-goods", "construction-materials", "high-tech", "transport", "luxury-goods", "aerospace-defense", "energy"];
 
@@ -122,15 +129,17 @@ export function VWAPInflationPage() {
                   {hLoading ? (
                     <p className="py-16 text-center text-surface-400">Loading price history...</p>
                   ) : history.length > 1 ? (
-                    <ResponsiveContainer width="100%" height={250}>
-                      <LineChart data={history}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="vwap" stroke="#0ea5e9" strokeWidth={2} dot={false} name="VWAP" />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    <Recharts>
+                      <RC width="100%" height={250}>
+                        <LC data={history}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
+                          <Tooltip />
+                          <Line type="monotone" dataKey="vwap" stroke="#0ea5e9" strokeWidth={2} dot={false} name="VWAP" />
+                        </LC>
+                      </RC>
+                    </Recharts>
                   ) : (
                     <div className="py-16 text-center">
                       <p className="text-surface-400 mb-2">No price history available</p>
@@ -151,3 +160,5 @@ export function VWAPInflationPage() {
     </div>
   );
 }
+
+

@@ -42,7 +42,9 @@ export function Link({
       style={style}
       onClick={(e) => {
         const isModifiedClick = !!(e.metaKey || e.altKey || e.ctrlKey || e.shiftKey);
-        if (!isModifiedClick && e.button === 0) {
+        // Allow keyboard navigation (Enter/Space on focus) and modifier clicks to use default browser behavior
+        const isKeyboardClick = e.detail === 0 || e.nativeEvent?.detail === 0;
+        if (!isModifiedClick && e.button === 0 && !isKeyboardClick) {
           e.preventDefault();
           onClick?.();
           nav(to);

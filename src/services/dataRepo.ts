@@ -382,7 +382,7 @@ export async function fetchResourcePriceHistory(realm: number, resourceId: numbe
     if (res) {
       history.push({
         date: mapped.ts,
-        vwap: res.outputVwap,
+        vwap: res.outputVwap ?? 0,
         profit: res.netProfitPerHour,
       });
     }

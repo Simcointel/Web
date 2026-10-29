@@ -44,7 +44,7 @@
     window.postMessage({
       type: 'simcointel:data-response',
       detail: { ...data, source: 'simcointel-extension', extensionId: chrome.runtime.id },
-    }, '*');
+    }, window.location.origin);
   }
 
   async function refreshAndPublish() {
@@ -65,7 +65,18 @@
     }
   }
 
+  const ALLOWED_ORIGINS = [
+    'https://simcointel.github.io',
+    'http://localhost:5173',
+    'http://localhost:3000',
+  ];
+
+  function isAllowedOrigin(origin) {
+    return ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed));
+  }
+
   function handleDataRequest(event) {
+    if (!isAllowedOrigin(event.origin)) return;
     if (event.data?.type !== 'simcointel:data-request') return;
     if (event.data?.source !== 'simcointel-web') return;
     log('Data request received from web page via postMessage');

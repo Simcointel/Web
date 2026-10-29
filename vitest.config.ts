@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
-    include: ["src/__tests__/**/*.test.tsx", "src/__tests__/**/*.test.ts"],
+    include: ["src/**/*.test.tsx", "src/**/*.test.ts"],
     exclude: ["node_modules", "dist"],
     setupFiles: [],
     css: false,

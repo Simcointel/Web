@@ -13,12 +13,12 @@ const XP_TABLE: number[] = [
 
 function xpForLevel(lv: number): number {
   if (lv < 1 || lv > 60) return 0;
-  if (lv <= XP_TABLE.length) return XP_TABLE[lv - 1];
+  if (lv <= 23) return XP_TABLE[lv - 1];
   return 400_000;
 }
 
 const OP_XP = 12;
-const REC_XP = Math.round(20160 / 168);
+const REC_XP = 120; // 20,160 XP/week ÷ 168 hours
 
 export function XpCalculatorPage() {
   usePageTitleKey('xpCalculator');
@@ -48,7 +48,7 @@ export function XpCalculatorPage() {
     }
     return total;
   })();
-  const progressPct = totalXpForLevels > 0 ? Math.min(100, (currentXp * progress / 100 / totalXpForLevels) * 100) : 0;
+  const progressPct = progress;
 
   return (
     <div className="max-w-3xl mx-auto space-y-5 animate-slide-up">

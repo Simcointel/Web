@@ -1,3 +1,12 @@
+// ============================================================================
+// SimCo Static Data
+// Source: SimCompanies game data (simco_static.ts)
+// Version: 1.0.0
+// Last Updated: 2026-10-28
+// Note: Building costs, wages, and resource requirements may change with game updates.
+//       Update this file when game patches are released.
+// ============================================================================
+
 export const BUILDINGS = [
   // === Production Buildings (Concrete/Bricks/Planks/CU) ===
   { "id": "P", "name": "Farm", "type": "production", "cost": 6900, "baseTime": 1, "wages": 103.5, "resources": [{ "id": 101, "qty": 8 }, { "id": 102, "qty": 110 }, { "id": 108, "qty": 32 }, { "id": 111, "qty": 2 }] },

@@ -67,7 +67,7 @@ export function ProfitMarginsPage() {
       // Wages = baseWage * buildingLevel (per game: linear with level)
       // Since we don't know the exact level per building, use the default API wages
       const wagesPh = sr.baseWages;
-      const rev = ph * r.outputVwap;
+      const rev = ph * (r.outputVwap ?? 0);
       const cost = r.inputCostPerHour + wagesPh * (1 + adminOverhead / 100) + r.transportPerHour;
       const np = rev - cost;
       return { ...r, producedPerHour: ph, revenuePerHour: rev, netProfitPerHour: np, marginPct: rev > 0 ? (np / rev) * 100 : 0 };
@@ -75,8 +75,8 @@ export function ProfitMarginsPage() {
     if (category !== "all") list = list.filter(r => r.categoryName === category);
     if (search) list = list.filter(r => r.name.toLowerCase().includes(search.toLowerCase()) || r.categoryName.toLowerCase().includes(search.toLowerCase()));
     return [...list].sort((a, b) => {
-      const va = sortBy === "mg" ? a.marginPct : sortBy === "np" ? a.netProfitPerHour : sortBy === "rv" ? a.revenuePerHour : a.outputVwap;
-      const vb = sortBy === "mg" ? b.marginPct : sortBy === "np" ? b.netProfitPerHour : sortBy === "rv" ? b.revenuePerHour : b.outputVwap;
+      const va = sortBy === "mg" ? a.marginPct : sortBy === "np" ? a.netProfitPerHour : sortBy === "rv" ? a.revenuePerHour : a.outputVwap ?? 0;
+      const vb = sortBy === "mg" ? b.marginPct : sortBy === "np" ? b.netProfitPerHour : sortBy === "rv" ? b.revenuePerHour : b.outputVwap ?? 0;
       return sortDir === "desc" ? vb - va : va - vb;
     });
   }, [resources, category, search, sortBy, sortDir, localCalc, prodBonus, adminOverhead, abundance, resBonus]);
@@ -159,7 +159,7 @@ export function ProfitMarginsPage() {
                   <td className={`px-3 py-2 text-right font-bold ${r.marginPct > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmtPct(r.marginPct)}</td>
                   <td className="px-3 py-2 text-right font-bold">{fmtNumber(r.netProfitPerHour)}</td>
                   <td className="px-3 py-2 text-right text-surface-400">{fmtNumber(r.revenuePerHour)}</td>
-                  <td className="px-3 py-2 text-right font-bold text-brand-600">{r.outputVwap.toFixed(2)}</td>
+                  <td className="px-3 py-2 text-right font-bold text-brand-600">{(r.outputVwap ?? 0).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>

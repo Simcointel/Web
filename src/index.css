@@ -20,7 +20,7 @@
 @layer components {
   /* ── Typography ── */
   .stat-value { @apply text-xl font-black tracking-tight tabular-nums font-mono; }
-  .stat-label { @apply text-[9px] font-black uppercase tracking-[0.2em] text-surface-400; }
+  .stat-label { @apply text-[9px] font-black uppercase tracking-[0.2em] text-surface-500; }
 
   /* ── Cards ── */
   .card {
@@ -78,7 +78,7 @@
     @apply text-lg font-bold tabular-nums;
   }
   .metric-label {
-    @apply text-[9px] font-black uppercase tracking-[0.15em] text-surface-400;
+    @apply text-[9px] font-black uppercase tracking-[0.15em] text-surface-500;
   }
 
   /* ── KPI Cards ── */
@@ -99,18 +99,18 @@
     @apply bg-brand-600 text-white shadow-sm;
   }
   .sidebar-link-inactive {
-    @apply text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-900 hover:text-surface-900 dark:hover:text-surface-200;
+    @apply text-surface-600 dark:text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-900 hover:text-surface-900 dark:hover:text-surface-200;
   }
   .sidebar-icon-active {
     @apply text-white;
   }
   .sidebar-icon-inactive {
-    @apply text-surface-400 dark:text-surface-500 group-hover:text-brand-600;
+    @apply text-surface-500 dark:text-surface-400 group-hover:text-brand-600;
   }
 
   /* ── Nav Group ── */
   .nav-group-header {
-    @apply px-3 text-[10px] font-black uppercase tracking-[0.18em] text-surface-400 mb-2;
+    @apply px-3 text-[10px] font-black uppercase tracking-[0.18em] text-surface-500 mb-2;
   }
   .nav-group-divider {
     @apply border-t border-surface-100 dark:border-surface-800 mx-3 my-4;
