@@ -2,7 +2,7 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
-const cspHeader = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-qUfytOIotiaRfRm5tv4kk/OuGZvPXqFZmeb+OGhEjRQ=' 'sha256-1YtRcwWFYwc12Z4W+IbSPG/et1QYUBFZk/cwaL75LmI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.simcotools.com https://raw.githubusercontent.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';";
+const cspHeader = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-qUfytOIotiaRfRm5tv4kk/OuGZvPXqFZmeb+OGhEjRQ=' 'sha256-1YtRcwWFYwc12Z4W+IbSPG/et1QYUBFZk/cwaL75LmI=' 'sha256-KTbaGoeWo1Wv2Kq5eJfkc2HU4fu3sZ5Ul+6eGUPQJ3o='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.simcotools.com https://raw.githubusercontent.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';";
 
 function cspPlugin() {
   return {
