@@ -164,10 +164,12 @@ async function loadSyncStatus() {
 
       const companyInfoEl = document.getElementById('companyInfo');
       if (companyInfoEl && data.companyName) {
+        const level = data.companyLevel ?? data.level;
+        const rank = data.companyRank ?? data.rank;
         let info = `<strong>${data.companyName}</strong>`;
         if (data.companyId) info += ` (#${data.companyId})`;
-        if (data.level) info += ` \u00b7 Lv ${data.level}`;
-        if (data.rank) info += ` \u00b7 Rank ${data.rank}`;
+        if (level) info += ` \u00b7 Lv ${level}`;
+        if (rank) info += ` \u00b7 Rank ${rank}`;
         if (data.workers) info += ` \u00b7 ${data.workers} workers`;
         companyInfoEl.innerHTML = info;
       }
@@ -198,7 +200,8 @@ async function triggerManualSync() {
         if (btn) btn.textContent = 'Synced!';
         addLog('Sync completed', 'success');
       } else {
-        if (btn) btn.textContent = 'Not on company page';
+        if (btn) btn.textContent = 'Sync unavailable';
+        addLog('Sync failed: ' + (response?.error || 'no response'), 'error');
       }
     } else {
       if (btn) btn.textContent = 'Not on SimCompanies';

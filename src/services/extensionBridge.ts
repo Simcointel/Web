@@ -11,14 +11,23 @@ function isAllowedOrigin(origin: string): boolean {
 }
 
 export interface ExtensionCompanyData {
-  companyId?: string;
+  companyId?: string | number;
   companyName?: string;
   companyLevel?: number;
   companyRank?: number;
   companyValue?: number;
   apiAO?: number;
+  governmentOrderTierIndex?: number;
+  governmentTier?: number;
+  extraSlots?: number;
+  onlineStatus?: string;
   workers?: number;
-  buildings?: Array<{ id?: string; level?: number; [key: string]: unknown }>;
+  buildings?: Array<{ id?: string; name?: string; level?: number; instanceId?: number; [key: string]: unknown }>;
+  // Legacy keys written by extension <= 1.2.1
+  level?: number;
+  rank?: number;
+  value?: number;
+  adminOverhead?: number | string;
   [key: string]: unknown;
 }
 

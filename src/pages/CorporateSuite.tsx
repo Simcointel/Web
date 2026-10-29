@@ -599,19 +599,31 @@ export function CorporateSuitePage() {
         setNotification({ msg: 'No data received from extension', type: 'error' });
         return;
       }
-      const newMap: MapItem[] = (data.buildings || [])
-        .filter(b => b?.id)
-        .map(b => ({ id: b.id!, level: n(b.level) || 1 }));
+      const level = data.companyLevel ?? data.level;
+      const rank = data.companyRank ?? data.rank;
+      const value = data.companyValue ?? data.value;
+      const govTier = data.governmentOrderTierIndex ?? data.governmentTier;
+      const aoRaw = data.apiAO ?? data.adminOverhead;
+      const aoNum = typeof aoRaw === 'string' ? parseFloat(aoRaw.replace('%', '')) : aoRaw;
+      const ao = typeof aoNum === 'number' && isFinite(aoNum) ? (aoNum > 1 ? aoNum / 100 : aoNum) : undefined;
+      const newMap: MapItem[] = [];
+      for (const b of data.buildings || []) {
+        const id = b.id || BUILDINGS.find(x => x.name.toLowerCase() === String(b.name || '').toLowerCase())?.id;
+        if (id) newMap.push({ id, level: n(b.level) || 1, instanceId: b.instanceId });
+      }
       setState(prev => ({
         ...prev,
-        companyId: data.companyId || prev.companyId,
+        companyId: data.companyId ? String(data.companyId) : prev.companyId,
         companyName: data.companyName || prev.companyName,
-        companyLevel: data.companyLevel || prev.companyLevel,
-        companyRank: data.companyRank || prev.companyRank,
-        companyValue: data.companyValue || prev.companyValue,
-        apiAO: data.apiAO ?? prev.apiAO,
+        companyLevel: level ?? prev.companyLevel,
+        companyRank: rank ?? prev.companyRank,
+        companyValue: value ?? prev.companyValue,
+        apiAO: ao ?? prev.apiAO,
         workers: data.workers ?? prev.workers,
-        map: newMap,
+        governmentTier: govTier ?? prev.governmentTier,
+        extraSlots: data.extraSlots ?? prev.extraSlots,
+        onlineStatus: data.onlineStatus ?? prev.onlineStatus,
+        map: newMap.length ? newMap : prev.map,
         lastSynced: new Date().toLocaleTimeString(),
       }));
       setNotification({ msg: `Imported: ${data.companyName || 'Company data'}`, type: 'success' });
