@@ -75,7 +75,7 @@ export function RetailCalculatorPage() {
 
   const selected = storeProducts.find(p => p.id === resId);
   const vwapPrice = margins.find(m => m.id === resId)?.outputVwap ?? 0;
-  const qualityMult = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5][quality] ?? 1.0;
+  const qualityMult = 1 + quality * 0.05; // Q0=1.0, Q12=1.6
   const marginRec = margins.find(m => m.id === resId);
   const demandMult = marginRec && marginRec.producedPerHour > 0 && vwapPrice > 0
     ? marginRec.revenuePerHour / (marginRec.producedPerHour * vwapPrice)
@@ -148,7 +148,8 @@ export function RetailCalculatorPage() {
           {/* Store */}
           <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><Store size={13} /> Store</div>
-            <select value={storeId} onChange={e => { setStoreId(e.target.value); setResId(0); }} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900">
+            <label htmlFor="retail-store" className="sr-only">Store Type</label>
+            <select id="retail-store" value={storeId} onChange={e => { setStoreId(e.target.value); setResId(0); }} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900">
               <option value="">Select a store type…</option>
               {stores.sort((a, b) => a.name.localeCompare(b.name)).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
@@ -156,7 +157,8 @@ export function RetailCalculatorPage() {
             {store && storeProducts.length > 0 && (
               <>
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider pt-2 border-t border-surface-100 dark:border-surface-800"><TrendingUp size={13} /> Product</div>
-                <select value={resId} onChange={e => setResId(toNum(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900">
+                <label htmlFor="retail-product" className="sr-only">Product</label>
+                <select id="retail-product" value={resId} onChange={e => setResId(toNum(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900">
                   <option value={0}>Choose product…</option>
                   {storeProducts.map(p => (
                     <option key={p.id} value={p.id}>{p.name}</option>
@@ -173,11 +175,11 @@ export function RetailCalculatorPage() {
           <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><Settings2 size={13} /> Parameters</div>
             <div className="grid grid-cols-2 gap-2.5">
-              <div><label className="text-[10px] font-semibold text-surface-500 block mb-1">Level</label><input type="number" min={1} max={20} value={bldgLevel} onChange={e => setBldgLevel(Math.max(1, Math.min(20, toNum(e.target.value, 1))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" /></div>
-              <div><label className="text-[10px] font-semibold text-surface-500 block mb-1">Quality</label><select value={quality} onChange={e => setQuality(toNum(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900">{[0,1,2,3,4,5].map(q => <option key={q} value={q}>Q{q}</option>)}</select></div>
-              <div><label className="text-[10px] font-semibold text-surface-500 block mb-1">AO %</label><input type="number" min={0} max={100} value={ao} onChange={e => setAo(Math.max(0, Math.min(100, toNum(e.target.value, 25))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" /></div>
-              <div><label className="text-[10px] font-semibold text-surface-500 block mb-1">Sales Speed %</label><input type="number" min={0} max={200} value={salesSpeed} onChange={e => setSalesSpeed(Math.max(0, Math.min(200, toNum(e.target.value, 0))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" /></div>
-              <div className="col-span-2"><label className="text-[10px] font-semibold text-surface-500 block mb-1">Economy</label><select value={phase} onChange={e => setPhase(e.target.value)} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900"><option value="boom">Boom ×1.25</option><option value="normal">Normal ×1.0</option><option value="recession">Recession ×0.8</option></select></div>
+              <div><label htmlFor="retail-level" className="text-[10px] font-semibold text-surface-500 block mb-1">Level</label><input id="retail-level" type="number" min={1} max={20} value={bldgLevel} onChange={e => setBldgLevel(Math.max(1, Math.min(20, toNum(e.target.value, 1))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" /></div>
+              <div><label htmlFor="retail-quality" className="text-[10px] font-semibold text-surface-500 block mb-1">Quality</label><select id="retail-quality" value={quality} onChange={e => setQuality(Math.max(0, Math.min(12, toNum(e.target.value))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900">{[...Array(13).keys()].map(q => <option key={q} value={q}>Q{q}</option>)}</select></div>
+              <div><label htmlFor="retail-ao" className="text-[10px] font-semibold text-surface-500 block mb-1">AO %</label><input id="retail-ao" type="number" min={0} max={100} value={ao} onChange={e => setAo(Math.max(0, Math.min(100, toNum(e.target.value, 25))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" /></div>
+              <div><label htmlFor="retail-sales-speed" className="text-[10px] font-semibold text-surface-500 block mb-1">Sales Speed %</label><input id="retail-sales-speed" type="number" min={0} max={200} value={salesSpeed} onChange={e => setSalesSpeed(Math.max(0, Math.min(200, toNum(e.target.value, 0))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" /></div>
+              <div className="col-span-2"><label htmlFor="retail-economy" className="text-[10px] font-semibold text-surface-500 block mb-1">Economy</label><select id="retail-economy" value={phase} onChange={e => setPhase(e.target.value)} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900"><option value="boom">Boom ×1.25</option><option value="normal">Normal ×1.0</option><option value="recession">Recession ×0.8</option></select></div>
             </div>
           </div>
 
@@ -187,23 +189,23 @@ export function RetailCalculatorPage() {
               <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><BarChart3 size={13} /> {selected.name} — Manual</div>
 
               <div>
-                <div className="flex items-center justify-between mb-1"><label className="text-[10px] font-semibold text-surface-500">Demand</label><span className={`text-xs font-bold ${demandColor(demand)}`}>{demandLabel(demand)}</span></div>
+                <div className="flex items-center justify-between mb-1"><label htmlFor="retail-demand" className="text-[10px] font-semibold text-surface-500">Demand</label><span className={`text-xs font-bold ${demandColor(demand)}`}>{demandLabel(demand)}</span></div>
                 <div className="h-2 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden mb-1.5"><div className={`h-full transition-all duration-500 ${demandBarColor(demand)}`} style={{ width: `${demand}%` }} /></div>
                 <div className="flex items-center gap-2">
-                  <input type="range" min={0} max={100} value={demand} onChange={e => setDemand(toNum(e.target.value, 50))} className="flex-1 accent-rose-500" />
-                  <input type="number" min={0} max={100} value={demand} onChange={e => setDemand(Math.max(0, Math.min(100, toNum(e.target.value, 50))))} className="w-14 border border-surface-300 rounded-md px-2 py-1 text-xs font-bold text-center outline-none" />
+                  <input id="retail-demand-slider" type="range" min={0} max={100} value={demand} onChange={e => setDemand(toNum(e.target.value, 50))} className="flex-1 accent-rose-500" />
+                  <input id="retail-demand" type="number" min={0} max={100} value={demand} onChange={e => setDemand(Math.max(0, Math.min(100, toNum(e.target.value, 50))))} className="w-14 border border-surface-300 rounded-md px-2 py-1 text-xs font-bold text-center outline-none" />
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] font-semibold text-surface-500 block mb-1">Base Sales Rate (units/h/level)</label>
-                <input type="number" min={0.01} step={0.5} value={baseRate} onChange={e => setBaseRate(Math.max(0.01, toNum(e.target.value, 3)))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" />
+                <label htmlFor="retail-base-rate" className="text-[10px] font-semibold text-surface-500 block mb-1">Base Sales Rate (units/h/level)</label>
+                <input id="retail-base-rate" type="number" min={0.01} step={0.5} value={baseRate} onChange={e => setBaseRate(Math.max(0.01, toNum(e.target.value, 3)))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" />
               </div>
 
               <div>
-                <label className="text-[10px] font-semibold text-surface-500 block mb-1">Selling Price</label>
+                <label htmlFor="retail-custom-price" className="text-[10px] font-semibold text-surface-500 block mb-1">Selling Price</label>
                 <div className="flex items-center gap-2">
-                  <input type="number" step="0.01" value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder={`VWAP $${fmtNumber(vwapPrice)}`} className="flex-1 border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" />
+                  <input id="retail-custom-price" type="number" step="0.01" value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder={`VWAP $${fmtNumber(vwapPrice)}`} className="flex-1 border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" />
                   {customPrice && <button onClick={() => setCustomPrice("")} className="text-[10px] text-brand-600 font-bold">VWAP</button>}
                 </div>
                 <div className="text-[10px] text-surface-400 mt-0.5">VWAP: ${fmtNumber(vwapPrice)}</div>

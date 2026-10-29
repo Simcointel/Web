@@ -1,5 +1,14 @@
 const PAIRING_KEY = 'simcointel-pairing-code';
 const TIMEOUT_MS = 2000;
+const ALLOWED_ORIGINS = [
+  'https://simcointel.github.io',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+function isAllowedOrigin(origin: string): boolean {
+  return ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed));
+}
 
 export interface ExtensionCompanyData {
   companyId?: string;
@@ -21,6 +30,7 @@ function waitForExtensionResponse(timeoutMs: number): Promise<{ companyData: Ext
     }, timeoutMs);
 
     function handler(e: MessageEvent) {
+      if (!isAllowedOrigin(e.origin)) return;
       if (e.data?.type !== 'simcointel:data-response') return;
       if (e.data?.detail?.source !== 'simcointel-extension') return;
       clearTimeout(timer);
@@ -35,9 +45,13 @@ function waitForExtensionResponse(timeoutMs: number): Promise<{ companyData: Ext
   });
 }
 
+function getTargetOrigin(): string {
+  return window.location.origin;
+}
+
 export async function requestExtensionData(): Promise<ExtensionCompanyData | null> {
   const responsePromise = waitForExtensionResponse(TIMEOUT_MS);
-  window.postMessage({ type: 'simcointel:data-request', source: 'simcointel-web' }, '*');
+  window.postMessage({ type: 'simcointel:data-request', source: 'simcointel-web' }, getTargetOrigin());
   const response = await responsePromise;
   return response.companyData;
 }
@@ -45,7 +59,7 @@ export async function requestExtensionData(): Promise<ExtensionCompanyData | nul
 export async function isExtensionAvailable(): Promise<boolean> {
   try {
     const responsePromise = waitForExtensionResponse(500);
-    window.postMessage({ type: 'simcointel:data-request', source: 'simcointel-web' }, '*');
+    window.postMessage({ type: 'simcointel:data-request', source: 'simcointel-web' }, getTargetOrigin());
     await responsePromise;
     return true;
   } catch {

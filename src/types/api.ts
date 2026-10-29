@@ -84,7 +84,7 @@ export interface ProfitMarginResource {
   marginDirection: string | null;
   forecastMargin: number | null;
   trendDirection: string | null;
-  outputVwap: number;
+  outputVwap: number | null;
 }
 
 export interface ProfitMarginsResponse {

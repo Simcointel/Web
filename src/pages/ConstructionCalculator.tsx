@@ -8,16 +8,10 @@ import type { ProfitMarginsResponse } from "../types/api";
 import { useProfitMargins } from "../hooks/useDataQueries";
 import { PageHeader, MetricBox } from "../components/ui/Common";
 import { usePageTitleKey } from "../hooks/usePageTitle";
-import { fmtNumber } from "../utils/formatters";
+import { fmtNumber, fmtHours } from "../utils/formatters";
 
 function matName(id: number): string {
   return CONSTRUCTION_MATERIALS.find(c => c.id === id)?.name ?? RESOURCES.find(r => r.id === id)?.name ?? `Mat ${id}`;
-}
-
-function fmtHours(h: number): string {
-  if (h < 1) return `${Math.round(h * 60)}m`;
-  if (h < 24) return `${h.toFixed(1)}h`;
-  return `${Math.floor(h / 24)}d ${Math.round(h % 24)}h`;
 }
 
 export function ConstructionCalculatorPage() {
@@ -131,8 +125,8 @@ export function ConstructionCalculatorPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="stat-label">Select building</label>
-              <select value={buildingId} onChange={e => setBuildingId(e.target.value)}
+              <label htmlFor="construction-building" className="stat-label">Select building</label>
+              <select id="construction-building" value={buildingId} onChange={e => setBuildingId(e.target.value)}
                 className="w-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 rounded-lg text-sm font-bold outline-none focus:ring-1 focus:ring-brand-500/20">
                 <option value="">-- Choose a building --</option>
                 <optgroup label="Production">
@@ -152,14 +146,14 @@ export function ConstructionCalculatorPage() {
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="stat-label">Current Lv</label>
-                    <input type="number" min={0} max={49} value={currentLv}
+                    <label htmlFor="construction-current-lv" className="stat-label">Current Lv</label>
+                    <input id="construction-current-lv" type="number" min={0} max={49} value={currentLv}
                       onChange={e => setCurrentLv(Math.max(0, Math.min(49, Number(e.target.value))))}
                       className="input !text-sm" />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="stat-label">Target Lv</label>
-                    <input type="number" min={1} max={50} value={targetLv}
+                    <label htmlFor="construction-target-lv" className="stat-label">Target Lv</label>
+                    <input id="construction-target-lv" type="number" min={1} max={50} value={targetLv}
                       onChange={e => setTargetLv(Math.max(1, Math.min(50, Number(e.target.value))))}
                       className="input !text-sm" />
                   </div>

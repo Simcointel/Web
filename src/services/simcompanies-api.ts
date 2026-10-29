@@ -1,6 +1,6 @@
 /**
  * SimCompanies.com Official API v3 Integration
- * Enhanced with additional endpoints and caching
+ * Core endpoints only - placeholder endpoints removed
  */
 
 import { withCache } from "./data-cache";
@@ -35,6 +35,83 @@ export interface CompanyProfile {
   buildings: Building[];
   storage: StorageInfo;
   contracts: Contract[];
+}
+
+// Raw API response types (for mapping)
+interface RawCompanyProfile {
+  id?: number;
+  username?: string;
+  companyPublicInfo?: { company?: string; logo?: string; level?: number; rank?: number; online?: string; productionModifier?: number; salesModifier?: number; extraBuildingSlots?: number };
+  name?: string;
+  level?: number;
+  rank?: number;
+  online?: string;
+  productionModifier?: number;
+  salesModifier?: number;
+  extraBuildingSlots?: number;
+  history?: { value?: number; bondsPayable?: number };
+  cash?: number;
+  infrastructure?: { workers?: number; recreationBonus?: number; administrationOverhead?: number; buildings?: Array<{ id?: number; kind?: string; level?: number; size?: number; busy?: Record<string, number>; slot?: number }> };
+  happiness?: number;
+  governmentOrderTierIndex?: number;
+  storage?: { capacity?: number; used?: number; items?: Array<{ resourceId?: number; resourceName?: string; quality?: number; amount?: number }> };
+  contracts?: Array<{ id?: number; type?: string; resourceId?: number; resourceName?: string; quality?: number; amount?: number; price?: number; remaining?: number }>;
+  logo?: string;
+}
+
+interface RawBuilding {
+  id?: number;
+  kind?: string;
+  level?: number;
+  size?: number;
+  busy?: Record<string, number>;
+  slot?: number;
+}
+
+interface RawStorageItem {
+  resourceId?: number;
+  resourceName?: string;
+  quality?: number;
+  amount?: number;
+}
+
+interface RawContract {
+  id?: number;
+  type?: string;
+  resourceId?: number;
+  resourceName?: string;
+  quality?: number;
+  amount?: number;
+  price?: number;
+  remaining?: number;
+}
+
+interface RawResource {
+  id?: number;
+  name?: string;
+  category?: string;
+  categoryName?: string;
+  basePrice?: number;
+  demandElasticity?: number;
+  supplyElasticity?: number;
+  decayRate?: number;
+  productionTime?: number;
+  inputs?: Array<{ resourceId?: number; amount?: number }>;
+  outputs?: Array<{ resourceId?: number; amount?: number; probability?: number }>;
+}
+
+interface RawMarketOrder {
+  id?: number;
+  companyId?: number;
+  companyName?: string;
+  type?: string;
+  resourceId?: number;
+  resourceName?: string;
+  quality?: number;
+  amount?: number;
+  remaining?: number;
+  price?: number;
+  createdAt?: string;
 }
 
 export interface Building {
@@ -95,22 +172,6 @@ export interface ResourceOutput {
   probability?: number;
 }
 
-export interface BuildingType {
-  id: number;
-  name: string;
-  description: string;
-  size: number;
-  constructionCost: ConstructionCost[];
-  constructionTime: number;
-  slots: number;
-  type: "production" | "retail" | "office" | "storage";
-}
-
-export interface ConstructionCost {
-  resourceId: number;
-  amount: number;
-}
-
 export interface MarketOrder {
   id: number;
   companyId: number;
@@ -125,63 +186,6 @@ export interface MarketOrder {
   createdAt: string;
 }
 
-export interface ExchangeRate {
-  resource1Id: number;
-  resource1Name: string;
-  resource2Id: number;
-  resource2Name: string;
-  rate: number;
-  volume: number;
-  updatedAt: string;
-}
-
-export interface GovernmentContract {
-  id: number;
-  tier: number;
-  resourceId: number;
-  resourceName: string;
-  amount: number;
-  price: number;
-  deadline: string;
-  requirements: Requirement[];
-}
-
-export interface Requirement {
-  type: "building" | "resource" | "certification";
-  id: number;
-  name: string;
-  level?: number;
-  amount?: number;
-}
-
-export interface NewsItem {
-  id: number;
-  title: string;
-  summary: string;
-  content: string;
-  category: string;
-  publishedAt: string;
-  author?: string;
-}
-
-export interface LeagueInfo {
-  id: number;
-  name: string;
-  minRank: number;
-  maxRank: number;
-  benefits: string[];
-}
-
-export interface Achievement {
-  id: number;
-  name: string;
-  description: string;
-  icon: string;
-  unlocked: boolean;
-  progress: number;
-  target: number;
-}
-
 // ============================================================================
 // Cache Configuration
 // ============================================================================
@@ -189,12 +193,7 @@ export interface Achievement {
 const CACHE_CONFIG = {
   COMPANY_PROFILE: 5 * 60 * 1000,      // 5 minutes
   RESOURCES: 15 * 60 * 1000,           // 15 minutes
-  BUILDINGS: 30 * 60 * 1000,           // 30 minutes
   MARKET_ORDERS: 2 * 60 * 1000,        // 2 minutes
-  EXCHANGE_RATES: 5 * 60 * 1000,       // 5 minutes
-  GOVERNMENT_CONTRACTS: 10 * 60 * 1000, // 10 minutes
-  NEWS: 30 * 60 * 1000,                // 30 minutes
-  LEAGUES: 60 * 60 * 1000,             // 1 hour
 };
 
 // ============================================================================
@@ -279,13 +278,13 @@ export async function fetchCompanyProfile(identifier: string | number, realm = 0
       : `${API_BASE}/companies`;
     
     const url = `${basePath}/${identifier}/`;
-    const data = await fetchWithRetry<any>(url);
+    const data = await fetchWithRetry<RawCompanyProfile>(url);
     
     return mapCompanyProfile(data);
   }, CACHE_CONFIG.COMPANY_PROFILE);
 }
 
-function mapCompanyProfile(data: any): CompanyProfile {
+function mapCompanyProfile(data: RawCompanyProfile): CompanyProfile {
   return {
     id: data.id ?? 0,
     username: data.username ?? data.companyPublicInfo?.company ?? '',
@@ -305,7 +304,7 @@ function mapCompanyProfile(data: any): CompanyProfile {
     recreationBonus: data.infrastructure?.recreationBonus ?? 0,
     administrationOverhead: data.infrastructure?.administrationOverhead ?? 0,
     governmentOrderTierIndex: data.governmentOrderTierIndex ?? 0,
-    buildings: (data.infrastructure?.buildings ?? []).map((b: any) => ({
+    buildings: (data.infrastructure?.buildings ?? []).map((b: RawBuilding) => ({
       id: b.id ?? 0,
       kind: b.kind ?? '',
       level: b.level ?? 1,
@@ -316,16 +315,16 @@ function mapCompanyProfile(data: any): CompanyProfile {
     storage: {
       capacity: data.storage?.capacity ?? 0,
       used: data.storage?.used ?? 0,
-      items: (data.storage?.items ?? []).map((i: any) => ({
+      items: (data.storage?.items ?? []).map((i: RawStorageItem) => ({
         resourceId: i.resourceId ?? 0,
         resourceName: i.resourceName ?? '',
         quality: i.quality ?? 1,
         amount: i.amount ?? 0,
       })),
     },
-    contracts: (data.contracts ?? []).map((c: any) => ({
+    contracts: (data.contracts ?? []).map((c: RawContract) => ({
       id: c.id ?? 0,
-      type: c.type ?? 'sale',
+      type: (c.type === 'purchase' ? 'purchase' : 'sale'),
       resourceId: c.resourceId ?? 0,
       resourceName: c.resourceName ?? '',
       quality: c.quality ?? 1,
@@ -334,20 +333,6 @@ function mapCompanyProfile(data: any): CompanyProfile {
       remaining: c.remaining ?? 0,
     })),
   };
-}
-
-/**
- * Search companies by name fragment (requires web scraping workaround)
- */
-export async function searchCompanies(query: string, realm = 0): Promise<CompanyProfile[]> {
-  const cacheKey = `company_search:${realm}:${query}`;
-  
-  return withCache(cacheKey, async () => {
-    // Note: Official API doesn't support search, this is a placeholder
-    // for future implementation using alternative methods
-    console.warn('Company search not supported by official API');
-    return [];
-  }, 60 * 1000); // 1 minute cache
 }
 
 /**
@@ -375,14 +360,12 @@ export async function fetchCompanyStorage(identifier: string | number, realm = 0
  */
 export async function fetchAllResources(): Promise<Resource[]> {
   return withCache('resources:all', async () => {
-    // Static resource data - would need to be maintained or fetched from game data
-    // This is a placeholder for actual implementation
-    const response = await fetchWithRetry<any[]>(`${API_BASE}/resources/`);
+    const response = await fetchWithRetry<RawResource[]>(`${API_BASE}/resources/`);
     return response.map(mapResource);
   }, CACHE_CONFIG.RESOURCES);
 }
 
-function mapResource(data: any): Resource {
+function mapResource(data: RawResource): Resource {
   return {
     id: data.id ?? 0,
     name: data.name ?? '',
@@ -393,70 +376,16 @@ function mapResource(data: any): Resource {
     supplyElasticity: data.supplyElasticity ?? 0,
     decayRate: data.decayRate,
     productionTime: data.productionTime ?? 0,
-    inputs: (data.inputs ?? []).map((i: any) => ({
+    inputs: (data.inputs ?? []).map((i) => ({
       resourceId: i.resourceId ?? 0,
       amount: i.amount ?? 0,
     })),
-    outputs: (data.outputs ?? []).map((o: any) => ({
+    outputs: (data.outputs ?? []).map((o) => ({
       resourceId: o.resourceId ?? 0,
       amount: o.amount ?? 0,
       probability: o.probability,
     })),
   };
-}
-
-/**
- * Fetch single resource details
- */
-export async function fetchResource(resourceId: number): Promise<Resource> {
-  const cacheKey = `resource:${resourceId}`;
-  
-  return withCache(cacheKey, async () => {
-    const data = await fetchWithRetry<any>(`${API_BASE}/resources/${resourceId}/`);
-    return mapResource(data);
-  }, CACHE_CONFIG.RESOURCES);
-}
-
-// ============================================================================
-// Buildings
-// ============================================================================
-
-/**
- * Fetch all building types
- */
-export async function fetchAllBuildings(): Promise<BuildingType[]> {
-  return withCache('buildings:all', async () => {
-    const response = await fetchWithRetry<any[]>(`${API_BASE}/buildings/`);
-    return response.map(mapBuildingType);
-  }, CACHE_CONFIG.BUILDINGS);
-}
-
-function mapBuildingType(data: any): BuildingType {
-  return {
-    id: data.id ?? 0,
-    name: data.name ?? '',
-    description: data.description ?? '',
-    size: data.size ?? 0,
-    constructionCost: (data.constructionCost ?? []).map((c: any) => ({
-      resourceId: c.resourceId ?? 0,
-      amount: c.amount ?? 0,
-    })),
-    constructionTime: data.constructionTime ?? 0,
-    slots: data.slots ?? 0,
-    type: data.type ?? 'production',
-  };
-}
-
-/**
- * Fetch building type details
- */
-export async function fetchBuildingType(buildingId: number): Promise<BuildingType> {
-  const cacheKey = `building:${buildingId}`;
-  
-  return withCache(cacheKey, async () => {
-    const data = await fetchWithRetry<any>(`${API_BASE}/buildings/${buildingId}/`);
-    return mapBuildingType(data);
-  }, CACHE_CONFIG.BUILDINGS);
 }
 
 // ============================================================================
@@ -474,17 +403,17 @@ export async function fetchMarketOrders(resourceId: number, type?: 'sell' | 'buy
     if (type) {
       url += `?type=${type}`;
     }
-    const response = await fetchWithRetry<any[]>(url);
+    const response = await fetchWithRetry<RawMarketOrder[]>(url);
     return response.map(mapMarketOrder);
   }, CACHE_CONFIG.MARKET_ORDERS);
 }
 
-function mapMarketOrder(data: any): MarketOrder {
+function mapMarketOrder(data: RawMarketOrder): MarketOrder {
   return {
     id: data.id ?? 0,
     companyId: data.companyId ?? 0,
     companyName: data.companyName ?? '',
-    type: data.type ?? 'sell',
+    type: (data.type === 'purchase' ? 'buy' : 'sell'),
     resourceId: data.resourceId ?? 0,
     resourceName: data.resourceName ?? '',
     quality: data.quality ?? 1,
@@ -492,169 +421,6 @@ function mapMarketOrder(data: any): MarketOrder {
     remaining: data.remaining ?? 0,
     price: data.price ?? 0,
     createdAt: data.createdAt ?? '',
-  };
-}
-
-/**
- * Fetch exchange rates between resources
- */
-export async function fetchExchangeRates(): Promise<ExchangeRate[]> {
-  return withCache('exchange:rates', async () => {
-    const response = await fetchWithRetry<any[]>(`${API_BASE}/exchange/rates/`);
-    return response.map(mapExchangeRate);
-  }, CACHE_CONFIG.EXCHANGE_RATES);
-}
-
-function mapExchangeRate(data: any): ExchangeRate {
-  return {
-    resource1Id: data.resource1Id ?? 0,
-    resource1Name: data.resource1Name ?? '',
-    resource2Id: data.resource2Id ?? 0,
-    resource2Name: data.resource2Name ?? '',
-    rate: data.rate ?? 0,
-    volume: data.volume ?? 0,
-    updatedAt: data.updatedAt ?? '',
-  };
-}
-
-// ============================================================================
-// Government Contracts
-// ============================================================================
-
-/**
- * Fetch available government contracts
- */
-export async function fetchGovernmentContracts(tier?: number): Promise<GovernmentContract[]> {
-  const cacheKey = `gov:contracts:${tier ?? 'all'}`;
-  
-  return withCache(cacheKey, async () => {
-    let url = `${API_BASE}/government/contracts/`;
-    if (tier !== undefined) {
-      url += `?tier=${tier}`;
-    }
-    const response = await fetchWithRetry<any[]>(url);
-    return response.map(mapGovernmentContract);
-  }, CACHE_CONFIG.GOVERNMENT_CONTRACTS);
-}
-
-function mapGovernmentContract(data: any): GovernmentContract {
-  return {
-    id: data.id ?? 0,
-    tier: data.tier ?? 1,
-    resourceId: data.resourceId ?? 0,
-    resourceName: data.resourceName ?? '',
-    amount: data.amount ?? 0,
-    price: data.price ?? 0,
-    deadline: data.deadline ?? '',
-    requirements: (data.requirements ?? []).map((r: any) => ({
-      type: r.type ?? 'building',
-      id: r.id ?? 0,
-      name: r.name ?? '',
-      level: r.level,
-      amount: r.amount,
-    })),
-  };
-}
-
-// ============================================================================
-// News & Information
-// ============================================================================
-
-/**
- * Fetch game news
- */
-export async function fetchNews(category?: string): Promise<NewsItem[]> {
-  const cacheKey = `news:${category ?? 'all'}`;
-  
-  return withCache(cacheKey, async () => {
-    let url = `${API_BASE}/news/`;
-    if (category) {
-      url += `?category=${category}`;
-    }
-    const response = await fetchWithRetry<any[]>(url);
-    return response.map(mapNewsItem);
-  }, CACHE_CONFIG.NEWS);
-}
-
-function mapNewsItem(data: any): NewsItem {
-  return {
-    id: data.id ?? 0,
-    title: data.title ?? '',
-    summary: data.summary ?? '',
-    content: data.content ?? '',
-    category: data.category ?? '',
-    publishedAt: data.publishedAt ?? '',
-    author: data.author,
-  };
-}
-
-// ============================================================================
-// Leagues & Rankings
-// ============================================================================
-
-/**
- * Fetch league information
- */
-export async function fetchLeagues(): Promise<LeagueInfo[]> {
-  return withCache('leagues:all', async () => {
-    const response = await fetchWithRetry<any[]>(`${API_BASE}/leagues/`);
-    return response.map(mapLeague);
-  }, CACHE_CONFIG.LEAGUES);
-}
-
-function mapLeague(data: any): LeagueInfo {
-  return {
-    id: data.id ?? 0,
-    name: data.name ?? '',
-    minRank: data.minRank ?? 0,
-    maxRank: data.maxRank ?? 0,
-    benefits: data.benefits ?? [],
-  };
-}
-
-/**
- * Fetch top companies ranking
- */
-export async function fetchRankings(limit = 100, realm = 0): Promise<CompanyProfile[]> {
-  const cacheKey = `rankings:${realm}:${limit}`;
-  
-  return withCache(cacheKey, async () => {
-    const basePath = realm === 1 
-      ? `${API_BASE}/entrepreneurs/rankings`
-      : `${API_BASE}/rankings`;
-    
-    const url = `${basePath}/?limit=${limit}`;
-    const response = await fetchWithRetry<any[]>(url);
-    return response.map(mapCompanyProfile);
-  }, 5 * 60 * 1000); // 5 minutes
-}
-
-// ============================================================================
-// Achievements (if authenticated)
-// ============================================================================
-
-/**
- * Fetch player achievements (requires authentication)
- */
-export async function fetchAchievements(companyId: string | number): Promise<Achievement[]> {
-  const cacheKey = `achievements:${companyId}`;
-  
-  return withCache(cacheKey, async () => {
-    // This endpoint would require authentication
-    const response = await fetchWithRetry<any[]>(`${API_BASE}/companies/${companyId}/achievements/`);
-    return response.map(mapAchievement);
-  }, 10 * 60 * 1000);
-}
-
-function mapAchievement(data: any): Achievement {
-  return {
-    id: data.id ?? 0,
-    name: data.name ?? '',
-    description: data.description ?? '',
-    icon: data.icon ?? '',
-    unlocked: data.unlocked ?? false,
-    progress: data.progress ?? 0,
-    target: data.target ?? 0,
   };
 }
 

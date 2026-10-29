@@ -86,7 +86,7 @@ export function EncyclopediaPage() {
               </div>
               <div className="relative z-10 flex items-center gap-3">
                 <button onClick={() => setShowFlow(true)} className="px-3 py-2 bg-surface-100 dark:bg-surface-800 hover:bg-brand-100 dark:hover:bg-brand-900/30 rounded-lg text-xs font-bold uppercase flex items-center gap-2 transition-all"><Share2 size={14} /> Flow</button>
-                {selectedMargin && <div className="text-right"><span className="block text-xs font-bold uppercase text-surface-400 mb-1">Market Benchmark</span><span className="text-3xl font-bold text-brand-600">${selectedMargin.outputVwap.toFixed(2)}</span></div>}
+                {selectedMargin && <div className="text-right"><span className="block text-xs font-bold uppercase text-surface-400 mb-1">Market Benchmark</span><span className="text-3xl font-bold text-brand-600">${(selectedMargin.outputVwap ?? 0).toFixed(2)}</span></div>}
               </div>
             </div>
 
