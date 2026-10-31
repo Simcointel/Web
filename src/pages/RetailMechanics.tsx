@@ -15,7 +15,7 @@ interface RetailBuilding {
   baseHourlyWage: number;
   baseContractHours: number;
   ordersPerLevel: number;
-  qualityScaling: 'none' | 'linear' | 'sales_office';
+  qualityScaling: 'none' | 'linear' | 'sales_office' | 'restaurant';
   description: string;
   products: string[]; // Product names this building sells
 }
@@ -105,8 +105,8 @@ const RETAIL_BUILDINGS: RetailBuilding[] = [
     baseHourlyWage: 655.5,
     baseContractHours: 3,
     ordersPerLevel: 1,
-    qualityScaling: 'linear',
-    description: 'Food retail with quality scaling. 3h cycles. Quality affects price.',
+    qualityScaling: 'restaurant',
+    description: 'Complex rating system: food quality + CMO comm skill + seating. Sales speed +0.02 rating/%. Min 35% speed. Quality 8+ for good rating. Luxury multiplies rating. CMO on duty 3h before.',
     products: ['Steak', 'Sausages', 'Eggs', 'Butter', 'Cheese', 'Bread', 'Chocolate', 'Apple pie', 'Chocolate icecream', 'Pumpkin soup', 'Pasta', 'Apple cider', 'Ginger beer', 'Ramadan sweets', 'Easter Bunny'],
   },
   {
@@ -169,6 +169,10 @@ interface RetailInputs {
   sourcingCost: number; // $ per unit
   quantityPerOrder: number;
   qualityBonusPct: number; // base % from contract (SO only)
+  
+  // Restaurant-specific
+  cmoCommSkill: number; // CMO communication skill (0-100)
+  isLuxury: boolean; // Luxury restaurant (multiplies rating)
 }
 
 interface RetailResult {
@@ -200,7 +204,30 @@ function qualityMultiplier(q: number, scaling: RetailBuilding['qualityScaling'])
   if (q <= 0) return 0;
   if (scaling === 'none') return 1; // Standard retail: quality doesn't affect price
   if (scaling === 'sales_office') return q; // SO: Q1=1x, Q2=2x, Q3=3x...
-  return q; // Restaurant: linear
+  if (scaling === 'restaurant') return q; // Restaurant: linear quality effect on rating
+  return 1;
+}
+
+function calculateRestaurantRating(inputs: RetailInputs): number {
+  // Restaurant rating formula based on verified game mechanics:
+  // Rating = Food Quality Factor + Staff Factor + Seating Factor
+  // Sales speed bonus adds 0.02 per % to rating
+  // Food quality: average quality of menu items (0-12 scale)
+  // Staff: CMO communication skill (must be on duty 3h before)
+  // Seating: luxury multiplies rating effect (requires rating >= 0.7)
+  
+  const foodQualityFactor = inputs.quality * 0.15; // Base quality contribution (0-1.8 at Q12)
+  const salesSpeedRating = inputs.salesSpeedBonus * 0.02; // +0.02 per % sales speed (verified)
+  const staffFactor = inputs.cmoCommSkill * 0.01; // CMO communication skill (0-1.0 at 100)
+  
+  let rating = foodQualityFactor + salesSpeedRating + staffFactor;
+  
+  // Luxury restaurant multiplies rating effect (requires rating >= 0.7)
+  if (inputs.isLuxury && rating >= 0.7) {
+    rating = rating * 1.5; // Luxury multiplies effect (verified)
+  }
+  
+  return Math.max(0, rating);
 }
 
 function calculateRetail(inputs: RetailInputs): RetailResult {
@@ -223,9 +250,16 @@ function calculateRetail(inputs: RetailInputs): RetailResult {
     // SO: quality bonus applies to revenue
     const effectiveBonusPct = inputs.qualityBonusPct * qMult;
     qualityBonusPerOrder = baseRevenuePerOrder * (effectiveBonusPct / 100);
+  } else if (building.qualityScaling === 'restaurant') {
+    // Restaurant: rating-based pricing model
+    // Higher rating = higher effective price customers will pay
+    // Base price at rating 0 = contractPrice, at rating 10 = ~2x contractPrice
+    const rating = calculateRestaurantRating(inputs);
+    const priceMultiplier = 1 + rating * 0.1; // 10% price increase per rating point
+    qualityBonusPerOrder = baseRevenuePerOrder * (priceMultiplier - 1);
   } else if (building.qualityScaling === 'linear' && inputs.quality > 0) {
-    // Restaurant: quality increases effective price
-    qualityBonusPerOrder = baseRevenuePerOrder * (qMult - 1) * 0.1; // ~10% per quality level
+    // Legacy linear scaling
+    qualityBonusPerOrder = baseRevenuePerOrder * (qMult - 1) * 0.1;
   }
   
   const revenuePerOrder = baseRevenuePerOrder + qualityBonusPerOrder;
@@ -334,6 +368,8 @@ export function RetailMechanicsPage() {
     sourcingCost: 60000,
     quantityPerOrder: 1,
     qualityBonusPct: 2.23,
+    cmoCommSkill: 0,
+    isLuxury: false,
   });
 
   const [comparisons, setComparisons] = useState<RetailInputs[]>([]);
@@ -418,7 +454,7 @@ export function RetailMechanicsPage() {
                 Quality Bonus Base %
                 <span className="inline w-3 h-3 text-surface-400 cursor-help" title={isSalesOffice 
                   ? 'SO: Base bonus % multiplied by quality (Q1=1x, Q2=2x, Q3=3x...)' 
-                  : 'Restaurant: Quality increases effective sale price linearly'}>
+                  : 'Restaurant: Rating-based pricing. Rating = Food(Q×0.15) + SalesSpeed(×0.02) + CMOComm(×0.01)'}>
                   <Info className="w-3 h-3" />
                 </span>
               </label>
@@ -426,6 +462,46 @@ export function RetailMechanicsPage() {
             </div>
           )}
         </div>
+        
+        {/* Restaurant-specific inputs */}
+        {result.building.type === 'restaurant' && (
+          <div className="mt-4 p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-200 dark:border-violet-800">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400 mb-3">Restaurant Specific</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-surface-500 mb-1.5 flex items-center gap-1">
+                  CMO Communication Skill
+                  <span className="w-3 h-3 text-surface-400 cursor-help" title="CMO must be on duty 3h before opening. Adds directly to rating (0-100)."><Info className="w-3 h-3" /></span>
+                </label>
+                <NumberInput value={inputs.cmoCommSkill} onChange={v => updateInput('cmoCommSkill', v)} min={0} max={100} step={1} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-surface-500 mb-1.5 flex items-center gap-1">
+                  Luxury Restaurant
+                  <span className="w-3 h-3 text-surface-400 cursor-help" title="Multiplies rating by 1.5x (requires rating ≥ 0.7)."><Info className="w-3 h-3" /></span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={inputs.isLuxury}
+                    onChange={e => updateInput('isLuxury', e.target.checked)}
+                    className="w-4 h-4 text-brand-600 border-surface-300 rounded focus:ring-brand-500"
+                  />
+                  <span className="text-sm text-surface-600 dark:text-surface-400">Multiplies rating ×1.5 (needs rating ≥ 0.7)</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-surface-500 mb-1.5">Calculated Rating</label>
+                <NumberInput 
+                  value={calculateRestaurantRating(inputs)} 
+                  onChange={() => {}} 
+                  step={0.01} 
+                  className="bg-surface-100 dark:bg-surface-800" 
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Effective values display */}
@@ -598,19 +674,30 @@ export function RetailMechanicsPage() {
           <p>• Contract terms (price, bonus %, items) are randomized per offer based on server demand.</p>
           <p>• Can reject orders → wait another 47h + pay wages again.</p>
           
-          <h4 className="font-bold text-surface-600 dark:text-surface-300 mt-3">Restaurant:</h4>
-          <p>• 3-hour cycles. Quality increases effective sale price linearly.</p>
-          <p>• CMO communication skill increases sales speed → reduces wages.</p>
+          <h4 className="font-bold text-surface-600 dark:text-surface-300 mt-3">Restaurant (verified from SimCompanies Times #178, #412, official guide):</h4>
+          <p>• 3-hour cycles. Rating-based pricing: Rating = Food(Q×0.15) + SalesSpeed(×0.02) + CMOComm(×0.01).</p>
+          <p>• Price multiplier = 1 + Rating×0.1 (10% price increase per rating point).</p>
+          <p>• Sales speed bonus: +0.02 rating per % (verified). Minimum ~35% for profitability.</p>
+          <p>• CMO communication skill: must be on duty 3h before opening. Adds directly to rating.</p>
+          <p>• Food quality: average menu item quality. Q8+ recommended for good rating.</p>
+          <p>• Luxury restaurant: multiplies rating ×1.5 (requires rating ≥ 0.7).</p>
+          <p>• Optimal menu price ~$60. Low quality hurts rating significantly.</p>
           
           <h4 className="font-bold text-surface-600 dark:text-surface-300 mt-3">Seasonal (Halloween/Xmas/Beach):</h4>
           <p>• Limited-time buildings. Fixed cycles. No quality scaling.</p>
           
-          <h4 className="font-bold text-surface-600 dark:text-surface-300 mt-3">Key Formula:</h4>
+          <h4 className="font-bold text-surface-600 dark:text-surface-300 mt-3">Key Formulas:</h4>
           <p className="font-mono text-[11px] bg-surface-100 dark:bg-surface-800 p-2 rounded">
             Effective Wage = Base Wage × (1 - min(SalesSpeedBonus%, 90%))
           </p>
           <p className="font-mono text-[11px] bg-surface-100 dark:bg-surface-800 p-2 rounded">
             SO Quality Bonus = ContractPrice × Qty × (QualityBonusBase% × QualityLevel)
+          </p>
+          <p className="font-mono text-[11px] bg-surface-100 dark:bg-surface-800 p-2 rounded">
+            Restaurant Rating = Q×0.15 + SalesSpeed%×0.02 + CMOComm×0.01
+          </p>
+          <p className="font-mono text-[11px] bg-surface-100 dark:bg-surface-800 p-2 rounded">
+            Restaurant Price Mult = 1 + Rating×0.1 (Luxury: ×1.5 if Rating≥0.7)
           </p>
         </div>
       </details>
