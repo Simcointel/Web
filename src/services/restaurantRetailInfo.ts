@@ -1,6 +1,7 @@
 /**
- * Restaurant Retail Info API Service
- * Fetches and caches data from https://www.simcompanies.com/api/v4/1/resources-retail-info/
+ * Restaurant Retail Info Service
+ * Reads data from SimcoIntel/Data repo (GitHub raw) instead of direct API
+ * Data is collected by backend scheduler and stored in Data repo
  * Key metric for restaurants: amountSoldRestaurant (not demand)
  */
 
@@ -20,12 +21,16 @@ interface RestaurantQualityData {
   retailData: RestaurantRetailDataPoint[];
 }
 
-interface RestaurantRetailInfoResponse {
-  [key: string]: RestaurantQualityData[];
+interface RestaurantRetailInfoSnapshot {
+  timestamp: string;
+  snapshotType: "restaurant-retail-info";
+  data: RestaurantQualityData[];
 }
 
 const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours
-const API_URL = 'https://www.simcompanies.com/api/v4/1/resources-retail-info/';
+// Data repo raw URL - reads from GitHub raw (SimcoIntel/Data repo)
+const DATA_REPO_BASE = 'https://raw.githubusercontent.com/SimcoIntel/Data/main';
+const INDEX_URL = `${DATA_REPO_BASE}/aggregates/restaurant-retail-info/index.json`;
 
 let cachedData: RestaurantQualityData[] | null = null;
 let cacheTimestamp: number = 0;
@@ -39,43 +44,41 @@ async function fetchRestaurantRetailInfo(): Promise<RestaurantQualityData[]> {
   }
 
   try {
-    const response = await fetch(API_URL, {
-      headers: {
-        'Accept': 'application/json',
-      },
+    // First fetch index to get latest snapshot filename
+    const indexResponse = await fetch(INDEX_URL, {
+      headers: { 'Accept': 'application/json' },
     });
 
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
+    if (!indexResponse.ok) {
+      throw new Error(`Index fetch error: ${indexResponse.status}`);
     }
 
-    const rawData = await response.json();
-    
-    // The API returns an array of quality data objects
-    // We need to flatten/normalize it
-    const normalizedData: RestaurantQualityData[] = [];
-    
-    for (const item of rawData) {
-      if (item && typeof item.quality === 'number') {
-        normalizedData.push({
-          quality: item.quality,
-          dbLetter: item.dbLetter || 150,
-          averagePrice: item.averagePrice || 0,
-          saturation: item.saturation || 0,
-          retailData: item.retailData || [],
-        });
-      }
+    const index = await indexResponse.json() as { latest: string; files: string[] };
+    if (!index.latest) {
+      throw new Error("No latest snapshot in index");
     }
 
-    // Sort by quality
-    normalizedData.sort((a, b) => a.quality - b.quality);
+    // Fetch the latest snapshot
+    const snapshotUrl = `${DATA_REPO_BASE}/aggregates/restaurant-retail-info/${index.latest}`;
+    const snapshotResponse = await fetch(snapshotUrl, {
+      headers: { 'Accept': 'application/json' },
+    });
+
+    if (!snapshotResponse.ok) {
+      throw new Error(`Snapshot fetch error: ${snapshotResponse.status}`);
+    }
+
+    const snapshot = await snapshotResponse.json() as RestaurantRetailInfoSnapshot;
+    
+    // Normalize and sort by quality
+    const normalizedData = snapshot.data.sort((a, b) => a.quality - b.quality);
     
     cachedData = normalizedData;
     cacheTimestamp = now;
     
     return normalizedData;
   } catch (error) {
-    console.error('Failed to fetch restaurant retail info:', error);
+    console.error('Failed to fetch restaurant retail info from Data repo:', error);
     // Return cached data even if stale, or empty array
     return cachedData || [];
   }
