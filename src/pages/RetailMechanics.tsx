@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { PageHeader } from "../components/ui/Common";
 import { usePageTitleKey } from "../hooks/usePageTitle";
 import { fmtCurrency, fmtPct, fmtNumber } from "../utils/formatters";
-import { Calculator, Plus, Trash2, Copy, ChevronDown, ChevronUp, Clock, Building2, Store, ShoppingBag, Factory, Settings, Info, AlertTriangle, Zap, Truck, ArrowLeftRight, Users, Trophy, Target, TrendingUp } from "lucide-react";
+import { Calculator, Plus, Trash2, Copy, ChevronDown, ChevronUp, Clock, Building2, Store, ShoppingBag, Factory, Settings, Info, AlertTriangle, Zap, Truck, ArrowLeftRight, Users, Trophy, Target, TrendingUp, Utensils, Star, TrendingDown } from "lucide-react";
+import { getRestaurantRetailInfo, getQualityData, getAvgAmountSoldRestaurant, getAvgPriceForQuality, RESTAURANT_MENU_ITEMS, type RestaurantMenuItemId } from "../services/restaurantRetailInfo";
 
 // ============================================================================
 // RETAIL BUILDING DEFINITIONS (from simco_static.ts + game mechanics)
@@ -173,6 +174,7 @@ interface RetailInputs {
   // Restaurant-specific
   cmoCommSkill: number; // CMO communication skill (0-100)
   isLuxury: boolean; // Luxury restaurant (multiplies rating)
+  currentRating: number | null; // User-entered actual rating (overrides calculated)
 }
 
 interface RetailResult {
@@ -309,8 +311,8 @@ function calculateRetail(inputs: RetailInputs): RetailResult {
 // UI COMPONENTS
 // ============================================================================
 
-function NumberInput({ value, onChange, min = 0, max, step = 1, prefix = "", className = "" }: {
-  value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number; prefix?: string; className?: string;
+function NumberInput({ value, onChange, min = 0, max, step = 1, prefix = "", className = "", placeholder }: {
+  value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number; prefix?: string; className?: string; placeholder?: string;
 }) {
   return (
     <div className={`relative ${className}`}>
@@ -321,6 +323,7 @@ function NumberInput({ value, onChange, min = 0, max, step = 1, prefix = "", cla
         min={min}
         max={max}
         step={step}
+        placeholder={placeholder}
         onChange={e => onChange(Math.min(max ?? Infinity, Math.max(min, Number(e.target.value))))}
         className={`w-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 rounded-lg py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all ${prefix ? 'pl-7 pr-3' : 'px-3'}`}
       />
@@ -412,10 +415,23 @@ export function RetailMechanicsPage() {
     qualityBonusPct: 2.23,
     cmoCommSkill: 0,
     isLuxury: false,
+    // New: user can override calculated rating with actual current rating
+    currentRating: null,
   });
 
   const [comparisons, setComparisons] = useState<RetailInputs[]>([]);
   const [showComparison, setShowComparison] = useState(false);
+  
+  // Restaurant API data
+  const [restaurantData, setRestaurantData] = useState<Awaited<ReturnType<typeof getRestaurantRetailInfo>> | null>(null);
+  const [restaurantLoading, setRestaurantLoading] = useState(true);
+
+  useEffect(() => {
+    getRestaurantRetailInfo().then(data => {
+      setRestaurantData(data);
+      setRestaurantLoading(false);
+    }).catch(() => setRestaurantLoading(false));
+  }, []);
 
   const result = useMemo(() => calculateRetail(inputs), [inputs]);
   const comparisonResults = useMemo(() => comparisons.map(c => calculateRetail(c)), [comparisons]);
@@ -439,7 +455,21 @@ export function RetailMechanicsPage() {
   
   // Restaurant competitive analysis
   const metaRatingThreshold = 5.0; // Rough meta threshold from community
-  const isCompetitive = result.restaurantRating >= metaRatingThreshold;
+  const isCompetitive = (inputs.currentRating ?? result.restaurantRating) >= metaRatingThreshold;
+  
+  // Effective rating: user-entered or calculated
+  const effectiveRating = inputs.currentRating ?? result.restaurantRating;
+  const effectivePriceMultiplier = 1 + effectiveRating * 0.1;
+  const effectiveCompetitive = effectiveRating >= metaRatingThreshold;
+
+  // Restaurant API data for current quality
+  const currentQualityData = restaurantData?.find(d => d.quality === inputs.quality);
+  const retailData = currentQualityData?.retailData || [];
+  const avgAmountSold = retailData.length > 0 
+    ? retailData.slice(-7).reduce((sum, d) => sum + (d.amountSoldRestaurant || 0), 0) / Math.min(7, retailData.length)
+    : 0;
+  const avgPrice = currentQualityData?.averagePrice || 0;
+  const saturation = currentQualityData?.saturation || 0;
 
   return (
     <div className="max-w-5xl mx-auto space-y-5 animate-slide-up">
@@ -566,15 +596,68 @@ export function RetailMechanicsPage() {
                   className="bg-surface-100 dark:bg-surface-800" 
                 />
               </div>
+              <div>
+                <label className="block text-xs font-medium text-surface-500 mb-1.5 flex items-center gap-1">
+                  Your Current Rating (optional)
+                  <span className="w-3 h-3 text-surface-400 cursor-help" title="Enter your actual current rating from the game to override calculated rating. This affects all profit projections."><Info className="w-3 h-3" /></span>
+                </label>
+                <NumberInput 
+                  value={inputs.currentRating ?? 0} 
+                  onChange={v => updateInput('currentRating', v === 0 ? null : v)} 
+                  min={0} 
+                  max={20} 
+                  step={0.01} 
+                  placeholder="Enter actual rating..."
+                />
+              </div>
             </div>
             
             {/* Restaurant Rating Analysis */}
             <div className="mt-4">
               <RestaurantRatingCard 
-                rating={result.restaurantRating} 
-                priceMult={result.restaurantPriceMultiplier}
-                isCompetitive={isCompetitive}
+                rating={effectiveRating} 
+                priceMult={effectivePriceMultiplier}
+                isCompetitive={effectiveCompetitive}
               />
+            </div>
+            
+            {/* API Data: Amount Sold in Restaurants */}
+            {currentQualityData && (
+              <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-3">API Data: Q{inputs.quality} Restaurant Retail Info</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div className="text-center p-2 bg-white dark:bg-surface-800 rounded">
+                    <div className="font-bold text-emerald-600">{avgAmountSold.toFixed(0)}</div>
+                    <div className="text-surface-500">Avg Sold/Day (7d)</div>
+                  </div>
+                  <div className="text-center p-2 bg-white dark:bg-surface-800 rounded">
+                    <div className="font-bold text-blue-600">{fmtCurrency(avgPrice)}</div>
+                    <div className="text-surface-500">Avg Price</div>
+                  </div>
+                  <div className="text-center p-2 bg-white dark:bg-surface-800 rounded">
+                    <div className="font-bold text-amber-600">{saturation.toFixed(2)}</div>
+                    <div className="text-surface-500">Saturation</div>
+                  </div>
+                  <div className="text-center p-2 bg-white dark:bg-surface-800 rounded">
+                    <div className="font-bold text-violet-600">{currentQualityData.retailData.length}d</div>
+                    <div className="text-surface-500">Data Points</div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Restaurant Menu Items */}
+            <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 mb-3">Restaurant Menu Items (Sellable in Restaurant)</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 text-xs">
+                {RESTAURANT_MENU_ITEMS.map(item => (
+                  <div key={item.id} className="p-2 bg-white dark:bg-surface-800 rounded border border-orange-100 dark:border-orange-800">
+                    <div className="font-bold text-orange-600 dark:text-orange-400 capitalize">{item.name.replace('_', ' ')}</div>
+                    <div className="text-surface-500">Category: {item.category}</div>
+                    <div className="text-surface-500">Base Quality: Q{item.baseQuality}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -599,32 +682,32 @@ export function RetailMechanicsPage() {
           <p className="text-xs text-surface-500 dark:text-surface-400 mb-4">These numbers assume you OUT-RATE all competitors. If you don't, revenue = $0.</p>
           
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            <ResultCard label="Your Rating" value={result.restaurantRating.toFixed(2)} color={isCompetitive ? 'emerald' : 'rose'} />
-            <ResultCard label="Price Multiplier" value={`${result.restaurantPriceMultiplier.toFixed(2)}x`} color="violet" />
-            <ResultCard label="Effective Price/Unit" value={fmtCurrency(inputs.contractPrice * result.restaurantPriceMultiplier)} color="blue" prefix="$" />
-            <ResultCard label="Meta Threshold" value={`${metaRatingThreshold.toFixed(1)} rating`} color={isCompetitive ? 'emerald' : 'amber'} />
+            <ResultCard label="Your Rating" value={effectiveRating.toFixed(2)} color={effectiveCompetitive ? 'emerald' : 'rose'} />
+            <ResultCard label="Price Multiplier" value={`${effectivePriceMultiplier.toFixed(2)}x`} color="violet" />
+            <ResultCard label="Effective Price/Unit" value={fmtCurrency(inputs.contractPrice * effectivePriceMultiplier)} color="blue" prefix="$" />
+            <ResultCard label="Meta Threshold" value={`${metaRatingThreshold.toFixed(1)} rating`} color={effectiveCompetitive ? 'emerald' : 'amber'} />
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            <ResultCard label="Theoretical Revenue" value={fmtCurrency(result.revenuePerOrder)} color="emerald" prefix="$" />
+            <ResultCard label="Theoretical Revenue" value={fmtCurrency(inputs.contractPrice * inputs.quantityPerOrder * effectivePriceMultiplier)} color="emerald" prefix="$" />
             <ResultCard label="Wage Cost (3h)" value={fmtCurrency(result.wageCostPerOrder)} color="rose" prefix="-$" />
             <ResultCard label="Sourcing Cost" value={fmtCurrency(result.sourcingCostPerOrder)} color="rose" prefix="-$" />
             <ResultCard label="Overhead" value={fmtCurrency(result.overheadCostPerOrder)} color="amber" prefix="-$" />
           </div>
 
-          <div className={`rounded-xl p-5 ${isCompetitive ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200' : 'bg-rose-50 dark:bg-rose-900/20 border border-rose-200'}`}>
+          <div className={`rounded-xl p-5 ${effectiveCompetitive ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200' : 'bg-rose-50 dark:bg-rose-900/20 border border-rose-200'}`}>
             <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-1">
-                  {isCompetitive ? '✅ COMPETITIVE VS META' : '❌ BELOW META THRESHOLD'}
+                  {effectiveCompetitive ? '✅ COMPETITIVE VS META' : '❌ BELOW META THRESHOLD'}
                 </div>
-                <div className="text-xl font-black {isCompetitive ? 'text-emerald-600' : 'text-rose-600'}">
-                  Rating: {result.restaurantRating.toFixed(2)} / {metaRatingThreshold}
+                <div className="text-xl font-black {effectiveCompetitive ? 'text-emerald-600' : 'text-rose-600'}">
+                  Rating: {effectiveRating.toFixed(2)} / {metaRatingThreshold}
                 </div>
               </div>
               <div className="text-center sm:text-right">
                 <div className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-1">Theoretical Margin</div>
-                <div className="text-2xl font-black {isCompetitive ? 'text-emerald-600' : 'text-rose-600'}">{fmtPct(result.marginPct)}</div>
+                <div className="text-2xl font-black {effectiveCompetitive ? 'text-emerald-600' : 'text-rose-600'}">{fmtPct(((inputs.contractPrice * inputs.quantityPerOrder * effectivePriceMultiplier) - (result.sourcingCostPerOrder + result.wageCostPerOrder + result.overheadCostPerOrder)) / (inputs.contractPrice * inputs.quantityPerOrder * effectivePriceMultiplier) * 100)}</div>
               </div>
             </div>
           </div>
@@ -744,18 +827,18 @@ export function RetailMechanicsPage() {
                   <>
                     <tr>
                       <td className="py-3 px-5 text-sm font-medium text-surface-500">Rating</td>
-                      <td className="text-right py-3 px-4 text-sm font-bold text-violet-600">{result.restaurantRating.toFixed(2)}</td>
+                      <td className="text-right py-3 px-4 text-sm font-bold text-violet-600">{effectiveRating.toFixed(2)}</td>
                       {comparisonResults.map(r => <td key={r.building.id} className="text-right py-3 px-4 text-sm font-bold text-violet-600">{r.restaurantRating.toFixed(2)}</td>)}
                     </tr>
                     <tr>
                       <td className="py-3 px-5 text-sm font-medium text-surface-500">Price Mult</td>
-                      <td className="text-right py-3 px-4 text-sm font-bold">{result.restaurantPriceMultiplier.toFixed(2)}x</td>
+                      <td className="text-right py-3 px-4 text-sm font-bold">{effectivePriceMultiplier.toFixed(2)}x</td>
                       {comparisonResults.map(r => <td key={r.building.id} className="text-right py-3 px-4 text-sm font-bold">{r.restaurantPriceMultiplier.toFixed(2)}x</td>)}
                     </tr>
                     <tr className="bg-surface-50 dark:bg-surface-900">
                       <td className="py-4 px-5 text-sm font-black uppercase text-surface-700 dark:text-surface-300">Competitive?</td>
-                      <td className="text-right py-4 px-4 text-lg font-black {isCompetitive ? 'text-emerald-600' : 'text-rose-600'}">
-                        {isCompetitive ? 'YES' : 'NO'}
+                      <td className="text-right py-4 px-4 text-lg font-black {effectiveCompetitive ? 'text-emerald-600' : 'text-rose-600'}">
+                        {effectiveCompetitive ? 'YES' : 'NO'}
                       </td>
                       {comparisonResults.map(r => <td key={r.building.id} className={`text-right py-4 px-4 text-lg font-black ${r.restaurantRating >= metaRatingThreshold ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {r.restaurantRating >= metaRatingThreshold ? 'YES' : 'NO'}
@@ -795,14 +878,18 @@ export function RetailMechanicsPage() {
             </table>
           </div>
           <div className="p-4 space-y-2">
-            {comparisons.map((c, i) => (
-              <div key={i} className="flex items-center justify-between p-2 bg-surface-50 dark:bg-surface-900 rounded">
-                <span className="text-sm">{comparisonResults[i].building.name} L{c.buildingLevel} Q{c.quality} — {isRestaurant ? comparisonResults[i].restaurantRating.toFixed(2) + ' rating' : fmtCurrency(comparisonResults[i].profitPerOrder) + '/order'}</span>
-                <button onClick={() => removeComparison(i)} className="p-1 text-surface-400 hover:text-rose-500">
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
+            {comparisons.map((c, i) => {
+              const compResult = comparisonResults[i];
+              const compEffectiveRating = c.currentRating ?? compResult.restaurantRating;
+              return (
+                <div key={i} className="flex items-center justify-between p-2 bg-surface-50 dark:bg-surface-900 rounded">
+                  <span className="text-sm">{compResult.building.name} L{c.buildingLevel} Q{c.quality} — {isRestaurant ? compEffectiveRating.toFixed(2) + ' rating' : fmtCurrency(compResult.profitPerOrder) + '/order'}</span>
+                  <button onClick={() => removeComparison(i)} className="p-1 text-surface-400 hover:text-rose-500">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
