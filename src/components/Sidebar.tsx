@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Briefcase, DollarSign,
   TrendingUp, BookOpen, Bell, Info,
   Sun, Moon, ChevronRight, LayoutGrid,
-  Calculator, HardHat, Store, BarChart3, Zap, Building2, FileText, Chrome
+  Calculator, HardHat, Store, BarChart3, Zap, Building2, FileText, Chrome, Settings
 } from "lucide-react";
 
 const navLinks = [
@@ -28,6 +28,7 @@ const navLinks = [
   { group: "TOOLS", links: [
     { to: "/profit-calculator", label: "Profit Calc", icon: <Calculator size={18} /> },
     { to: "/retail-calculator", label: "Retail Calc", icon: <Store size={18} /> },
+    { to: "/retail-mechanics", label: "Retail Mechanics", icon: <Settings size={18} /> },
     { to: "/construction-calculator", label: "Construction", icon: <HardHat size={18} /> },
     { to: "/xp-calculator", label: "XP Calculator", icon: <Zap size={18} /> },
     { to: "/extension", label: "Extension", icon: <Chrome size={18} /> },
