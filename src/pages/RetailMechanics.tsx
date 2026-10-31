@@ -3,7 +3,7 @@ import { PageHeader } from "../components/ui/Common";
 import { usePageTitleKey } from "../hooks/usePageTitle";
 import { fmtCurrency, fmtPct, fmtNumber } from "../utils/formatters";
 import { Calculator, Plus, Trash2, Copy, ChevronDown, ChevronUp, Clock, Building2, Store, ShoppingBag, Factory, Settings, Info, AlertTriangle, Zap, Truck, ArrowLeftRight, Users, Trophy, Target, TrendingUp, Utensils, Star, TrendingDown } from "lucide-react";
-import { getRestaurantRetailInfo, getQualityData, getAvgAmountSoldRestaurant, getAvgPriceForQuality, RESTAURANT_MENU_ITEMS, type RestaurantMenuItemId } from "../services/restaurantRetailInfo";
+import { getRestaurantRetailInfo, getQualityData, getAvgAmountSoldRestaurant, getAvgPriceForQuality, RESTAURANT_MENU_ITEMS, type RestaurantMenuItemId, calculateRestaurantMenu, type RestaurantMenuCalculationInput, type RestaurantMenuCalculationResult, type RestaurantType } from "../services/restaurantRetailInfo";
 
 // ============================================================================
 // RETAIL BUILDING DEFINITIONS (from simco_static.ts + game mechanics)
@@ -471,6 +471,26 @@ export function RetailMechanicsPage() {
   const avgPrice = currentQualityData?.averagePrice || 0;
   const saturation = currentQualityData?.saturation || 0;
 
+  // Restaurant menu calculation
+  const [menuCalculation, setMenuCalculation] = useState<RestaurantMenuCalculationResult | null>(null);
+  
+  useEffect(() => {
+    if (isRestaurant && currentQualityData) {
+      const input: RestaurantMenuCalculationInput = {
+        type: inputs.isLuxury ? "luxury" : "standard",
+        quality: inputs.quality,
+        salesSpeedBonus: inputs.salesSpeedBonus,
+        cmoCommSkill: inputs.cmoCommSkill,
+        isLuxury: inputs.isLuxury,
+        contractPrice: inputs.contractPrice,
+        quantityPerOrder: inputs.quantityPerOrder,
+      };
+      setMenuCalculation(calculateRestaurantMenu(input, restaurantData || []));
+    } else {
+      setMenuCalculation(null);
+    }
+  }, [isRestaurant, inputs.isLuxury, inputs.quality, inputs.salesSpeedBonus, inputs.cmoCommSkill, inputs.contractPrice, inputs.quantityPerOrder, restaurantData]);
+
   return (
     <div className="max-w-5xl mx-auto space-y-5 animate-slide-up">
       <PageHeader
@@ -659,6 +679,74 @@ export function RetailMechanicsPage() {
                 ))}
               </div>
             </div>
+
+            {/* Restaurant Menu Calculator Results */}
+            {menuCalculation && (
+              <div className="mt-4 p-4 bg-teal-50 dark:bg-teal-900/20 rounded-lg border border-teal-200 dark:border-teal-800">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 mb-3 flex items-center gap-2">
+                  <Utensils size={14} /> Restaurant Menu Calculator (Q{inputs.quality} {inputs.isLuxury ? "Luxury" : "Standard"})
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                  <div className="text-center p-3 bg-white dark:bg-surface-800 rounded border border-teal-200 dark:border-teal-800">
+                    <div className="text-2xl font-black text-teal-600">{menuCalculation.rating.toFixed(2)}</div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-teal-600">Rating</div>
+                  </div>
+                  <div className="text-center p-3 bg-white dark:bg-surface-800 rounded border border-teal-200 dark:border-teal-800">
+                    <div className="text-2xl font-black text-violet-600">{menuCalculation.priceMultiplier.toFixed(2)}x</div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-violet-600">Price Multiplier</div>
+                  </div>
+                  <div className="text-center p-3 bg-white dark:bg-surface-800 rounded border border-teal-200 dark:border-teal-800">
+                    <div className="text-2xl font-black text-blue-600">{fmtCurrency(menuCalculation.effectivePrice)}</div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-blue-600">Effective Price/Unit</div>
+                  </div>
+                </div>
+                <div className={`rounded-xl p-4 ${menuCalculation.competitive ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200' : 'bg-rose-50 dark:bg-rose-900/20 border border-rose-200'}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-1">
+                        {menuCalculation.competitive ? '✅ COMPETITIVE VS META' : '❌ BELOW META THRESHOLD'}
+                      </div>
+                      <div className="text-xl font-black {menuCalculation.competitive ? 'text-emerald-600' : 'text-rose-600'}">
+                        Rating: {menuCalculation.rating.toFixed(2)} / 5.0
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-1">Price Multiplier</div>
+                      <div className="text-2xl font-black text-violet-600">{menuCalculation.priceMultiplier.toFixed(2)}x</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <h5 className="text-xs font-bold uppercase tracking-wider text-surface-500 mb-3">Menu Item Breakdown</h5>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-teal-200 dark:border-teal-800">
+                          <th className="text-left py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-surface-400">Item</th>
+                          <th className="text-right py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-surface-400">Category</th>
+                          <th className="text-right py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-surface-400">Base Q</th>
+                          <th className="text-right py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-surface-400">Eff. Q</th>
+                          <th className="text-right py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-surface-400">Price/Unit</th>
+                          <th className="text-right py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-surface-400">Est. Sold/Day</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-teal-100 dark:divide-teal-800">
+                        {menuCalculation.menuItems.map(({ item, effectiveQuality, priceAtQuality, amountSoldEstimate }) => (
+                          <tr key={item.id} className="hover:bg-teal-50 dark:hover:bg-teal-900/20">
+                            <td className="py-2 px-3 text-left font-medium capitalize">{item.name.replace('_', ' ')}</td>
+                            <td className="py-2 px-3 text-right text-surface-500">{item.category}</td>
+                            <td className="py-2 px-3 text-right font-mono">Q{item.baseQuality}</td>
+                            <td className="py-2 px-3 text-right font-mono text-teal-600">Q{effectiveQuality.toFixed(1)}</td>
+                            <td className="py-2 px-3 text-right font-bold text-blue-600">{fmtCurrency(priceAtQuality)}</td>
+                            <td className="py-2 px-3 text-right font-mono text-amber-600">{amountSoldEstimate.toFixed(0)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
