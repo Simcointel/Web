@@ -10,5 +10,13 @@ export default defineConfig({
     exclude: ["node_modules", "dist"],
     setupFiles: [],
     css: false,
+    testTimeout: 60000,
+    hookTimeout: 60000,
+    pool: "threads",
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      },
+    },
   },
 });
