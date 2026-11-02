@@ -450,10 +450,7 @@ export function optimizeMenu(
   };
 }
 
-// Re-export countMultiplier from restaurantMenu for internal use
-import { countMultiplier } from "./restaurantMenu";
+import { RESTAURANT_MENU_ITEMS, countMultiplier } from "./restaurantMenu";
 export { countMultiplier };
 
-// Constants
-const RESTAURANT_MENU_ITEMS = (await import("./restaurantMenu")).RESTAURANT_MENU_ITEMS;
 const ITEM_BY_ID = new Map(RESTAURANT_MENU_ITEMS.map(item => [item.id, item]));

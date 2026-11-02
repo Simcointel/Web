@@ -25,6 +25,7 @@ const XpCalculatorPage = lazy(() => import("./pages/XpCalculator").then(m => ({ 
 const ExtensionPage = lazy(() => import("./pages/Extension").then(m => ({ default: m.ExtensionPage })));
 const SalesOfficeCalculatorPage = lazy(() => import("./pages/SalesOfficeCalculator").then(m => ({ default: m.SalesOfficeCalculatorPage })));
 const RetailMechanicsPage = lazy(() => import("./pages/RetailMechanics").then(m => ({ default: m.RetailMechanicsPage })));
+const RestaurantPlannerPage = lazy(() => import("./pages/RestaurantPlanner").then(m => ({ default: m.RestaurantPlannerPage })));
 
 
 const LoadingFallback = () => (
@@ -60,6 +61,7 @@ export function AppShell({ path }: { path: string }) {
     : path === "/extension" ? <ExtensionPage />
     : path === "/sales-office" ? <SalesOfficeCalculatorPage />
     : path === "/retail-mechanics" ? <RetailMechanicsPage />
+    : path === "/restaurant" ? <RestaurantPlannerPage />
     : isWidget ? <WidgetPage />
     : <NotFoundPage />;
 
