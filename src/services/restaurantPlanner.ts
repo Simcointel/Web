@@ -326,9 +326,8 @@ export function optimizeMenu(
   currentOccupancy: number
 ): OptimizerResult {
   const allItems = RESTAURANT_MENU_ITEMS;
-  const selectedSet = new Set(input.selectedItemIds);
 
-  // Determine which items have usable costs
+  // Determine which items have usable costs (> 0 and finite)
   const pricedItemIds = new Set<RestaurantMenuItemId>();
   for (const item of allItems) {
     const cost = input.unitCosts[item.id] ?? 0;
@@ -348,30 +347,31 @@ export function optimizeMenu(
     return { best: null, alternatives: [], targetReachable: false, excludedItemIds };
   }
 
-  // Build candidate menus
-  const saladSubsets = subsetsOfCategory(allItems, "salad");
-  const mainSubsets = subsetsOfCategory(allItems, "main");
-  const drinkSubsets = subsetsOfCategory(allItems, "drink");
+  // Build candidate menus - only from fully-priced items per category
+  const saladSubsets = subsetsOfCategory(allItems, "salad").filter(
+    subset => subset.every(i => pricedItemIds.has(i.id))
+  );
+  const mainSubsets = subsetsOfCategory(allItems, "main").filter(
+    subset => subset.every(i => pricedItemIds.has(i.id))
+  );
+  const drinkSubsets = subsetsOfCategory(allItems, "drink").filter(
+    subset => subset.every(i => pricedItemIds.has(i.id))
+  );
+
+  if (saladSubsets.length === 0 || mainSubsets.length === 0 || drinkSubsets.length === 0) {
+    return { best: null, alternatives: [], targetReachable: false, excludedItemIds };
+  }
 
   const candidates: MenuCandidate[] = [];
   const targetRating = safeNumber(input.targetRating, 7.5);
 
-  // Precompute unit costs and category counts for efficiency
+  // Precompute unit costs map
   const unitCostMap = new Map(Object.entries(input.unitCosts) as [string, number][]);
-  const categoryCounts = new Map<string, number>();
-  for (const id of input.selectedItemIds) {
-    const item = ITEM_BY_ID.get(id);
-    if (item) categoryCounts.set(item.category, (categoryCounts.get(item.category) ?? 0) + 1);
-  }
 
-  // For each candidate, we need to know its category counts
+  // Single pass: collect all candidates with their ratings and profits
   for (const salad of saladSubsets) {
-    if (!salad.some(i => pricedItemIds.has(i.id))) continue;
     for (const main of mainSubsets) {
-      if (!main.some(i => pricedItemIds.has(i.id))) continue;
       for (const drink of drinkSubsets) {
-        if (!drink.some(i => pricedItemIds.has(i.id))) continue;
-
         const itemIds = [...salad, ...main, ...drink].map(i => i.id) as RestaurantMenuItemId[];
         const catCounts = { salad: salad.length, main: main.length, drink: drink.length };
 
@@ -392,46 +392,18 @@ export function optimizeMenu(
           ? rawRating + (input.actualRating - estimateRating(input, currentRows.reduce((s, r) => s + r.lineCost, 0)))
           : rawRating;
 
-        if (calibratedRating < targetRating) continue;
-
+        // Store candidate with raw rating for filtering, but we'll use calibrated for ranking
         const profitResult = computeProfit({ ...input, selectedItemIds: itemIds }, rows, currentOccupancy);
         candidates.push({ itemIds, rating: calibratedRating, foodCost, profitPerCycle: profitResult.profitPerCycle });
       }
     }
   }
 
-  if (candidates.length === 0) {
-    // Return highest-rated candidates even if below target
-    // Re-run without target filter
-    for (const salad of saladSubsets) {
-      if (!salad.some(i => pricedItemIds.has(i.id))) continue;
-      for (const main of mainSubsets) {
-        if (!main.some(i => pricedItemIds.has(i.id))) continue;
-        for (const drink of drinkSubsets) {
-          if (!drink.some(i => pricedItemIds.has(i.id))) continue;
+  // Filter by target rating
+  const qualified = candidates.filter(c => c.rating >= targetRating);
 
-          const itemIds = [...salad, ...main, ...drink].map(i => i.id) as RestaurantMenuItemId[];
-          const catCounts = { salad: salad.length, main: main.length, drink: drink.length };
-
-          const rows: MenuUnitRow[] = [];
-          let foodCost = 0;
-          for (const item of [...salad, ...main, ...drink]) {
-            const units = computeUnits(item, input.mode, input.level, catCounts[item.category] ?? 1);
-            const unitCost = (unitCostMap.get(item.id) ?? 0) as number;
-            foodCost += units * unitCost;
-            rows.push({ item, units, unitCost, lineCost: units * unitCost });
-          }
-
-          const rawRating = estimateRating({ ...input, selectedItemIds: itemIds, unitCosts: {} }, foodCost);
-          const calibratedRating = input.actualRating !== null
-            ? rawRating + (input.actualRating - estimateRating(input, currentRows.reduce((s, r) => s + r.lineCost, 0)))
-            : rawRating;
-
-          const profitResult = computeProfit({ ...input, selectedItemIds: itemIds }, rows, currentOccupancy);
-          candidates.push({ itemIds, rating: calibratedRating, foodCost, profitPerCycle: profitResult.profitPerCycle });
-        }
-      }
-    }
+  if (qualified.length === 0) {
+    // No candidate meets target - return top 5 by rating
     candidates.sort((a, b) => b.rating - a.rating);
     return {
       best: candidates[0] ?? null,
@@ -441,10 +413,11 @@ export function optimizeMenu(
     };
   }
 
-  candidates.sort((a, b) => b.profitPerCycle - a.profitPerCycle);
+  // Rank qualified by profit
+  qualified.sort((a, b) => b.profitPerCycle - a.profitPerCycle);
   return {
-    best: candidates[0] ?? null,
-    alternatives: candidates.slice(1, 5),
+    best: qualified[0] ?? null,
+    alternatives: qualified.slice(1, 5),
     targetReachable: true,
     excludedItemIds,
   };
