@@ -1,9 +1,9 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { PageHeader } from "../components/ui/Common";
 import { usePageTitleKey } from "../hooks/usePageTitle";
-import { fmtCurrency, fmtPct, fmtNumber } from "../utils/formatters";
-import { Calculator, Plus, Trash2, Copy, ChevronDown, ChevronUp, Clock, Building2, Store, ShoppingBag, Factory, Settings, Info, AlertTriangle, Zap, Truck, ArrowLeftRight, Users, Trophy, Target, TrendingUp, Utensils, Star, TrendingDown } from "lucide-react";
-import { getRestaurantRetailInfo, getQualityData, getAvgAmountSoldRestaurant, getAvgPriceForQuality, RESTAURANT_MENU_ITEMS, type RestaurantMenuItemId, calculateRestaurantMenu, type RestaurantMenuCalculationInput, type RestaurantMenuCalculationResult, type RestaurantType } from "../services/restaurantRetailInfo";
+import { fmtCurrency, fmtPct } from "../utils/formatters";
+import { Plus, Trash2, Clock, Store, Settings, Info, ArrowLeftRight, Utensils } from "lucide-react";
+import { Link } from "../router";
 
 // ============================================================================
 // RETAIL BUILDING DEFINITIONS (from simco_static.ts + game mechanics)
@@ -12,11 +12,11 @@ import { getRestaurantRetailInfo, getQualityData, getAvgAmountSoldRestaurant, ge
 interface RetailBuilding {
   id: string;
   name: string;
-  type: 'standard' | 'sales_office' | 'restaurant' | 'seasonal';
+  type: 'standard' | 'sales_office' | 'seasonal';
   baseHourlyWage: number;
   baseContractHours: number;
   ordersPerLevel: number;
-  qualityScaling: 'none' | 'linear' | 'sales_office' | 'restaurant';
+  qualityScaling: 'none' | 'linear' | 'sales_office';
   description: string;
   products: string[]; // Product names this building sells
 }
@@ -100,17 +100,6 @@ const RETAIL_BUILDINGS: RetailBuilding[] = [
     products: ['Sub-orbital rocket', 'Single engine plane', 'Quadcopter', 'Attitude control', 'Cockpit', 'Flight computer', 'Basic interior', 'Car body', 'Combustion engine', 'Electric motor', 'On-board computer'],
   },
   {
-    id: 'r',
-    name: 'Restaurant',
-    type: 'restaurant',
-    baseHourlyWage: 655.5,
-    baseContractHours: 3,
-    ordersPerLevel: 1,
-    qualityScaling: 'restaurant',
-    description: 'PvP COMPETITION - Player vs Player. No guaranteed profit. Rating determines customer share. Expect ~$4M losses while learning. Need A/B testing with 2+ restaurants.',
-    products: ['Steak', 'Sausages', 'Eggs', 'Butter', 'Cheese', 'Bread', 'Chocolate', 'Apple pie', 'Chocolate icecream', 'Pumpkin soup', 'Pasta', 'Apple cider', 'Ginger beer', 'Ramadan sweets', 'Easter Bunny'],
-  },
-  {
     id: 't',
     name: 'Halloween Market',
     type: 'seasonal',
@@ -170,11 +159,6 @@ interface RetailInputs {
   sourcingCost: number; // $ per unit
   quantityPerOrder: number;
   qualityBonusPct: number; // base % from contract (SO only)
-  
-  // Restaurant-specific
-  cmoCommSkill: number; // CMO communication skill (0-100)
-  isLuxury: boolean; // Luxury restaurant (multiplies rating)
-  currentRating: number | null; // User-entered actual rating (overrides calculated)
 }
 
 interface RetailResult {
@@ -200,40 +184,13 @@ interface RetailResult {
   // Effective values
   effectiveHourlyWage: number;
   effectiveWagePerOrder: number;
-  
-  // Restaurant-specific (PvP competition)
-  restaurantRating: number;
-  restaurantPriceMultiplier: number;
 }
 
 function qualityMultiplier(q: number, scaling: RetailBuilding['qualityScaling']): number {
   if (q <= 0) return 0;
   if (scaling === 'none') return 1; // Standard retail: quality doesn't affect price
   if (scaling === 'sales_office') return q; // SO: Q1=1x, Q2=2x, Q3=3x...
-  if (scaling === 'restaurant') return q; // Restaurant: linear quality effect on rating
   return 1;
-}
-
-function calculateRestaurantRating(inputs: RetailInputs): number {
-  // Restaurant rating formula based on verified game mechanics:
-  // Rating = Food Quality Factor + Staff Factor + Seating Factor
-  // Sales speed bonus adds 0.02 per % to rating
-  // Food quality: average quality of menu items (0-12 scale)
-  // Staff: CMO communication skill (must be on duty 3h before)
-  // Seating: luxury multiplies rating effect (requires rating >= 0.7)
-  
-  const foodQualityFactor = inputs.quality * 0.15; // Base quality contribution (0-1.8 at Q12)
-  const salesSpeedRating = inputs.salesSpeedBonus * 0.02; // +0.02 per % sales speed (verified)
-  const staffFactor = inputs.cmoCommSkill * 0.01; // CMO communication skill (0-1.0 at 100)
-  
-  let rating = foodQualityFactor + salesSpeedRating + staffFactor;
-  
-  // Luxury restaurant multiplies rating effect (requires rating >= 0.7)
-  if (inputs.isLuxury && rating >= 0.7) {
-    rating = rating * 1.5; // Luxury multiplies effect (verified)
-  }
-  
-  return Math.max(0, rating);
 }
 
 function calculateRetail(inputs: RetailInputs): RetailResult {
@@ -256,13 +213,6 @@ function calculateRetail(inputs: RetailInputs): RetailResult {
     // SO: quality bonus applies to revenue
     const effectiveBonusPct = inputs.qualityBonusPct * qMult;
     qualityBonusPerOrder = baseRevenuePerOrder * (effectiveBonusPct / 100);
-  } else if (building.qualityScaling === 'restaurant') {
-    // Restaurant: rating-based pricing model (PvP - not guaranteed profit!)
-    // Higher rating = higher effective price customers will pay
-    // Base price at rating 0 = contractPrice, at rating 10 = ~2x contractPrice
-    const rating = calculateRestaurantRating(inputs);
-    const priceMultiplier = 1 + rating * 0.1; // 10% price increase per rating point
-    qualityBonusPerOrder = baseRevenuePerOrder * (priceMultiplier - 1);
   } else if (building.qualityScaling === 'linear' && inputs.quality > 0) {
     // Legacy linear scaling
     qualityBonusPerOrder = baseRevenuePerOrder * (qMult - 1) * 0.1;
@@ -282,9 +232,6 @@ function calculateRetail(inputs: RetailInputs): RetailResult {
   const dailyCost = totalCostPerOrder * ordersPerDay;
   const dailyProfit = profitPerOrder * ordersPerDay;
   
-  const rating = calculateRestaurantRating(inputs);
-  const priceMultiplier = 1 + rating * 0.1;
-  
   return {
     building,
     inputs,
@@ -302,8 +249,6 @@ function calculateRetail(inputs: RetailInputs): RetailResult {
     dailyProfit,
     effectiveHourlyWage,
     effectiveWagePerOrder: wageCostPerOrder,
-    restaurantRating: rating,
-    restaurantPriceMultiplier: priceMultiplier,
   };
 }
 
@@ -363,39 +308,6 @@ function InfoRow({ label, value, color }: { label: string; value: string | numbe
   );
 }
 
-function RestaurantRatingCard({ rating, priceMult, isCompetitive }: { rating: number; priceMult: number; isCompetitive: boolean }) {
-  const ratingTier = rating >= 7.5 ? 'Elite' : rating >= 5 ? 'Competitive' : rating >= 3 ? 'Struggling' : 'Non-viable';
-  const tierColor = rating >= 7.5 ? 'text-emerald-600' : rating >= 5 ? 'text-blue-600' : rating >= 3 ? 'text-amber-600' : 'text-rose-600';
-  const bgColor = rating >= 7.5 ? 'bg-emerald-50 dark:bg-emerald-900/20' : rating >= 5 ? 'bg-blue-50 dark:bg-blue-900/20' : rating >= 3 ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-rose-50 dark:bg-rose-900/20';
-  
-  return (
-    <div className={`card p-4 ${bgColor} border-2 ${rating >= 5 ? 'border-emerald-200 dark:border-emerald-800' : rating >= 3 ? 'border-amber-200 dark:border-amber-800' : 'border-rose-200 dark:border-rose-800'}`}>
-      <h3 className="text-xs font-bold uppercase tracking-wider text-surface-500 mb-3">Competitive Rating Analysis</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-        <div className="text-center p-3 rounded-lg bg-white dark:bg-surface-800">
-          <div className="text-3xl font-black {tierColor}">{rating.toFixed(2)}</div>
-          <div className="text-xs font-bold uppercase tracking-wider {tierColor}">{ratingTier}</div>
-        </div>
-        <div className="text-center p-3 rounded-lg bg-white dark:bg-surface-800">
-          <div className="text-3xl font-black text-violet-600">{priceMult.toFixed(2)}x</div>
-          <div className="text-xs font-bold uppercase tracking-wider text-violet-600">Price Multiplier</div>
-        </div>
-        <div className="text-center p-3 rounded-lg bg-white dark:bg-surface-800">
-          <div className="text-3xl font-black text-blue-600">{isCompetitive ? 'YES' : 'NO'}</div>
-          <div className="text-xs font-bold uppercase tracking-wider text-blue-600">Viable vs Meta</div>
-        </div>
-      </div>
-      <div className="p-3 rounded-lg bg-surface-100 dark:bg-surface-800 text-xs text-surface-600 dark:text-surface-400 space-y-1">
-        <p><strong>PvP Reality Check:</strong> Restaurants are player vs player competition. No guaranteed profit.</p>
-        <p>• Rating determines customer share — highest rated gets most customers</p>
-        <p>• Meta typically requires 5.0+ rating to be competitive</p>
-        <p>• Expect ~$4M losses during A/B testing (2+ restaurants needed)</p>
-        <p>• Profit only exists when YOUR rating beats competitors consistently</p>
-      </div>
-    </div>
-  );
-}
-
 // ============================================================================
 // MAIN PAGE
 // ============================================================================
@@ -413,25 +325,10 @@ export function RetailMechanicsPage() {
     sourcingCost: 60000,
     quantityPerOrder: 1,
     qualityBonusPct: 2.23,
-    cmoCommSkill: 0,
-    isLuxury: false,
-    // New: user can override calculated rating with actual current rating
-    currentRating: null,
   });
 
   const [comparisons, setComparisons] = useState<RetailInputs[]>([]);
   const [showComparison, setShowComparison] = useState(false);
-  
-  // Restaurant API data
-  const [restaurantData, setRestaurantData] = useState<Awaited<ReturnType<typeof getRestaurantRetailInfo>> | null>(null);
-  const [restaurantLoading, setRestaurantLoading] = useState(true);
-
-  useEffect(() => {
-    getRestaurantRetailInfo().then(data => {
-      setRestaurantData(data);
-      setRestaurantLoading(false);
-    }).catch(() => setRestaurantLoading(false));
-  }, []);
 
   const result = useMemo(() => calculateRetail(inputs), [inputs]);
   const comparisonResults = useMemo(() => comparisons.map(c => calculateRetail(c)), [comparisons]);
@@ -450,46 +347,7 @@ export function RetailMechanicsPage() {
   };
 
   const isSalesOffice = result.building.type === 'sales_office';
-  const isRestaurant = result.building.type === 'restaurant';
-  const showQualityBonus = isSalesOffice || isRestaurant;
-  
-  // Restaurant competitive analysis
-  const metaRatingThreshold = 5.0; // Rough meta threshold from community
-  const isCompetitive = (inputs.currentRating ?? result.restaurantRating) >= metaRatingThreshold;
-  
-  // Effective rating: user-entered or calculated
-  const effectiveRating = inputs.currentRating ?? result.restaurantRating;
-  const effectivePriceMultiplier = 1 + effectiveRating * 0.1;
-  const effectiveCompetitive = effectiveRating >= metaRatingThreshold;
-
-  // Restaurant API data for current quality
-  const currentQualityData = restaurantData?.find(d => d.quality === inputs.quality);
-  const retailData = currentQualityData?.retailData || [];
-  const avgAmountSold = retailData.length > 0 
-    ? retailData.slice(-7).reduce((sum, d) => sum + (d.amountSoldRestaurant || 0), 0) / Math.min(7, retailData.length)
-    : 0;
-  const avgPrice = currentQualityData?.averagePrice || 0;
-  const saturation = currentQualityData?.saturation || 0;
-
-  // Restaurant menu calculation
-  const [menuCalculation, setMenuCalculation] = useState<RestaurantMenuCalculationResult | null>(null);
-  
-  useEffect(() => {
-    if (isRestaurant && currentQualityData) {
-      const input: RestaurantMenuCalculationInput = {
-        type: inputs.isLuxury ? "luxury" : "standard",
-        quality: inputs.quality,
-        salesSpeedBonus: inputs.salesSpeedBonus,
-        cmoCommSkill: inputs.cmoCommSkill,
-        isLuxury: inputs.isLuxury,
-        contractPrice: inputs.contractPrice,
-        quantityPerOrder: inputs.quantityPerOrder,
-      };
-      setMenuCalculation(calculateRestaurantMenu(input, restaurantData || []));
-    } else {
-      setMenuCalculation(null);
-    }
-  }, [isRestaurant, inputs.isLuxury, inputs.quality, inputs.salesSpeedBonus, inputs.cmoCommSkill, inputs.contractPrice, inputs.quantityPerOrder, restaurantData]);
+  const showQualityBonus = isSalesOffice;
 
   return (
     <div className="max-w-5xl mx-auto space-y-5 animate-slide-up">
@@ -501,25 +359,16 @@ export function RetailMechanicsPage() {
         iconColor="text-emerald-600"
       />
 
-      {/* PvP Warning for Restaurant */}
-      {isRestaurant && (
-        <div className="card p-4 bg-rose-50 dark:bg-rose-900/20 border-2 border-rose-200 dark:border-rose-800">
-          <div className="flex items-start gap-3">
-            <AlertTriangle size={20} className="text-rose-500 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="text-sm font-bold text-rose-700 dark:text-rose-400 mb-2">⚠️ PvP COMPETITION — NOT A PROFIT CALCULATOR</h3>
-              <p className="text-xs text-rose-600 dark:text-rose-400 space-y-1">
-                Restaurants are <strong>player vs player</strong> — you compete directly for customers.
-                <br/>• No guaranteed profit. Profit only exists when YOUR rating beats competitors.
-                <br/>• You NEED 2+ restaurants for A/B testing to find optimal menu/quality/price.
-                <br/>• Expect ~$4M losses while learning the meta (community consensus).
-                <br/>• The "profit" below is THEORETICAL — only realized if you out-rate competitors.
-                <br/>• <a href="https://www.simcompanies.com/pages/restaurant-guide/" target="_blank" rel="noopener noreferrer" className="underline hover:text-rose-500">Official Restaurant Guide</a>
-              </p>
-            </div>
-          </div>
+      {/* Restaurant Planner link */}
+      <Link to="/restaurant" className="card p-4 flex items-center gap-3 hover:border-brand-500/50 hover:ring-1 hover:ring-brand-500/10 transition-all group">
+        <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center shadow-sm group-hover:scale-110 transition-all">
+          <Utensils size={20} />
         </div>
-      )}
+        <div>
+          <div className="text-sm font-bold text-surface-800 dark:text-white">Restaurant planning moved to the Restaurant Planner</div>
+          <div className="text-xs text-surface-500 dark:text-surface-400">Economy/Luxury seats, menus, market occupancy and profit estimates are on the new page.</div>
+        </div>
+      </Link>
 
       {/* Building Selector */}
       <div className="card p-4">
@@ -569,9 +418,7 @@ export function RetailMechanicsPage() {
             <div>
               <label className="block text-xs font-medium text-surface-500 mb-1.5 flex items-center gap-1">
                 Quality Bonus Base %
-                <span className="inline w-3 h-3 text-surface-400 cursor-help" title={isSalesOffice 
-                  ? 'SO: Base bonus % multiplied by quality (Q1=1x, Q2=2x, Q3=3x...)' 
-                  : 'Restaurant: Rating-based pricing. Rating = Food(Q×0.15) + SalesSpeed(×0.02) + CMOComm(×0.01)'}>
+                <span className="inline w-3 h-3 text-surface-400 cursor-help" title="SO: Base bonus % multiplied by quality (Q1=1x, Q2=2x, Q3=3x...)">
                   <Info className="w-3 h-3" />
                 </span>
               </label>
@@ -580,175 +427,6 @@ export function RetailMechanicsPage() {
           )}
         </div>
         
-        {/* Restaurant-specific inputs */}
-        {isRestaurant && (
-          <div className="mt-4 p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-200 dark:border-violet-800">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400 mb-3">Restaurant Specific (PvP Competition)</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-surface-500 mb-1.5 flex items-center gap-1">
-                  CMO Communication Skill
-                  <span className="w-3 h-3 text-surface-400 cursor-help" title="CMO must be on duty 3h before opening. Adds directly to rating (0-100)."><Info className="w-3 h-3" /></span>
-                </label>
-                <NumberInput value={inputs.cmoCommSkill} onChange={v => updateInput('cmoCommSkill', v)} min={0} max={100} step={1} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-surface-500 mb-1.5 flex items-center gap-1">
-                  Luxury Restaurant
-                  <span className="w-3 h-3 text-surface-400 cursor-help" title="Multiplies rating by 1.5x (requires rating ≥ 0.7)."><Info className="w-3 h-3" /></span>
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={inputs.isLuxury}
-                    onChange={e => updateInput('isLuxury', e.target.checked)}
-                    className="w-4 h-4 text-brand-600 border-surface-300 rounded focus:ring-brand-500"
-                  />
-                  <span className="text-sm text-surface-600 dark:text-surface-400">Multiplies rating ×1.5 (needs rating ≥ 0.7)</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-surface-500 mb-1.5">Calculated Rating</label>
-                <NumberInput 
-                  value={calculateRestaurantRating(inputs)} 
-                  onChange={() => {}} 
-                  step={0.01} 
-                  className="bg-surface-100 dark:bg-surface-800" 
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-surface-500 mb-1.5 flex items-center gap-1">
-                  Your Current Rating (optional)
-                  <span className="w-3 h-3 text-surface-400 cursor-help" title="Enter your actual current rating from the game to override calculated rating. This affects all profit projections."><Info className="w-3 h-3" /></span>
-                </label>
-                <NumberInput 
-                  value={inputs.currentRating ?? 0} 
-                  onChange={v => updateInput('currentRating', v === 0 ? null : v)} 
-                  min={0} 
-                  max={20} 
-                  step={0.01} 
-                  placeholder="Enter actual rating..."
-                />
-              </div>
-            </div>
-            
-            {/* Restaurant Rating Analysis */}
-            <div className="mt-4">
-              <RestaurantRatingCard 
-                rating={effectiveRating} 
-                priceMult={effectivePriceMultiplier}
-                isCompetitive={effectiveCompetitive}
-              />
-            </div>
-            
-            {/* API Data: Amount Sold in Restaurants */}
-            {currentQualityData && (
-              <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-3">API Data: Q{inputs.quality} Restaurant Retail Info</h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                  <div className="text-center p-2 bg-white dark:bg-surface-800 rounded">
-                    <div className="font-bold text-emerald-600">{avgAmountSold.toFixed(0)}</div>
-                    <div className="text-surface-500">Avg Sold/Day (7d)</div>
-                  </div>
-                  <div className="text-center p-2 bg-white dark:bg-surface-800 rounded">
-                    <div className="font-bold text-blue-600">{fmtCurrency(avgPrice)}</div>
-                    <div className="text-surface-500">Avg Price</div>
-                  </div>
-                  <div className="text-center p-2 bg-white dark:bg-surface-800 rounded">
-                    <div className="font-bold text-amber-600">{saturation.toFixed(2)}</div>
-                    <div className="text-surface-500">Saturation</div>
-                  </div>
-                  <div className="text-center p-2 bg-white dark:bg-surface-800 rounded">
-                    <div className="font-bold text-violet-600">{currentQualityData.retailData.length}d</div>
-                    <div className="text-surface-500">Data Points</div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Restaurant Menu Items */}
-            <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 mb-3">Restaurant Menu Items (Sellable in Restaurant)</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 text-xs">
-                {RESTAURANT_MENU_ITEMS.map(item => (
-                  <div key={item.id} className="p-2 bg-white dark:bg-surface-800 rounded border border-orange-100 dark:border-orange-800">
-                    <div className="font-bold text-orange-600 dark:text-orange-400 capitalize">{item.name.replace('_', ' ')}</div>
-                    <div className="text-surface-500">Category: {item.category}</div>
-                    <div className="text-surface-500">Base Quality: Q{item.baseQuality}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Restaurant Menu Calculator Results */}
-            {menuCalculation && (
-              <div className="mt-4 p-4 bg-teal-50 dark:bg-teal-900/20 rounded-lg border border-teal-200 dark:border-teal-800">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 mb-3 flex items-center gap-2">
-                  <Utensils size={14} /> Restaurant Menu Calculator (Q{inputs.quality} {inputs.isLuxury ? "Luxury" : "Standard"})
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                  <div className="text-center p-3 bg-white dark:bg-surface-800 rounded border border-teal-200 dark:border-teal-800">
-                    <div className="text-2xl font-black text-teal-600">{menuCalculation.rating.toFixed(2)}</div>
-                    <div className="text-xs font-bold uppercase tracking-wider text-teal-600">Rating</div>
-                  </div>
-                  <div className="text-center p-3 bg-white dark:bg-surface-800 rounded border border-teal-200 dark:border-teal-800">
-                    <div className="text-2xl font-black text-violet-600">{menuCalculation.priceMultiplier.toFixed(2)}x</div>
-                    <div className="text-xs font-bold uppercase tracking-wider text-violet-600">Price Multiplier</div>
-                  </div>
-                  <div className="text-center p-3 bg-white dark:bg-surface-800 rounded border border-teal-200 dark:border-teal-800">
-                    <div className="text-2xl font-black text-blue-600">{fmtCurrency(menuCalculation.effectivePrice)}</div>
-                    <div className="text-xs font-bold uppercase tracking-wider text-blue-600">Effective Price/Unit</div>
-                  </div>
-                </div>
-                <div className={`rounded-xl p-4 ${menuCalculation.competitive ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200' : 'bg-rose-50 dark:bg-rose-900/20 border border-rose-200'}`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-1">
-                        {menuCalculation.competitive ? '✅ COMPETITIVE VS META' : '❌ BELOW META THRESHOLD'}
-                      </div>
-                      <div className="text-xl font-black {menuCalculation.competitive ? 'text-emerald-600' : 'text-rose-600'}">
-                        Rating: {menuCalculation.rating.toFixed(2)} / 5.0
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-1">Price Multiplier</div>
-                      <div className="text-2xl font-black text-violet-600">{menuCalculation.priceMultiplier.toFixed(2)}x</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <h5 className="text-xs font-bold uppercase tracking-wider text-surface-500 mb-3">Menu Item Breakdown</h5>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-teal-200 dark:border-teal-800">
-                          <th className="text-left py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-surface-400">Item</th>
-                          <th className="text-right py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-surface-400">Category</th>
-                          <th className="text-right py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-surface-400">Base Q</th>
-                          <th className="text-right py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-surface-400">Eff. Q</th>
-                          <th className="text-right py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-surface-400">Price/Unit</th>
-                          <th className="text-right py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-surface-400">Est. Sold/Day</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-teal-100 dark:divide-teal-800">
-                        {menuCalculation.menuItems.map(({ item, effectiveQuality, priceAtQuality, amountSoldEstimate }) => (
-                          <tr key={item.id} className="hover:bg-teal-50 dark:hover:bg-teal-900/20">
-                            <td className="py-2 px-3 text-left font-medium capitalize">{item.name.replace('_', ' ')}</td>
-                            <td className="py-2 px-3 text-right text-surface-500">{item.category}</td>
-                            <td className="py-2 px-3 text-right font-mono">Q{item.baseQuality}</td>
-                            <td className="py-2 px-3 text-right font-mono text-teal-600">Q{effectiveQuality.toFixed(1)}</td>
-                            <td className="py-2 px-3 text-right font-bold text-blue-600">{fmtCurrency(priceAtQuality)}</td>
-                            <td className="py-2 px-3 text-right font-mono text-amber-600">{amountSoldEstimate.toFixed(0)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Effective values display */}
@@ -762,113 +440,63 @@ export function RetailMechanicsPage() {
         </div>
       </div>
 
-      {/* Results - Different for Restaurant vs Standard */}
-      {isRestaurant ? (
-        // Restaurant: Show competitive analysis instead of profit
+      <>
         <div className="card p-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-surface-500 mb-3">PvP Competitive Analysis (Theoretical)</h3>
-          <p className="text-xs text-surface-500 dark:text-surface-400 mb-4">These numbers assume you OUT-RATE all competitors. If you don't, revenue = $0.</p>
-          
+          <h3 className="text-xs font-bold uppercase tracking-wider text-surface-500 mb-3">Per Order Financials</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            <ResultCard label="Your Rating" value={effectiveRating.toFixed(2)} color={effectiveCompetitive ? 'emerald' : 'rose'} />
-            <ResultCard label="Price Multiplier" value={`${effectivePriceMultiplier.toFixed(2)}x`} color="violet" />
-            <ResultCard label="Effective Price/Unit" value={fmtCurrency(inputs.contractPrice * effectivePriceMultiplier)} color="blue" prefix="$" />
-            <ResultCard label="Meta Threshold" value={`${metaRatingThreshold.toFixed(1)} rating`} color={effectiveCompetitive ? 'emerald' : 'amber'} />
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            <ResultCard label="Theoretical Revenue" value={fmtCurrency(inputs.contractPrice * inputs.quantityPerOrder * effectivePriceMultiplier)} color="emerald" prefix="$" />
-            <ResultCard label="Wage Cost (3h)" value={fmtCurrency(result.wageCostPerOrder)} color="rose" prefix="-$" />
+            <ResultCard label="Revenue" value={fmtCurrency(result.revenuePerOrder)} color="emerald" prefix="$" />
+            <ResultCard label="Quality Bonus" value={fmtCurrency(result.qualityBonusPerOrder)} color="violet" prefix="+" />
+            <ResultCard label="Total Revenue" value={fmtCurrency(result.revenuePerOrder + result.qualityBonusPerOrder)} color="blue" prefix="$" />
             <ResultCard label="Sourcing Cost" value={fmtCurrency(result.sourcingCostPerOrder)} color="rose" prefix="-$" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <ResultCard label="Wage Cost" value={fmtCurrency(result.wageCostPerOrder)} color="rose" prefix="-$" />
             <ResultCard label="Overhead" value={fmtCurrency(result.overheadCostPerOrder)} color="amber" prefix="-$" />
+            <ResultCard label="Total Cost" value={fmtCurrency(result.totalCostPerOrder)} color="rose" prefix="-$" />
+            <ResultCard label={result.profitPerOrder >= 0 ? 'Net Profit' : 'Net Loss'} value={fmtCurrency(Math.abs(result.profitPerOrder))} color={result.profitPerOrder >= 0 ? 'emerald' : 'rose'} prefix={result.profitPerOrder >= 0 ? '+' : '-'} />
           </div>
 
-          <div className={`rounded-xl p-5 ${effectiveCompetitive ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200' : 'bg-rose-50 dark:bg-rose-900/20 border border-rose-200'}`}>
+          <div className={`rounded-xl p-5 ${result.profitPerOrder >= 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-rose-500 to-rose-600'}`}>
             <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-1">
-                  {effectiveCompetitive ? '✅ COMPETITIVE VS META' : '❌ BELOW META THRESHOLD'}
-                </div>
-                <div className="text-xl font-black {effectiveCompetitive ? 'text-emerald-600' : 'text-rose-600'}">
-                  Rating: {effectiveRating.toFixed(2)} / {metaRatingThreshold}
-                </div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-white/70 mb-1">Margin</div>
+                <div className="text-3xl font-black text-white">{fmtPct(result.marginPct)}</div>
               </div>
               <div className="text-center sm:text-right">
-                <div className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-1">Theoretical Margin</div>
-                <div className="text-2xl font-black {effectiveCompetitive ? 'text-emerald-600' : 'text-rose-600'}">{fmtPct(((inputs.contractPrice * inputs.quantityPerOrder * effectivePriceMultiplier) - (result.sourcingCostPerOrder + result.wageCostPerOrder + result.overheadCostPerOrder)) / (inputs.contractPrice * inputs.quantityPerOrder * effectivePriceMultiplier) * 100)}</div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-white/70 mb-1">Cycle Time</div>
+                <div className="text-2xl font-black text-white flex items-center gap-1 justify-center sm:justify-end">
+                  <Clock size={18} /> {result.building.baseContractHours}h
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="mt-3 p-3 rounded-lg bg-surface-100 dark:bg-surface-800 text-xs text-surface-600 dark:text-surface-400 space-y-1">
-            <p><strong>How to actually profit:</strong></p>
-            <p>1. Build 2+ restaurants for A/B testing different quality/price/menu combos</p>
-            <p>2. Track which gets customers — that's your winning formula</p>
-            <p>3. Expect ~$4M total losses during discovery phase</p>
-            <p>4. Once you find winning combo, scale that restaurant</p>
-            <p>5. Monitor competitors — meta shifts when they improve</p>
           </div>
         </div>
-      ) : (
-        // Standard retail: Show normal profit calculator
-        <>
-          <div className="card p-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-surface-500 mb-3">Per Order Financials</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-              <ResultCard label="Revenue" value={fmtCurrency(result.revenuePerOrder)} color="emerald" prefix="$" />
-              <ResultCard label="Quality Bonus" value={fmtCurrency(result.qualityBonusPerOrder)} color="violet" prefix="+" />
-              <ResultCard label="Total Revenue" value={fmtCurrency(result.revenuePerOrder + result.qualityBonusPerOrder)} color="blue" prefix="$" />
-              <ResultCard label="Sourcing Cost" value={fmtCurrency(result.sourcingCostPerOrder)} color="rose" prefix="-$" />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-              <ResultCard label="Wage Cost" value={fmtCurrency(result.wageCostPerOrder)} color="rose" prefix="-$" />
-              <ResultCard label="Overhead" value={fmtCurrency(result.overheadCostPerOrder)} color="amber" prefix="-$" />
-              <ResultCard label="Total Cost" value={fmtCurrency(result.totalCostPerOrder)} color="rose" prefix="-$" />
-              <ResultCard label={result.profitPerOrder >= 0 ? 'Net Profit' : 'Net Loss'} value={fmtCurrency(Math.abs(result.profitPerOrder))} color={result.profitPerOrder >= 0 ? 'emerald' : 'rose'} prefix={result.profitPerOrder >= 0 ? '+' : '-'} />
-            </div>
 
-            <div className={`rounded-xl p-5 ${result.profitPerOrder >= 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-rose-500 to-rose-600'}`}>
-              <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-white/70 mb-1">Margin</div>
-                  <div className="text-3xl font-black text-white">{fmtPct(result.marginPct)}</div>
-                </div>
-                <div className="text-center sm:text-right">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-white/70 mb-1">Cycle Time</div>
-                  <div className="text-2xl font-black text-white flex items-center gap-1 justify-center sm:justify-end">
-                    <Clock size={18} /> {result.building.baseContractHours}h
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Daily Projection */}
+        <div className="card p-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-surface-500 mb-3">Daily Projection (Level {inputs.buildingLevel})</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <ResultCard label="Orders/Day" value={result.ordersPerDay.toFixed(2)} color="emerald" />
+            <ResultCard label="Daily Revenue" value={fmtCurrency(result.dailyRevenue)} color="emerald" prefix="$" />
+            <ResultCard label="Daily Cost" value={fmtCurrency(result.dailyCost)} color="rose" prefix="$" />
+            <ResultCard label="Daily Profit" value={fmtCurrency(result.dailyProfit)} color={result.dailyProfit >= 0 ? 'emerald' : 'rose'} prefix={result.dailyProfit >= 0 ? '+' : '-'} />
           </div>
+        </div>
 
-          {/* Daily Projection */}
-          <div className="card p-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-surface-500 mb-3">Daily Projection (Level {inputs.buildingLevel})</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <ResultCard label="Orders/Day" value={result.ordersPerDay.toFixed(2)} color="emerald" />
-              <ResultCard label="Daily Revenue" value={fmtCurrency(result.dailyRevenue)} color="emerald" prefix="$" />
-              <ResultCard label="Daily Cost" value={fmtCurrency(result.dailyCost)} color="rose" prefix="$" />
-              <ResultCard label="Daily Profit" value={fmtCurrency(result.dailyProfit)} color={result.dailyProfit >= 0 ? 'emerald' : 'rose'} prefix={result.dailyProfit >= 0 ? '+' : '-'} />
-            </div>
+        {/* Cost Breakdown */}
+        <div className="card p-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-surface-500 mb-3">Cost Breakdown (per order)</h3>
+          <div className="divide-y divide-surface-100 dark:divide-surface-800">
+            <InfoRow label="Base Revenue" value={fmtCurrency(result.revenuePerOrder - result.qualityBonusPerOrder)} color="text-emerald-600" />
+            {showQualityBonus && <InfoRow label={`Quality Bonus (Q${inputs.quality} × ${fmtPct(inputs.qualityBonusPct)})`} value={fmtCurrency(result.qualityBonusPerOrder)} color="text-violet-600" />}
+            <InfoRow label="Sourcing Cost" value={fmtCurrency(result.sourcingCostPerOrder)} color="text-rose-500" />
+            <InfoRow label="Wage Cost" value={fmtCurrency(result.wageCostPerOrder)} color="text-rose-500" />
+            <InfoRow label={`Admin Overhead (${fmtPct(inputs.adminOverhead)})`} value={fmtCurrency(result.overheadCostPerOrder)} color="text-amber-500" />
+            <InfoRow label="Total Cost" value={fmtCurrency(result.totalCostPerOrder)} color="text-rose-600" />
+            <InfoRow label="Net Profit" value={fmtCurrency(result.profitPerOrder)} color={result.profitPerOrder >= 0 ? 'text-emerald-600' : 'text-rose-600'} />
           </div>
-
-          {/* Cost Breakdown */}
-          <div className="card p-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-surface-500 mb-3">Cost Breakdown (per order)</h3>
-            <div className="divide-y divide-surface-100 dark:divide-surface-800">
-              <InfoRow label="Base Revenue" value={fmtCurrency(result.revenuePerOrder - result.qualityBonusPerOrder)} color="text-emerald-600" />
-              {showQualityBonus && <InfoRow label={`Quality Bonus (Q${inputs.quality} × ${fmtPct(inputs.qualityBonusPct)})`} value={fmtCurrency(result.qualityBonusPerOrder)} color="text-violet-600" />}
-              <InfoRow label="Sourcing Cost" value={fmtCurrency(result.sourcingCostPerOrder)} color="text-rose-500" />
-              <InfoRow label="Wage Cost" value={fmtCurrency(result.wageCostPerOrder)} color="text-rose-500" />
-              <InfoRow label={`Admin Overhead (${fmtPct(inputs.adminOverhead)})`} value={fmtCurrency(result.overheadCostPerOrder)} color="text-amber-500" />
-              <InfoRow label="Total Cost" value={fmtCurrency(result.totalCostPerOrder)} color="text-rose-600" />
-              <InfoRow label="Net Profit" value={fmtCurrency(result.profitPerOrder)} color={result.profitPerOrder >= 0 ? 'text-emerald-600' : 'text-rose-600'} />
-            </div>
-          </div>
-        </>
-      )}
+        </div>
+      </>
 
       {/* Comparison Mode */}
       <div className="flex items-center gap-3">
@@ -911,67 +539,42 @@ export function RetailMechanicsPage() {
                   <td className="text-right py-3 px-4 text-sm font-bold">Q{inputs.quality}</td>
                   {comparisonResults.map(r => <td key={r.building.id} className="text-right py-3 px-4 text-sm font-bold">Q{r.inputs.quality}</td>)}
                 </tr>
-                {isRestaurant ? (
-                  <>
-                    <tr>
-                      <td className="py-3 px-5 text-sm font-medium text-surface-500">Rating</td>
-                      <td className="text-right py-3 px-4 text-sm font-bold text-violet-600">{effectiveRating.toFixed(2)}</td>
-                      {comparisonResults.map(r => <td key={r.building.id} className="text-right py-3 px-4 text-sm font-bold text-violet-600">{r.restaurantRating.toFixed(2)}</td>)}
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-5 text-sm font-medium text-surface-500">Price Mult</td>
-                      <td className="text-right py-3 px-4 text-sm font-bold">{effectivePriceMultiplier.toFixed(2)}x</td>
-                      {comparisonResults.map(r => <td key={r.building.id} className="text-right py-3 px-4 text-sm font-bold">{r.restaurantPriceMultiplier.toFixed(2)}x</td>)}
-                    </tr>
-                    <tr className="bg-surface-50 dark:bg-surface-900">
-                      <td className="py-4 px-5 text-sm font-black uppercase text-surface-700 dark:text-surface-300">Competitive?</td>
-                      <td className="text-right py-4 px-4 text-lg font-black {effectiveCompetitive ? 'text-emerald-600' : 'text-rose-600'}">
-                        {effectiveCompetitive ? 'YES' : 'NO'}
-                      </td>
-                      {comparisonResults.map(r => <td key={r.building.id} className={`text-right py-4 px-4 text-lg font-black ${r.restaurantRating >= metaRatingThreshold ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        {r.restaurantRating >= metaRatingThreshold ? 'YES' : 'NO'}
-                      </td>)}
-                    </tr>
-                  </>
-                ) : (
-                  <>
-                    <tr>
-                      <td className="py-3 px-5 text-sm font-medium text-surface-500">Revenue/Order</td>
-                      <td className="text-right py-3 px-4 text-sm font-bold text-emerald-600">{fmtCurrency(result.revenuePerOrder)}</td>
-                      {comparisonResults.map(r => <td key={r.building.id} className="text-right py-3 px-4 text-sm font-bold text-emerald-600">{fmtCurrency(r.revenuePerOrder)}</td>)}
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-5 text-sm font-medium text-surface-500">Total Cost/Order</td>
-                      <td className="text-right py-3 px-4 text-sm font-bold text-rose-500">{fmtCurrency(result.totalCostPerOrder)}</td>
-                      {comparisonResults.map(r => <td key={r.building.id} className="text-right py-3 px-4 text-sm font-bold text-rose-500">{fmtCurrency(r.totalCostPerOrder)}</td>)}
-                    </tr>
-                    <tr className="bg-surface-50 dark:bg-surface-900">
-                      <td className="py-4 px-5 text-sm font-black uppercase text-surface-700 dark:text-surface-300">Profit/Order</td>
-                      <td className="text-right py-4 px-4 text-lg font-black text-emerald-600">{fmtCurrency(result.profitPerOrder)}</td>
-                      {comparisonResults.map(r => <td key={r.building.id} className={`text-right py-4 px-4 text-lg font-black ${r.profitPerOrder >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmtCurrency(r.profitPerOrder)}</td>)}
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-5 text-sm font-medium text-surface-500">Margin</td>
-                      <td className="text-right py-3 px-4 text-sm font-bold">{fmtPct(result.marginPct)}</td>
-                      {comparisonResults.map(r => <td key={r.building.id} className="text-right py-3 px-4 text-sm font-bold">{fmtPct(r.marginPct)}</td>)}
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-5 text-sm font-medium text-surface-500">Daily Profit</td>
-                      <td className="text-right py-3 px-4 text-sm font-bold">{fmtCurrency(result.dailyProfit)}</td>
-                      {comparisonResults.map(r => <td key={r.building.id} className="text-right py-3 px-4 text-sm font-bold">{fmtCurrency(r.dailyProfit)}</td>)}
-                    </tr>
-                  </>
-                )}
+                <>
+                  <tr>
+                    <td className="py-3 px-5 text-sm font-medium text-surface-500">Revenue/Order</td>
+                    <td className="text-right py-3 px-4 text-sm font-bold text-emerald-600">{fmtCurrency(result.revenuePerOrder)}</td>
+                    {comparisonResults.map(r => <td key={r.building.id} className="text-right py-3 px-4 text-sm font-bold text-emerald-600">{fmtCurrency(r.revenuePerOrder)}</td>)}
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-5 text-sm font-medium text-surface-500">Total Cost/Order</td>
+                    <td className="text-right py-3 px-4 text-sm font-bold text-rose-500">{fmtCurrency(result.totalCostPerOrder)}</td>
+                    {comparisonResults.map(r => <td key={r.building.id} className="text-right py-3 px-4 text-sm font-bold text-rose-500">{fmtCurrency(r.totalCostPerOrder)}</td>)}
+                  </tr>
+                  <tr className="bg-surface-50 dark:bg-surface-900">
+                    <td className="py-4 px-5 text-sm font-black uppercase text-surface-700 dark:text-surface-300">Profit/Order</td>
+                    <td className="text-right py-4 px-4 text-lg font-black text-emerald-600">{fmtCurrency(result.profitPerOrder)}</td>
+                    {comparisonResults.map(r => <td key={r.building.id} className={`text-right py-4 px-4 text-lg font-black ${r.profitPerOrder >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmtCurrency(r.profitPerOrder)}</td>)}
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-5 text-sm font-medium text-surface-500">Margin</td>
+                    <td className="text-right py-3 px-4 text-sm font-bold">{fmtPct(result.marginPct)}</td>
+                    {comparisonResults.map(r => <td key={r.building.id} className="text-right py-3 px-4 text-sm font-bold">{fmtPct(r.marginPct)}</td>)}
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-5 text-sm font-medium text-surface-500">Daily Profit</td>
+                    <td className="text-right py-3 px-4 text-sm font-bold">{fmtCurrency(result.dailyProfit)}</td>
+                    {comparisonResults.map(r => <td key={r.building.id} className="text-right py-3 px-4 text-sm font-bold">{fmtCurrency(r.dailyProfit)}</td>)}
+                  </tr>
+                </>
               </tbody>
             </table>
           </div>
           <div className="p-4 space-y-2">
             {comparisons.map((c, i) => {
               const compResult = comparisonResults[i];
-              const compEffectiveRating = c.currentRating ?? compResult.restaurantRating;
               return (
                 <div key={i} className="flex items-center justify-between p-2 bg-surface-50 dark:bg-surface-900 rounded">
-                  <span className="text-sm">{compResult.building.name} L{c.buildingLevel} Q{c.quality} — {isRestaurant ? compEffectiveRating.toFixed(2) + ' rating' : fmtCurrency(compResult.profitPerOrder) + '/order'}</span>
+                  <span className="text-sm">{compResult.building.name} L{c.buildingLevel} Q{c.quality} — {fmtCurrency(compResult.profitPerOrder)}/order</span>
                   <button onClick={() => removeComparison(i)} className="p-1 text-surface-400 hover:text-rose-500">
                     <Trash2 size={14} />
                   </button>
@@ -1002,16 +605,6 @@ export function RetailMechanicsPage() {
           <p>• Contract terms (price, bonus %, items) are randomized per offer based on server demand.</p>
           <p>• Can reject orders → wait another 47h + pay wages again.</p>
           
-          <h4 className="font-bold text-surface-600 dark:text-surface-300 mt-3">Restaurant (PvP Competition — verified from SimCompanies Times #178, #412, official guide):</h4>
-          <p>• 3-hour cycles. Rating-based pricing: Rating = Food(Q×0.15) + SalesSpeed(×0.02) + CMOComm(×0.01).</p>
-          <p>• Price multiplier = 1 + Rating×0.1 (10% price increase per rating point).</p>
-          <p>• Sales speed bonus: +0.02 rating per % (verified). Minimum ~35% for profitability.</p>
-          <p>• CMO communication skill: must be on duty 3h before opening. Adds directly to rating.</p>
-          <p>• Food quality: average menu item quality. Q8+ recommended for good rating.</p>
-          <p>• Luxury restaurant: multiplies rating ×1.5 (requires rating ≥ 0.7).</p>
-          <p>• Optimal menu price ~$60. Low quality hurts rating significantly.</p>
-          <p>• <strong>PvP Reality:</strong> Player vs Player competition. No guaranteed profit. Need 2+ restaurants for A/B testing. Expect ~$4M losses during discovery.</p>
-          
           <h4 className="font-bold text-surface-600 dark:text-surface-300 mt-3">Seasonal (Halloween/Xmas/Beach):</h4>
           <p>• Limited-time buildings. Fixed cycles. No quality scaling.</p>
           
@@ -1021,12 +614,6 @@ export function RetailMechanicsPage() {
           </p>
           <p className="font-mono text-[11px] bg-surface-100 dark:bg-surface-800 p-2 rounded">
             SO Quality Bonus = ContractPrice × Qty × (QualityBonusBase% × QualityLevel)
-          </p>
-          <p className="font-mono text-[11px] bg-surface-100 dark:bg-surface-800 p-2 rounded">
-            Restaurant Rating = Q×0.15 + SalesSpeed%×0.02 + CMOComm×0.01
-          </p>
-          <p className="font-mono text-[11px] bg-surface-100 dark:bg-surface-800 p-2 rounded">
-            Restaurant Price Mult = 1 + Rating×0.1 (Luxury: ×1.5 if Rating≥0.7)
           </p>
         </div>
       </details>

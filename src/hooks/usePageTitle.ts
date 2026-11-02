@@ -36,6 +36,7 @@ export const PAGE_TITLES = {
   extension: 'Browser Extension',
   salesOffice: 'Sales Office Calculator',
   retailMechanics: 'Retail Mechanics',
+  restaurantPlanner: 'Restaurant Planner',
   widgets: 'Widgets',
 } as const;
 
