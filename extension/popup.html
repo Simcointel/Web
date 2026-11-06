@@ -163,21 +163,6 @@
     }
     .sync-dot.connected { background: #22c55e; }
     .sync-dot.disconnected { background: #64748b; }
-    .sync-btn {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #3b82f6;
-      border-radius: 6px;
-      background: #3b82f6;
-      color: #fff;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-bottom: 8px;
-    }
-    .sync-btn:hover { background: #2563eb; }
-    .sync-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .pairing-row {
       display: flex;
       gap: 6px;
@@ -285,7 +270,6 @@
         <span id="syncStatusText">Dashboard: Not connected</span>
       </span>
     </div>
-    <button class="sync-btn" id="syncNowBtn">Sync Now</button>
     <div class="pairing-row">
       <input type="text" class="pairing-input" id="pairingCodeInput" placeholder="Pairing code from dashboard" />
       <button class="pairing-save-btn" id="pairingSaveBtn">Save</button>

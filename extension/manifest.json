@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SimcoIntel — SimCo Market Data",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Real-time SimCompanies market data, profit margins, retail saturation, and macro indicators at a glance. Syncs company data to the SimcoIntel web dashboard.",
   "permissions": ["storage", "alarms"],
   "host_permissions": [
@@ -26,7 +26,8 @@
     "128": "icons/icon128.png"
   },
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["background.js"],
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
@@ -43,7 +44,9 @@
     {
       "matches": [
         "https://simcointel.github.io/Web",
-        "https://simcointel.github.io/Web/*"
+        "https://simcointel.github.io/Web/*",
+        "http://localhost:5173/*",
+        "http://localhost:3000/*"
       ],
       "js": [
         "bridge.js"
