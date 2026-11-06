@@ -184,42 +184,6 @@ async function loadSyncStatus() {
   }
 }
 
-async function triggerManualSync() {
-  addLog('Manual sync triggered');
-  const btn = document.getElementById('syncNowBtn');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = 'Syncing...';
-  }
-
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab?.url?.includes('simcompanies.com')) {
-      const response = await chrome.tabs.sendMessage(tab.id, { type: 'simcointel:trigger-sync' });
-      if (response?.success) {
-        if (btn) btn.textContent = 'Synced!';
-        addLog('Sync completed', 'success');
-      } else {
-        if (btn) btn.textContent = 'Sync unavailable';
-        addLog('Sync failed: ' + (response?.error || 'no response'), 'error');
-      }
-    } else {
-      if (btn) btn.textContent = 'Not on SimCompanies';
-    }
-  } catch (err) {
-    if (btn) btn.textContent = 'Sync failed';
-    addLog('Sync failed', 'error');
-  }
-
-  setTimeout(async () => {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = 'Sync Now';
-    }
-    await loadSyncStatus();
-  }, 2000);
-}
-
 document.querySelectorAll('.realm-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.realm-btn').forEach(b => b.classList.remove('active'));
@@ -231,8 +195,6 @@ document.querySelectorAll('.realm-btn').forEach(btn => {
 });
 
 document.getElementById('refreshBtn').addEventListener('click', loadDashboard);
-
-document.getElementById('syncNowBtn').addEventListener('click', triggerManualSync);
 
 document.getElementById('pairingSaveBtn').addEventListener('click', async () => {
   const input = document.getElementById('pairingCodeInput');

@@ -13,7 +13,11 @@ export async function withCache<T>(key: string, fn: () => Promise<T>, ttl = CACH
     DATA_CACHE.set(key, { data, expiry: Date.now() + ttl });
     return data;
   } catch (err) {
-    DATA_CACHE.set(key, { data: null, expiry: Date.now() + CACHE_FAIL_TTL });
+    // Don't cache failures: upstream fetchers (rawFetch/fetchWithRetry) already
+    // implement retry with exponential backoff. Caching failures here would
+    // suppress their retry logic and cause premature fallback to stale data.
+    // If a caller wants failure caching, it can wrap withCache and handle it.
+    DATA_CACHE.delete(key);
     throw err;
   }
 }

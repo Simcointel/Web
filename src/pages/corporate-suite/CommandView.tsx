@@ -1,11 +1,11 @@
 import React, { useMemo, useRef } from "react";
-import { Globe, Package, Building2, DollarSign, Zap, Clock, Upload, Key } from "lucide-react";
+import { Globe, Package, Building2, DollarSign, Zap, Clock, RefreshCw, Key } from "lucide-react";
 import { KPICard, CheckItem } from "./components";
 import { n } from "./types";
 
 import type { SuiteViewProps } from "./types";
 
-export function CommandView({ core, phase, margins, state, onSync, isSyncing, setState, onImportFromExtension, onShowPairingCode }: SuiteViewProps) {
+export function CommandView({ core, phase, margins, state, onSync, isSyncing, setState, onSyncAccount, onShowPairingCode }: SuiteViewProps) {
   const companyIdInputRef = useRef<HTMLInputElement>(null);
   const marketAlerts = useMemo(() => {
     if (!margins?.resources) return [];
@@ -159,10 +159,10 @@ export function CommandView({ core, phase, margins, state, onSync, isSyncing, se
              <h3 className="text-sm font-bold uppercase text-surface-500 mb-4">Extension Bridge</h3>
              <div className="space-y-3">
                 <button
-                   onClick={onImportFromExtension}
+                   onClick={onSyncAccount}
                    className="w-full btn !bg-brand-600 text-white !py-2.5 !px-4 hover:shadow-lg hover:shadow-brand-500/20 transition-all flex items-center justify-center gap-2"
                 >
-                   <Upload size={14} /> Import from Extension
+                   <RefreshCw size={14} /> Sync Account
                 </button>
                 <button
                    onClick={onShowPairingCode}
@@ -172,7 +172,7 @@ export function CommandView({ core, phase, margins, state, onSync, isSyncing, se
                 </button>
              </div>
              <p className="text-[10px] text-surface-500 mt-3 leading-relaxed">
-                Import company data synced from the browser extension, or generate a pairing code to link your extension.
+                Fetches your signed-in account data (money, level, rank, slots, modifiers) through the extension.
              </p>
           </div>
 
