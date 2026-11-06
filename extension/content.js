@@ -326,10 +326,10 @@
   let syncingPromise = null;
   let lastSyncAt = 0;
 
-  async function syncCompanyData(reason = 'auto') {
+  async function syncCompanyData() {
     if (syncing) return syncingPromise;
     const now = Date.now();
-    if (reason !== 'manual' && now - lastSyncAt < SYNC_THROTTLE_MS) return null;
+    if (now - lastSyncAt < SYNC_THROTTLE_MS) return null;
     lastSyncAt = now;
     syncing = true;
 
@@ -347,7 +347,7 @@
               companyName: extractCompanyName() || undefined,
               realm,
             };
-        const apiProfile = (reason === 'manual' || now - lastApiAt > API_THROTTLE_MS)
+        const apiProfile = (now - lastApiAt > API_THROTTLE_MS)
           ? await fetchApiProfile(companyId, realm)
           : null;
         if (apiProfile) lastApiAt = Date.now();
@@ -366,20 +366,11 @@
           JSON.stringify({ ...(existing || {}), syncedAt: null });
         if (changed) {
           await storageSet(STORAGE_KEY, merged);
-          log(`Company data synced (${merged.provider || 'dom'}, ${reason})`, 'success');
-        }
-
-        if (reason === 'manual' && document.getElementById('simcointel-sync-btn')) {
-          updateSyncButton('success', 'Synced!');
-          setTimeout(() => updateSyncButton('default', 'Sync to Dashboard'), 2000);
+          log(`Company data synced (${merged.provider || 'dom'})`, 'success');
         }
         return merged;
       } catch (err) {
         log('Sync failed: ' + err.message, 'error');
-        if (reason === 'manual' && document.getElementById('simcointel-sync-btn')) {
-          updateSyncButton('error', 'Sync failed');
-          setTimeout(() => updateSyncButton('default', 'Sync to Dashboard'), 3000);
-        }
         throw err;
       } finally {
         syncing = false;
@@ -390,54 +381,12 @@
     return syncingPromise;
   }
 
-  // --- In-page sync button (shown on every SimCompanies page) ---------------
-
-  function createSyncButton() {
-    const btn = document.createElement('div');
-    btn.id = 'simcointel-sync-btn';
-    btn.style.cssText = `
-      position: fixed; bottom: 16px; left: 16px; z-index: 999999;
-      background: rgba(15, 23, 42, 0.95); border: 1px solid #3b82f6;
-      border-radius: 8px; padding: 10px 14px; font-size: 12px;
-      color: #e2e8f0; font-family: -apple-system, sans-serif;
-      cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      display: flex; align-items: center; gap: 6px;
-      transition: all 0.2s;
-    `;
-    btn.innerHTML = `
-      <span style="color:#3b82f6;font-size:14px;">&#x21bb;</span>
-      <span id="simcointel-sync-text">Sync to Dashboard</span>
-    `;
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      updateSyncButton('syncing', 'Syncing...');
-      syncCompanyData('manual').catch(() => {});
-    });
-    document.body.appendChild(btn);
-    return btn;
-  }
-
-  function updateSyncButton(status, message) {
-    const btn = document.getElementById('simcointel-sync-btn');
-    if (!btn) return;
-    const text = document.getElementById('simcointel-sync-text');
-    if (text) text.textContent = message;
-    if (status === 'syncing') {
-      btn.style.borderColor = '#f59e0b';
-      btn.style.opacity = '0.7';
-    } else if (status === 'success') {
-      btn.style.borderColor = '#22c55e';
-    } else if (status === 'error') {
-      btn.style.borderColor = '#ef4444';
-    }
-  }
-
   // --- Init ------------------------------------------------------------------
 
   let syncTimer = null;
   function scheduleSync(delay = 2500) {
     clearTimeout(syncTimer);
-    syncTimer = setTimeout(() => syncCompanyData('dom-change').catch(() => {}), delay);
+    syncTimer = setTimeout(() => syncCompanyData().catch(() => {}), delay);
   }
 
   let lastUrl = window.location.href;
@@ -453,12 +402,8 @@
   function onReady() {
     setTimeout(loadData, 3000);
 
-    if (!document.getElementById('simcointel-sync-btn') && document.body) {
-      createSyncButton();
-    }
-
-    setTimeout(() => syncCompanyData('load').catch(() => {}), 1200);
-    setTimeout(() => syncCompanyData('settle').catch(() => {}), 6000);
+    setTimeout(() => syncCompanyData().catch(() => {}), 1200);
+    setTimeout(() => syncCompanyData().catch(() => {}), 6000);
 
     const observer = new MutationObserver(() => scheduleSync(2500));
     observer.observe(document.body, { childList: true, subtree: true });
@@ -467,14 +412,21 @@
     window.addEventListener('popstate', () => scheduleSync(1500));
   }
 
+  async function fetchAuthData() {
+    const res = await fetch(`${API_V3}/companies/auth-data/`, {
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message?.type === 'simcointel:trigger-sync') {
-      syncCompanyData('manual')
-        .then((data) => sendResponse({ success: true, company: data?.companyName || null }))
-        .catch((err) => sendResponse({ success: false, error: err.message }));
-      return true;
-    }
-    return false;
+    if (message?.type !== 'simcointel:fetch-auth-data') return false;
+    fetchAuthData()
+      .then((data) => sendResponse({ ok: true, data }))
+      .catch((err) => sendResponse({ ok: false, error: err.message }));
+    return true;
   });
 
   if (document.readyState === 'loading') {
