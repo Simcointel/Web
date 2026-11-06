@@ -1,5 +1,8 @@
+import type { AuthDataPayload } from '../types/api';
+
 const PAIRING_KEY = 'simcointel-pairing-code';
 const TIMEOUT_MS = 2000;
+const AUTH_TIMEOUT_MS = 15000;
 const ALLOWED_ORIGINS = [
   'https://simcointel.github.io',
   'http://localhost:5173',
@@ -54,6 +57,29 @@ function waitForExtensionResponse(timeoutMs: number): Promise<{ companyData: Ext
   });
 }
 
+function waitForAuthDataResponse(timeoutMs: number): Promise<{ authData: AuthDataPayload | null; error?: string }> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      window.removeEventListener('message', handler);
+      reject(new Error('Timeout waiting for extension response'));
+    }, timeoutMs);
+
+    function handler(e: MessageEvent) {
+      if (!isAllowedOrigin(e.origin)) return;
+      if (e.data?.type !== 'simcointel:auth-data-response') return;
+      if (e.data?.detail?.source !== 'simcointel-extension') return;
+      clearTimeout(timer);
+      window.removeEventListener('message', handler);
+      resolve({
+        authData: e.data?.detail?.authData ?? null,
+        error: e.data?.detail?.error,
+      });
+    }
+
+    window.addEventListener('message', handler);
+  });
+}
+
 function getTargetOrigin(): string {
   return window.location.origin;
 }
@@ -63,6 +89,12 @@ export async function requestExtensionData(): Promise<ExtensionCompanyData | nul
   window.postMessage({ type: 'simcointel:data-request', source: 'simcointel-web' }, getTargetOrigin());
   const response = await responsePromise;
   return response.companyData;
+}
+
+export async function requestAuthData(): Promise<{ authData: AuthDataPayload | null; error?: string }> {
+  const responsePromise = waitForAuthDataResponse(AUTH_TIMEOUT_MS);
+  window.postMessage({ type: 'simcointel:auth-data-request', source: 'simcointel-web' }, getTargetOrigin());
+  return responsePromise;
 }
 
 export async function isExtensionAvailable(): Promise<boolean> {
