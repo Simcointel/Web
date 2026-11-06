@@ -29,3 +29,54 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 refreshData();
+
+// auth-data: the worker is the only context that can fetch this cross-origin
+const AUTH_URL = 'https://www.simcompanies.com/api/v3/companies/auth-data/';
+const AUTH_KEY = 'simcointel-auth-data';
+const COMPANY_TAB = 'https://www.simcompanies.com/*';
+
+async function fetchAuthDataDirect() {
+  try {
+    const res = await fetch(AUTH_URL, { credentials: 'include', headers: { Accept: 'application/json' } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.authCompany ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+function fetchAuthDataFromTab() {
+  return new Promise((resolve) => {
+    chrome.tabs.query({ url: COMPANY_TAB }, (tabs) => {
+      if (chrome.runtime.lastError || !tabs?.length) return resolve(null);
+      chrome.tabs.sendMessage(tabs[0].id, { type: 'simcointel:fetch-auth-data' }, (res) => {
+        if (chrome.runtime.lastError) return resolve(null);
+        resolve(res?.ok ? res.data ?? null : null);
+      });
+    });
+  });
+}
+
+async function fetchAuthData() {
+  const data = (await fetchAuthDataDirect()) ?? (await fetchAuthDataFromTab());
+  if (!data) return { ok: false, error: 'not-signed-in' };
+  const payload = { ...data, syncedAt: new Date().toISOString() };
+  // wait for the write: the MV3 worker may be killed right after the response
+  await new Promise((resolve) =>
+    chrome.storage.local.set({ [AUTH_KEY]: payload }, () => {
+      void chrome.runtime.lastError; // must be read to suppress unchecked-error noise
+      resolve();
+    })
+  );
+  // shortcut: write failure reported as ok, upgrade if cache staleness matters
+  return { ok: true, data: payload };
+}
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type !== 'simcointel:fetch-auth-data') return false;
+  fetchAuthData()
+    .then(sendResponse)
+    .catch((err) => sendResponse({ ok: false, error: String(err?.message || err) }));
+  return true;
+});
