@@ -56,7 +56,8 @@ import { PageHeader } from "../components/ui/Common";
 import { usePageTitleKey } from "../hooks/usePageTitle";
 
 import { useDashboardState, useProfitMargins, useRetailData } from "../hooks/useDataQueries";
-import { requestExtensionData, isExtensionAvailable, getPairingCode } from "../services/extensionBridge";
+import { requestAuthData, isExtensionAvailable, getPairingCode } from "../services/extensionBridge";
+import { applyAuthData } from "./corporate-suite/authData";
 
 import { fmtPct, fmtCurrency } from "../utils/formatters";
 
@@ -585,48 +586,21 @@ export function CorporateSuitePage() {
 
   };
 
-  const importFromExtension = async () => {
+  const syncAccount = async () => {
     setShowPairingCode(false);
     try {
-      const available = await isExtensionAvailable();
-      if (!available) {
+      if (!(await isExtensionAvailable())) {
         setNotification({ msg: 'Extension not detected', type: 'error' });
         return;
       }
-      setNotification({ msg: 'Requesting data from extension...', type: 'success' });
-      const data = await requestExtensionData();
-      if (!data) {
-        setNotification({ msg: 'No data received from extension', type: 'error' });
+      setNotification({ msg: 'Fetching account data from extension...', type: 'success' });
+      const { authData, error } = await requestAuthData();
+      if (!authData) {
+        setNotification({ msg: error === 'not-signed-in' ? 'Sign in on simcompanies.com, then retry' : (error || 'No account data received'), type: 'error' });
         return;
       }
-      const level = data.companyLevel ?? data.level;
-      const rank = data.companyRank ?? data.rank;
-      const value = data.companyValue ?? data.value;
-      const govTier = data.governmentOrderTierIndex ?? data.governmentTier;
-      const aoRaw = data.apiAO ?? data.adminOverhead;
-      const aoNum = typeof aoRaw === 'string' ? parseFloat(aoRaw.replace('%', '')) : aoRaw;
-      const ao = typeof aoNum === 'number' && isFinite(aoNum) ? (aoNum > 1 ? aoNum / 100 : aoNum) : undefined;
-      const newMap: MapItem[] = [];
-      for (const b of data.buildings || []) {
-        const id = b.id || BUILDINGS.find(x => x.name.toLowerCase() === String(b.name || '').toLowerCase())?.id;
-        if (id) newMap.push({ id, level: n(b.level) || 1, instanceId: b.instanceId });
-      }
-      setState(prev => ({
-        ...prev,
-        companyId: data.companyId ? String(data.companyId) : prev.companyId,
-        companyName: data.companyName || prev.companyName,
-        companyLevel: level ?? prev.companyLevel,
-        companyRank: rank ?? prev.companyRank,
-        companyValue: value ?? prev.companyValue,
-        apiAO: ao ?? prev.apiAO,
-        workers: data.workers ?? prev.workers,
-        governmentTier: govTier ?? prev.governmentTier,
-        extraSlots: data.extraSlots ?? prev.extraSlots,
-        onlineStatus: data.onlineStatus ?? prev.onlineStatus,
-        map: newMap.length ? newMap : prev.map,
-        lastSynced: new Date().toLocaleTimeString(),
-      }));
-      setNotification({ msg: `Imported: ${data.companyName || 'Company data'}`, type: 'success' });
+      setState((prev) => applyAuthData(prev, authData));
+      setNotification({ msg: `Account synced: ${authData.authCompany?.company ?? 'company'}`, type: 'success' });
     } catch (e) {
       setNotification({ msg: 'Extension not detected', type: 'error' });
       setDebugData({ error: e instanceof Error ? e.message : String(e) });
@@ -645,7 +619,7 @@ export function CorporateSuitePage() {
 
     switch(state.activeTab || 'command') {
 
-      case 'command': return <CommandView state={state} core={core} phase={economyPhase} margins={margins} onSync={syncCompany} isSyncing={isSyncing} setState={setState} onImportFromExtension={importFromExtension} onShowPairingCode={showPairingCodeHandler} />;
+      case 'command': return <CommandView state={state} core={core} phase={economyPhase} margins={margins} onSync={syncCompany} isSyncing={isSyncing} setState={setState} onSyncAccount={syncAccount} onShowPairingCode={showPairingCodeHandler} />;
 
       case 'ops': return <OperationsView state={state} core={core} setState={setState} />;
 
@@ -666,7 +640,7 @@ export function CorporateSuitePage() {
 
       case 'ledger': return <LedgerView state={state} />;
 
-      default: return <CommandView state={state} core={core} phase={economyPhase} margins={margins} onSync={syncCompany} isSyncing={isSyncing} setState={setState} onImportFromExtension={importFromExtension} onShowPairingCode={showPairingCodeHandler} />;
+      default: return <CommandView state={state} core={core} phase={economyPhase} margins={margins} onSync={syncCompany} isSyncing={isSyncing} setState={setState} onSyncAccount={syncAccount} onShowPairingCode={showPairingCodeHandler} />;
 
     }
 
