@@ -12,16 +12,18 @@
 
   const STORAGE_KEY = 'simcointel-company-data';
   const PAIRING_KEY = 'simcointel-pairing-code';
+  const AUTH_KEY = 'simcointel-auth-data';
 
   let lastData = null;
   let lastPairingCode = null;
 
   function getStorageData() {
     return new Promise((resolve) => {
-      chrome.storage.local.get([STORAGE_KEY, PAIRING_KEY], (result) => {
+      chrome.storage.local.get([STORAGE_KEY, PAIRING_KEY, AUTH_KEY], (result) => {
         resolve({
           companyData: result[STORAGE_KEY] || null,
           pairingCode: result[PAIRING_KEY] || null,
+          authData: result[AUTH_KEY] || null,
         });
       });
     });
@@ -50,13 +52,14 @@
   async function refreshAndPublish() {
     log('Refreshing storage data...');
     try {
-      const { companyData, pairingCode } = await getStorageData();
+      const { companyData, pairingCode, authData } = await getStorageData();
       lastData = companyData;
       lastPairingCode = pairingCode;
 
       createDataElement({
         companyData,
         pairingCode,
+        authData,
         extensionId: chrome.runtime.id,
         timestamp: Date.now(),
       });
@@ -80,17 +83,35 @@
     if (event.data?.type !== 'simcointel:data-request') return;
     if (event.data?.source !== 'simcointel-web') return;
     log('Data request received from web page via postMessage');
-    getStorageData().then(({ companyData, pairingCode }) => {
+    getStorageData().then(({ companyData, pairingCode, authData }) => {
       notifyPage({
         companyData,
         pairingCode,
+        authData,
         extensionId: chrome.runtime.id,
         timestamp: Date.now(),
       });
     });
   }
 
-  window.addEventListener('message', handleDataRequest);
+  function handleAuthRequest(event) {
+    if (!isAllowedOrigin(event.origin)) return;
+    if (event.data?.type !== 'simcointel:auth-data-request') return;
+    if (event.data?.source !== 'simcointel-web') return;
+    chrome.runtime.sendMessage({ type: 'simcointel:fetch-auth-data' }, (res) => {
+      const error = chrome.runtime.lastError?.message || (res?.ok ? undefined : res?.error);
+      window.postMessage({
+        type: 'simcointel:auth-data-response',
+        detail: {
+          authData: res?.ok ? res.data : null,
+          error,
+          source: 'simcointel-extension',
+        },
+      }, window.location.origin);
+    });
+  }
+
+  window.addEventListener('message', handleAuthRequest);
 
   refreshAndPublish();
 })();
