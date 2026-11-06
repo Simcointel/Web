@@ -312,3 +312,28 @@ export interface DependencyData {
   dependencyMatrix: Record<string, Record<string, number>>;
 }
 
+export interface AuthDataPayload {
+  authCompany?: {
+    companyId?: number;
+    company?: string;
+    logo?: string;
+    level?: number;
+    rank?: number;
+    money?: number;
+    extraBuildingSlots?: number;
+    productionModifier?: number;
+    salesModifier?: number;
+  };
+  authUser?: { email?: string };
+  levelInfo?: {
+    level?: number;
+    levelName?: string;
+    experience?: number;
+    experienceToNextLevel?: number;
+    maxBuildings?: number;
+    capabilities?: Record<string, boolean>;
+  };
+  temporals?: { contest?: { id?: number; name?: string } | null };
+  syncedAt?: string;
+}
+
