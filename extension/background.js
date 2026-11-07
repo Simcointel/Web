@@ -75,8 +75,15 @@ async function fetchAuthData() {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type !== 'simcointel:fetch-auth-data') return false;
+  console.log('[SimcoIntel BG] Received fetch-auth-data request');
   fetchAuthData()
-    .then(sendResponse)
-    .catch((err) => sendResponse({ ok: false, error: String(err?.message || err) }));
+    .then((res) => {
+      console.log('[SimcoIntel BG] fetchAuthData resolved:', { ok: res.ok, error: res.error, hasData: !!res.data });
+      sendResponse(res);
+    })
+    .catch((err) => {
+      console.error('[SimcoIntel BG] fetchAuthData rejected:', err);
+      sendResponse({ ok: false, error: String(err?.message || err) });
+    });
   return true;
 });

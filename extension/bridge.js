@@ -100,7 +100,12 @@
     if (!isAllowedOrigin(event.origin)) return;
     if (event.data?.type !== 'simcointel:auth-data-request') return;
     if (event.data?.source !== 'simcointel-web') return;
+    log('Auth request received, sending to background worker', 'info');
     chrome.runtime.sendMessage({ type: 'simcointel:fetch-auth-data' }, (res) => {
+      if (chrome.runtime.lastError) {
+        log('Background worker error: ' + chrome.runtime.lastError.message, 'error');
+      }
+      log('Background worker responded: ' + JSON.stringify({ ok: res?.ok, error: res?.error, hasData: !!res?.data }), 'info');
       const error = chrome.runtime.lastError?.message || (res?.ok ? undefined : res?.error);
       window.postMessage({
         type: 'simcointel:auth-data-response',
