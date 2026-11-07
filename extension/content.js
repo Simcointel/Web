@@ -16,7 +16,7 @@
   const API_V3 = 'https://www.simcompanies.com/api/v3';
   const STORAGE_KEY_BASE = 'simcointel-company-data';
   const SYNC_THROTTLE_MS = 15000;
-  const API_THROTTLE_MS = 60000;
+  const API_THROTTLE_MS = 120000; // Official SimCompanies API limit: 1 per 2 minutes
   let lastApiAt = 0;
 
   function getStorageKey() {

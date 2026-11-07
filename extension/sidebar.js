@@ -25,10 +25,13 @@
   };
 
   // Rate limiting for GET requests
+  // SimCompanies official API: 1 request per 2 minutes (30/hour)
+  // simcotools/community APIs: they handle rate limiting on their end
+  // Chat parsing: local DOM observation, no API calls
   const RATE_LIMITS = {
-    api: { windowMs: 60000, maxCalls: 30 },      // 30 calls/min for SimCompanies API
-    market: { windowMs: 300000, maxCalls: 10 },   // 10 calls/5min for market data
-    chat: { windowMs: 60000, maxCalls: 100 },     // 100 checks/min for chat
+    simcompaniesApi: { windowMs: 120000, maxCalls: 1 },  // 1 per 2 min (official limit)
+    marketData: { windowMs: 60000, maxCalls: 10 },        // community APIs, generous
+    chatParse: { windowMs: 60000, maxCalls: 200 },        // local DOM parsing, generous
   };
 
   const rateLimitState = new Map();
@@ -140,7 +143,7 @@
   // --- Finance Dashboard ---
   async function fetchFinanceData(companyId, realm) {
     const base = realm === 1 ? 'https://www.simcompanies.com/api/v3/entrepreneurs/companies' : 'https://www.simcompanies.com/api/v3/companies';
-    if (!checkRateLimit('finance-api', RATE_LIMITS.api)) throw new Error('Rate limited');
+    if (!checkRateLimit('finance-api', RATE_LIMITS.simcompaniesApi)) throw new Error('Rate limited');
     const res = await fetch(`${base}/${companyId}/`, { credentials: 'include', headers: { Accept: 'application/json' } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
@@ -176,7 +179,7 @@
   // --- Market Alerts ---
   async function checkMarketAlerts(alerts) {
     if (!alerts?.length) return [];
-    if (!checkRateLimit('market-alerts', RATE_LIMITS.market)) return [];
+    if (!checkRateLimit('market-alerts', RATE_LIMITS.marketData)) return [];
 
     try {
       const margins = await cachedGet(
@@ -527,7 +530,7 @@
     const chatContainer = document.querySelector('[class*="chat"], [class*="Chat"], #chat, .messages');
     if (chatContainer) {
       const observer = new MutationObserver(() => {
-        if (!checkRateLimit('chat-parse', RATE_LIMITS.chat)) return;
+        if (!checkRateLimit('chat-parse', RATE_LIMITS.chatParse)) return;
         chatContainer.querySelectorAll('[class*="message"], [class*="Message"], li, .msg').forEach(el => {
           const text = el.textContent.trim();
           if (!text || el.dataset.simcointelParsed) return;
@@ -562,7 +565,7 @@
 
     try {
       const base = realm === 1 ? 'https://www.simcompanies.com/api/v3/entrepreneurs/companies' : 'https://www.simcompanies.com/api/v3/companies';
-      if (!checkRateLimit('buildings-api', RATE_LIMITS.api)) throw new Error('Rate limited');
+      if (!checkRateLimit('buildings-api', RATE_LIMITS.simcompaniesApi)) throw new Error('Rate limited');
       const res = await fetch(`${base}/${companyId}/`, { credentials: 'include', headers: { Accept: 'application/json' } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
