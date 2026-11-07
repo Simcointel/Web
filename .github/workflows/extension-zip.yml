@@ -1,0 +1,64 @@
+name: Build Extension Zip
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'extension/**'
+      - 'build-extension-zip.js'
+      - 'verify-extension.js'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-zip:
+    name: Build & Upload Extension Zip
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: Web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: Web
+        run: npm ci
+
+      - name: Build extension zip
+        working-directory: Web
+        run: npm run extension:zip
+
+      - name: Verify extension zip
+        working-directory: Web
+        run: npm run extension:verify
+
+      - name: Upload extension zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simcointel-extension
+          path: Web/extension/simcointel-extension.zip
+          retention-days: 30
+
+      - name: Commit updated zip to repo
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Web/extension/simcointel-extension.zip
+          if git diff --staged --quiet; then
+            echo "No changes to zip"
+          else
+            git commit -m "chore(extension): auto-update extension zip [skip ci]"
+            git push
+          fi
