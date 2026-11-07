@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Briefcase, DollarSign,
   TrendingUp, BookOpen, Bell, Info,
   Sun, Moon, ChevronRight, LayoutGrid,
-  Calculator, HardHat, Store, BarChart3, Zap, Building2, FileText, Chrome, Settings, Utensils
+  Calculator, HardHat, Store, BarChart3, Zap, Building2, FileText, Chrome, Settings, Utensils, Database
 } from "lucide-react";
 
 const navLinks = [
@@ -20,6 +20,7 @@ const navLinks = [
   { group: "INTEL", links: [
     { to: "/vwap-inflation", label: "Trends", icon: <TrendingUp size={18} /> },
     { to: "/encyclopedia", label: "Registry", icon: <BookOpen size={18} /> },
+    { to: "/resources", label: "Resources", icon: <Database size={18} /> },
     { to: "/market-intel", label: "Market Intel", icon: <BarChart3 size={18} /> },
     { to: "/market-orders", label: "Market Orders", icon: <DollarSign size={18} /> },
     { to: "/government", label: "Government", icon: <FileText size={18} /> },

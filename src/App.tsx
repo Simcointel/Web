@@ -26,6 +26,7 @@ const ExtensionPage = lazy(() => import("./pages/Extension").then(m => ({ defaul
 const SalesOfficeCalculatorPage = lazy(() => import("./pages/SalesOfficeCalculator").then(m => ({ default: m.SalesOfficeCalculatorPage })));
 const RetailMechanicsPage = lazy(() => import("./pages/RetailMechanics").then(m => ({ default: m.RetailMechanicsPage })));
 const RestaurantPlannerPage = lazy(() => import("./pages/RestaurantPlanner").then(m => ({ default: m.RestaurantPlannerPage })));
+const ResourceEncyclopediaPage = lazy(() => import("./pages/ResourceEncyclopedia").then(m => ({ default: m.ResourceEncyclopediaPage })));
 
 
 const LoadingFallback = () => (
@@ -62,6 +63,8 @@ export function AppShell({ path }: { path: string }) {
     : path === "/sales-office" ? <SalesOfficeCalculatorPage />
     : path === "/retail-mechanics" ? <RetailMechanicsPage />
     : path === "/restaurant" ? <RestaurantPlannerPage />
+    : path === "/resources" ? <ResourceEncyclopediaPage />
+    : path === "/xp-calculator" ? <XpCalculatorPage />
     : isWidget ? <WidgetPage />
     : <NotFoundPage />;
 
