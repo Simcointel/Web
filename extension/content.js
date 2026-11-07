@@ -366,7 +366,7 @@
 
     syncingPromise = (async () => {
       try {
-        const existing = await storageGet(STORAGE_KEY);
+        const existing = await storageGet(getStorageKey());
         const companyId = extractCompanyId(existing) || null;
         const realm = extractRealm();
 
@@ -396,7 +396,7 @@
         const changed = JSON.stringify({ ...merged, syncedAt: null }) !==
           JSON.stringify({ ...(existing || {}), syncedAt: null });
         if (changed) {
-          await storageSet(STORAGE_KEY, merged);
+          await storageSet(getStorageKey(), merged);
           log(`Company data synced (${merged.provider || 'dom'})`, 'success');
         }
         return merged;

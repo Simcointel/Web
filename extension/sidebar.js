@@ -556,7 +556,7 @@
   // --- Buildings Listeners ---
   async function attachBuildingsListeners() {
     const list = document.getElementById('buildingsList');
-    const companyId = extractCompanyIdFromPage();
+    const companyId = await extractCompanyIdFromPage();
     const realm = extractRealmFromPage();
 
     if (!companyId) { list.innerHTML = '<div class="tool-empty" style="padding:24px;color:#64748b;">No company detected on this page</div>'; return; }
@@ -637,7 +637,7 @@
   // --- Finance Listeners ---
   async function attachFinanceListeners() {
     const refresh = document.getElementById('finRefresh');
-    const companyId = extractCompanyIdFromPage();
+    const companyId = await extractCompanyIdFromPage();
     const realm = extractRealmFromPage();
 
     if (!companyId) { setFinanceError('No company detected'); return; }
@@ -726,9 +726,18 @@
   }
 
   // --- Helpers ---
-  function extractCompanyIdFromPage() {
-    const existing = null;
-    const fromLink = findCompanyIdFromLinks(existing?.companyName);
+  async function extractCompanyIdFromPage() {
+    // Try to get from storage first
+    try {
+      const storage = await chrome.storage.local.get(['simcointel-company-data-realm-0', 'simcointel-company-data-realm-1']);
+      for (const key of ['simcointel-company-data-realm-0', 'simcointel-company-data-realm-1']) {
+        const data = storage[key];
+        if (data?.companyId) return String(data.companyId);
+      }
+    } catch {}
+
+    // Fallback to DOM extraction
+    const fromLink = findCompanyIdFromLinks(null);
     if (fromLink) return fromLink;
     const m = window.location.pathname.match(/\/company\/(\d+)/);
     return m ? m[1] : null;
