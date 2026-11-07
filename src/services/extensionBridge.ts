@@ -45,6 +45,7 @@ function waitForExtensionResponse(timeoutMs: number): Promise<{ companyData: Ext
       if (!isAllowedOrigin(e.origin)) return;
       if (e.data?.type !== 'simcointel:data-response') return;
       if (e.data?.detail?.source !== 'simcointel-extension') return;
+      console.log('[SimcoIntel Page] Received data-response from bridge');
       clearTimeout(timer);
       window.removeEventListener('message', handler);
       resolve({
@@ -68,6 +69,7 @@ function waitForAuthDataResponse(timeoutMs: number): Promise<{ authData: AuthDat
       if (!isAllowedOrigin(e.origin)) return;
       if (e.data?.type !== 'simcointel:auth-data-response') return;
       if (e.data?.detail?.source !== 'simcointel-extension') return;
+      console.log('[SimcoIntel Page] Received auth-data-response from bridge');
       clearTimeout(timer);
       window.removeEventListener('message', handler);
       resolve({

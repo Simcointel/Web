@@ -20,6 +20,7 @@
   function getStorageData() {
     return new Promise((resolve) => {
       chrome.storage.local.get([STORAGE_KEY, PAIRING_KEY, AUTH_KEY], (result) => {
+        log('Storage read complete', 'info');
         resolve({
           companyData: result[STORAGE_KEY] || null,
           pairingCode: result[PAIRING_KEY] || null,
@@ -43,6 +44,7 @@
   }
 
   function notifyPage(data) {
+    log('Posting data-response to page', 'info');
     window.postMessage({
       type: 'simcointel:data-response',
       detail: { ...data, source: 'simcointel-extension', extensionId: chrome.runtime.id },
@@ -111,6 +113,7 @@
     });
   }
 
+  window.addEventListener('message', handleDataRequest);
   window.addEventListener('message', handleAuthRequest);
 
   refreshAndPublish();
