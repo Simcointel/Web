@@ -24,6 +24,7 @@ $includePatterns = @(
     "manifest.json",
     "background.js",
     "content.js",
+    "sidebar.js",
     "bridge.js",
     "popup.html",
     "popup.js",
