@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { RESOURCES } from "../data/simco_static";
 import { usePageTitleKey } from "../hooks/usePageTitle";
-import { Search, Copy, Check } from "lucide-react";
+import { Search, Copy, Check, Download } from "lucide-react";
 
 export function ResourceEncyclopediaPage() {
   usePageTitleKey('resourceEncyclopedia');
@@ -22,6 +22,32 @@ export function ResourceEncyclopediaPage() {
     setTimeout(() => setCopiedId(null), 1500);
   };
 
+  const downloadData = (format: 'json' | 'csv') => {
+    const data = filtered.map(r => ({ id: r.id, name: r.name }));
+    let content: string;
+    let filename: string;
+    let mimeType: string;
+
+    if (format === 'json') {
+      content = JSON.stringify(data, null, 2);
+      filename = 'simcompanies-resources.json';
+      mimeType = 'application/json';
+    } else {
+      const header = 'id,name\n';
+      content = header + data.map(r => `${r.id},"${r.name}"`).join('\n');
+      filename = 'simcompanies-resources.csv';
+      mimeType = 'text/csv';
+    }
+
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="max-w-[1440px] mx-auto p-3 sm:p-4 lg:p-6 space-y-6 animate-in fade-in duration-300">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -33,15 +59,35 @@ export function ResourceEncyclopediaPage() {
             All {RESOURCES.length} resources with their IDs (codes) from Sim Companies.
           </p>
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
-          <input
-            type="text"
-            placeholder="Search by name..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 rounded-lg text-sm focus:ring-1 focus:ring-brand-500 outline-none"
-          />
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-72">
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
+            <input
+              type="text"
+              placeholder="Search by name..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 rounded-lg text-sm focus:ring-1 focus:ring-brand-500 outline-none"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => downloadData('csv')}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
+              aria-label="Download filtered resources as CSV"
+            >
+              <Download size={12} />
+              <span>CSV</span>
+            </button>
+            <button
+              onClick={() => downloadData('json')}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase bg-surface-100 text-surface-700 dark:bg-surface-800 dark:text-surface-300 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-900/30 transition-colors"
+              aria-label="Download filtered resources as JSON"
+            >
+              <Download size={12} />
+              <span>JSON</span>
+            </button>
+          </div>
         </div>
       </div>
 
