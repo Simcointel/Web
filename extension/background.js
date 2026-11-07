@@ -61,10 +61,12 @@ function fetchAuthDataFromTab() {
 async function fetchAuthData() {
   const data = (await fetchAuthDataDirect()) ?? (await fetchAuthDataFromTab());
   if (!data) return { ok: false, error: 'not-signed-in' };
-  const payload = { ...data, syncedAt: new Date().toISOString() };
+  const realm = data.realm ?? 0;
+  const payload = { ...data, syncedAt: new Date().toISOString(), realm };
   // wait for the write: the MV3 worker may be killed right after the response
+  const authKey = `simcointel-auth-data-realm-${realm}`;
   await new Promise((resolve) =>
-    chrome.storage.local.set({ [AUTH_KEY]: payload }, () => {
+    chrome.storage.local.set({ [authKey]: payload }, () => {
       void chrome.runtime.lastError; // must be read to suppress unchecked-error noise
       resolve();
     })

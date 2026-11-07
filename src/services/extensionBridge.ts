@@ -31,10 +31,21 @@ export interface ExtensionCompanyData {
   rank?: number;
   value?: number;
   adminOverhead?: number | string;
+  // Realm info
+  realm?: number;
+  syncedAt?: string;
   [key: string]: unknown;
 }
 
-function waitForExtensionResponse(timeoutMs: number): Promise<{ companyData: ExtensionCompanyData | null; pairingCode: string | null }> {
+export interface ExtensionDataResponse {
+  companyData: ExtensionCompanyData | null;
+  companyDataByRealm: { 0: ExtensionCompanyData | null; 1: ExtensionCompanyData | null };
+  pairingCode: string | null;
+  authData: AuthDataPayload | null;
+  preferredRealm: number;
+}
+
+function waitForExtensionResponse(timeoutMs: number): Promise<ExtensionDataResponse> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       window.removeEventListener('message', handler);
@@ -48,9 +59,13 @@ function waitForExtensionResponse(timeoutMs: number): Promise<{ companyData: Ext
       console.log('[SimcoIntel Page] Received data-response from bridge');
       clearTimeout(timer);
       window.removeEventListener('message', handler);
+      const d = e.data?.detail ?? {};
       resolve({
-        companyData: e.data?.detail?.companyData ?? null,
-        pairingCode: e.data?.detail?.pairingCode ?? null,
+        companyData: d.companyData ?? null,
+        companyDataByRealm: d.companyDataByRealm ?? { 0: null, 1: null },
+        pairingCode: d.pairingCode ?? null,
+        authData: d.authData ?? null,
+        preferredRealm: d.preferredRealm ?? 0,
       });
     }
 
@@ -86,11 +101,10 @@ function getTargetOrigin(): string {
   return window.location.origin;
 }
 
-export async function requestExtensionData(): Promise<ExtensionCompanyData | null> {
+export async function requestExtensionData(): Promise<ExtensionDataResponse> {
   const responsePromise = waitForExtensionResponse(TIMEOUT_MS);
   window.postMessage({ type: 'simcointel:data-request', source: 'simcointel-web' }, getTargetOrigin());
-  const response = await responsePromise;
-  return response.companyData;
+  return responsePromise;
 }
 
 export async function requestAuthData(): Promise<{ authData: AuthDataPayload | null; error?: string }> {

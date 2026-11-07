@@ -14,10 +14,19 @@
 
   const API_BASE = 'https://raw.githubusercontent.com/SimcoIntel/Data/main';
   const API_V3 = 'https://www.simcompanies.com/api/v3';
-  const STORAGE_KEY = 'simcointel-company-data';
+  const STORAGE_KEY_BASE = 'simcointel-company-data';
   const SYNC_THROTTLE_MS = 15000;
   const API_THROTTLE_MS = 60000;
   let lastApiAt = 0;
+
+  function getStorageKey() {
+    const realm = extractRealm();
+    return `${STORAGE_KEY_BASE}-realm-${realm}`;
+  }
+
+  function getAllRealmKeys() {
+    return [`${STORAGE_KEY_BASE}-realm-0`, `${STORAGE_KEY_BASE}-realm-1`];
+  }
 
   function createOverlay() {
     const div = document.createElement('div');
@@ -69,14 +78,16 @@
   // --- Storage helpers -------------------------------------------------------
 
   function storageGet(key) {
+    const actualKey = key || getStorageKey();
     return new Promise((resolve) => {
-      chrome.storage.local.get([key], (result) => resolve(result?.[key] ?? null));
+      chrome.storage.local.get([actualKey], (result) => resolve(result?.[actualKey] ?? null));
     });
   }
 
   function storageSet(key, value) {
+    const actualKey = key || getStorageKey();
     return new Promise((resolve, reject) => {
-      chrome.storage.local.set({ [key]: value }, () => {
+      chrome.storage.local.set({ [actualKey]: value }, () => {
         if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
         else resolve();
       });
@@ -302,8 +313,28 @@
   }
 
   function extractRealm() {
-    const m = pageText().match(/Realm\s*(\d+)/i);
-    return m ? parseInt(m[1], 10) : 0;
+    // Try multiple detection methods in order of reliability
+    // 1. Check URL for realm parameter (most reliable)
+    const urlMatch = window.location.href.match(/[?&]realm=(\d)/);
+    if (urlMatch) return parseInt(urlMatch[1], 10);
+
+    // 2. Check for realm in path (e.g., /realm-1/, /entrepreneurs/)
+    const pathMatch = window.location.pathname.match(/\/(?:realm|entrepreneurs)[-\/]?(\d)/);
+    if (pathMatch) return parseInt(pathMatch[1], 10);
+
+    // 3. Check page text for "Realm X" (original method)
+    const textMatch = pageText().match(/Realm\s*(\d+)/i);
+    if (textMatch) return parseInt(textMatch[1], 10);
+
+    // 4. Check for "Entrepreneurs" keyword (Realm 1)
+    if (/entrepreneur/i.test(pageText())) return 1;
+
+    // 5. Check cookies for realm preference
+    const cookieMatch = document.cookie.match(/realm=(\d)/);
+    if (cookieMatch) return parseInt(cookieMatch[1], 10);
+
+    // Default to realm 0
+    return 0;
   }
 
   // --- Merge + sync ----------------------------------------------------------
@@ -424,7 +455,7 @@
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message?.type !== 'simcointel:fetch-auth-data') return false;
     fetchAuthData()
-      .then((data) => sendResponse({ ok: true, data }))
+      .then((data) => sendResponse({ ok: true, data, realm: extractRealm() }))
       .catch((err) => sendResponse({ ok: false, error: err.message }));
     return true;
   });

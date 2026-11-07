@@ -10,7 +10,7 @@
     else console.log(prefix, message);
   }
 
-  const STORAGE_KEY = 'simcointel-company-data';
+  const STORAGE_KEY_BASE = 'simcointel-company-data';
   const PAIRING_KEY = 'simcointel-pairing-code';
   const AUTH_KEY = 'simcointel-auth-data';
 
@@ -19,12 +19,28 @@
 
   function getStorageData() {
     return new Promise((resolve) => {
-      chrome.storage.local.get([STORAGE_KEY, PAIRING_KEY, AUTH_KEY], (result) => {
+      chrome.storage.local.get([
+        'simcointel-company-data-realm-0',
+        'simcointel-company-data-realm-1',
+        PAIRING_KEY,
+        AUTH_KEY
+      ], (result) => {
         log('Storage read complete', 'info');
+        const realm0Data = result['simcointel-company-data-realm-0'] || null;
+        const realm1Data = result['simcointel-company-data-realm-1'] || null;
+        // Determine which realm has more recent data or default to realm 0
+        const preferredRealm = (realm0Data?.syncedAt && realm1Data?.syncedAt)
+          ? (new Date(realm1Data.syncedAt) > new Date(realm0Data.syncedAt) ? 1 : 0)
+          : (realm1Data ? 1 : 0);
         resolve({
-          companyData: result[STORAGE_KEY] || null,
+          companyData: result[`simcointel-company-data-realm-${preferredRealm}`] || null,
+          companyDataByRealm: {
+            0: realm0Data,
+            1: realm1Data,
+          },
           pairingCode: result[PAIRING_KEY] || null,
           authData: result[AUTH_KEY] || null,
+          preferredRealm,
         });
       });
     });
@@ -54,16 +70,18 @@
   async function refreshAndPublish() {
     log('Refreshing storage data...');
     try {
-      const { companyData, pairingCode, authData } = await getStorageData();
+      const { companyData, companyDataByRealm, pairingCode, authData, preferredRealm } = await getStorageData();
       lastData = companyData;
       lastPairingCode = pairingCode;
 
       createDataElement({
         companyData,
+        companyDataByRealm,
         pairingCode,
         authData,
         extensionId: chrome.runtime.id,
         timestamp: Date.now(),
+        preferredRealm,
       });
     } catch (err) {
       console.error('[SimcoIntel Bridge] Failed to read storage:', err);
@@ -85,13 +103,15 @@
     if (event.data?.type !== 'simcointel:data-request') return;
     if (event.data?.source !== 'simcointel-web') return;
     log('Data request received from web page via postMessage');
-    getStorageData().then(({ companyData, pairingCode, authData }) => {
+    getStorageData().then(({ companyData, companyDataByRealm, pairingCode, authData, preferredRealm }) => {
       notifyPage({
         companyData,
+        companyDataByRealm,
         pairingCode,
         authData,
         extensionId: chrome.runtime.id,
         timestamp: Date.now(),
+        preferredRealm,
       });
     });
   }
