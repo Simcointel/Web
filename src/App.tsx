@@ -1,9 +1,11 @@
 import { useState, useEffect, Suspense, lazy } from "react";
 import { useTheme } from "./hooks/useTheme";
+import { useMaintenanceMode } from "./hooks/useMaintenanceMode";
 import { Sidebar } from "./components/Sidebar";
 import { MobileNav } from "./components/MobileNav";
 import { Footer } from "./components/Footer";
 import { PageErrorBoundary } from "./components/PageErrorBoundary";
+import { MaintenanceOverlay } from "./components/MaintenanceOverlay";
 
 const HomePage = lazy(() => import("./pages/Home").then(m => ({ default: m.HomePage })));
 const MacroPage = lazy(() => import("./pages/Macro").then(m => ({ default: m.MacroPage })));
@@ -40,9 +42,31 @@ const LoadingFallback = () => (
 
 export function AppShell({ path }: { path: string }) {
   const { theme } = useTheme();
+  const { enabled, title, message, retryAfter, loading, refresh } = useMaintenanceMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isWidget = path.startsWith("/widgets");
   const isSuite = path === "/corporate-suite";
+
+  // Show maintenance overlay if enabled
+  if (enabled) {
+    return (
+      <MaintenanceOverlay
+        title={title}
+        message={message}
+        retryAfter={retryAfter}
+        onRetry={refresh}
+      />
+    );
+  }
+
+  // Hold back the page until the flag is known, so no API calls fire during maintenance.
+  if (loading) {
+    return (
+      <div className={`flex h-screen items-center justify-center ${theme === 'dark' ? 'dark' : ''} bg-white dark:bg-surface-950`}>
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+      </div>
+    );
+  }
 
   const page = path === "/" ? <HomePage />
     : path === "/macro" ? <MacroPage />
