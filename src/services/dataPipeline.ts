@@ -1,6 +1,3 @@
-import { DataPipeline } from "./dataPipelineTypes.js";
-import { schemas } from "./schemas.js";
-
 var DataPipeline = (function() {
   function DataPipeline() {
     this.steps = [];
@@ -107,7 +104,7 @@ var dataPipeline = {
       name: 'filterLowQuality',
       transform: function(coeffs) {
         return coeffs.filter(function(c) { return c.rSquared >= 0.7 && c.sampleSize >= 50; });
-      }
+      },
     });
     return pipeline;
   },

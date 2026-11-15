@@ -322,25 +322,4 @@ export function registerDefaultHandlers(worker: ComputeWorker): void {
   });
 }
 
-export function getComputeWorker(): Worker {
-  // Return the singleton instance
-  let worker: ComputeWorker | null = null;
-  
-  return {
-    run: async <T, R>(type: string, payload: T): Promise<R> => {
-      if (!worker) {
-        worker = new ComputeWorker();
-        registerDefaultHandlers(worker);
-      }
-      return worker.run<T, R>(type, payload);
-    },
-    terminate: () => {
-      if (worker) {
-        worker.terminate();
-        worker = null;
-      }
-    },
-  };
-}
-
-export { ComputeWorker, registerDefaultHandlers };
+export { ComputeWorker, registerDefaultHandlers, getComputeWorker };

@@ -3,9 +3,11 @@
  * Supports multiple formats and compression.
  */
 
-import { createMockResponse } from './cooperincDataJob.test';
+// import { createMockResponse } from './cooperincDataJob.test';
+// Mock for testing - replace with actual import when available
+const createMockResponse = (data: any) => ({ ok: true, json: async () => data, text: async () => JSON.stringify(data) });
 
-type ExportFormat = 'json' | 'csv' | 'tsv' | 'msgpack' | 'yaml';
+type ExportFormat = 'json' | 'csv' | 'tsv' | 'msgpack' | 'yaml' | 'yml';
 type CompressionType = 'none' | 'gzip' | 'deflate';
 
 interface ExportOptions {
@@ -194,7 +196,7 @@ export async function importData(
     }
 
     // Detect format
-    const format = explicitFormat || detectFormat(content as string, file.name);
+    const format = explicitFormat || detectFormat(content as string, (file as File).name || 'unknown');
     
     // Parse data
     let data: any[];
@@ -524,4 +526,4 @@ function getMimeType(format: ExportFormat): string {
   }
 }
 
-export { ExportOptions, ImportOptions, ExportResult, ImportResult, ExportMetadata, ImportOptions };
+export { ExportOptions, ImportOptions, ExportResult, ImportResult, ExportMetadata };
