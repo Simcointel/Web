@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Briefcase, DollarSign,
   TrendingUp, BookOpen, Bell, Info,
   Sun, Moon, ChevronRight, LayoutGrid,
-  Calculator, HardHat, Store, BarChart3, Zap, FileText, Chrome, Settings, Utensils, Database, Share2
+  Calculator, HardHat, Store, BarChart3, Zap, FileText, Chrome, Settings, Utensils, Database, Share2, Code
 } from "lucide-react";
 
 const navLinks = [
@@ -36,6 +36,9 @@ const navLinks = [
     { to: "/xp-calculator", label: "XP Calculator", icon: <Zap size={18} /> },
     { to: "/extension", label: "Extension", icon: <Chrome size={18} /> },
     { to: "/sales-office", label: "Sales Office", icon: <Calculator size={18} /> },
+  ]},
+  { group: "DEVELOPER", links: [
+    { to: "/api-docs", label: "API Docs", icon: <Code size={18} /> },
   ]},
 ];
 

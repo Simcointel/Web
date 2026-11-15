@@ -26,7 +26,153 @@ export interface EventsResponse {
 // ============ Dashboard ============
 export type DashboardMap = Record<string, RealmDashboard>;
 
-// ============ Macro ============
+// ============ Public API Types (Backend /api/public/* responses) ============
+
+export interface PublicStatus {
+  api: string;
+  version: string;
+  realms: number[];
+  endpoints: {
+    macro: string;
+    indexes: string;
+    inflation: string;
+    resources: string;
+    export: string;
+  };
+  generatedAt: string;
+}
+
+export interface PublicMacro {
+  realm: string;
+  latest: {
+    companiesValue: number | null;
+    activeCompanies: number | null;
+    bondsSold: number | null;
+    totalBuildings: number | null;
+  };
+  latestIndexes: { cpi: number | null; coreCpi: number | null; gdp: number | null } | null;
+  latestInflation: { cpiRate: number | null; coreCpiRate: number | null; gdpGrowth: number | null } | null;
+  generatedAt: string;
+}
+
+// Raw backend API response types (matching publicData.ts)
+export interface RawMacroHistoryEntry {
+  d: string;
+  ac: number;
+  cv: number;
+  tb: number;
+  bs: number;
+  ph: string;
+  cp: boolean;
+}
+
+export interface RawMacroHistoryResponse {
+  realm: number;
+  totalEntries: number;
+  yearsAvailable: number[];
+  history: RawMacroHistoryEntry[];
+}
+
+export interface RawMacroHistoryListResponse {
+  [realm: string]: {
+    years: number[];
+    totalEntries: number;
+  };
+}
+
+export interface RawMacroIndexEntry {
+  ix: Record<string, { v: number }>;
+}
+
+export interface RawMacroIndexesResponse {
+  realm: number;
+  total: number;
+  indexes: RawMacroIndexEntry[];
+}
+
+export interface RawMacroInflationEntry {
+  in: Record<string, { ch: number }>;
+}
+
+export interface RawMacroInflationResponse {
+  realm: number;
+  total: number;
+  inflation: RawMacroInflationEntry[];
+}
+
+export interface RawMacroPhase {
+  date: string;
+  phase: string;
+}
+
+export interface RawMacroTransition {
+  from: string;
+  to: string;
+  date: string;
+}
+
+export interface RawMacroPhases {
+  realm: number;
+  totalDays: number;
+  currentPhase: string | null;
+  transitions: RawMacroTransition[];
+  phases: RawMacroPhase[];
+}
+
+export interface RawMacroLatestResponse {
+  realm: number;
+  latestHistory: RawMacroHistoryEntry | null;
+  latestIndexes: unknown;
+  latestInflation: unknown;
+}
+
+// Export API
+export interface ExportDataset {
+  name: string;
+  description: string;
+  url: string;
+}
+
+export interface ExportListResponse {
+  datasets: ExportDataset[];
+}
+
+export interface ExportResponse {
+  dataset: string;
+  realm: number;
+  format: string;
+}
+
+// Health & Status
+export interface HealthResponse {
+  status: string;
+  checks: Record<string, unknown>;
+  timestamp: string;
+}
+
+export interface StatusResponse {
+  health: HealthResponse;
+  failures: Record<string, unknown>;
+  scheduler: {
+    running: boolean;
+    uptimeMs: number;
+  };
+  realms: number[];
+  timestamp: string;
+}
+
+// Sync
+export interface SyncFile {
+  path: string;
+  content: string;
+}
+
+export interface SyncResponse {
+  files: SyncFile[];
+}
+
+// ============ UI Types (transformed by dataRepo for frontend consumption) ============
+
 export interface MacroHistoryPoint {
   date: string;
   activeCompanies: number;
@@ -66,7 +212,7 @@ export interface MacroInflationResponse {
   total: number;
 }
 
-// ============ Profit Margins ============
+// Profit Margins
 export interface ProfitMarginResource {
   id: number;
   name: string;
@@ -100,7 +246,7 @@ export interface PriceHistoryItem {
   profit: number;
 }
 
-// ============ VWAP Inflation ============
+// VWAP Inflation
 export interface VWAPInflationEntry {
   date: string;
   overall: Record<string, number>;
@@ -114,7 +260,7 @@ export interface VWAPInflationResponse {
   total: number;
 }
 
-// ============ Retail ============
+// Retail
 export interface RetailData {
   retail: Record<string, { saturation: number; [key: string]: unknown }>;
 }
@@ -182,12 +328,19 @@ export interface ReferencePrice {
   ref: { cpi: number; coreCpi: number };
 }
 
+export interface PhaseRecord {
+  phase: string;
+  startDate: string;
+  endDate: string | null;
+  days: number;
+}
+
 export interface MacroPhases {
   realm?: string;
   totalDays: number;
   currentPhase: string | null;
   transitions: { from: string; to: string; date: string; reason: string }[];
-  phases: { phase: string; startDate: string; endDate: string | null; days: number }[];
+  phases: PhaseRecord[];
 }
 
 export interface IntelligenceMomentum {
@@ -342,7 +495,7 @@ export interface AuthDataPayload {
 export interface CalculatorLiveData {
   generatedAt: string;
   realm: number;
-  economyPhase: "Boom" | "Normal" | "Recession";
+  economyPhase: "Boom" | "Normal" | "Reccession" | "Recession";
   weatherMultiplier: number;
   livePrices: Record<number, Record<number, number>>;
   saturation: Record<number, Record<number, number>>;
@@ -377,3 +530,239 @@ export interface AlertsResponse {
   generatedAt: string;
 }
 
+// ============ SimCompanies API v3 Types (Client-side) ============
+
+export interface SimCompanyProfile {
+  id: number;
+  username: string;
+  name: string;
+  logo?: string;
+  level: number;
+  rank: number;
+  online: string;
+  productionModifier: number;
+  salesModifier: number;
+  extraBuildingSlots: number;
+  value: number;
+  bondsPayable: number;
+  cash: number;
+  workers: number;
+  happiness: number;
+  recreationBonus: number;
+  administrationOverhead: number;
+  governmentOrderTierIndex: number;
+  buildings: SimBuilding[];
+  storage: SimStorageInfo;
+  contracts: SimContract[];
+}
+
+export interface SimBuilding {
+  id: number;
+  kind: string;
+  level: number;
+  size: number;
+  busy?: Record<string, number>;
+  slot?: number;
+}
+
+export interface SimStorageInfo {
+  capacity: number;
+  used: number;
+  items: SimStorageItem[];
+}
+
+export interface SimStorageItem {
+  resourceId: number;
+  resourceName: string;
+  quality: number;
+  amount: number;
+}
+
+export interface SimContract {
+  id: number;
+  type: "sale" | "purchase";
+  resourceId: number;
+  resourceName: string;
+  quality: number;
+  amount: number;
+  price: number;
+  remaining: number;
+}
+
+export interface SimResource {
+  id: number;
+  name: string;
+  category: string;
+  categoryName: string;
+  basePrice: number;
+  demandElasticity: number;
+  supplyElasticity: number;
+  decayRate?: number;
+  productionTime: number;
+  inputs?: SimResourceInput[];
+  outputs?: SimResourceOutput[];
+}
+
+export interface SimResourceInput {
+  resourceId: number;
+  amount: number;
+}
+
+export interface SimResourceOutput {
+  resourceId: number;
+  amount: number;
+  probability?: number;
+}
+
+export interface SimMarketOrder {
+  id: number;
+  companyId: number;
+  companyName: string;
+  type: "sell" | "buy";
+  resourceId: number;
+  resourceName: string;
+  quality: number;
+  amount: number;
+  remaining: number;
+  price: number;
+  createdAt: string;
+}
+
+// ============ Calculator Engine Types (Client-side) ============
+
+export interface RetailProductMapEntry {
+  resourceId: number;
+  resourceName: string;
+  buildingType: string;
+  buildingLevel: number;
+  inputs: Array<{ resourceId: number; amount: number }>;
+  outputs: Array<{ resourceId: number; amount: number }>;
+}
+
+export interface RetailSaturationData {
+  [resourceId: number]: {
+    [quality: number]: number;
+  };
+}
+
+export interface CalculatorEngineConfig {
+  realm: number;
+  phase: "Boom" | "Normal" | "Recession";
+  weatherMultiplier: number;
+  phaseMultipliers: Record<string, number>;
+  referencePrices: Record<number, { cpi: number; coreCpi: number }>;
+}
+
+export interface ProductionCalculatorInput {
+  buildingType: string;
+  buildingLevel: number;
+  resourceId: number;
+  quality: number;
+  quantity: number;
+  inputPrices: Record<number, number>;
+  wages: number;
+  transportCost: number;
+}
+
+export interface ProductionCalculatorOutput {
+  revenuePerHour: number;
+  inputCostPerHour: number;
+  wagesPerHour: number;
+  transportPerHour: number;
+  netProfitPerHour: number;
+  marginPct: number;
+  producedPerHour: number;
+}
+
+export interface RetailCalculatorInput {
+  productId: number;
+  quality: number;
+  buildingLevel: number;
+  price: number;
+  saturation: number;
+  inputPrices: Record<number, number>;
+  wages: number;
+}
+
+export interface RetailCalculatorOutput {
+  revenuePerHour: number;
+  costPerHour: number;
+  netProfitPerHour: number;
+  marginPct: number;
+  unitsPerHour: number;
+}
+
+export interface ConstructionCalculatorInput {
+  buildingType: string;
+  targetLevel: number;
+  currentLevel: number;
+  materialPrices: Record<number, number>;
+}
+
+export interface ConstructionCalculatorOutput {
+  totalCost: number;
+  materials: Array<{ resourceId: number; name: string; quantity: number; cost: number }>;
+  timeHours: number;
+}
+
+export interface XPCalculatorInput {
+  currentLevel: number;
+  targetLevel: number;
+  activityType: "production" | "construction" | "research" | "retail";
+  efficiency: number;
+}
+
+export interface XPCalculatorOutput {
+  xpRequired: number;
+  timeEstimate: string;
+  actionsRequired: number;
+}
+
+export interface RestaurantPlannerInput {
+  restaurantLevel: number;
+  menuItems: Array<{
+    recipeId: number;
+    quantity: number;
+    price: number;
+  }>;
+  ingredientPrices: Record<number, number>;
+}
+
+export interface RestaurantPlannerOutput {
+  totalRevenue: number;
+  totalCost: number;
+  netProfit: number;
+  marginPct: number;
+  perItem: Array<{
+    recipeId: number;
+    revenue: number;
+    cost: number;
+    profit: number;
+    margin: number;
+  }>;
+}
+
+export interface SalesOfficeCalculatorInput {
+  contracts: Array<{
+    resourceId: number;
+    quality: number;
+    amount: number;
+    price: number;
+    type: "sale" | "purchase";
+  }>;
+  wages: number;
+  overhead: number;
+}
+
+export interface SalesOfficeCalculatorOutput {
+  totalRevenue: number;
+  totalCost: number;
+  netProfit: number;
+  marginPct: number;
+  perContract: Array<{
+    resourceId: number;
+    revenue: number;
+    cost: number;
+    profit: number;
+  }>;
+}
