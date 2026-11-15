@@ -3,12 +3,13 @@ import { BUILDINGS, CONSTRUCTION_MATERIALS, MAT_REF_PRICES, RESOURCES } from "..
 import { useSharedRealm } from "../hooks/useSharedRealm";
 import { Section, CardGrid } from "../components/Layout";
 import { HardHat, Search, Layers, TrendingUp, Package, ListTree, Timer, Building2 } from "lucide-react";
-import type { ProfitMarginsResponse } from "../types/api";
+import type { ProfitMarginsResponse, CalculatorLiveData } from "../types/api";
 
 import { useProfitMargins } from "../hooks/useDataQueries";
 import { PageHeader, MetricBox } from "../components/ui/Common";
 import { usePageTitleKey } from "../hooks/usePageTitle";
 import { fmtNumber, fmtHours } from "../utils/formatters";
+import { fetchCalculatorLive } from "../services/dataRepo";
 
 function matName(id: number): string {
   return CONSTRUCTION_MATERIALS.find(c => c.id === id)?.name ?? RESOURCES.find(r => r.id === id)?.name ?? `Mat ${id}`;
@@ -25,6 +26,26 @@ export function ConstructionCalculatorPage() {
   const { data: marginsData } = useProfitMargins(120000);
   const margins = (marginsData as ProfitMarginsResponse | undefined)?.resources ?? [];
 
+  // Fetch calculator live data
+  const [calcLiveData, setCalcLiveData] = useState<CalculatorLiveData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const liveData = await fetchCalculatorLive(realm);
+        setCalcLiveData(liveData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load calculator data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [realm]);
+
   const building = useMemo(() => BUILDINGS.find(b => b.id === buildingId), [buildingId]);
 
   const buildingMatIds = useMemo(() => {
@@ -38,10 +59,12 @@ export function ConstructionCalculatorPage() {
     const prices: Record<number, number> = {};
     for (const id of buildingMatIds) {
       const m = margins.find(r => r.id === id);
-      prices[id] = m?.outputVwap ?? MAT_REF_PRICES[id] ?? 0;
+      // Use live price from calculator-live.json if available, fallback to margins, then MAT_REF_PRICES
+      const liveP = calcLiveData?.livePrices[id]?.[0] ?? 0; // Quality 0 for construction materials
+      prices[id] = m?.outputVwap ?? liveP ?? MAT_REF_PRICES[id] ?? 0;
     }
     return prices;
-  }, [margins, buildingMatIds]);
+  }, [margins, buildingMatIds, calcLiveData]);
 
   const upgrades = useMemo(() => {
     if (!building || targetLv <= currentLv) return [];
@@ -68,30 +91,30 @@ export function ConstructionCalculatorPage() {
   const totalRefCost = upgrades.reduce((s, u) => s + u.refCost, 0);
 
   const roi = useMemo<{ dailyRevenue: number; dailyWages: number; daysToRecoup: number; revenuePerLevel: number; outputVwap: number; dailyNet: number } | null>(() => {
-  const totalMatCost = upgrades.reduce((s, u) => s + u.matCost, 0);
-  const totalTimeH = upgrades.reduce((s, u) => s + u.time, 0);
-  if (!building || upgrades.length === 0) return null;
-  const res = RESOURCES.find(r => r.buildingId === building.id);
-  if (!res) return { dailyRevenue: 0, dailyWages: 0, daysToRecoup: 0, revenuePerLevel: 0, outputVwap: 0, dailyNet: 0 };
-  const outputVwap = margins.find(m => m.id === res.id)?.outputVwap ?? 0;
-  const wages = building.wages ?? 0;
-  const levelMult = Math.max(1, targetLv - 1);
-  const revenuePerLevel = (res.basePh ?? 0) * outputVwap * 24;
-  const dailyRevenue = revenuePerLevel * levelMult;
-  const dailyWages = wages * 24 * (1 + 0.1) * levelMult;
-  const adminOverheadCost = dailyWages * (levelMult / 170);
-  let dailyInputCost = 0;
-  if (res.inputs) {
-    for (const [inputId, qtyPerUnit] of Object.entries(res.inputs)) {
-      const inputPrice = matPrices[Number(inputId)] ?? margins.find(m => m.id === Number(inputId))?.outputVwap ?? MAT_REF_PRICES[Number(inputId)] ?? 0;
-      dailyInputCost += inputPrice * qtyPerUnit;
+    const totalMatCost = upgrades.reduce((s, u) => s + u.matCost, 0);
+    const totalTimeH = upgrades.reduce((s, u) => s + u.time, 0);
+    if (!building || upgrades.length === 0) return null;
+    const res = RESOURCES.find(r => r.buildingId === building.id);
+    if (!res) return { dailyRevenue: 0, dailyWages: 0, daysToRecoup: 0, revenuePerLevel: 0, outputVwap: 0, dailyNet: 0 };
+    const outputVwap = margins.find(m => m.id === res.id)?.outputVwap ?? (calcLiveData?.livePrices[res.id]?.[0] ?? 0) ?? 0;
+    const wages = building.wages ?? 0;
+    const levelMult = Math.max(1, targetLv - 1);
+    const revenuePerLevel = (res.basePh ?? 0) * outputVwap * 24;
+    const dailyRevenue = revenuePerLevel * levelMult;
+    const dailyWages = wages * 24 * (1 + 0.1) * levelMult;
+    const adminOverheadCost = dailyWages * (levelMult / 170);
+    let dailyInputCost = 0;
+    if (res.inputs) {
+      for (const [inputId, qtyPerUnit] of Object.entries(res.inputs)) {
+        const inputPrice = matPrices[Number(inputId)] ?? margins.find(m => m.id === Number(inputId))?.outputVwap ?? MAT_REF_PRICES[Number(inputId)] ?? 0;
+        dailyInputCost += inputPrice * qtyPerUnit;
+      }
+      dailyInputCost *= (res.basePh ?? 0) * levelMult * 24;
     }
-    dailyInputCost *= (res.basePh ?? 0) * levelMult * 24;
-  }
-  const dailyNet = dailyRevenue - dailyWages - adminOverheadCost - dailyInputCost;
-  const daysToRecoup = dailyNet > 0 ? totalMatCost / dailyNet : Infinity;
-  return { dailyRevenue, dailyWages, daysToRecoup, revenuePerLevel, outputVwap, dailyNet };
-  }, [building, upgrades, targetLv, margins, totalMatCost, matPrices]);
+    const dailyNet = dailyRevenue - dailyWages - adminOverheadCost - dailyInputCost;
+    const daysToRecoup = dailyNet > 0 ? totalMatCost / dailyNet : Infinity;
+    return { dailyRevenue, dailyWages, daysToRecoup, revenuePerLevel, outputVwap, dailyNet };
+  }, [building, upgrades, targetLv, margins, totalMatCost, matPrices, calcLiveData]);
 
   const totalMats = useMemo(() => {
     const m: Record<number, number> = {};
@@ -103,17 +126,59 @@ export function ConstructionCalculatorPage() {
     return m;
   }, [upgrades]);
 
+  if (loading) {
+    return (
+      <div className="space-y-5 animate-slide-up">
+        <PageHeader
+          title="Construction Calculator"
+          subtitle="Loading live market data…"
+          icon={<HardHat size={18} />}
+          iconBg="bg-orange-100 dark:bg-orange-900/30"
+          iconColor="text-orange-600"
+          realm={realm}
+          onRealmChange={() => {}}
+        />
+        <div className="flex items-center justify-center py-16">
+          <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-5 animate-slide-up">
+        <PageHeader
+          title="Construction Calculator"
+          subtitle="Error loading data"
+          icon={<HardHat size={18} />}
+          iconBg="bg-rose-100 dark:bg-rose-900/30"
+          iconColor="text-rose-600"
+          realm={realm}
+          onRealmChange={() => {}}
+        />
+        <div className="bg-white dark:bg-surface-950 border border-rose-200 dark:border-rose-800 rounded-xl p-6 text-rose-600">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 animate-slide-up">
       <PageHeader
         title="Construction Calculator"
-        subtitle="Building cost estimator & ROI"
+        subtitle={calcLiveData ? `Live data from ${new Date(calcLiveData.generatedAt).toLocaleString()} (${calcLiveData.dataFreshnessMinutes}min old)` : "Using fallback prices"}
         icon={<HardHat size={18} />}
         iconBg="bg-orange-100 dark:bg-orange-900/30"
         iconColor="text-orange-600"
         realm={realm}
         onRealmChange={() => {}}
-      />
+      >
+        <div className="text-[10px] text-surface-400 font-bold">
+          {margins.length} products with pricing data
+        </div>
+      </PageHeader>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* ─── Sidebar: building & level controls ─── */}

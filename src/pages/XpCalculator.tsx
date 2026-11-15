@@ -1,24 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Zap } from "lucide-react";
+import { XP_TABLE, OP_XP_PER_LEVEL, REC_XP_PER_QUALITY, PROSPECT_XP_BASE, xpForLevel } from "../data/simco_static";
 
 import { PageHeader, MetricBox } from "../components/ui/Common";
 import { usePageTitleKey } from "../hooks/usePageTitle";
 import { fmtNumber } from "../utils/formatters";
 
-const XP_TABLE: number[] = [
-  5, 10, 20, 30, 50, 80, 130, 210, 340, 550, 890, 1430,
-  2320, 3750, 6000, 10000, 16000, 26000, 42000, 68000,
-  110000, 170000, 280000,
-];
-
-function xpForLevel(lv: number): number {
-  if (lv < 1 || lv > 60) return 0;
-  if (lv <= 23) return XP_TABLE[lv - 1];
-  return 400_000;
+function InputField({ label, value, onChange, min, max }: { label: string; value: number; onChange: (v: number) => void; min?: number; max?: number }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">{label}</label>
+      <input type="number" min={min} max={max} value={value}
+        onChange={e => onChange(Number(e.target.value))}
+        className="input" />
+    </div>
+  );
 }
-
-const OP_XP = 12;
-const REC_XP = 120; // 20,160 XP/week ÷ 168 hours
 
 export function XpCalculatorPage() {
   usePageTitleKey('xpCalculator');
@@ -35,7 +32,12 @@ export function XpCalculatorPage() {
   let totalNeeded = remaining;
   for (let lv = currentLv; lv < targetLv - 1; lv++) totalNeeded += xpForLevel(lv + 1);
 
-  const hourlyXp = opBldgs * OP_XP + recLvls * REC_XP + (prospecting ? 36 : 0);
+  // XP rates from official game data
+  const opXp = OP_XP_PER_LEVEL[currentLv] ?? OP_XP_PER_LEVEL[1];
+  const recXp = REC_XP_PER_QUALITY[recLvls - 1] ?? REC_XP_PER_QUALITY[0];
+  const prospectXp = PROSPECT_XP_BASE;
+
+  const hourlyXp = opBldgs * opXp + recLvls * recXp + (prospecting ? prospectXp : 0);
   const hours = hourlyXp > 0 ? totalNeeded / hourlyXp : Infinity;
   const days = hours / 24;
   const eta = isFinite(hours) && hours > 0 ? new Date(Date.now() + hours * 3600_000) : null;
@@ -81,7 +83,7 @@ export function XpCalculatorPage() {
             <InputField label="Target Level" value={targetLv} onChange={v => setTargetLv(Math.max(currentLv + 1, Math.min(60, v)))} min={2} max={60} />
             <InputField label="Progress %" value={progress} onChange={v => setProgress(Math.max(0, Math.min(100, v)))} min={0} max={100} />
             <InputField label="Operating Bldgs" value={opBldgs} onChange={v => setOpBldgs(Math.max(0, Math.min(18, v)))} min={0} max={18} />
-            <InputField label="Rec. Levels" value={recLvls} onChange={v => setRecLvls(Math.max(0, Math.min(9, v)))} min={0} max={9} />
+            <InputField label="Rec. Levels" value={recLvls} onChange={v => setRecLvls(Math.max(0, Math.min(12, v)))} min={0} max={12} />
             <div className="space-y-1">
               <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">Prospecting</label>
               <label className="flex items-center gap-2 cursor-pointer mt-1.5">
@@ -96,9 +98,9 @@ export function XpCalculatorPage() {
         <div className="space-y-3">
           <div className="card p-5 space-y-3">
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">XP Sources</h2>
-            <div className="flex justify-between"><span className="text-xs text-surface-500 font-semibold">Operating ({opBldgs} × {OP_XP})</span><span className="text-sm font-bold">{fmtNumber(opBldgs * OP_XP)}/h</span></div>
-            <div className="flex justify-between"><span className="text-xs text-surface-500 font-semibold">Recreation ({recLvls} × {REC_XP})</span><span className="text-sm font-bold">{fmtNumber(recLvls * REC_XP)}/h</span></div>
-            {prospecting && <div className="flex justify-between"><span className="text-xs text-surface-500 font-semibold">Prospecting</span><span className="text-sm font-bold">36/h</span></div>}
+            <div className="flex justify-between"><span className="text-xs text-surface-500 font-semibold">Operating ({opBldgs} × {opXp})</span><span className="text-sm font-bold">{fmtNumber(opBldgs * opXp)}/h</span></div>
+            <div className="flex justify-between"><span className="text-xs text-surface-500 font-semibold">Recreation ({recLvls} × {recXp})</span><span className="text-sm font-bold">{fmtNumber(recLvls * recXp)}/h</span></div>
+            {prospecting && <div className="flex justify-between"><span className="text-xs text-surface-500 font-semibold">Prospecting</span><span className="text-sm font-bold">{prospectXp}/h</span></div>}
             <div className="border-t border-surface-200 dark:border-surface-800 pt-3 flex justify-between items-center">
               <span className="text-xs font-bold">Total</span>
               <span className="text-xl font-black text-brand-600 tabular-nums">{fmtNumber(hourlyXp)}/h</span>
@@ -117,19 +119,8 @@ export function XpCalculatorPage() {
         </div>
       </div>
       <p className="text-[10px] text-surface-400 text-center max-w-xl mx-auto">
-        Rates: 12 XP/h per operating building, 20,160 XP/week per recreation level, 36 XP/h prospecting.
+        Rates: {opXp} XP/h per operating building, {recXp} XP/h per recreation level, {prospectXp} XP/h prospecting.
       </p>
-    </div>
-  );
-}
-
-function InputField({ label, value, onChange, min, max }: { label: string; value: number; onChange: (v: number) => void; min?: number; max?: number }) {
-  return (
-    <div className="space-y-1">
-      <label className="text-[9px] font-bold uppercase text-surface-400 tracking-wider block">{label}</label>
-      <input type="number" min={min} max={max} value={value}
-        onChange={e => onChange(Number(e.target.value))}
-        className="input" />
     </div>
   );
 }

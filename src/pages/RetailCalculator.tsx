@@ -1,50 +1,69 @@
 import { useState, useEffect, useMemo } from "react";
-import { BUILDINGS, RETAIL_PRODUCT_MAP, PHASE_MULTIPLIERS, RESOURCES } from "../data/simco_static";
+import { BUILDINGS, RETAIL_PRODUCT_MAP, RESOURCES } from "../data/simco_static";
 import { useSharedRealm } from "../hooks/useSharedRealm";
-import { Store, DollarSign, Users, BarChart3, Settings2, TrendingUp } from "lucide-react";
-import type { ProfitMarginsResponse } from "../types/api";
+import { Store, DollarSign, Users, BarChart3, Settings2, TrendingUp, AlertTriangle } from "lucide-react";
+import type { ProfitMarginsResponse, CalculatorLiveData, PhaseCoefficients } from "../types/api";
 
 import { useProfitMargins } from "../hooks/useDataQueries";
 import { PageHeader, MetricBox } from "../components/ui/Common";
 import { usePageTitleKey } from "../hooks/usePageTitle";
 import { fmtNumber, fmtPct } from "../utils/formatters";
+import { fetchCalculatorLive, fetchPhaseCoefficients } from "../services/dataRepo";
 
 function toNum(v: unknown, fallback = 0): number {
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
 }
 
-// ─── Helpers ───────────────────────────────────────────────────
-function getDemandMult(d: number): number {
-  if (d >= 80) return 1.0;
-  if (d >= 60) return 0.9;
-  if (d >= 40) return 0.75;
-  if (d >= 20) return 0.55;
-  return 0.35;
+function demand(price: number, coeffs: PhaseCoefficients): number {
+  return coeffs.T * price ** 2 + coeffs.U * price + coeffs.V * price ** 3 + coeffs.W;
 }
 
-function demandLabel(d: number): string {
-  if (d >= 80) return "Very High";
-  if (d >= 60) return "High";
-  if (d >= 40) return "Medium";
-  if (d >= 20) return "Low";
-  return "Very Low";
+function adjustedDemand(price: number, coeffs: PhaseCoefficients, saturation: number): number {
+  const baseDemand = demand(price, coeffs);
+  return baseDemand / Math.max(1, saturation);
 }
 
-function demandColor(d: number): string {
-  if (d >= 80) return "text-emerald-600";
-  if (d >= 60) return "text-emerald-500";
-  if (d >= 40) return "text-amber-500";
-  if (d >= 20) return "text-orange-500";
-  return "text-rose-500";
+function profit(price: number, input: {
+  livePrice: number;
+  buildingWage: number;
+  buildingLevel: number;
+  transport: number;
+  saturation: number;
+  phaseCoeffs: PhaseCoefficients;
+}): number {
+  const d = adjustedDemand(price, input.phaseCoeffs, input.saturation);
+  const cost = input.livePrice + input.transport + (input.buildingWage / input.buildingLevel);
+  return (price - cost) * d;
 }
 
-function demandBarColor(d: number): string {
-  if (d >= 80) return "bg-emerald-500";
-  if (d >= 60) return "bg-emerald-400";
-  if (d >= 40) return "bg-amber-400";
-  if (d >= 20) return "bg-orange-400";
-  return "bg-rose-400";
+function optimizePrice(input: {
+  livePrice: number;
+  buildingWage: number;
+  buildingLevel: number;
+  transport: number;
+  saturation: number;
+  phaseCoeffs: PhaseCoefficients;
+}): { price: number; profit: number; demand: number } {
+  const minPrice = input.livePrice * 1.01;
+  const maxPrice = input.livePrice * 3.0;
+
+  let bestPrice = minPrice;
+  let bestProfit = -Infinity;
+  let bestDemand = 0;
+
+  for (let i = 0; i <= 100; i++) {
+    const price = minPrice + (maxPrice - minPrice) * (i / 100);
+    const p = profit(price, input);
+    const d = adjustedDemand(price, input.phaseCoeffs, input.saturation);
+    if (p > bestProfit) {
+      bestProfit = p;
+      bestPrice = price;
+      bestDemand = d;
+    }
+  }
+
+  return { price: bestPrice, profit: bestProfit, demand: bestDemand };
 }
 
 // ─── Page ──────────────────────────────────────────────────────
@@ -57,89 +76,208 @@ export function RetailCalculatorPage() {
   const [bldgLevel, setBldgLevel] = useState(1);
   const [ao, setAo] = useState(25);
   const [salesSpeed, setSalesSpeed] = useState(0);
-  const [demand, setDemand] = useState(50);
-  const [baseRate, setBaseRate] = useState(3);
-  const [customPrice, setCustomPrice] = useState("");
-  const [phase, setPhase] = useState("normal");
   const [quality, setQuality] = useState(0);
+  const [customPrice, setCustomPrice] = useState("");
+  const [showTop, setShowTop] = useState(false);
 
   const { data: marginsData } = useProfitMargins(120000);
   const margins = (marginsData as ProfitMarginsResponse | undefined)?.resources ?? [];
 
+  // Fetch calculator live data
+  const [calcLiveData, setCalcLiveData] = useState<CalculatorLiveData | null>(null);
+  const [phaseCoeffs, setPhaseCoeffs] = useState<PhaseCoefficients[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [liveData, coeffs] = await Promise.all([
+          fetchCalculatorLive(realm),
+          fetchPhaseCoefficients(realm),
+        ]);
+        setCalcLiveData(liveData);
+        setPhaseCoeffs(coeffs);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load calculator data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [realm]);
+
   const stores = useMemo(() => BUILDINGS.filter(b => b.type === "retail" && b.id !== "r" && b.id !== "B" && (RETAIL_PRODUCT_MAP[b.id]?.length ?? 0) > 0), []);
   const store = useMemo(() => stores.find(s => s.id === storeId), [storeId, stores]);
   const storeProductIds = useMemo(() => RETAIL_PRODUCT_MAP[storeId] ?? [], [storeId]);
-
   const storeProducts = useMemo(() => storeProductIds.map(id => ({ id, name: RESOURCES.find(r => r.id === id)?.name ?? `#${id}` })), [storeProductIds]);
   useEffect(() => { if (store && resId && !storeProductIds.includes(resId)) setResId(0); }, [store, storeProductIds, resId]);
-
   const selected = storeProducts.find(p => p.id === resId);
+
+  // Get live price and saturation from calculator-live.json
+  const livePrice = useMemo(() => {
+    if (!calcLiveData || !selected) return 0;
+    return calcLiveData.livePrices[selected.id]?.[quality] ?? 0;
+  }, [calcLiveData, selected, quality]);
+
+  const saturation = useMemo(() => {
+    if (!calcLiveData || !selected) return 1.0;
+    return calcLiveData.saturation[selected.id]?.[quality] ?? 1.0;
+  }, [calcLiveData, selected, quality]);
+
+  const economyPhase = calcLiveData?.economyPhase ?? "Normal";
+  const weatherMultiplier = calcLiveData?.weatherMultiplier ?? 1.0;
+
+  // Get phase coefficients for this product/quality/phase
+  const phaseCoeff = useMemo(() => {
+    if (!selected) return null;
+    return phaseCoeffs.find(c => c.productId === selected.id && c.quality === quality && c.phase === economyPhase) ?? null;
+  }, [phaseCoeffs, selected, quality, economyPhase]);
+
   const vwapPrice = margins.find(m => m.id === resId)?.outputVwap ?? 0;
-  const qualityMult = 1 + quality * 0.05; // Q0=1.0, Q12=1.6
-  const marginRec = margins.find(m => m.id === resId);
-  const demandMult = marginRec && marginRec.producedPerHour > 0 && vwapPrice > 0
-    ? marginRec.revenuePerHour / (marginRec.producedPerHour * vwapPrice)
-    : 1.0;
-  const sellingPrice = customPrice ? toNum(customPrice, vwapPrice) : vwapPrice * qualityMult * demandMult;
+  const transportCost = margins.find(m => m.id === resId)?.transportPerHour ?? 0;
+  const buildingWage = store?.wages ?? 100;
+
+  // Calculate optimal price using cubic regression if coefficients available
+  const optimizationResult = useMemo(() => {
+    if (!selected || !livePrice || !phaseCoeff) return null;
+    return optimizePrice({
+      livePrice,
+      buildingWage,
+      buildingLevel: bldgLevel,
+      transport: transportCost,
+      saturation,
+      phaseCoeffs: phaseCoeff,
+    });
+  }, [selected, livePrice, phaseCoeff, bldgLevel, transportCost, saturation]);
+
+  const sellingPrice = customPrice ? toNum(customPrice, livePrice) : (optimizationResult?.price ?? livePrice * (1 + quality * 0.05));
 
   // Calculate single product
   const result = useMemo(() => {
     if (!store || !selected || !sellingPrice) return null;
-    const pm = PHASE_MULTIPLIERS[phase] ?? 1.0;
-    const dm = getDemandMult(demand);
-    const ss = 1 + salesSpeed / 100;
-    const u = baseRate * bldgLevel * pm * dm * ss;
+    
+    // Use optimization demand if available, otherwise fall back to simple model
+    const u = optimizationResult?.demand ?? (() => {
+      const baseRate = 3;
+      const pm = weatherMultiplier;
+      const dm = 1.0; // Use demand from optimization or default
+      const ss = 1 + salesSpeed / 100;
+      return baseRate * bldgLevel * pm * dm * ss;
+    })();
+    
     const rev = u * sellingPrice;
     const mf = rev * 0.03;
-    const w = toNum(store.wages) * bldgLevel;
+    const w = toNum(buildingWage) * bldgLevel;
     const ac = w * (ao / 100);
-    const cogs = vwapPrice * u;
-    const transportCost = margins.find(m => m.id === resId)?.transportPerHour ?? 0;
+    const cogs = livePrice * u;
     const np = rev - mf - w - ac - cogs - transportCost;
     const mg = rev > 0 ? (np / rev) * 100 : 0;
-    return { u, rev, mf, w, ac, cogs, np, mg, pm, dm, ss };
-  }, [store, selected, sellingPrice, bldgLevel, ao, salesSpeed, demand, baseRate, phase, vwapPrice]);
-
-  const [showTop, setShowTop] = useState(false);
+    
+    return { u, rev, mf, w, ac, cogs, np, mg, pm: weatherMultiplier, dm: 1.0, ss: 1 + salesSpeed / 100 };
+  }, [store, selected, sellingPrice, bldgLevel, ao, salesSpeed, livePrice, transportCost, buildingWage, optimizationResult, weatherMultiplier]);
 
   const topProducts = useMemo(() => {
-    const out: Array<{ storeName: string; productName: string; demand: number; profit: number; margin: number; revenue: number }> = [];
-    const pm = PHASE_MULTIPLIERS[phase] ?? 1.0;
-    const ss = 1 + salesSpeed / 100;
+    if (!calcLiveData || !phaseCoeffs.length) return [];
+    const out: Array<{ storeName: string; productName: string; demand: number; profit: number; margin: number; revenue: number; productId: number }> = [];
+    
     for (const s of stores) {
       const pids = RETAIL_PRODUCT_MAP[s.id] ?? [];
       for (const pid of pids) {
-        const vwap = margins.find(m => m.id === pid)?.outputVwap ?? 0;
-        if (!vwap) continue; // ponytail: skip products without price data
-        const d = 50; // ponytail: static demand estimate when no live API
-        const dm = getDemandMult(d);
-        const u = 3 * bldgLevel * pm * dm * ss; // ponytail: base rate 3 when no live API
-        const rev = u * vwap;
+        const liveP = calcLiveData.livePrices[pid]?.[quality] ?? 0;
+        const sat = calcLiveData.saturation[pid]?.[quality] ?? 1.0;
+        if (!liveP) continue;
+        
+        const coeff = phaseCoeffs.find(c => c.productId === pid && c.quality === quality && c.phase === economyPhase);
+        if (!coeff) continue;
+        
+        const opt = optimizePrice({
+          livePrice: liveP,
+          buildingWage: s.wages,
+          buildingLevel: bldgLevel,
+          transport: margins.find(m => m.id === pid)?.transportPerHour ?? 0,
+          saturation: sat,
+          phaseCoeffs: coeff,
+        });
+        
+        const u = opt.demand;
+        const rev = u * opt.price;
         const mf = rev * 0.03;
-        const w = toNum(s.wages) * bldgLevel;
+        const w = s.wages * bldgLevel;
         const ac = w * (ao / 100);
-        const cogs = vwap * u;
-        const transportCost = margins.find(m => m.id === pid)?.transportPerHour ?? 0;
-        const np = rev - mf - w - ac - cogs - transportCost;
+        const cogs = liveP * u;
+        const transport = margins.find(m => m.id === pid)?.transportPerHour ?? 0;
+        const np = rev - mf - w - ac - cogs - transport;
         const mg = rev > 0 ? (np / rev) * 100 : 0;
-        out.push({ storeName: s.name, productName: `#${pid}`, demand: d, profit: np, margin: mg, revenue: rev });
+        
+        out.push({ 
+          storeName: s.name, 
+          productName: RESOURCES.find(r => r.id === pid)?.name ?? `#${pid}`, 
+          demand: Math.round(opt.demand * 100) / 100,
+          profit: np, 
+          margin: mg, 
+          revenue: rev,
+          productId: pid,
+        });
       }
     }
     return out.sort((a, b) => b.profit - a.profit).slice(0, 20);
-  }, [stores, bldgLevel, ao, salesSpeed, phase, margins]);
+  }, [stores, bldgLevel, ao, economyPhase, quality, margins, calcLiveData, phaseCoeffs]);
+
+  if (loading) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-5 animate-slide-up">
+        <PageHeader
+          title="Retail Profitability"
+          subtitle="Loading live market data…"
+          icon={<Store size={18} />}
+          iconBg="bg-rose-100 dark:bg-rose-900/30"
+          iconColor="text-rose-600"
+          realm={realm}
+          onRealmChange={() => {}}
+        />
+        <div className="flex items-center justify-center py-16">
+          <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-5 animate-slide-up">
+        <PageHeader
+          title="Retail Profitability"
+          subtitle="Error loading data"
+          icon={<AlertTriangle size={18} />}
+          iconBg="bg-rose-100 dark:bg-rose-900/30"
+          iconColor="text-rose-600"
+          realm={realm}
+          onRealmChange={() => {}}
+        />
+        <div className="bg-white dark:bg-surface-950 border border-rose-200 dark:border-rose-800 rounded-xl p-6 text-rose-600">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-5 animate-slide-up">
       <PageHeader
         title="Retail Profitability"
-        subtitle="Demand-driven profit analysis per store & product"
+        subtitle={calcLiveData ? `Live data from ${new Date(calcLiveData.generatedAt).toLocaleString()} (${calcLiveData.dataFreshnessMinutes}min old)` : "No live data"}
         icon={<Store size={18} />}
         iconBg="bg-rose-100 dark:bg-rose-900/30"
         iconColor="text-rose-600"
         realm={realm}
         onRealmChange={() => {}}
       >
-        <div className="text-[10px] text-surface-400 font-bold">{margins.length} products with pricing data</div>
+        <div className="text-[10px] text-surface-400 font-bold">
+          {margins.length} products with pricing data
+          {phaseCoeff && <span className="ml-4 text-brand-600">Coefficients: R²={phaseCoeff.rSquared.toFixed(2)} n={phaseCoeff.sampleSize}</span>}
+        </div>
       </PageHeader>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -179,50 +317,50 @@ export function RetailCalculatorPage() {
               <div><label htmlFor="retail-quality" className="text-[10px] font-semibold text-surface-500 block mb-1">Quality</label><select id="retail-quality" value={quality} onChange={e => setQuality(Math.max(0, Math.min(12, toNum(e.target.value))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900">{[...Array(13).keys()].map(q => <option key={q} value={q}>Q{q}</option>)}</select></div>
               <div><label htmlFor="retail-ao" className="text-[10px] font-semibold text-surface-500 block mb-1">AO %</label><input id="retail-ao" type="number" min={0} max={100} value={ao} onChange={e => setAo(Math.max(0, Math.min(100, toNum(e.target.value, 25))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" /></div>
               <div><label htmlFor="retail-sales-speed" className="text-[10px] font-semibold text-surface-500 block mb-1">Sales Speed %</label><input id="retail-sales-speed" type="number" min={0} max={200} value={salesSpeed} onChange={e => setSalesSpeed(Math.max(0, Math.min(200, toNum(e.target.value, 0))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" /></div>
-              <div className="col-span-2"><label htmlFor="retail-economy" className="text-[10px] font-semibold text-surface-500 block mb-1">Economy</label><select id="retail-economy" value={phase} onChange={e => setPhase(e.target.value)} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900"><option value="boom">Boom ×1.25</option><option value="normal">Normal ×1.0</option><option value="recession">Recession ×0.8</option></select></div>
             </div>
           </div>
 
           {/* Demand + Price */}
           {selected && (
             <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><BarChart3 size={13} /> {selected.name} — Manual</div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1"><label htmlFor="retail-demand" className="text-[10px] font-semibold text-surface-500">Demand</label><span className={`text-xs font-bold ${demandColor(demand)}`}>{demandLabel(demand)}</span></div>
-                <div className="h-2 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden mb-1.5"><div className={`h-full transition-all duration-500 ${demandBarColor(demand)}`} style={{ width: `${demand}%` }} /></div>
-                <div className="flex items-center gap-2">
-                  <input id="retail-demand-slider" type="range" min={0} max={100} value={demand} onChange={e => setDemand(toNum(e.target.value, 50))} className="flex-1 accent-rose-500" />
-                  <input id="retail-demand" type="number" min={0} max={100} value={demand} onChange={e => setDemand(Math.max(0, Math.min(100, toNum(e.target.value, 50))))} className="w-14 border border-surface-300 rounded-md px-2 py-1 text-xs font-bold text-center outline-none" />
-                </div>
-              </div>
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><BarChart3 size={13} /> {selected.name} — Live Optimizer</div>
 
               <div>
                 <label htmlFor="retail-base-rate" className="text-[10px] font-semibold text-surface-500 block mb-1">Base Sales Rate (units/h/level)</label>
-                <input id="retail-base-rate" type="number" min={0.01} step={0.5} value={baseRate} onChange={e => setBaseRate(Math.max(0.01, toNum(e.target.value, 3)))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" />
+                <input id="retail-base-rate" type="number" min={0.01} step={0.5} value={3} disabled className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none bg-surface-50 dark:bg-surface-900" />
               </div>
 
               <div>
                 <label htmlFor="retail-custom-price" className="text-[10px] font-semibold text-surface-500 block mb-1">Selling Price</label>
                 <div className="flex items-center gap-2">
-                  <input id="retail-custom-price" type="number" step="0.01" value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder={`VWAP $${fmtNumber(vwapPrice)}`} className="flex-1 border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" />
-                  {customPrice && <button onClick={() => setCustomPrice("")} className="text-[10px] text-brand-600 font-bold">VWAP</button>}
+                  <input id="retail-custom-price" type="number" step="0.01" value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder={`Optimal: $${fmtNumber(optimizationResult?.price ?? livePrice)}`} className="flex-1 border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" />
+                  {customPrice && <button onClick={() => setCustomPrice("")} className="text-[10px] text-brand-600 font-bold">Auto</button>}
                 </div>
-                <div className="text-[10px] text-surface-400 mt-0.5">VWAP: ${fmtNumber(vwapPrice)}</div>
+                <div className="text-[10px] text-surface-400 mt-0.5">
+                  Live VWAP: ${fmtNumber(livePrice)} | Optimal: ${fmtNumber(optimizationResult?.price ?? livePrice)} | Saturation: {saturation.toFixed(2)}x
+                </div>
               </div>
 
-              <div className="border-t border-surface-100 dark:border-surface-800 pt-3 mt-2">
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[10px] font-semibold text-surface-500">Demand Gauge</span>
-                  <span className={`text-xs font-bold ${demandColor(demand)}`}>{demandLabel(demand)}</span>
+              {optimizationResult && (
+                <div className="border-t border-surface-100 dark:border-surface-800 pt-3 mt-2">
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-[10px] font-semibold text-surface-500">Optimized Demand</span>
+                    <span className="text-xs font-bold text-brand-600">{fmtNumber(optimizationResult.demand)} units/h</span>
+                  </div>
+                  <div className="h-2.5 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-brand-500 transition-all duration-700 ease-out" style={{ width: `${Math.min(100, optimizationResult.demand / 50 * 100)}%` }} />
+                  </div>
+                  <p className="text-[10px] text-surface-400 mt-1.5">
+                    Expected Profit: ${fmtNumber(optimizationResult.profit)}/h at ${fmtNumber(optimizationResult.demand)} units/h
+                  </p>
                 </div>
-                <div className="h-2.5 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
-                  <div className={`h-full transition-all duration-700 ease-out ${demandBarColor(demand)}`} style={{ width: `${demand}%` }} />
+              )}
+
+              {phaseCoeff && (
+                <div className="text-[10px] text-surface-400 bg-surface-50 dark:bg-surface-900 rounded-lg p-2">
+                  Phase: {economyPhase} | Coeff: T={phaseCoeff.T.toFixed(6)} U={phaseCoeff.U.toFixed(4)} V={phaseCoeff.V.toFixed(6)} W={phaseCoeff.W.toFixed(2)} | R²={phaseCoeff.rSquared.toFixed(2)} (n={phaseCoeff.sampleSize})
                 </div>
-                <p className="text-[10px] text-surface-400 mt-1.5">
-                  {demand >= 60 ? "High demand — great time to sell" : demand >= 40 ? "Moderate demand — standard conditions" : "Low demand — consider different product"}
-                </p>
-              </div>
+              )}
             </div>
           )}
 
@@ -234,7 +372,7 @@ export function RetailCalculatorPage() {
             <div className="bg-white dark:bg-surface-950 border border-dashed border-surface-300 dark:border-surface-700 rounded-xl p-16 text-center">
               <Store size={40} className="mx-auto text-surface-300 mb-3" />
               <p className="text-surface-400 font-bold text-sm">{!store ? "Select a store" : "Choose a product"}</p>
-              <p className="text-surface-300 text-xs mt-1">Adjust demand, price & parameters in the sidebar</p>
+              <p className="text-surface-300 text-xs mt-1">Adjust parameters in the sidebar</p>
             </div>
           ) : (
             <>
@@ -243,7 +381,7 @@ export function RetailCalculatorPage() {
                 <button onClick={() => setShowTop(!showTop)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${showTop ? "bg-rose-600 text-white shadow-sm" : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200"}`}>
                   {showTop ? "Hide Rankings" : "Top 20 Products"}
                 </button>
-                {showTop && <span className="text-[10px] text-surface-400">Ranked by profit using current parameters</span>}
+                {showTop && <span className="text-[10px] text-surface-400">Ranked by profit using live data & cubic regression</span>}
               </div>
 
               {showTop && (
@@ -254,7 +392,7 @@ export function RetailCalculatorPage() {
                       <thead><tr className="bg-surface-50 dark:bg-surface-900 text-[10px] font-bold uppercase text-surface-500"><th className="text-left px-4 py-2.5">#</th><th className="text-left px-4 py-2.5">Store</th><th className="text-left px-4 py-2.5">Product</th><th className="text-right px-4 py-2.5">Demand</th><th className="text-right px-4 py-2.5">Revenue</th><th className="text-right px-4 py-2.5">Profit/h</th><th className="text-right px-4 py-2.5">Margin</th></tr></thead>
                       <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
                         {topProducts.map((p, i) => (
-                          <tr key={`${p.storeName}-${p.productName}`} className="hover:bg-surface-50 dark:hover:bg-surface-900/50">
+                          <tr key={`${p.storeName}-${p.productName}-${p.productId}`} className="hover:bg-surface-50 dark:hover:bg-surface-900/50">
                             <td className="px-4 py-2 text-surface-400 font-bold">{i + 1}</td>
                             <td className="px-4 py-2 font-bold">{p.storeName}</td>
                             <td className="px-4 py-2">{p.productName}</td>
@@ -272,47 +410,47 @@ export function RetailCalculatorPage() {
 
               {!showTop && !result ? null : !showTop && result && (
                 <>
-              {/* KPI cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { label: "Revenue", val: `$${fmtNumber(result.rev)}`, color: "text-emerald-600", icon: DollarSign, iconColor: "text-emerald-500" },
-                  { label: "Net Profit", val: `${result.np >= 0 ? "+" : ""}$${fmtNumber(result.np)}`, color: result.np >= 0 ? "text-emerald-600" : "text-rose-600", icon: DollarSign, iconColor: result.np >= 0 ? "text-emerald-500" : "text-rose-500" },
-                  { label: "Margin", val: `${fmtPct(result.mg)}`, color: result.mg >= 0 ? "text-emerald-600" : "text-rose-600", icon: BarChart3, iconColor: "text-blue-500" },
-                  { label: "Volume", val: fmtNumber(result.u), color: "text-surface-700 dark:text-surface-300", icon: Users, iconColor: "text-violet-500" },
-                ].map(c => (
-                  <div key={c.label} className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4">
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-surface-400 mb-1"><c.icon size={12} className={c.iconColor} /> {c.label}</div>
-                    <div className={`text-2xl font-bold tracking-tight ${c.color}`}>{c.val}</div>
-                    <div className="text-[10px] text-surface-400">/ hour</div>
+                  {/* KPI cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { label: "Revenue", val: `$${fmtNumber(result.rev)}`, color: "text-emerald-600", icon: DollarSign, iconColor: "text-emerald-500" },
+                      { label: "Net Profit", val: `${result.np >= 0 ? "+" : ""}$${fmtNumber(result.np)}`, color: result.np >= 0 ? "text-emerald-600" : "text-rose-600", icon: DollarSign, iconColor: result.np >= 0 ? "text-emerald-500" : "text-rose-500" },
+                      { label: "Margin", val: `${fmtPct(result.mg)}`, color: result.mg >= 0 ? "text-emerald-600" : "text-rose-600", icon: BarChart3, iconColor: "text-blue-500" },
+                      { label: "Volume", val: fmtNumber(result.u), color: "text-surface-700 dark:text-surface-300", icon: Users, iconColor: "text-violet-500" },
+                    ].map(c => (
+                      <div key={c.label} className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-surface-400 mb-1"><c.icon size={12} className={c.iconColor} /> {c.label}</div>
+                        <div className={`text-2xl font-bold tracking-tight ${c.color}`}>{c.val}</div>
+                        <div className="text-[10px] text-surface-400">/ hour</div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              {/* Breakdown */}
-              <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl divide-y divide-surface-100 dark:divide-surface-800">
-                <div className="px-5 py-3 flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><Settings2 size={12} /> Multipliers</div>
-                <div className="px-5 py-3 space-y-2">
-                  <Mt label="Phase" val={phase} mult={result.pm} />
-                  <Mt label="Demand" val={`${demand}%`} mult={result.dm} badge={demandLabel(demand)} bc={demandColor(demand)} />
-                  <Mt label="Sales Speed" val={`+${salesSpeed}%`} mult={result.ss} />
-                  <Mt label="Base Rate" val={`${baseRate}/h/lv`} />
-                  <Mt label="Level" val={String(bldgLevel)} />
-                </div>
-                <div className="px-5 py-3 space-y-2">
-                  <div className="flex justify-between"><span className="text-xs text-surface-500">Gross Revenue</span><span className="text-sm font-bold text-emerald-600">${fmtNumber(result.rev)}</span></div>
-                  <div className="flex justify-between"><span className="text-xs text-surface-500">Market Fee</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.mf)}</span><span className="text-[10px] text-surface-400 ml-auto">3%</span></div>
-                  <div className="flex justify-between"><span className="text-xs text-surface-500">COGS</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.cogs)}</span></div>
-                  <div className="flex justify-between"><span className="text-xs text-surface-500">Wages</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.w)}</span><span className="text-[10px] text-surface-400 ml-auto">Lv{bldgLevel}</span></div>
-                  <div className="flex justify-between"><span className="text-xs text-surface-500">Admin Overhead</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.ac)}</span><span className="text-[10px] text-surface-400 ml-auto">{ao}%</span></div>
-                </div>
-                <div className="px-5 py-4 flex items-center justify-between">
-                  <span className="text-sm font-bold uppercase tracking-wide">Net Profit</span>
-                  <span className={`text-xl font-bold ${result.np >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{result.np >= 0 ? "+" : ""}${fmtNumber(result.np)}/h</span>
-                </div>
-              </div>
+                  {/* Breakdown */}
+                  <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl divide-y divide-surface-100 dark:divide-surface-800">
+                    <div className="px-5 py-3 flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><Settings2 size={12} /> Multipliers</div>
+                    <div className="px-5 py-3 space-y-2">
+                      <Mt label="Weather" val={weatherMultiplier.toFixed(3)} mult={weatherMultiplier} />
+                      <Mt label="Demand" val={optimizationResult ? `${fmtNumber(optimizationResult.demand)} u/h` : "Auto"} mult={1} />
+                      <Mt label="Sales Speed" val={`+${salesSpeed}%`} mult={result.ss} />
+                      <Mt label="Base Rate" val={`${3}/h/lv`} />
+                      <Mt label="Level" val={String(bldgLevel)} />
+                    </div>
+                    <div className="px-5 py-3 space-y-2">
+                      <div className="flex justify-between"><span className="text-xs text-surface-500">Gross Revenue</span><span className="text-sm font-bold text-emerald-600">${fmtNumber(result.rev)}</span></div>
+                      <div className="flex justify-between"><span className="text-xs text-surface-500">Market Fee</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.mf)}</span><span className="text-[10px] text-surface-400 ml-auto">3%</span></div>
+                      <div className="flex justify-between"><span className="text-xs text-surface-500">COGS</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.cogs)}</span></div>
+                      <div className="flex justify-between"><span className="text-xs text-surface-500">Wages</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.w)}</span><span className="text-[10px] text-surface-400 ml-auto">Lv{bldgLevel}</span></div>
+                      <div className="flex justify-between"><span className="text-xs text-surface-500">Admin Overhead</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.ac)}</span><span className="text-[10px] text-surface-400 ml-auto">{ao}%</span></div>
+                    </div>
+                    <div className="px-5 py-4 flex items-center justify-between">
+                      <span className="text-sm font-bold uppercase tracking-wide">Net Profit</span>
+                      <span className={`text-xl font-bold ${result.np >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{result.np >= 0 ? "+" : ""}${fmtNumber(result.np)}/h</span>
+                    </div>
+                  </div>
 
-            </>
-          )}
+                </>
+              )}
             </>
           )}
         </div>

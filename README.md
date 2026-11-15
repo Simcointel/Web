@@ -22,10 +22,10 @@ This application is designed to be highly scalable and cost-effective by consumi
 
 ## Technical Stack
 
-*   **Framework**: React 18 with TypeScript
+*   **Framework**: React 19 with TypeScript
 *   **Styling**: Tailwind CSS (Enterprise Slate/Sky theme)
 *   **Icons**: Lucide React
-*   **Charts**: Recharts & Framer Motion for high-performance visualizations
+*   **Charts**: Recharts for high-performance visualizations
 *   **Build Tool**: Vite
 
 ## Development

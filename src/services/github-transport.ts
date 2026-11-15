@@ -8,6 +8,21 @@ const DATA_REPO_BRANCH = "main";
 const GITHUB_RAW = `https://raw.githubusercontent.com/${DATA_REPO_OWNER}/${DATA_REPO_NAME}/${DATA_REPO_BRANCH}`;
 const GITHUB_API = `https://api.github.com/repos/${DATA_REPO_OWNER}/${DATA_REPO_NAME}`;
 
+// In-flight request deduplication: cache promises for concurrent identical requests
+const inFlightCache = new Map<string, Promise<unknown>>();
+
+function getOrCreateInFlight<T>(key: string, factory: () => Promise<T>): Promise<T> {
+  const existing = inFlightCache.get(key);
+  if (existing) {
+    return existing as Promise<T>;
+  }
+  const promise = factory().finally(() => {
+    inFlightCache.delete(key);
+  });
+  inFlightCache.set(key, promise);
+  return promise;
+}
+
 // Add retry logic with exponential backoff for transient failures
 async function fetchWithRetry<T>(url: string, maxRetries = 3): Promise<T> {
   let lastError: Error | null = null;
@@ -56,7 +71,8 @@ async function fetchWithRetry<T>(url: string, maxRetries = 3): Promise<T> {
 }
 
 export async function rawFetch<T = unknown>(path: string): Promise<T> {
-  return fetchWithRetry<T>(`${GITHUB_RAW}/${path}`);
+  const url = `${GITHUB_RAW}/${path}`;
+  return getOrCreateInFlight(url, () => fetchWithRetry<T>(url));
 }
 
 const INDEX_CACHE = new Map<string, { data: unknown; expiry: number }>();
@@ -67,21 +83,22 @@ export async function fetchIndex(dir: string): Promise<{ latest: string; files: 
   const key = `index:${dir}`;
   const cached = INDEX_CACHE.get(key);
   if (cached && Date.now() < cached.expiry) return cached.data as { latest: string; files: string[] } | null;
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-    const data = await rawFetch<{ latest: string; files: string[] }>(`${dir}/index.json`);
-    clearTimeout(timer);
-    if (data && Array.isArray(data.files)) {
-      INDEX_CACHE.set(key, { data, expiry: Date.now() + INDEX_TTL });
-      return data;
+  
+  const fetchKey = `fetchIndex:${dir}`;
+  return getOrCreateInFlight(fetchKey, async () => {
+    try {
+      const data = await rawFetch<{ latest: string; files: string[] }>(`${dir}/index.json`);
+      if (data && Array.isArray(data.files)) {
+        INDEX_CACHE.set(key, { data, expiry: Date.now() + INDEX_TTL });
+        return data;
+      }
+      INDEX_CACHE.set(key, { data: null, expiry: Date.now() + INDEX_FAIL_TTL });
+      return null;
+    } catch {
+      INDEX_CACHE.set(key, { data: null, expiry: Date.now() + INDEX_FAIL_TTL });
+      return null;
     }
-    INDEX_CACHE.set(key, { data: null, expiry: Date.now() + INDEX_FAIL_TTL });
-    return null;
-  } catch {
-    INDEX_CACHE.set(key, { data: null, expiry: Date.now() + INDEX_FAIL_TTL });
-    return null;
-  }
+  });
 }
 
 export async function fetchLatest<T = unknown>(dir: string, prefix: string): Promise<T | null> {
@@ -103,22 +120,26 @@ export async function listFiles(path: string): Promise<string[]> {
   const cached = LIST_CACHE.get(key);
   if (cached && Date.now() < cached.expiry) return cached.files;
 
-  const url = `${GITHUB_API}/contents/${path}`;
-  try {
+  const fetchKey = `listFiles:${path}`;
+  return getOrCreateInFlight(fetchKey, async () => {
+    const url = `${GITHUB_API}/contents/${path}`;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error(`GitHub API: ${res.status}`);
-    const data = await res.json();
-    if (!Array.isArray(data)) throw new Error("Not an array");
-    const files = data.filter((f: { type: string }) => f.type === "file").map((f: { name: string }) => f.name);
-    LIST_CACHE.set(key, { files, expiry: Date.now() + LIST_TTL });
-    return files;
-  } catch {
-    LIST_CACHE.set(key, { files: [], expiry: Date.now() + LIST_TTL });
-    return [];
-  }
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      if (!res.ok) throw new Error(`GitHub API: ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error("Not an array");
+      const files = data.filter((f: { type: string }) => f.type === "file").map((f: { name: string }) => f.name);
+      LIST_CACHE.set(key, { files, expiry: Date.now() + LIST_TTL });
+      return files;
+    } catch {
+      LIST_CACHE.set(key, { files: [], expiry: Date.now() + LIST_TTL });
+      return [];
+    } finally {
+      clearTimeout(timer);
+    }
+  });
 }
 
 export async function fetchAllFiles<T = unknown>(dir: string, prefix: string, limit = 100): Promise<T[]> {

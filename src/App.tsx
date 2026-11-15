@@ -29,6 +29,7 @@ const SalesOfficeCalculatorPage = lazy(() => import("./pages/SalesOfficeCalculat
 const RetailMechanicsPage = lazy(() => import("./pages/RetailMechanics").then(m => ({ default: m.RetailMechanicsPage })));
 const RestaurantPlannerPage = lazy(() => import("./pages/RestaurantPlanner").then(m => ({ default: m.RestaurantPlannerPage })));
 const ResourceEncyclopediaPage = lazy(() => import("./pages/ResourceEncyclopedia").then(m => ({ default: m.ResourceEncyclopediaPage })));
+const ProductionFlowPage = lazy(() => import("./pages/ProductionFlow").then(m => ({ default: m.ProductionFlowPage })));
 
 
 const LoadingFallback = () => (
@@ -89,6 +90,7 @@ export function AppShell({ path }: { path: string }) {
     : path === "/restaurant" ? <RestaurantPlannerPage />
     : path === "/resources" ? <ResourceEncyclopediaPage />
     : path === "/xp-calculator" ? <XpCalculatorPage />
+    : path === "/production-flow" ? <ProductionFlowPage />
     : isWidget ? <WidgetPage />
     : <NotFoundPage />;
 

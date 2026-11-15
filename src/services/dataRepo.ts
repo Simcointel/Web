@@ -31,6 +31,8 @@ import type {
   ProfitMarginsResponse,
   PriceHistoryItem,
   RetailData,
+  CalculatorLiveData,
+  PhaseCoefficients,
 } from "../types/api";
 
 /* ============================================================
@@ -470,6 +472,51 @@ export async function fetchCompanyData(companyId: string | number, realm = 0): P
   }
 
   throw new Error("Company data fetch failed after retries");
+}
+
+/* ============================================================
+   Backend Public API Fallback
+   ============================================================ */
+
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+
+export async function fetchPublicApi<T>(path: string): Promise<T> {
+  const url = `${API_BASE}${path}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) {
+      throw new Error(`API ${res.status}: ${res.statusText}`);
+    }
+    return res.json();
+  } catch (err) {
+    clearTimeout(timer);
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error('Request timeout');
+    }
+    throw err;
+  }
+}
+
+/* ============================================================
+   Calculator Data
+   ============================================================ */
+
+export async function fetchCalculatorLive(realm: number): Promise<CalculatorLiveData> {
+  return rawFetch<CalculatorLiveData>(`public/realm-${realm}/calculator-live.json`);
+}
+
+export async function fetchPhaseCoefficients(realm: number): Promise<PhaseCoefficients[]> {
+  try {
+    const index = await fetchIndex(`aggregates/phase-coefficients/realm-${realm}`);
+    if (!index?.latest) return [];
+    return rawFetch<{ coefficients: PhaseCoefficients[] }>(`aggregates/phase-coefficients/realm-${realm}/${index.latest}`)
+      .then(data => data.coefficients ?? []);
+  } catch {
+    return [];
+  }
 }
 
 

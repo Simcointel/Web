@@ -337,3 +337,43 @@ export interface AuthDataPayload {
   syncedAt?: string;
 }
 
+// ============ Calculator Types ============
+
+export interface CalculatorLiveData {
+  generatedAt: string;
+  realm: number;
+  economyPhase: "Boom" | "Normal" | "Recession";
+  weatherMultiplier: number;
+  livePrices: Record<number, Record<number, number>>;
+  saturation: Record<number, Record<number, number>>;
+  source: string;
+  dataFreshnessMinutes: number;
+}
+
+export interface PhaseCoefficients {
+  productId: number;
+  quality: number;
+  phase: "Boom" | "Normal" | "Recession";
+  T: number;
+  U: number;
+  V: number;
+  W: number;
+  rSquared: number;
+  sampleSize: number;
+  derivedAt: string;
+}
+
+export interface Alert {
+  id: string;
+  type: "info" | "warning" | "success" | "error";
+  title: string;
+  message: string;
+  timestamp: string;
+  realm?: number;
+}
+
+export interface AlertsResponse {
+  alerts: Alert[];
+  generatedAt: string;
+}
+
