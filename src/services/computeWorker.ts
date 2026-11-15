@@ -199,7 +199,7 @@ class ComputeWorker {
 // Singleton instance
 let computeWorkerInstance: ComputeWorker | null = null;
 
-export function getComputeWorker(): ComputeWorker {
+function getComputeWorker(): ComputeWorker {
   if (!computeWorkerInstance) {
     computeWorkerInstance = new ComputeWorker();
   }
@@ -207,7 +207,7 @@ export function getComputeWorker(): ComputeWorker {
 }
 
 // Pre-register common handlers
-export function registerDefaultHandlers(worker: ComputeWorker): void {
+function registerDefaultHandlers(worker: ComputeWorker): void {
   // Retail price optimization
   worker.registerHandler('optimizeRetailPrice', async (payload: {
     livePrice: number;

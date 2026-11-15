@@ -23,7 +23,7 @@ interface ImportOptions {
   format?: ExportFormat;
   compression?: CompressionType;
   validate?: boolean;
-  schema?: any; // Zod schema
+  schema?: { parse: (data: any) => any }; // Zod-like schema
   onProgress?: (progress: number) => void;
   mergeStrategy?: 'replace' | 'merge' | 'append';
 }
@@ -47,13 +47,14 @@ interface ExportMetadata {
   schema?: string;
 }
 
-interface ImportResult {
+interface ImportResult<T = any> {
   success: boolean;
   imported: number;
   failed: number;
   errors: string[];
   warnings: string[];
   durationMs: number;
+  data?: T[];
 }
 
 const EXPORT_VERSION = '1.0.0';
@@ -211,8 +212,7 @@ export async function importData(
 
     // Validate if schema provided
     if (validate && schema) {
-      const validationErrors: string[] = [];
-      const validData = [];
+      const validData: any[] = [];
       
       for (let i = 0; i < data.length; i++) {
         try {
@@ -526,4 +526,4 @@ function getMimeType(format: ExportFormat): string {
   }
 }
 
-export { ExportOptions, ImportOptions, ExportResult, ImportResult, ExportMetadata };
+export type { ExportOptions, ImportOptions, ExportResult, ImportResult, ExportMetadata };

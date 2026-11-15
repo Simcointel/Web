@@ -1,62 +1,96 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+/**
+ * Cross-tab localStorage synchronization using BroadcastChannel and storage events.
+ */
 
-const DEFAULT_OPTIONS = {
+interface LocalSyncOptions {
+  prefix: string;
+  useBroadcastChannel: boolean;
+  storageEventsEnabled: boolean;
+}
+
+interface BroadcastMessage {
+  type: 'set' | 'delete' | 'clear';
+  key: string;
+  value?: any;
+  timestamp: number;
+  sourceTabId: string;
+}
+
+interface SyncListener {
+  (event: string, key: string, value?: any): void;
+}
+
+const DEFAULT_OPTIONS: LocalSyncOptions = {
   prefix: 'simcointel:',
   useBroadcastChannel: true,
   storageEventsEnabled: true,
 };
 
-function generateTabId() {
-  return 'tab_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+function generateTabId(): string {
+  return `tab_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
 class LocalSync {
-  private options;
-  private tabId;
-  private channel;
-  private listeners;
-  private storageListener;
-  private initialized;
+  private options: LocalSyncOptions;
+  private tabId: string;
+  private channel: BroadcastChannel | null = null;
+  private listeners: Map<string, Set<SyncListener>> = new Map();
+  private storageListener: ((event: StorageEvent) => void) | null = null;
+  private initialized = false;
 
-  constructor(options) {
-    this.options = Object.assign({}, DEFAULT_OPTIONS, options);
+  constructor(options: Partial<LocalSyncOptions> = {}) {
+    this.options = { ...DEFAULT_OPTIONS, ...options };
     this.tabId = generateTabId();
-    this.listeners = new Map();
     this.initialized = false;
   }
 
-  init() {
+  init(): void {
     if (this.initialized) return;
-    
+
     if (this.options.useBroadcastChannel && typeof BroadcastChannel !== 'undefined') {
       this.channel = new BroadcastChannel('simcointel-sync');
-      this.channel.onmessage = function(event) { this.handleMessage(event.data); }.bind(this);
+      this.channel.onmessage = (event: MessageEvent) => {
+        this.handleMessage(event.data);
+      };
     }
 
     if (this.options.storageEventsEnabled) {
-      this.storageListener = function(event) {
+      this.storageListener = (event: StorageEvent) => {
         if (event.key && event.key.startsWith(this.options.prefix) && event.newValue !== event.oldValue) {
           try {
-            var data = JSON.parse(event.newValue || '{}');
+            const data = JSON.parse(event.newValue || '{}');
             this.notifyListeners('set', event.key.replace(this.options.prefix, ''), data);
-          } catch (e) {}
+          } catch {
+            // Ignore parse errors
+          }
         }
-      }.bind(this);
+      };
       window.addEventListener('storage', this.storageListener);
     }
 
     this.initialized = true;
   }
 
-  handleMessage(message) {
+  private handleMessage(message: BroadcastMessage): void {
     if (message.sourceTabId === this.tabId) return;
     this.notifyListeners(message.type, message.key, message.value);
   }
 
-  notifyListeners(event, key, value) {
-    var listeners = this.listeners.get(key) || this.listeners.get('*');
-    if (listeners) {
-      listeners.forEach(function(listener) {
+  private notifyListeners(event: string, key: string, value?: any): void {
+    const keyListeners = this.listeners.get(key);
+    const allListeners = this.listeners.get('*');
+
+    if (keyListeners) {
+      keyListeners.forEach((listener) => {
+        try {
+          listener(event, key, value);
+        } catch (e) {
+          console.error('Sync listener error:', e);
+        }
+      });
+    }
+    if (allListeners) {
+      allListeners.forEach((listener) => {
         try {
           listener(event, key, value);
         } catch (e) {
@@ -66,105 +100,101 @@ class LocalSync {
     }
   }
 
-  set(key, value) {
+  set(key: string, value: any): void {
     if (!this.initialized) this.init();
-    
-    var prefixedKey = this.options.prefix + key;
-    var timestamp = Date.now();
-    
-    localStorage.setItem(this.options.prefix + key, JSON.stringify({ value: value, timestamp: timestamp }));
-    
-    this.broadcast({ type: 'set', key: key, value: value, timestamp: timestamp, sourceTabId: this.tabId });
-    
+
+    const timestamp = Date.now();
+    localStorage.setItem(`${this.options.prefix}${key}`, JSON.stringify({ value, timestamp }));
+
+    this.broadcast({ type: 'set', key, value, timestamp, sourceTabId: this.tabId });
     this.notifyListeners('set', key, value);
   }
 
-  get(key) {
-    var item = localStorage.getItem(this.options.prefix + key);
+  get(key: string): any {
+    const item = localStorage.getItem(`${this.options.prefix}${key}`);
     if (!item) return null;
-    
+
     try {
-      var parsed = JSON.parse(item);
+      const parsed = JSON.parse(item);
       return parsed.value;
-    } catch (e) {
+    } catch {
       return null;
     }
   }
 
-  delete(key) {
-    var prefixedKey = this.options.prefix + key;
-    localStorage.removeItem(prefixedKey);
-    
-    this.broadcast({ type: 'delete', key: key, timestamp: Date.now(), sourceTabId: this.tabId });
+  delete(key: string): void {
+    localStorage.removeItem(`${this.options.prefix}${key}`);
+
+    this.broadcast({ type: 'delete', key, timestamp: Date.now(), sourceTabId: this.tabId });
     this.notifyListeners('delete', key);
   }
 
-  clear() {
-    var keysToRemove = [];
-    for (var i = 0; i < localStorage.length; i++) {
-      var key = localStorage.key(i);
+  clear(): void {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
       if (key && key.startsWith(this.options.prefix)) {
         keysToRemove.push(key);
       }
     }
-    for (var i = 0; i < keysToRemove.length; i++) {
-      localStorage.removeItem(keysToRemove[i]);
-    }
-    
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+
     this.broadcast({ type: 'clear', key: '', timestamp: Date.now(), sourceTabId: this.tabId });
     this.notifyListeners('clear', '');
   }
 
-  broadcast(message) {
+  private broadcast(message: BroadcastMessage): void {
     if (this.channel) {
       this.channel.postMessage(message);
     }
   }
 
-  subscribe(key, listener) {
+  subscribe(key: string, listener: SyncListener): () => void {
     if (!this.initialized) this.init();
-    
+
     if (!this.listeners.has(key)) {
       this.listeners.set(key, new Set());
     }
-    this.listeners.get(key).add(listener);
-    
-    return function() {
-      this.listeners.get(key).delete(listener);
+    this.listeners.get(key)!.add(listener);
+
+    return () => {
+      this.listeners.get(key)?.delete(listener);
     };
   }
 
-  subscribeAll(listener) {
+  subscribeAll(listener: SyncListener): () => void {
     if (!this.initialized) this.init();
-    
+
     if (!this.listeners.has('*')) {
       this.listeners.set('*', new Set());
     }
-    this.listeners.get('*').add(listener);
-    
-    return function() {
-      this.listeners.get('*').delete(listener);
+    this.listeners.get('*')!.add(listener);
+
+    return () => {
+      this.listeners.get('*')?.delete(listener);
     };
   }
 
-  getAll() {
-    var result = {};
-    for (var i = 0; i < localStorage.length; i++) {
-      var key = localStorage.key(i);
+  getAll(): Record<string, any> {
+    const result: Record<string, any> = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
       if (key && key.startsWith(this.options.prefix)) {
-        var unprefixedKey = key.replace(this.options.prefix, '');
-        var item = localStorage.getItem(key);
+        const unprefixedKey = key.replace(this.options.prefix, '');
+        const item = localStorage.getItem(key);
         if (item) {
           try {
             result[unprefixedKey] = JSON.parse(item).value;
-          } catch (e) {}
+          } catch {
+            // Ignore parse errors
+          }
         }
       }
     }
     return result;
   }
 
-  destroy() {
+  destroy(): void {
     if (this.channel) {
       this.channel.close();
       this.channel = null;
@@ -178,9 +208,9 @@ class LocalSync {
   }
 }
 
-var syncInstance = null;
+let syncInstance: LocalSync | null = null;
 
-function getLocalSync(options) {
+export function getLocalSync(options: Partial<LocalSyncOptions> = {}): LocalSync {
   if (!syncInstance) {
     syncInstance = new LocalSync(options);
     syncInstance.init();
@@ -188,12 +218,12 @@ function getLocalSync(options) {
   return syncInstance;
 }
 
-function initLocalSync(options) {
-  var sync = getLocalSync(options);
+export function initLocalSync(options: Partial<LocalSyncOptions> = {}): LocalSync {
+  const sync = getLocalSync(options);
   sync.init();
   return sync;
 }
 
-function useLocalSync(key, defaultValue) {
-  return getLocalSync();
+export function useLocalSync(key: string, defaultValue: any, options: Partial<LocalSyncOptions> = {}): LocalSync {
+  return getLocalSync(options);
 }

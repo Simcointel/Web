@@ -1,163 +1,169 @@
-var DataPipeline = (function() {
-  function DataPipeline() {
-    this.steps = [];
-  }
-  DataPipeline.prototype.validate = function(schema) {
-    this.schema = schema;
-    return this;
-  };
-  DataPipeline.prototype.addStep = function(step) {
-    this.steps.push(step);
-    return this;
-  };
-  return DataPipeline;
-})();
+/**
+ * Data pipeline utilities for validation and transformation.
+ */
 
-export var schemas = {
+export interface PipelineStep {
+  name: string;
+  transform: (data: any) => any;
+}
+
+export interface DataPipeline {
+  steps: PipelineStep[];
+  schema?: any;
+  validate(schema: any): DataPipeline;
+  addStep(step: PipelineStep): DataPipeline;
+}
+
+export function createPipeline(): DataPipeline {
+  const pipeline: DataPipeline = {
+    steps: [],
+    validate(schema: any) {
+      this.schema = schema;
+      return this;
+    },
+    addStep(step: PipelineStep) {
+      this.steps.push(step);
+      return this;
+    },
+  };
+  return pipeline;
+}
+
+export const schemas = {
   profitMargins: {
-    type: "object",
+    type: 'object',
     properties: {
-      t: { type: "string" },
-      r: { type: "number" },
-      sr: { type: "string" },
+      t: { type: 'string' },
+      r: { type: 'number' },
+      sr: { type: 'string' },
       rs: {
-        type: "array",
+        type: 'array',
         items: {
-          type: "object",
+          type: 'object',
           properties: {
-            i: { type: "number" },
-            n: { type: "string" },
-            c: { type: "string" },
-            cn: { type: "string" },
-            ph: { type: "number" },
-            rv: { type: "number" },
-            ic: { type: "number" },
-            wg: { type: "number" },
-            tr: { type: "number" },
-            np: { type: "number" },
-            mg: { type: "number" },
-            m1: { type: ["number", "null"] },
-            n1: { type: ["number", "null"] },
-            md: { type: ["string", "null"] },
-            fp: { type: ["number", "null"] },
-            td: { type: ["string", "null"] },
-            vw: { type: "number" },
-            ir: { type: "boolean" },
+            i: { type: 'number' },
+            n: { type: 'string' },
+            c: { type: 'string' },
+            cn: { type: 'string' },
+            ph: { type: 'number' },
+            rv: { type: 'number' },
+            ic: { type: 'number' },
+            wg: { type: 'number' },
+            tr: { type: 'number' },
+            np: { type: 'number' },
+            mg: { type: 'number' },
+            m1: { type: ['number', 'null'] },
+            n1: { type: ['number', 'null'] },
+            md: { type: ['string', 'null'] },
+            fp: { type: ['number', 'null'] },
+            td: { type: ['string', 'null'] },
+            vw: { type: 'number' },
+            ir: { type: 'boolean' },
           },
         },
       },
     },
-    required: ["t", "r", "sr", "rs"],
+    required: ['t', 'r', 'sr', 'rs'],
   },
   retailData: {
-    type: "object",
+    type: 'object',
     properties: {
-      lastUpdated: { type: "string" },
+      lastUpdated: { type: 'string' },
       retailIndexes: {
-        type: "object",
+        type: 'object',
         additionalProperties: {
-          type: "object",
+          type: 'object',
           properties: {
-            index: { type: "number" },
-            trend: { type: "string" },
+            index: { type: 'number' },
+            trend: { type: 'string' },
           },
         },
       },
     },
-    required: ["lastUpdated", "retailIndexes"],
+    required: ['lastUpdated', 'retailIndexes'],
   },
   phaseCoefficients: {
-    type: "object",
+    type: 'object',
     properties: {
-      derivedAt: { type: "string" },
-      realm: { type: "number" },
-      dataWindowDays: { type: "number" },
+      derivedAt: { type: 'string' },
+      realm: { type: 'number' },
+      dataWindowDays: { type: 'number' },
       coefficients: {
-        type: "array",
+        type: 'array',
         items: {
-          type: "object",
+          type: 'object',
           properties: {
-            productId: { type: "number" },
-            quality: { type: "number" },
-            phase: { type: "string", enum: ["Boom", "Normal", "Recession"] },
-            T: { type: "number" },
-            U: { type: "number" },
-            V: { type: "number" },
-            W: { type: "number" },
-            rSquared: { type: "number" },
-            sampleSize: { type: "number" },
-            derivedAt: { type: "string" },
+            productId: { type: 'number' },
+            quality: { type: 'number' },
+            phase: { type: 'string', enum: ['Boom', 'Normal', 'Recession'] },
+            T: { type: 'number' },
+            U: { type: 'number' },
+            V: { type: 'number' },
+            W: { type: 'number' },
+            rSquared: { type: 'number' },
+            sampleSize: { type: 'number' },
+            derivedAt: { type: 'string' },
           },
-          required: ["productId", "quality", "phase", "T", "U", "V", "W", "rSquared", "sampleSize", "derivedAt"],
+          required: ['productId', 'quality', 'phase', 'T', 'U', 'V', 'W', 'rSquared', 'sampleSize', 'derivedAt'],
         },
       },
     },
-    required: ["derivedAt", "realm", "dataWindowDays", "coefficients"],
+    required: ['derivedAt', 'realm', 'dataWindowDays', 'coefficients'],
   },
 };
 
-var dataPipeline = {
-  phaseCoefficients: function() {
-    var pipeline = new DataPipeline();
+export const dataPipeline = {
+  phaseCoefficients: () => {
+    const pipeline = createPipeline();
     pipeline.validate(schemas.phaseCoefficients);
     pipeline.addStep({
       name: 'filterLowQuality',
-      transform: function(coeffs) {
-        return coeffs.filter(function(c) { return c.rSquared >= 0.7 && c.sampleSize >= 50; });
-      },
+      transform: (coeffs: any[]) => coeffs.filter((c) => c.rSquared >= 0.7 && c.sampleSize >= 50),
     });
     return pipeline;
   },
 
-  profitMargins: function() {
-    var pipeline = new DataPipeline();
+  profitMargins: () => {
+    const pipeline = createPipeline();
     pipeline.validate(schemas.profitMargins);
     pipeline.addStep({
       name: 'filterValidMargins',
-      transform: function(data) {
-        return {
-          ...data,
-          resources: data.resources.filter(function(r) {
-            return r.marginPct > -100 && r.marginPct < 1000 && r.outputVwap > 0;
-          }),
-        };
-      },
+      transform: (data: any) => ({
+        ...data,
+        resources: data.resources.filter((r: any) => r.marginPct > -100 && r.marginPct < 1000 && r.outputVwap > 0),
+      }),
     });
     return pipeline;
   },
 
-  retailData: function() {
-    var pipeline = new DataPipeline();
+  retailData: () => {
+    const pipeline = createPipeline();
     pipeline.validate(schemas.retailData);
     return pipeline;
   },
 };
 
-var dataQuality = {
-  calculateFreshness: function(generatedAt, maxAgeHours) {
-    if (maxAgeHours === void 0) { maxAgeHours = 24; }
-    var ageHours = (Date.now() - new Date(generatedAt).getTime()) / (1000 * 60 * 60);
+export const dataQuality = {
+  calculateFreshness: (generatedAt: string, maxAgeHours = 24): number => {
+    const ageHours = (Date.now() - new Date(generatedAt).getTime()) / (1000 * 60 * 60);
     return Math.max(0, 1 - ageHours / maxAgeHours);
   },
 
-  detectOutliersIQR: function(values, multiplier) {
-    if (multiplier === void 0) { multiplier = 1.5; }
+  detectOutliersIQR: (values: number[], multiplier = 1.5): { outliers: number[]; clean: number[] } => {
     if (values.length < 4) return { outliers: [], clean: values };
 
-    var sorted = values.slice().sort(function(a, b) { return a - b; });
-    var q1Idx = Math.floor(sorted.length * 0.25);
-    var q3Idx = Math.floor(sorted.length * 0.75);
-    var q1 = sorted[q1Idx];
-    var q3 = sorted[q3Idx];
-    var iqr = q3 - q1;
-    var lower = q1 - multiplier * iqr;
-    var upper = q3 + multiplier * iqr;
+    const sorted = [...values].sort((a, b) => a - b);
+    const q1Idx = Math.floor(sorted.length * 0.25);
+    const q3Idx = Math.floor(sorted.length * 0.75);
+    const q1 = sorted[q1Idx];
+    const q3 = sorted[q3Idx];
+    const iqr = q3 - q1;
+    const lower = q1 - multiplier * iqr;
+    const upper = q3 + multiplier * iqr;
 
-    var outliers = values.filter(function(v) { return v < lower || v > upper; });
-    var clean = values.filter(function(v) { return v >= lower && v <= upper; });
+    const outliers = values.filter((v) => v < lower || v > upper);
+    const clean = values.filter((v) => v >= lower && v <= upper);
 
-    return { outliers: outliers, clean: clean };
+    return { outliers, clean };
   },
 };
-
-export { dataPipeline, schemas, dataQuality };
