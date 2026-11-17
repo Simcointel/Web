@@ -84,13 +84,13 @@ function RetailRankingsTab({ margins, storeNames, resNameMap }: { margins: Profi
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-surface-400">Products ranked by VWAP — higher VWAP typically means higher profit potential at retail.</p>
+      <p className="text-xs text-surface-500">Products ranked by VWAP — higher VWAP typically means higher profit potential at retail.</p>
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500" />
           <input type="text" placeholder="Search product or store..." value={search} onChange={e => setSearch(e.target.value)} className="input w-full pl-9" />
         </div>
-        <span className="text-[10px] font-bold text-surface-400 bg-surface-100 dark:bg-surface-800 px-2 py-1 rounded-lg">{filtered.length} products</span>
+        <span className="text-[10px] font-bold text-surface-500 bg-surface-100 dark:bg-surface-800 px-2 py-1 rounded-lg">{filtered.length} products</span>
       </div>
       <div className="overflow-x-auto rounded-xl border border-surface-200 dark:border-surface-800">
         <table className="w-full text-xs">
@@ -118,9 +118,9 @@ function RetailRankingsTab({ margins, storeNames, resNameMap }: { margins: Profi
 function QualityPremiumsTab() {
   return (
     <div className="rounded-xl border border-surface-200 dark:border-surface-800 p-12 text-center">
-      <DollarSign size={32} className="mx-auto text-surface-300 mb-3" />
+      <DollarSign size={32} className="mx-auto text-surface-500 mb-3" />
       <p className="text-sm font-bold text-surface-500 mb-1">Quality Premiums</p>
-      <p className="text-xs text-surface-400">Per-quality VWAP data requires a direct API connection. Use the Profit Margins page for current market prices.</p>
+      <p className="text-xs text-surface-500">Per-quality VWAP data requires a direct API connection. Use the Profit Margins page for current market prices.</p>
     </div>
   );
 }
@@ -133,15 +133,15 @@ function SupplyChainTab({ margins, resNameMap }: { margins: ProfitMarginResource
 
   function Tree({ nodeId }: { nodeId: number }) {
     const res = RESOURCES.find(r => r.id === nodeId);
-    if (!res || !res.inputs) return <div className="text-xs text-surface-400 italic py-2">No recipe data available.</div>;
+    if (!res || !res.inputs) return <div className="text-xs text-surface-500 italic py-2">No recipe data available.</div>;
     const inputs = Object.entries(res.inputs);
     const price = getPrice(nodeId);
     return (
       <div className="ml-3 pl-4 py-1">
         <div className="flex items-center gap-2 py-1">
-          <Package size={12} className="text-surface-400 shrink-0" />
+          <Package size={12} className="text-surface-500 shrink-0" />
           <span className="font-bold text-sm">{res.name ?? `#${nodeId}`}</span>
-          <span className="text-[10px] text-surface-400">#{nodeId}</span>
+          <span className="text-[10px] text-surface-500">#{nodeId}</span>
           {price > 0 && <span className="text-xs font-bold text-brand-600">${fmtNumber(price)}</span>}
         </div>
         {inputs.length > 0 && (
@@ -154,10 +154,10 @@ function SupplyChainTab({ margins, resNameMap }: { margins: ProfitMarginResource
               return (
                 <div key={id}>
                   <div className="flex items-center gap-2 py-0.5 text-xs">
-                    <ChevronRight size={10} className="text-surface-300 shrink-0" />
+                    <ChevronRight size={10} className="text-surface-500 shrink-0" />
                     <span>{subRes?.name ?? resNameMap[toNum(id)] ?? `#${id}`}</span>
-                    <span className="text-surface-400">×{qty}</span>
-                    {subPrice > 0 && <><span className="text-surface-400">@</span><span className="font-bold">${fmtNumber(subPrice)}</span><span className="text-surface-400">= ${fmtNumber(total)}</span></>}
+                    <span className="text-surface-500">×{qty}</span>
+                    {subPrice > 0 && <><span className="text-surface-500">@</span><span className="font-bold">${fmtNumber(subPrice)}</span><span className="text-surface-500">= ${fmtNumber(total)}</span></>}
                   </div>
                   {hasChildren && <Tree nodeId={toNum(id)} />}
                 </div>
@@ -173,7 +173,7 @@ function SupplyChainTab({ margins, resNameMap }: { margins: ProfitMarginResource
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-surface-400">Select a product to see its recipe tree with current market prices from profit margins.</p>
+      <p className="text-xs text-surface-500">Select a product to see its recipe tree with current market prices from profit margins.</p>
       <select value={searchId} onChange={e => setSearchId(e.target.value)} className="input max-w-sm">
         <option value="">Choose product...</option>
         {productsWithInputs.map(r => <option key={r.id} value={r.id}>{r.name} (#{r.id})</option>)}

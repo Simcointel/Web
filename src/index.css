@@ -20,7 +20,7 @@
 @layer components {
   /* ── Typography ── */
   .stat-value { @apply text-xl font-black tracking-tight tabular-nums font-mono; }
-  .stat-label { @apply text-[9px] font-black uppercase tracking-[0.2em] text-surface-400; }
+  .stat-label { @apply text-[9px] font-black uppercase tracking-[0.2em] text-surface-500; }
 
   /* ── Cards ── */
   .card {
@@ -52,7 +52,7 @@
 
   /* ── Inputs ── */
   .input {
-    @apply block w-full px-3 py-2 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-lg text-xs font-bold placeholder-surface-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/20 transition-all;
+    @apply block w-full px-3 py-2 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-lg text-xs font-bold placeholder-surface-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/20 transition-all;
   }
 
   .badge {
@@ -78,7 +78,7 @@
     @apply text-lg font-bold tabular-nums;
   }
   .metric-label {
-    @apply text-[9px] font-black uppercase tracking-[0.15em] text-surface-400;
+    @apply text-[9px] font-black uppercase tracking-[0.15em] text-surface-500;
   }
 
   /* ── KPI Cards ── */
@@ -105,12 +105,12 @@
     @apply text-white;
   }
   .sidebar-icon-inactive {
-    @apply text-surface-400 dark:text-surface-500 group-hover:text-brand-600;
+    @apply text-surface-500 dark:text-surface-500 group-hover:text-brand-600;
   }
 
   /* ── Nav Group ── */
   .nav-group-header {
-    @apply px-3 text-[10px] font-black uppercase tracking-[0.18em] text-surface-400 mb-2;
+    @apply px-3 text-[10px] font-black uppercase tracking-[0.18em] text-surface-500 mb-2;
   }
   .nav-group-divider {
     @apply border-t border-surface-100 dark:border-surface-800 mx-3 my-4;

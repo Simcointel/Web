@@ -18,5 +18,17 @@ export default defineConfig({
         singleThread: true,
       },
     },
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov", "html"],
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/main.tsx", "src/vite-env.d.ts", "src/__tests__/**", "src/**/*.d.ts"],
+      thresholds: {
+        statements: 9,
+        branches: 7,
+        functions: 6,
+        lines: 9,
+      },
+    },
   },
 });

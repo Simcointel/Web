@@ -24,7 +24,7 @@ export function MobileNav() {
             key={link.to}
             to={link.to}
             className={`relative flex flex-col items-center gap-0.5 p-1.5 rounded-xl transition-all duration-200 min-w-0 flex-1 ${
-              active ? "text-brand-600" : "text-surface-400"
+              active ? "text-brand-800" : "text-surface-900"
             }`}
           >
             {active && (
@@ -33,7 +33,7 @@ export function MobileNav() {
             <div className={`${active ? "scale-110 transition-transform" : ""}`}>
               {link.icon}
             </div>
-            <span className={`text-[8px] font-bold uppercase tracking-tight truncate w-full text-center ${
+            <span className={`text-[10px] font-bold uppercase tracking-tight truncate w-full text-center ${
               active ? "opacity-100" : "opacity-60"
             }`}>
               {link.label}

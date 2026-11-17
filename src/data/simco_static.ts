@@ -154,7 +154,7 @@ export const RESOURCES: ResourceData[] = [
   { "id": 54, "name": "Luxury e-car", "transport": 5, "buildingId": "1", "basePh": 0, "baseWages": 0 },
   { "id": 55, "name": "Economy car", "transport": 5, "buildingId": "1", "basePh": 0, "baseWages": 0 },
   { "id": 56, "name": "Luxury car", "transport": 5, "buildingId": "1", "basePh": 0, "baseWages": 0 },
-  { "id": 57, "name": "Truck", "transport": 5, "buildingId": "1", "basePh": 0, "baseWages": 0 },
+  { "id": 57, "name": "Truck", "transport": 5, "buildingId": "1", "basePh": 2.8, "baseWages": 448.5, "inputs": { 43: 10, 47: 1, 50: 1, 51: 1, 52: 6, 13: 5 } },
   { "id": 58, "name": "Automotive research", "transport": 0, "buildingId": "a", "basePh": 0, "baseWages": 0 },
   { "id": 59, "name": "Fashion research", "transport": 0, "buildingId": "f", "basePh": 0, "baseWages": 0 },
   { "id": 60, "name": "Underwear", "transport": 1, "buildingId": "T", "basePh": 0, "baseWages": 0 },

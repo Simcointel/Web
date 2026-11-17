@@ -15,29 +15,30 @@ const VWAPInflationPage = lazy(() => import("./pages/VWAPInflation").then(m => (
 const ProfitMarginsPage = lazy(() => import("./pages/ProfitMargins").then(m => ({ default: m.ProfitMarginsPage })));
 const EncyclopediaPage = lazy(() => import("./pages/Encyclopedia").then(m => ({ default: m.EncyclopediaPage })));
 const WidgetPage = lazy(() => import("./pages/WidgetRenderer").then(m => ({ default: m.WidgetPage })));
-const NotFoundPage = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFoundPage })));
-const CorporateSuitePage = lazy(() => import("./pages/CorporateSuite").then(m => ({ default: m.CorporateSuitePage })));
-const ProfitCalculatorPage = lazy(() => import("./pages/ProfitCalculator").then(m => ({ default: m.ProfitCalculatorPage })));
-const ConstructionCalculatorPage = lazy(() => import("./pages/ConstructionCalculator").then(m => ({ default: m.ConstructionCalculatorPage })));
-const RetailCalculatorPage = lazy(() => import("./pages/RetailCalculator").then(m => ({ default: m.RetailCalculatorPage })));
-const MarketIntelPage = lazy(() => import("./pages/MarketIntel").then(m => ({ default: m.MarketIntelPage })));
-const MarketOrdersPage = lazy(() => import("./pages/MarketOrders").then(m => ({ default: m.MarketOrdersPage })));
-const GovernmentPage = lazy(() => import("./pages/Government").then(m => ({ default: m.GovernmentPage })));
-const XpCalculatorPage = lazy(() => import("./pages/XpCalculator").then(m => ({ default: m.XpCalculatorPage })));
-const ExtensionPage = lazy(() => import("./pages/Extension").then(m => ({ default: m.ExtensionPage })));
-const SalesOfficeCalculatorPage = lazy(() => import("./pages/SalesOfficeCalculator").then(m => ({ default: m.SalesOfficeCalculatorPage })));
-const RetailMechanicsPage = lazy(() => import("./pages/RetailMechanics").then(m => ({ default: m.RetailMechanicsPage })));
-const RestaurantPlannerPage = lazy(() => import("./pages/RestaurantPlanner").then(m => ({ default: m.RestaurantPlannerPage })));
-const ResourceEncyclopediaPage = lazy(() => import("./pages/ResourceEncyclopedia").then(m => ({ default: m.ResourceEncyclopediaPage })));
-const ProductionFlowPage = lazy(() => import("./pages/ProductionFlow").then(m => ({ default: m.ProductionFlowPage })));
-const ApiDocsPage = lazy(() => import("./pages/ApiDocs").then(m => ({ default: m.ApiDocsPage })));
+const NotFoundPage = lazy(() => import("./pages/NotFound.tsx").then(m => ({ default: m.NotFoundPage })));
+const CorporateSuitePage = lazy(() => import("./pages/CorporateSuite.tsx").then(m => ({ default: m.CorporateSuitePage })));
+const ProfitCalculatorPage = lazy(() => import("./pages/ProfitCalculator.tsx").then(m => ({ default: m.ProfitCalculatorPage })));
+const ConstructionCalculatorPage = lazy(() => import("./pages/ConstructionCalculator.tsx").then(m => ({ default: m.ConstructionCalculatorPage })));
+const RetailCalculatorPage = lazy(() => import("./pages/RetailCalculator.tsx").then(m => ({ default: m.RetailCalculatorPage })));
+const MarketIntelPage = lazy(() => import("./pages/MarketIntel.tsx").then(m => ({ default: m.MarketIntelPage })));
+const MarketOrdersPage = lazy(() => import("./pages/MarketOrders.tsx").then(m => ({ default: m.MarketOrdersPage })));
+const GovernmentPage = lazy(() => import("./pages/Government.tsx").then(m => ({ default: m.GovernmentPage })));
+const XpCalculatorPage = lazy(() => import("./pages/XpCalculator.tsx").then(m => ({ default: m.XpCalculatorPage })));
+const ExtensionPage = lazy(() => import("./pages/Extension.tsx").then(m => ({ default: m.ExtensionPage })));
+const SalesOfficeCalculatorPage = lazy(() => import("./pages/SalesOfficeCalculator.tsx").then(m => ({ default: m.SalesOfficeCalculatorPage })));
+const RetailMechanicsPage = lazy(() => import("./pages/RetailMechanics.tsx").then(m => ({ default: m.RetailMechanicsPage })));
+const RestaurantPlannerPage = lazy(() => import("./pages/RestaurantPlanner.tsx").then(m => ({ default: m.RestaurantPlannerPage })));
+const ResourceEncyclopediaPage = lazy(() => import("./pages/ResourceEncyclopedia.tsx").then(m => ({ default: m.ResourceEncyclopediaPage })));
+const ProductionFlowPage = lazy(() => import("./pages/ProductionFlow.tsx").then(m => ({ default: m.ProductionFlowPage })));
+const ApiDocsPage = lazy(() => import("./pages/ApiDocs.tsx").then(m => ({ default: m.ApiDocsPage })));
+const ChallengeOptimizerPage = lazy(() => import("./pages/ChallengeOptimizer.tsx").then(m => ({ default: m.ChallengeOptimizerPage })));
 
 
 const LoadingFallback = () => (
   <div className="flex items-center justify-center py-24">
     <div className="flex flex-col items-center gap-3">
       <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-      <span className="text-xs font-bold text-surface-400 uppercase tracking-wider">Loading</span>
+      <span className="text-xs font-bold text-surface-500 uppercase tracking-wider">Loading</span>
     </div>
   </div>
 );
@@ -93,6 +94,7 @@ export function AppShell({ path }: { path: string }) {
     : path === "/xp-calculator" ? <XpCalculatorPage />
     : path === "/production-flow" ? <ProductionFlowPage />
     : path === "/api-docs" ? <ApiDocsPage />
+    : path === "/challenge-optimizer" ? <ChallengeOptimizerPage />
     : isWidget ? <WidgetPage />
     : <NotFoundPage />;
 

@@ -20,7 +20,7 @@ export function StatCard({ title, value, subtitle, color, icon, trend, trendLabe
              <p className="stat-label">{title}</p>
              {title === "Economic Health" && (
                 <Tooltip text="Aggregate measure of production volume, company valuations, and employment levels.">
-                   <svg className="w-3 h-3 text-surface-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                   <svg className="w-3 h-3 text-surface-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </Tooltip>
              )}
           </div>
@@ -32,10 +32,10 @@ export function StatCard({ title, value, subtitle, color, icon, trend, trendLabe
               </span>
             )}
           </div>
-          {subtitle && <p className="text-[10px] font-medium text-surface-400 dark:text-surface-500 mt-1 uppercase tracking-wider">{subtitle}</p>}
+          {subtitle && <p className="text-[10px] font-medium text-surface-500 dark:text-surface-400 mt-1 uppercase tracking-wider">{subtitle}</p>}
         </div>
         {icon && (
-          <div className="text-surface-300 dark:text-surface-700">
+          <div className="text-surface-500 dark:text-surface-400">
             {typeof icon === "string" ? (
               icon.startsWith("M") ? (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -35,7 +35,7 @@ export function InputNode({
           step={step}
           className="w-10 bg-transparent text-xs font-bold text-right outline-none"
         />
-        <span className="text-xs text-surface-400">{unit}</span>
+        <span className="text-xs text-surface-500">{unit}</span>
       </div>
     </div>
   );

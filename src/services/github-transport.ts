@@ -1,4 +1,5 @@
 import { withCache, CACHE_TTL, CACHE_FAIL_TTL } from "./data-cache";
+import { apiUrl } from "../config";
 
 const DATA_REPO_OWNER = "SimcoIntel";
 const DATA_REPO_NAME = "Data";
@@ -21,6 +22,28 @@ function getOrCreateInFlight<T>(key: string, factory: () => Promise<T>): Promise
   });
   inFlightCache.set(key, promise);
   return promise;
+}
+
+// Map GitHub raw paths to backend API endpoints for fallback (path without /api prefix)
+const GITHUB_TO_API_MAP: Record<string, (realm: number) => string> = {
+  "public/realm-{realm}/macro.json": (realm) => `/public/export/macro?realm=${realm}`,
+  "public/realm-{realm}/history.json": (realm) => `/public/export/history?realm=${realm}&limit=120`,
+  "public/realm-{realm}/indexes.json": (realm) => `/public/export/indexes?realm=${realm}&limit=60`,
+  "public/realm-{realm}/inflation.json": (realm) => `/public/export/inflation?realm=${realm}&limit=60`,
+  "public/realm-{realm}/margins.json": (realm) => `/public/export/margins?realm=${realm}`,
+  // Retail and calculator-live don't have direct backend endpoints yet
+};
+
+function getBackendApiUrl(githubPath: string): string | null {
+  for (const [pattern, mapper] of Object.entries(GITHUB_TO_API_MAP)) {
+    const regex = new RegExp("^" + pattern.replace(/\{realm\}/g, "(\\d+)") + "$");
+    const match = githubPath.match(regex);
+    if (match) {
+      const realm = parseInt(match[1], 10);
+      return apiUrl(mapper(realm));
+    }
+  }
+  return null;
 }
 
 // Add retry logic with exponential backoff for transient failures
@@ -68,6 +91,36 @@ async function fetchWithRetry<T>(url: string, maxRetries = 3): Promise<T> {
   }
   
   throw lastError ?? new Error('Fetch failed');
+}
+
+// Fetch from GitHub raw with fallback to backend API on 404
+export async function fetchWithBackendFallback<T = unknown>(githubPath: string): Promise<T> {
+  // Try GitHub raw first
+  const githubUrl = `${GITHUB_RAW}/${githubPath}`;
+  try {
+    return await getOrCreateInFlight(githubUrl, () => fetchWithRetry<T>(githubUrl));
+  } catch (githubErr) {
+    // Check if it's a 404 error (resource not found)
+    if (githubErr instanceof Error && githubErr.message.includes("404")) {
+      const apiUrl = getBackendApiUrl(githubPath);
+      if (apiUrl) {
+        try {
+          const res = await fetch(apiUrl);
+          if (res.ok) {
+            const data = await res.json();
+            // Backend API returns { ok: true, data: ... } format
+            if (data && typeof data === "object" && "ok" in data && data.ok && "data" in data) {
+              return data.data as T;
+            }
+            return data as T;
+          }
+        } catch {
+          // Backend also failed, fall through to throw original error
+        }
+      }
+    }
+    throw githubErr;
+  }
 }
 
 export async function rawFetch<T = unknown>(path: string): Promise<T> {

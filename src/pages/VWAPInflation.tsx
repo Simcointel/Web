@@ -68,7 +68,7 @@ export function VWAPInflationPage() {
           <div className="border border-surface-200 rounded-lg overflow-hidden">
             <div className="p-3 border-b border-surface-100 bg-surface-50">
               <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500" />
                 <input type="text" placeholder="Search resources..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-9 pr-3 py-1.5 border border-surface-300 rounded-md text-sm outline-none" />
               </div>
               <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className="w-full mt-2 border border-surface-300 px-2 py-1.5 rounded-md text-sm outline-none">
@@ -81,14 +81,14 @@ export function VWAPInflationPage() {
                 <button key={r.id} onClick={() => setSelectedId(r.id)} className={`w-full text-left px-3 py-2 flex justify-between items-center hover:bg-surface-50 transition-colors ${selectedId === r.id ? 'bg-brand-50 border-l-4 border-brand-600' : ''}`}>
                   <div>
                     <span className="font-semibold text-sm">{r.name}</span>
-                    <span className="block text-[10px] text-surface-400 uppercase">{r.categoryName ?? r.category}</span>
+                    <span className="block text-[10px] text-surface-500 uppercase">{r.categoryName ?? r.category}</span>
                   </div>
                   <span className="font-bold text-sm">${fmtNumber(r.outputVwap ?? 0)}</span>
                 </button>
               ))}
-              {filtered.length === 0 && <p className="p-4 text-center text-surface-400 text-sm">No results</p>}
+              {filtered.length === 0 && <p className="p-4 text-center text-surface-500 text-sm">No results</p>}
             </div>
-            <div className="p-2 border-t border-surface-100 bg-surface-50 text-center text-[10px] text-surface-400">{filtered.length} resources</div>
+            <div className="p-2 border-t border-surface-100 bg-surface-50 text-center text-[10px] text-surface-500">{filtered.length} resources</div>
           </div>
         </div>
 
@@ -99,18 +99,18 @@ export function VWAPInflationPage() {
                 <div className="flex justify-between items-center mb-3">
                   <div>
                     <h2 className="text-lg font-bold">{selected.name}</h2>
-                    <span className="text-xs text-surface-400 uppercase">{selected.categoryName ?? selected.category}</span>
+                    <span className="text-xs text-surface-500 uppercase">{selected.categoryName ?? selected.category}</span>
                   </div>
                   <div className="text-right">
                     <span className="text-2xl font-bold text-brand-600">${fmtNumber(selected.outputVwap ?? 0)}</span>
-                    <span className="block text-[10px] text-surface-400">Current VWAP</span>
+                    <span className="block text-[10px] text-surface-500">Current VWAP</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-4 gap-3 text-center">
-                  <div><span className="text-[10px] text-surface-400 block">Revenue/H</span><span className="font-bold">${fmtNumber(selected.revenuePerHour ?? 0)}</span></div>
-                  <div><span className="text-[10px] text-surface-400 block">Profit/H</span><span className="font-bold">${fmtNumber(selected.netProfitPerHour ?? 0)}</span></div>
-                  <div><span className="text-[10px] text-surface-400 block">Margin</span><span className="font-bold">{fmtPct(selected.marginPct ?? 0)}</span></div>
-                  <div><span className="text-[10px] text-surface-400 block">Prod/H</span><span className="font-bold">{fmtNumber(selected.producedPerHour ?? 0)}</span></div>
+                  <div><span className="text-[10px] text-surface-500 block">Revenue/H</span><span className="font-bold">${fmtNumber(selected.revenuePerHour ?? 0)}</span></div>
+                  <div><span className="text-[10px] text-surface-500 block">Profit/H</span><span className="font-bold">${fmtNumber(selected.netProfitPerHour ?? 0)}</span></div>
+                  <div><span className="text-[10px] text-surface-500 block">Margin</span><span className="font-bold">${fmtPct(selected.marginPct ?? 0)}</span></div>
+                  <div><span className="text-[10px] text-surface-500 block">Prod/H</span><span className="font-bold">{fmtNumber(selected.producedPerHour ?? 0)}</span></div>
                 </div>
               </div>
 
@@ -120,7 +120,7 @@ export function VWAPInflationPage() {
                 </div>
                 <div className="p-4">
                   {hLoading ? (
-                    <p className="py-16 text-center text-surface-400">Loading price history...</p>
+                    <p className="py-16 text-center text-surface-500">Loading price history...</p>
                   ) : history.length > 1 ? (
                     <ResponsiveContainer width="100%" height={250}>
                       <LineChart data={history}>
@@ -133,8 +133,8 @@ export function VWAPInflationPage() {
                     </ResponsiveContainer>
                   ) : (
                     <div className="py-16 text-center">
-                      <p className="text-surface-400 mb-2">No price history available</p>
-                      <p className="text-surface-300 text-xs">Select another resource or try again later</p>
+                      <p className="text-surface-500 mb-2">No price history available</p>
+                      <p className="text-surface-500 text-xs">Select another resource or try again later</p>
                     </div>
                   )}
                 </div>
@@ -142,8 +142,8 @@ export function VWAPInflationPage() {
             </>
           ) : (
             <div className="border border-dashed border-surface-300 rounded-lg p-20 text-center">
-              <p className="text-surface-400 text-lg">Select a resource to view price history</p>
-              <p className="text-surface-300 text-sm mt-2">{margins.length} resources with price data</p>
+              <p className="text-surface-500 text-lg">Select a resource to view price history</p>
+              <p className="text-surface-500 text-sm mt-2">{margins.length} resources with price data</p>
             </div>
           )}
         </div>

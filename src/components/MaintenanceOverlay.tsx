@@ -50,12 +50,12 @@ export function MaintenanceOverlay({ title, message, retryAfter, onRetry }: Main
         </h1>
 
         {/* Message */}
-        <p id="maintenance-message" className="mb-6 text-surface-300 leading-relaxed">
+        <p id="maintenance-message" className="mb-6 text-surface-500 leading-relaxed">
           {message}
         </p>
 
         {/* Countdown */}
-        <div className="mb-6 flex items-center justify-center gap-2 text-surface-400">
+        <div className="mb-6 flex items-center justify-center gap-2 text-surface-500">
           <Clock className="h-4 w-4" aria-hidden="true" />
           <span className="font-mono text-lg font-semibold text-white">
             Auto-retry in {formatTime(countdown)}

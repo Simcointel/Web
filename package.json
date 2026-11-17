@@ -23,11 +23,13 @@
     "swagger-ui-react": "^5.35.0"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "@vitest/coverage-v8": "^4.1.12",
     "archiver": "^8.0.0",
     "autoprefixer": "^10.4.20",
     "jsdom": "^29.1.1",

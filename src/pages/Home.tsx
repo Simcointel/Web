@@ -42,16 +42,16 @@ export function HomePage() {
     return (
       <div className="space-y-6 animate-slide-up">
         <PageHeader
-          title={<><span className="text-2xl font-bold text-surface-900 dark:text-white tracking-tight">Simco<span className="text-brand-600">Intel</span></span> <span className="text-xs text-surface-400 font-semibold mt-0.5">Economic Intelligence Dashboard</span></>}
+          title={<><span className="text-2xl font-bold text-surface-900 dark:text-white tracking-tight">Simco<span className="text-brand-600">Intel</span></span> <span className="text-xs text-surface-500 font-semibold mt-0.5">Economic Intelligence Dashboard</span></>}
           realm={realm}
           onRealmChange={setRealm}
         />
         <div className="card flex flex-col items-center justify-center py-20 text-center">
           <div className="w-12 h-12 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-4">
-            <Sparkles size={22} className="text-surface-300 dark:text-surface-600" />
+            <Sparkles size={22} className="text-surface-500 dark:text-surface-400" />
           </div>
-          <p className="text-sm font-bold text-surface-300 dark:text-surface-600">No score data available</p>
-          <p className="text-xs text-surface-400 mt-1 max-w-xs">Economic scores will appear here once data is loaded</p>
+          <p className="text-sm font-bold text-surface-500 dark:text-surface-400">No score data available</p>
+          <p className="text-xs text-surface-500 mt-1 max-w-xs">Economic scores will appear here once data is loaded</p>
         </div>
       </div>
     );
@@ -69,7 +69,7 @@ export function HomePage() {
   return (
     <div className="space-y-6 animate-slide-up">
       <PageHeader
-        title={<><span className="text-2xl font-bold text-surface-900 dark:text-white tracking-tight">Simco<span className="text-brand-600">Intel</span></span> <span className="text-xs text-surface-400 font-semibold mt-0.5">Economic Intelligence Dashboard</span></>}
+        title={<><span className="text-2xl font-bold text-surface-900 dark:text-white tracking-tight">Simco<span className="text-brand-600">Intel</span></span> <span className="text-xs text-surface-500 font-semibold mt-0.5">Economic Intelligence Dashboard</span></>}
         realm={realm}
         onRealmChange={setRealm}
       >
@@ -105,7 +105,7 @@ export function HomePage() {
                 </div>
               )}
               {regime?.sc !== undefined && (
-                <span className="mt-3 text-[10px] font-bold text-surface-400 uppercase tracking-wider">
+                <span className="mt-3 text-[10px] font-bold text-surface-500 uppercase tracking-wider">
                   Score: {regime.sc.toFixed(1)}
                 </span>
               )}
@@ -128,10 +128,10 @@ export function HomePage() {
             </div>
             <div className="flex-1 flex flex-col items-center justify-center py-14 text-center">
               <div className="w-12 h-12 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-4">
-                <Sparkles size={22} className="text-surface-300 dark:text-surface-600" />
+                <Sparkles size={22} className="text-surface-500 dark:text-surface-400" />
               </div>
-              <p className="text-sm font-bold text-surface-300 dark:text-surface-600">No recent activity</p>
-              <p className="text-xs text-surface-400 mt-1 max-w-xs">Market events, regime changes, and system alerts will appear here</p>
+              <p className="text-sm font-bold text-surface-500 dark:text-surface-400">No recent activity</p>
+              <p className="text-xs text-surface-500 mt-1 max-w-xs">Market events, regime changes, and system alerts will appear here</p>
               <div className="mt-5 flex gap-2">
                 <Link to="/macro" className="btn btn-secondary">Macro View</Link>
                 <Link to="/alerts" className="btn btn-secondary">Alert Logs</Link>
@@ -143,7 +143,7 @@ export function HomePage() {
 
       <div className="pt-1">
         <div className="flex items-center gap-2 mb-3">
-          <LayoutGrid size={14} className="text-surface-400" />
+          <LayoutGrid size={14} className="text-surface-500" />
           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Quick Access</h3>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">

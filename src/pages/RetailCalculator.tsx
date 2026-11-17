@@ -274,7 +274,7 @@ export function RetailCalculatorPage() {
         realm={realm}
         onRealmChange={() => {}}
       >
-        <div className="text-[10px] text-surface-400 font-bold">
+        <div className="text-[10px] text-surface-500 font-bold">
           {margins.length} products with pricing data
           {phaseCoeff && <span className="ml-4 text-brand-600">Coefficients: R²={phaseCoeff.rSquared.toFixed(2)} n={phaseCoeff.sampleSize}</span>}
         </div>
@@ -285,7 +285,7 @@ export function RetailCalculatorPage() {
         <div className="lg:col-span-4 space-y-3">
           {/* Store */}
           <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><Store size={13} /> Store</div>
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-500 tracking-wider"><Store size={13} /> Store</div>
             <label htmlFor="retail-store" className="sr-only">Store Type</label>
             <select id="retail-store" value={storeId} onChange={e => { setStoreId(e.target.value); setResId(0); }} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900">
               <option value="">Select a store type…</option>
@@ -294,7 +294,7 @@ export function RetailCalculatorPage() {
 
             {store && storeProducts.length > 0 && (
               <>
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider pt-2 border-t border-surface-100 dark:border-surface-800"><TrendingUp size={13} /> Product</div>
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-500 tracking-wider pt-2 border-t border-surface-100 dark:border-surface-800"><TrendingUp size={13} /> Product</div>
                 <label htmlFor="retail-product" className="sr-only">Product</label>
                 <select id="retail-product" value={resId} onChange={e => setResId(toNum(e.target.value))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900">
                   <option value={0}>Choose product…</option>
@@ -305,13 +305,13 @@ export function RetailCalculatorPage() {
               </>
             )}
 
-            {store && !storeProducts.length && <div className="text-center py-4 text-surface-400 text-xs">No products mapped for this store</div>}
-            {!store && <div className="text-center py-6 text-surface-400 text-xs">Pick a store</div>}
+            {store && !storeProducts.length && <div className="text-center py-4 text-surface-500 text-xs">No products mapped for this store</div>}
+            {!store && <div className="text-center py-6 text-surface-500 text-xs">Pick a store</div>}
           </div>
 
           {/* Parameters */}
           <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><Settings2 size={13} /> Parameters</div>
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-500 tracking-wider"><Settings2 size={13} /> Parameters</div>
             <div className="grid grid-cols-2 gap-2.5">
               <div><label htmlFor="retail-level" className="text-[10px] font-semibold text-surface-500 block mb-1">Level</label><input id="retail-level" type="number" min={1} max={20} value={bldgLevel} onChange={e => setBldgLevel(Math.max(1, Math.min(20, toNum(e.target.value, 1))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" /></div>
               <div><label htmlFor="retail-quality" className="text-[10px] font-semibold text-surface-500 block mb-1">Quality</label><select id="retail-quality" value={quality} onChange={e => setQuality(Math.max(0, Math.min(12, toNum(e.target.value))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900">{[...Array(13).keys()].map(q => <option key={q} value={q}>Q{q}</option>)}</select></div>
@@ -323,7 +323,7 @@ export function RetailCalculatorPage() {
           {/* Demand + Price */}
           {selected && (
             <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><BarChart3 size={13} /> {selected.name} — Live Optimizer</div>
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-500 tracking-wider"><BarChart3 size={13} /> {selected.name} — Live Optimizer</div>
 
               <div>
                 <label htmlFor="retail-base-rate" className="text-[10px] font-semibold text-surface-500 block mb-1">Base Sales Rate (units/h/level)</label>
@@ -336,7 +336,7 @@ export function RetailCalculatorPage() {
                   <input id="retail-custom-price" type="number" step="0.01" value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder={`Optimal: $${fmtNumber(optimizationResult?.price ?? livePrice)}`} className="flex-1 border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-surface-900" />
                   {customPrice && <button onClick={() => setCustomPrice("")} className="text-[10px] text-brand-600 font-bold">Auto</button>}
                 </div>
-                <div className="text-[10px] text-surface-400 mt-0.5">
+                <div className="text-[10px] text-surface-500 mt-0.5">
                   Live VWAP: ${fmtNumber(livePrice)} | Optimal: ${fmtNumber(optimizationResult?.price ?? livePrice)} | Saturation: {saturation.toFixed(2)}x
                 </div>
               </div>
@@ -350,14 +350,14 @@ export function RetailCalculatorPage() {
                   <div className="h-2.5 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
                     <div className="h-full bg-brand-500 transition-all duration-700 ease-out" style={{ width: `${Math.min(100, optimizationResult.demand / 50 * 100)}%` }} />
                   </div>
-                  <p className="text-[10px] text-surface-400 mt-1.5">
+                  <p className="text-[10px] text-surface-500 mt-1.5">
                     Expected Profit: ${fmtNumber(optimizationResult.profit)}/h at ${fmtNumber(optimizationResult.demand)} units/h
                   </p>
                 </div>
               )}
 
               {phaseCoeff && (
-                <div className="text-[10px] text-surface-400 bg-surface-50 dark:bg-surface-900 rounded-lg p-2">
+                <div className="text-[10px] text-surface-500 bg-surface-50 dark:bg-surface-900 rounded-lg p-2">
                   Phase: {economyPhase} | Coeff: T={phaseCoeff.T.toFixed(6)} U={phaseCoeff.U.toFixed(4)} V={phaseCoeff.V.toFixed(6)} W={phaseCoeff.W.toFixed(2)} | R²={phaseCoeff.rSquared.toFixed(2)} (n={phaseCoeff.sampleSize})
                 </div>
               )}
@@ -370,30 +370,30 @@ export function RetailCalculatorPage() {
         <div className="lg:col-span-8 space-y-3">
           {!store || !selected ? (
             <div className="bg-white dark:bg-surface-950 border border-dashed border-surface-300 dark:border-surface-700 rounded-xl p-16 text-center">
-              <Store size={40} className="mx-auto text-surface-300 mb-3" />
-              <p className="text-surface-400 font-bold text-sm">{!store ? "Select a store" : "Choose a product"}</p>
-              <p className="text-surface-300 text-xs mt-1">Adjust parameters in the sidebar</p>
+              <Store size={40} className="mx-auto text-surface-500 mb-3" />
+              <p className="text-surface-500 font-bold text-sm">{!store ? "Select a store" : "Choose a product"}</p>
+              <p className="text-surface-500 text-xs mt-1">Adjust parameters in the sidebar</p>
             </div>
           ) : (
             <>
               {/* Top 20 toggle */}
               <div className="flex items-center gap-2">
-                <button onClick={() => setShowTop(!showTop)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${showTop ? "bg-rose-600 text-white shadow-sm" : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200"}`}>
+                <button onClick={() => setShowTop(!showTop)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${showTop ? "bg-rose-600 text-white shadow-sm" : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-500 hover:bg-surface-200"}`}>
                   {showTop ? "Hide Rankings" : "Top 20 Products"}
                 </button>
-                {showTop && <span className="text-[10px] text-surface-400">Ranked by profit using live data & cubic regression</span>}
+                {showTop && <span className="text-[10px] text-surface-500">Ranked by profit using live data & cubic regression</span>}
               </div>
 
               {showTop && (
                 <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl overflow-hidden">
-                  <div className="px-5 py-3 border-b border-surface-100 dark:border-surface-800 flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><TrendingUp size={12} /> Top 20 Most Profitable Products</div>
+                  <div className="px-5 py-3 border-b border-surface-100 dark:border-surface-800 flex items-center gap-2 text-[10px] font-bold uppercase text-surface-500 tracking-wider"><TrendingUp size={12} /> Top 20 Most Profitable Products</div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs">
                       <thead><tr className="bg-surface-50 dark:bg-surface-900 text-[10px] font-bold uppercase text-surface-500"><th className="text-left px-4 py-2.5">#</th><th className="text-left px-4 py-2.5">Store</th><th className="text-left px-4 py-2.5">Product</th><th className="text-right px-4 py-2.5">Demand</th><th className="text-right px-4 py-2.5">Revenue</th><th className="text-right px-4 py-2.5">Profit/h</th><th className="text-right px-4 py-2.5">Margin</th></tr></thead>
                       <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
                         {topProducts.map((p, i) => (
                           <tr key={`${p.storeName}-${p.productName}-${p.productId}`} className="hover:bg-surface-50 dark:hover:bg-surface-900/50">
-                            <td className="px-4 py-2 text-surface-400 font-bold">{i + 1}</td>
+                            <td className="px-4 py-2 text-surface-500 font-bold">{i + 1}</td>
                             <td className="px-4 py-2 font-bold">{p.storeName}</td>
                             <td className="px-4 py-2">{p.productName}</td>
                             <td className="px-4 py-2 text-right"><span className={`font-bold ${p.demand >= 60 ? "text-emerald-600" : p.demand >= 40 ? "text-amber-500" : "text-rose-500"}`}>{p.demand}%</span></td>
@@ -419,16 +419,16 @@ export function RetailCalculatorPage() {
                       { label: "Volume", val: fmtNumber(result.u), color: "text-surface-700 dark:text-surface-300", icon: Users, iconColor: "text-violet-500" },
                     ].map(c => (
                       <div key={c.label} className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4">
-                        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-surface-400 mb-1"><c.icon size={12} className={c.iconColor} /> {c.label}</div>
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-surface-500 mb-1"><c.icon size={12} className={c.iconColor} /> {c.label}</div>
                         <div className={`text-2xl font-bold tracking-tight ${c.color}`}>{c.val}</div>
-                        <div className="text-[10px] text-surface-400">/ hour</div>
+                        <div className="text-[10px] text-surface-500">/ hour</div>
                       </div>
                     ))}
                   </div>
 
                   {/* Breakdown */}
                   <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl divide-y divide-surface-100 dark:divide-surface-800">
-                    <div className="px-5 py-3 flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><Settings2 size={12} /> Multipliers</div>
+                    <div className="px-5 py-3 flex items-center gap-2 text-[10px] font-bold uppercase text-surface-500 tracking-wider"><Settings2 size={12} /> Multipliers</div>
                     <div className="px-5 py-3 space-y-2">
                       <Mt label="Weather" val={weatherMultiplier.toFixed(3)} mult={weatherMultiplier} />
                       <Mt label="Demand" val={optimizationResult ? `${fmtNumber(optimizationResult.demand)} u/h` : "Auto"} mult={1} />
@@ -438,10 +438,10 @@ export function RetailCalculatorPage() {
                     </div>
                     <div className="px-5 py-3 space-y-2">
                       <div className="flex justify-between"><span className="text-xs text-surface-500">Gross Revenue</span><span className="text-sm font-bold text-emerald-600">${fmtNumber(result.rev)}</span></div>
-                      <div className="flex justify-between"><span className="text-xs text-surface-500">Market Fee</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.mf)}</span><span className="text-[10px] text-surface-400 ml-auto">3%</span></div>
+                      <div className="flex justify-between"><span className="text-xs text-surface-500">Market Fee</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.mf)}</span><span className="text-[10px] text-surface-500 ml-auto">3%</span></div>
                       <div className="flex justify-between"><span className="text-xs text-surface-500">COGS</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.cogs)}</span></div>
-                      <div className="flex justify-between"><span className="text-xs text-surface-500">Wages</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.w)}</span><span className="text-[10px] text-surface-400 ml-auto">Lv{bldgLevel}</span></div>
-                      <div className="flex justify-between"><span className="text-xs text-surface-500">Admin Overhead</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.ac)}</span><span className="text-[10px] text-surface-400 ml-auto">{ao}%</span></div>
+                      <div className="flex justify-between"><span className="text-xs text-surface-500">Wages</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.w)}</span><span className="text-[10px] text-surface-500 ml-auto">Lv{bldgLevel}</span></div>
+                      <div className="flex justify-between"><span className="text-xs text-surface-500">Admin Overhead</span><span className="text-sm font-bold text-rose-500">-${fmtNumber(result.ac)}</span><span className="text-[10px] text-surface-500 ml-auto">{ao}%</span></div>
                     </div>
                     <div className="px-5 py-4 flex items-center justify-between">
                       <span className="text-sm font-bold uppercase tracking-wide">Net Profit</span>
@@ -467,7 +467,7 @@ function Mt({ label, val, mult, badge, bc }: { label: string; val: string; mult?
       <div className="flex items-center gap-2">
         {badge && <span className={`text-[10px] font-bold ${bc ?? "text-surface-500"}`}>{badge}</span>}
         <span className="text-xs font-bold text-surface-600">{val}</span>
-        {mult !== undefined && <span className="text-[10px] text-surface-400 w-10 text-right">×{mult.toFixed(2)}</span>}
+        {mult !== undefined && <span className="text-[10px] text-surface-500 w-10 text-right">×{mult.toFixed(2)}</span>}
       </div>
     </div>
   );

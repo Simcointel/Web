@@ -115,7 +115,7 @@ export function MacroPage() {
             <span className="text-xs font-bold text-brand-600 uppercase">Current: {phases?.currentPhase}</span>
           </div>
           <table className="w-full text-left">
-            <thead className="text-xs font-bold uppercase text-surface-400 bg-surface-50/50 dark:bg-surface-900/50 border-b border-surface-100 dark:border-surface-800">
+            <thead className="text-xs font-bold uppercase text-surface-500 bg-surface-50/50 dark:bg-surface-900/50 border-b border-surface-100 dark:border-surface-800">
               <tr>
                 <th className="px-4 py-2">Phase</th>
                 <th className="px-4 py-2 text-right">Start</th>

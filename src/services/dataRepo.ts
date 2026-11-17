@@ -11,6 +11,9 @@ export {
 // Export SimCompanies API v3 integration
 export * from "./simcompanies-api";
 
+// Export Challenge API
+export * from "./challengeApi";
+
 import { withCache } from "./data-cache";
 import {
   rawFetch,
@@ -18,6 +21,7 @@ import {
   fetchAllFiles,
   fetchIndex,
   listFiles,
+  fetchWithBackendFallback,
 } from "./github-transport";
 
 import type {
@@ -34,6 +38,9 @@ import type {
   CalculatorLiveData,
   PhaseCoefficients,
 } from "../types/api";
+
+type IxRecord = Record<string, { v: number }>;
+type InfRecord = Record<string, { ch: number }>;
 
 /* ============================================================
    Dashboard
@@ -57,15 +64,12 @@ export async function fetchDashboardState(realm: number): Promise<DashboardMap> 
 }
 
 
-
-
-
 /* ============================================================
    Macro
    ============================================================ */
 export async function fetchMacroLatest(realm: number): Promise<MacroLatest> {
   try {
-    const publicData = await rawFetch<{
+    const publicData = await fetchWithBackendFallback<{
       generatedAt: string;
       latest: {
         companiesValue: number;
@@ -104,9 +108,9 @@ export async function fetchMacroLatest(realm: number): Promise<MacroLatest> {
   const [data, ixData, infData] = await Promise.all([
     fetchLatest<{ t: string; cv: number; ac: number; bs: number; tb: number }>(
       `aggregates/realm-status/realm-${realm}`, "realm-status-"),
-    fetchLatest<{ ix: Record<string, { v: number }> }>(
+    fetchLatest<{ ix: IxRecord }>(
       `aggregates/indexes/realm-${realm}`, "price-indexes-").catch(() => null),
-    fetchLatest<{ in: Record<string, { ch: number }> }>(
+    fetchLatest<{ in: InfRecord }>(
       `aggregates/inflation/realm-${realm}`, "inflation-report-").catch(() => null),
   ]);
   if (!data) throw new Error("No macro latest data");
@@ -229,7 +233,7 @@ function latestPerDay<T extends { t?: string }>(items: T[]): T[] {
 
 export async function fetchMacroIndexes(realm: number, limit = 200): Promise<MacroIndexesResponse> {
   try {
-    const publicData = await rawFetch<Array<{ t: string; ix?: Record<string, { v: number }> }>>(
+    const publicData = await fetchWithBackendFallback<Array<{ t: string; ix?: Record<string, { v: number }> }>>(
       `public/realm-${realm}/indexes.json`);
     if (publicData && Array.isArray(publicData) && publicData.length > 0) {
       return {
@@ -261,7 +265,7 @@ export async function fetchMacroIndexes(realm: number, limit = 200): Promise<Mac
 
 export async function fetchMacroInflation(realm: number, limit = 200): Promise<MacroInflationResponse> {
   try {
-    const publicData = await rawFetch<Array<{ t: string; in?: Record<string, { ch: number }> }>>(
+    const publicData = await fetchWithBackendFallback<Array<{ t: string; in?: Record<string, { ch: number }> }>>(
       `public/realm-${realm}/inflation.json`);
     if (publicData && Array.isArray(publicData) && publicData.length > 0) {
       return {
@@ -296,7 +300,7 @@ export async function fetchMacroInflation(realm: number, limit = 200): Promise<M
    ============================================================ */
 export async function fetchRetailData(realm: number): Promise<RetailData> {
   try {
-    return await rawFetch<RetailData>(`public/realm-${realm}/retail.json`);
+    return await fetchWithBackendFallback<RetailData>(`public/realm-${realm}/retail.json`);
   } catch { /* fall through */ }
   const data = await fetchLatest<RetailData>(`aggregates/retail/realm-${realm}`, "retail-summary-");
   if (!data) throw new Error("No retail data");
@@ -336,7 +340,7 @@ function mapProfitMargins(data: Record<string, unknown>): ProfitMarginsResponse 
 
 export async function fetchProfitMargins(realm: number): Promise<ProfitMarginsResponse> {
   try {
-    const publicData = await rawFetch<Array<Record<string, unknown>>>(`public/realm-${realm}/margins.json`);
+    const publicData = await fetchWithBackendFallback<Array<Record<string, unknown>>>(`public/realm-${realm}/margins.json`);
     if (publicData && Array.isArray(publicData)) {
       return {
         ts: new Date().toISOString(),
@@ -392,13 +396,6 @@ export async function fetchResourcePriceHistory(realm: number, resourceId: numbe
 
   return history.reverse();
 }
-
-
-
-
-
-
-
 
 
 /* ============================================================
@@ -505,7 +502,55 @@ export async function fetchPublicApi<T>(path: string): Promise<T> {
    ============================================================ */
 
 export async function fetchCalculatorLive(realm: number): Promise<CalculatorLiveData> {
-  return rawFetch<CalculatorLiveData>(`public/realm-${realm}/calculator-live.json`);
+  try {
+    return await fetchWithBackendFallback<CalculatorLiveData>(`public/realm-${realm}/calculator-live.json`);
+  } catch {
+    // Fallback to legacy path
+    return rawFetch<CalculatorLiveData>(`public/realm-${realm}/calculator-live.json`);
+  }
+}
+
+/* ============================================================
+   SimCompanies API Proxy (via Backend)
+   ============================================================ */
+
+export interface SimCompaniesMarketTickerItem {
+  kind: number;
+  image: string;
+  price: number;
+  is_up: boolean;
+  realmId: number;
+}
+
+export interface SimCompaniesRetailInfoItem {
+  quality: number | null;
+  dbLetter: number;
+  saturation: number;
+  retailData: unknown[];
+  averagePrice: number | null;
+}
+
+export async function fetchSimCompaniesMarketTicker(realmId: number): Promise<SimCompaniesMarketTickerItem[]> {
+  const url = `${API_BASE}/public/simcompanies/market-ticker/${realmId}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Market ticker fetch failed: ${res.status}`);
+  const data = await res.json();
+  return data.data ?? [];
+}
+
+export async function fetchSimCompaniesRetailInfo(realmId: number): Promise<SimCompaniesRetailInfoItem[]> {
+  const url = `${API_BASE}/public/simcompanies/resources-retail-info/${realmId}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Retail info fetch failed: ${res.status}`);
+  const data = await res.json();
+  return data.data ?? [];
+}
+
+export async function fetchSimCompaniesCalculatorLive(realmId: number): Promise<CalculatorLiveData> {
+  const url = `${API_BASE}/public/simcompanies/calculator-live/${realmId}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Calculator live fetch failed: ${res.status}`);
+  return res.json();
 }
 
 export async function fetchPhaseCoefficients(realm: number): Promise<PhaseCoefficients[]> {
@@ -518,5 +563,3 @@ export async function fetchPhaseCoefficients(realm: number): Promise<PhaseCoeffi
     return [];
   }
 }
-
-

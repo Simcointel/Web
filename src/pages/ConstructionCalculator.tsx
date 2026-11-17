@@ -185,7 +185,7 @@ export function ConstructionCalculatorPage() {
         <div className="lg:col-span-4 xl:col-span-3 space-y-4">
           <div className="card p-5 space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-surface-100 dark:border-surface-800">
-              <Building2 size={16} className="text-surface-400" />
+              <Building2 size={16} className="text-surface-500" />
               <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Building</h2>
             </div>
 
@@ -252,48 +252,48 @@ export function ConstructionCalculatorPage() {
           {!building ? (
             <div className="card p-14 text-center">
               <Search size={44} className="mx-auto text-surface-200 dark:text-surface-700 mb-4" />
-              <p className="text-surface-300 dark:text-surface-600 text-sm font-bold">Select a building to begin</p>
-              <p className="text-xs text-surface-400 mt-1">Construction costs, material estimates, and ROI will appear here</p>
+              <p className="text-surface-500 dark:text-surface-400 text-sm font-bold">Select a building to begin</p>
+              <p className="text-xs text-surface-500 mt-1">Construction costs, material estimates, and ROI will appear here</p>
             </div>
           ) : upgrades.length === 0 ? (
             <div className="card p-14 text-center">
               <Layers size={44} className="mx-auto text-surface-200 dark:text-surface-700 mb-4" />
-              <p className="text-surface-300 dark:text-surface-600 text-sm font-bold">Target must be higher than current level</p>
-              <p className="text-xs text-surface-400 mt-1">Raise the target level above current to see the upgrade breakdown</p>
+              <p className="text-surface-500 dark:text-surface-400 text-sm font-bold">Target must be higher than current level</p>
+              <p className="text-xs text-surface-500 mt-1">Raise the target level above current to see the upgrade breakdown</p>
             </div>
           ) : (
             <>
               {/* ── Cost Summary ── */}
               <section className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <TrendingUp size={15} className="text-surface-400" />
+                  <TrendingUp size={15} className="text-surface-500" />
                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Cost Summary</h3>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
                   <div className="kpi-card card border-l-4 border-l-sky-500">
                     <span className="stat-label">Reference Cost</span>
                     <span className="stat-value">${fmtNumber(totalRefCost)}</span>
-                    <span className="block text-[10px] text-surface-400 mt-1">game reference prices</span>
+                    <span className="block text-[10px] text-surface-500 mt-1">game reference prices</span>
                   </div>
                   <div className="kpi-card card border-l-4 border-l-violet-500">
                     <span className="stat-label">Market Cost</span>
                     <span className={`stat-value ${totalMatCost > totalRefCost ? 'text-rose-600' : 'text-emerald-600'}`}>${fmtNumber(totalMatCost)}</span>
-                    <span className="block text-[10px] text-surface-400 mt-1">materials at VWAP</span>
+                    <span className="block text-[10px] text-surface-500 mt-1">materials at VWAP</span>
                   </div>
                   <div className="kpi-card card border-l-4 border-l-amber-500">
                     <span className="stat-label">Scrap Value</span>
                     <span className="stat-value">${fmtNumber(building.cost * Math.max(1, targetLv - 1))}</span>
-                    <span className="block text-[10px] text-surface-400 mt-1">if demolished at target</span>
+                    <span className="block text-[10px] text-surface-500 mt-1">if demolished at target</span>
                   </div>
                   <div className="kpi-card card border-l-4 border-l-emerald-500">
                     <span className="stat-label">Total Time</span>
                     <span className="stat-value">{fmtHours(totalTimeH)}</span>
-                    <span className="block text-[10px] text-surface-400 mt-1">{upgrades.length} level(s)</span>
+                    <span className="block text-[10px] text-surface-500 mt-1">{upgrades.length} level(s)</span>
                   </div>
                   <div className="kpi-card card border-l-4 border-l-orange-500">
                     <span className="stat-label">Upgrades</span>
                     <span className="stat-value">{upgrades.length}</span>
-                    <span className="block text-[10px] text-surface-400 mt-1">Lv {currentLv} → Lv {targetLv}</span>
+                    <span className="block text-[10px] text-surface-500 mt-1">Lv {currentLv} → Lv {targetLv}</span>
                   </div>
                 </div>
               </section>
@@ -302,29 +302,29 @@ export function ConstructionCalculatorPage() {
               {roi && roi.dailyRevenue > 0 && (
                 <section className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <TrendingUp size={15} className="text-surface-400" />
+                    <TrendingUp size={15} className="text-surface-500" />
                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Revenue Analysis</h3>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="card p-4 border-l-4 border-l-brand-500 space-y-1">
                       <span className="metric-label">Daily Revenue</span>
                       <span className="metric-value text-brand-600">${fmtNumber(roi.dailyRevenue)}</span>
-                      <span className="block text-[10px] text-surface-400">@ ${roi.outputVwap.toFixed(2)}/u</span>
+                      <span className="block text-[10px] text-surface-500">@ ${roi.outputVwap.toFixed(2)}/u</span>
                     </div>
                     <div className="card p-4 border-l-4 border-l-rose-400 space-y-1">
                       <span className="metric-label">Daily Wages</span>
                       <span className="metric-value">${fmtNumber(roi.dailyWages)}</span>
-                      <span className="block text-[10px] text-surface-400">incl. 10% vacation</span>
+                      <span className="block text-[10px] text-surface-500">incl. 10% vacation</span>
                     </div>
                     <div className="card p-4 border-l-4 space-y-1" style={{ borderLeftColor: roi.dailyNet > 0 ? '#10b981' : '#f43f5e' }}>
                       <span className="metric-label">Daily Net</span>
                       <span className={`metric-value ${roi.dailyNet > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>${fmtNumber(roi.dailyNet)}</span>
-                      <span className="block text-[10px] text-surface-400">{roi.dailyNet > 0 ? 'revenue − wages' : 'operating at loss'}</span>
+                      <span className="block text-[10px] text-surface-500">{roi.dailyNet > 0 ? 'revenue − wages' : 'operating at loss'}</span>
                     </div>
                     <div className="card p-4 border-l-4 border-l-violet-500 space-y-1">
                       <span className="metric-label">Recoup Time</span>
                       <span className="metric-value">{roi.daysToRecoup === Infinity ? '∞' : `${roi.daysToRecoup.toFixed(1)}d`}</span>
-                      <span className="block text-[10px] text-surface-400">{roi.daysToRecoup === Infinity ? 'never profitable' : 'market cost ÷ daily net'}</span>
+                      <span className="block text-[10px] text-surface-500">{roi.daysToRecoup === Infinity ? 'never profitable' : 'market cost ÷ daily net'}</span>
                     </div>
                   </div>
                 </section>
@@ -334,7 +334,7 @@ export function ConstructionCalculatorPage() {
               {buildingMatIds.length > 0 && (
                 <section className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <Package size={15} className="text-surface-400" />
+                    <Package size={15} className="text-surface-500" />
                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Material Requirements</h3>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -345,7 +345,7 @@ export function ConstructionCalculatorPage() {
                         <div key={id} className="card p-4 space-y-1">
                           <span className="stat-label">{matName(id)}</span>
                           <span className="stat-value">{qty.toLocaleString()}</span>
-                          <span className="block text-[10px] text-surface-400">@ ${(matPrices[id] ?? 0).toFixed(2)} = ${fmtNumber(qty * (matPrices[id] ?? 0))}</span>
+                          <span className="block text-[10px] text-surface-500">@ ${(matPrices[id] ?? 0).toFixed(2)} = ${fmtNumber(qty * (matPrices[id] ?? 0))}</span>
                         </div>
                       );
                     })}
@@ -356,7 +356,7 @@ export function ConstructionCalculatorPage() {
               {/* ── Upgrade Breakdown ── */}
               <section className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <ListTree size={15} className="text-surface-400" />
+                  <ListTree size={15} className="text-surface-500" />
                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500">Upgrade Breakdown</h3>
                 </div>
                 <div className="overflow-x-auto rounded-xl border border-surface-200 dark:border-surface-800">
@@ -386,7 +386,7 @@ export function ConstructionCalculatorPage() {
                               <td className="px-3 py-2 text-right tabular-nums">${fmtNumber(u.refCost)}</td>
                               <td className="px-3 py-2 text-right tabular-nums">${fmtNumber(u.matCost)}</td>
                               <td className="px-3 py-2 text-right tabular-nums">{fmtHours(u.time)}</td>
-                              <td className="px-3 py-2 text-right tabular-nums text-surface-400">{fmtHours(cumTime)}</td>
+                              <td className="px-3 py-2 text-right tabular-nums text-surface-500">{fmtHours(cumTime)}</td>
                               {buildingMatIds.map(id => (
                                 <td key={id} className="px-3 py-2 text-right tabular-nums">{Math.round(u.materials[id] ?? 0)}</td>
                               ))}

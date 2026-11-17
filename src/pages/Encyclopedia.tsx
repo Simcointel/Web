@@ -51,7 +51,7 @@ export function EncyclopediaPage() {
         <div className="card h-[75vh] flex flex-col overflow-hidden !shadow-none border-surface-200 dark:border-surface-800">
           <div className="p-4 border-b border-surface-100 dark:border-surface-800 bg-surface-50 dark:bg-surface-900">
             <div className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500" />
               <input type="text" placeholder="Search encyclopedia..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 rounded-lg text-sm focus:ring-1 focus:ring-brand-500 outline-none" />
             </div>
           </div>
@@ -59,15 +59,15 @@ export function EncyclopediaPage() {
             {filtered.map(r => (
               <button key={r.id} onClick={() => { setSelectedId(r.id); setShowFlow(false); }} className={`w-full text-left px-4 py-3 hover:bg-surface-50 dark:hover:bg-brand-900/10 transition-all flex justify-between items-center group ${selectedId === r.id ? 'bg-brand-50 dark:bg-brand-900/20 border-l-4 border-brand-600' : ''}`}>
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-surface-400 group-hover:text-brand-600 transition-colors ${selectedId === r.id ? 'text-brand-600 bg-white dark:bg-surface-800 shadow-sm' : ''}`}><Layers size={16} /></div>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-surface-500 group-hover:text-brand-600 transition-colors ${selectedId === r.id ? 'text-brand-600 bg-white dark:bg-surface-800 shadow-sm' : ''}`}><Layers size={16} /></div>
                   <span className={`font-semibold ${selectedId === r.id ? 'text-brand-600' : 'text-surface-700 dark:text-surface-300'}`}>{r.name}</span>
                 </div>
-                <ChevronRight size={14} className={`text-surface-300 transition-transform ${selectedId === r.id ? 'translate-x-1 text-brand-600' : ''}`} />
+                <ChevronRight size={14} className={`text-surface-500 transition-transform ${selectedId === r.id ? 'translate-x-1 text-brand-600' : ''}`} />
               </button>
             ))}
           </div>
           <div className="p-3 border-t border-surface-100 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 text-center">
-            <span className="text-[10px] font-bold text-surface-400">{filtered.length} of {RESOURCES.length} items</span>
+            <span className="text-[10px] font-bold text-surface-500">{filtered.length} of {RESOURCES.length} items</span>
           </div>
         </div>
       </div>
@@ -80,13 +80,13 @@ export function EncyclopediaPage() {
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="px-2 py-0.5 bg-brand-600 text-white rounded text-[10px] font-bold uppercase">Registry Item</div>
-                  <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">ID #{selected.id}</span>
+                  <span className="text-xs font-bold text-surface-500 uppercase tracking-widest">ID #{selected.id}</span>
                 </div>
                 <h1 className="text-4xl font-bold tracking-tight text-surface-900 dark:text-white">{selected.name}</h1>
               </div>
               <div className="relative z-10 flex items-center gap-3">
                 <button onClick={() => setShowFlow(true)} className="px-3 py-2 bg-surface-100 dark:bg-surface-800 hover:bg-brand-100 dark:hover:bg-brand-900/30 rounded-lg text-xs font-bold uppercase flex items-center gap-2 transition-all"><Share2 size={14} /> Flow</button>
-                {selectedMargin && <div className="text-right"><span className="block text-xs font-bold uppercase text-surface-400 mb-1">Market Benchmark</span><span className="text-3xl font-bold text-brand-600">${(selectedMargin.outputVwap ?? 0).toFixed(2)}</span></div>}
+                {selectedMargin && <div className="text-right"><span className="block text-xs font-bold uppercase text-surface-500 mb-1">Market Benchmark</span><span className="text-3xl font-bold text-brand-600">${(selectedMargin.outputVwap ?? 0).toFixed(2)}</span></div>}
               </div>
             </div>
 
@@ -108,7 +108,7 @@ export function EncyclopediaPage() {
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-surface-400 italic text-xs">Insufficient data for trend analysis</div>
+                    <div className="h-full flex items-center justify-center text-surface-500 italic text-xs">Insufficient data for trend analysis</div>
                   )}
                 </div>
               </div>
@@ -136,15 +136,15 @@ export function EncyclopediaPage() {
               <div className="card flex flex-col border-surface-200 dark:border-surface-800 !shadow-none">
                 <div className="px-6 py-4 border-b border-surface-100 dark:border-surface-800 flex items-center gap-2"><Factory size={18} className="text-emerald-600" /><h3 className="text-sm font-bold text-surface-500 uppercase">Production Process</h3></div>
                 <div className="p-6 space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-surface-50 dark:bg-surface-900 rounded-lg"><span className="font-bold">{BUILDINGS.find(b => b.id === selected.buildingId)?.name || 'Extraction Facility'}</span><ChevronRight size={14} className="text-surface-300" /></div>
+                  <div className="flex justify-between items-center p-3 bg-surface-50 dark:bg-surface-900 rounded-lg"><span className="font-bold">{BUILDINGS.find(b => b.id === selected.buildingId)?.name || 'Extraction Facility'}</span><ChevronRight size={14} className="text-surface-500" /></div>
                   {selected.inputs && Object.keys(selected.inputs).length > 0 && (
                     <div className="space-y-2">
                       {Object.entries(selected.inputs).map(([id, qty]) => (
-                        <div key={id} className="flex justify-between items-center px-2 py-2 border-b border-surface-50 dark:border-surface-800 last:border-0"><span className="font-medium text-surface-600 dark:text-surface-400">{RESOURCES.find(r => r.id === Number(id))?.name || `ID ${id}`}</span><span className="font-bold">{Number(qty).toFixed(3)}</span></div>
+                        <div key={id} className="flex justify-between items-center px-2 py-2 border-b border-surface-50 dark:border-surface-800 last:border-0"><span className="font-medium text-surface-500 dark:text-surface-300">{RESOURCES.find(r => r.id === Number(id))?.name || `ID ${id}`}</span><span className="font-bold">{Number(qty).toFixed(3)}</span></div>
                       ))}
                     </div>
                   )}
-                  {(!selected.inputs || Object.keys(selected.inputs).length === 0) && <p className="text-xs text-surface-400 italic text-center py-4">Raw resource — no production inputs</p>}
+                  {(!selected.inputs || Object.keys(selected.inputs).length === 0) && <p className="text-xs text-surface-500 italic text-center py-4">Raw resource — no production inputs</p>}
                 </div>
               </div>
 
@@ -163,7 +163,7 @@ export function EncyclopediaPage() {
                 <div className="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center text-white shadow-md"><Share2 size={20} /></div>
                 <div>
                   <h2 className="text-lg font-bold">Production Flow: {selected.name}</h2>
-                  <p className="text-xs text-surface-400">Recursive input tree (max depth 5)</p>
+                  <p className="text-xs text-surface-500">Recursive input tree (max depth 5)</p>
                 </div>
               </div>
               <button onClick={() => setShowFlow(false)} className="px-3 py-2 bg-surface-100 dark:bg-surface-800 hover:bg-brand-100 dark:hover:bg-brand-900/30 rounded-lg text-xs font-bold uppercase transition-all">Detail View</button>
@@ -187,11 +187,11 @@ export function EncyclopediaPage() {
 }
 
 function FinancialLine({ label, value, red }: { label: string; value: string; red?: boolean }) {
-  return (<div className="flex justify-between items-center text-[10px]"><span className="font-bold text-surface-400 uppercase tracking-tighter">{label}</span><span className={`font-black tabular-nums ${red ? 'text-rose-500' : 'text-surface-600 dark:text-surface-300'}`}>{value}</span></div>);
+  return (<div className="flex justify-between items-center text-[10px]"><span className="font-bold text-surface-500 uppercase tracking-tighter">{label}</span><span className={`font-black tabular-nums ${red ? 'text-rose-500' : 'text-surface-600 dark:text-surface-300'}`}>{value}</span></div>);
 }
 
 function SpecNode({ label, value }: { label: string; value: string | number }) {
-  return (<div className="bg-surface-50 dark:bg-surface-950 p-2 rounded"><span className="block text-[7px] font-black text-surface-400 uppercase mb-1">{label}</span><span className="text-[11px] font-black text-surface-900 dark:text-white uppercase">{value}</span></div>);
+  return (<div className="bg-surface-50 dark:bg-surface-950 p-2 rounded"><span className="block text-[7px] font-black text-surface-500 uppercase mb-1">{label}</span><span className="text-[11px] font-black text-surface-900 dark:text-white uppercase">{value}</span></div>);
 }
 
 function TreeNodeComponent({ node, isRoot, qty }: { node: TreeNode; isRoot?: boolean; qty?: number | string }) {

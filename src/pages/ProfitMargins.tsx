@@ -158,7 +158,7 @@ export function ProfitMarginsPage() {
                   <td className="px-3 py-2 font-bold">{r.name}</td>
                   <td className={`px-3 py-2 text-right font-bold ${r.marginPct > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmtPct(r.marginPct)}</td>
                   <td className="px-3 py-2 text-right font-bold">{fmtNumber(r.netProfitPerHour)}</td>
-                  <td className="px-3 py-2 text-right text-surface-400">{fmtNumber(r.revenuePerHour)}</td>
+                  <td className="px-3 py-2 text-right text-surface-500">{fmtNumber(r.revenuePerHour)}</td>
                   <td className="px-3 py-2 text-right font-bold text-brand-600">{(r.outputVwap ?? 0).toFixed(2)}</td>
                 </tr>
               ))}
@@ -170,23 +170,23 @@ export function ProfitMarginsPage() {
       {selectedResId && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="card p-4 space-y-3">
-            <h3 className="text-xs font-black uppercase tracking-wider text-surface-400">Input Requirements</h3>
+            <h3 className="text-xs font-black uppercase tracking-wider text-surface-500">Input Requirements</h3>
             <div className="space-y-2">
               {(() => {
                 const res = RESOURCES.find(r => r.id === selectedResId);
-                if (!res || !res.inputs) return <p className="text-xs text-surface-400 italic">No inputs required.</p>;
+                if (!res || !res.inputs) return <p className="text-xs text-surface-500 italic">No inputs required.</p>;
                 return Object.entries(res.inputs).map(([id, qty]) => {
                   const input = RESOURCES.find(r => r.id === Number(id));
                   const im = resources.find(r => r.id === Number(id));
-                  return <div key={id} className="flex justify-between items-center py-1.5 border-b border-surface-100 dark:border-surface-800 last:border-0"><span className="font-bold text-xs">{input?.name || `ID_${id}`}</span><div className="flex items-center gap-3"><span className="text-surface-400 text-xs">{qty} units</span><span className={`font-bold text-xs ${im && im.marginPct > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{im ? `${im.marginPct.toFixed(1)}%` : '--'}</span></div></div>;
+                  return <div key={id} className="flex justify-between items-center py-1.5 border-b border-surface-100 dark:border-surface-800 last:border-0"><span className="font-bold text-xs">{input?.name || `ID_${id}`}</span><div className="flex items-center gap-3"><span className="text-surface-500 text-xs">{qty} units</span><span className={`font-bold text-xs ${im && im.marginPct > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{im ? `${im.marginPct.toFixed(1)}%` : '--'}</span></div></div>;
                 });
               })()}
             </div>
           </div>
           <div className="card p-4 bg-surface-50 dark:bg-surface-900 flex flex-col justify-center space-y-1">
-            <h3 className="text-xs font-black uppercase tracking-wider text-surface-400">Advice</h3>
+            <h3 className="text-xs font-black uppercase tracking-wider text-surface-500">Advice</h3>
             <p className="text-lg font-bold">{(resources.find(r => r.id === selectedResId)?.marginPct ?? 0) > 5 ? 'Expand production capacity.' : 'Sourcing from market may be more efficient.'}</p>
-            <p className="text-xs text-surface-400">Resource ID: {selectedResId}</p>
+            <p className="text-xs text-surface-500">Resource ID: {selectedResId}</p>
           </div>
         </div>
       )}

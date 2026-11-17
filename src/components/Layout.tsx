@@ -15,7 +15,7 @@ export function Section({ title, subtitle, children, actions, icon: Icon, color 
           )}
           <div>
             <h2 className="text-sm font-bold text-surface-900 dark:text-white uppercase tracking-wider">{title}</h2>
-            {subtitle && <p className="text-xs text-surface-400 font-semibold uppercase tracking-wide mt-0.5">{subtitle}</p>}
+            {subtitle && <p className="text-xs text-surface-500 font-semibold uppercase tracking-wide mt-0.5">{subtitle}</p>}
           </div>
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}

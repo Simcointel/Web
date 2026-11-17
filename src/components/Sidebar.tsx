@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Briefcase, DollarSign,
   TrendingUp, BookOpen, Bell, Info,
   Sun, Moon, ChevronRight, LayoutGrid,
-  Calculator, HardHat, Store, BarChart3, Zap, FileText, Chrome, Settings, Utensils, Database, Share2, Code
+  Calculator, HardHat, Store, BarChart3, Zap, FileText, Chrome, Settings, Utensils, Database, Share2, Code, Maximize2
 } from "lucide-react";
 
 const navLinks = [
@@ -34,6 +34,7 @@ const navLinks = [
     { to: "/restaurant", label: "Restaurant", icon: <Utensils size={18} /> },
     { to: "/construction-calculator", label: "Construction", icon: <HardHat size={18} /> },
     { to: "/xp-calculator", label: "XP Calculator", icon: <Zap size={18} /> },
+    { to: "/challenge-optimizer", label: "Challenge Opt", icon: <Maximize2 size={18} /> },
     { to: "/extension", label: "Extension", icon: <Chrome size={18} /> },
     { to: "/sales-office", label: "Sales Office", icon: <Calculator size={18} /> },
   ]},
@@ -101,7 +102,7 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (o:
             <DarkModeToggle />
             <div className="flex items-center justify-between px-4">
               <span className="stat-label">v3.0.0</span>
-              <Link to="/about" aria-label="About" className="text-surface-400 hover:text-brand-600 transition-colors">
+              <Link to="/about" aria-label="About" className="text-surface-500 hover:text-brand-600 transition-colors">
                 <Info size={15} />
               </Link>
             </div>
@@ -120,7 +121,7 @@ function DarkModeToggle() {
       onClick={toggleTheme}
       className="flex items-center gap-3 w-full px-4 py-3 bg-surface-50 dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-800 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all group"
     >
-      <span className={`shrink-0 ${theme === 'dark' ? 'text-amber-400' : 'text-surface-400'} group-hover:text-brand-600 transition-colors`}>
+      <span className={`shrink-0 ${theme === 'dark' ? 'text-amber-400' : 'text-surface-500'} group-hover:text-brand-600 transition-colors`}>
         {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
       </span>
       <span className="text-sm font-bold text-surface-700 dark:text-surface-300">

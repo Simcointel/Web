@@ -38,6 +38,7 @@ export const PAGE_TITLES = {
   retailMechanics: 'Retail Mechanics',
   restaurantPlanner: 'Restaurant Planner',
   resourceEncyclopedia: 'Resource Encyclopedia',
+  challengeOptimizer: 'Challenge Optimizer',
   widgets: 'Widgets',
 } as const;
 

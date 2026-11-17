@@ -187,14 +187,14 @@ export function GovernmentPage() {
       })()}
 
       {lastUpdated && (
-        <p className="text-xs text-surface-400 mb-4">Last updated: {lastUpdated}</p>
+        <p className="text-xs text-surface-500 mb-4">Last updated: {lastUpdated}</p>
       )}
 
       <div className="rounded-xl border border-surface-200 dark:border-surface-800 overflow-hidden">
         {loading ? (
           <div className="p-8 text-center">
             <RefreshCw size={32} className="mx-auto text-amber-600 animate-spin mb-4" />
-            <p className="text-surface-400">Loading government orders...</p>
+            <p className="text-surface-500">Loading government orders...</p>
           </div>
         ) : orders.length === 0 ? (
           <div className="p-8 text-center">
@@ -226,11 +226,11 @@ export function GovernmentPage() {
                     <tr key={order.id} className="hover:bg-surface-50 dark:hover:bg-surface-900/50">
                       <td className="px-4 py-3">
                         <div className="font-bold">{order.projectName}</div>
-                        <div className="text-[10px] text-surface-400">ID: {order.id}</div>
+                        <div className="text-[10px] text-surface-500">ID: {order.id}</div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-medium">{getResourceName(order)}</div>
-                        <div className="text-[10px] text-surface-400 line-clamp-1">
+                        <div className="text-[10px] text-surface-500 line-clamp-1">
                           {order.resources?.map(r => `Q${r.quality}`).join(', ') ?? ''}
                         </div>
                       </td>
