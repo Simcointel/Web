@@ -33,7 +33,7 @@ jobs:
           cache-version: v3
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=optional
 
       - name: Ensure terser installed
         run: npx terser --version
@@ -68,7 +68,7 @@ jobs:
           cache-version: v3
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=optional
 
       - name: Ensure terser installed
         run: npx terser --version
@@ -134,7 +134,7 @@ jobs:
           cache-version: v3
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=optional
 
       - name: Ensure terser installed
         run: npx terser --version
