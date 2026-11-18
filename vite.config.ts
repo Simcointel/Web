@@ -4,12 +4,17 @@ import path from "path";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
+  const isProd = mode === 'production';
   return {
     plugins: [react()],
     base: "/Web/",
     define: {
-      'process.env.NODE_ENV': '"production"',
-      'process.env.__DEV__': 'false',
+      'process.env.NODE_ENV': isProd ? '"production"' : '"development"',
+      'process.env.__DEV__': isProd ? 'false' : 'true',
+      'import.meta.env.PROD': isProd,
+      'import.meta.env.DEV': !isProd,
+      'globalThis.process': 'undefined',
+      'globalThis.__DEV__': isProd ? 'false' : 'true',
     },
     resolve: {
       alias: {
@@ -36,20 +41,37 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       sourcemap: false,
-      minify: "esbuild",
+      minify: isProd ? "terser" : "esbuild",
+      terserOptions: isProd ? {
+        compress: {
+          pure_funcs: ['console.log', 'console.debug', 'console.info'],
+          drop_debugger: true,
+          passes: 2,
+          pure_getters: true,
+          unsafe: true,
+          unsafe_comps: true,
+          conditionals: true,
+          dead_code: true,
+          evaluate: true,
+        },
+        mangle: {
+          safari10: true,
+        },
+        format: {
+          comments: false,
+        },
+      } : undefined,
       cssMinify: true,
       rollupOptions: {
         output: {
           manualChunks: (id) => {
             if (id.includes('node_modules')) {
-              // Split large vendor libraries into separate chunks
               if (id.includes('recharts')) return 'vendor-recharts';
               if (id.includes('lucide-react')) return 'vendor-lucide';
               if (id.includes('swagger-ui')) return 'vendor-swagger';
               if (id.includes('react-dom') || id.includes('react/jsx') || id.includes('react')) return 'vendor-react';
               return 'vendor';
             }
-            // Split large app chunks
             if (id.includes('CorporateSuite')) return 'app-corporate-suite';
             if (id.includes('RestaurantPlanner')) return 'app-restaurant-planner';
             if (id.includes('Encyclopedia')) return 'app-encyclopedia';
