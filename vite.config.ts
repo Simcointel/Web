@@ -67,9 +67,8 @@ export default defineConfig(({ mode }) => {
           manualChunks: (id) => {
             if (id.includes('node_modules')) {
               if (id.includes('recharts')) return 'vendor-recharts';
-              if (id.includes('lucide-react')) return 'vendor-lucide';
               if (id.includes('swagger-ui')) return 'vendor-swagger';
-              if (id.includes('react-dom') || id.includes('react/jsx') || id.includes('react') || id.includes('scheduler')) return 'vendor-react';
+              // Keep React ecosystem in main vendor to avoid circular deps
               return 'vendor';
             }
             if (id.includes('CorporateSuite')) return 'app-corporate-suite';
