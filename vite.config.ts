@@ -69,7 +69,7 @@ export default defineConfig(({ mode }) => {
               if (id.includes('recharts')) return 'vendor-recharts';
               if (id.includes('lucide-react')) return 'vendor-lucide';
               if (id.includes('swagger-ui')) return 'vendor-swagger';
-              if (id.includes('react-dom') || id.includes('react/jsx') || id.includes('react')) return 'vendor-react';
+              if (id.includes('react-dom') || id.includes('react/jsx') || id.includes('react') || id.includes('scheduler')) return 'vendor-react';
               return 'vendor';
             }
             if (id.includes('CorporateSuite')) return 'app-corporate-suite';
