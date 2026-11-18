@@ -422,7 +422,7 @@ function generateBuildingCombinations(inputs: OptimizerInputs): BuildingPlan[][]
     // But don't demolish required buildings
     if (!bt.required || existingLevel === 0) {
       const subResults = generateRecursive(index + 1, current, slotsUsed, cashSpent, hasCarFactory, hasDealership);
-      results.push(...subResults);
+      for (const r of subResults) results.push(r);
     }
 
     // Option 2: Keep existing building as-is (if it exists)
@@ -436,7 +436,7 @@ function generateBuildingCombinations(inputs: OptimizerInputs): BuildingPlan[][]
         hasCarFactory || bt.id === "1",
         hasDealership || bt.id === "2"
       );
-      results.push(...subResults);
+      for (const r of subResults) results.push(r);
     }
 
     // Option 3: Upgrade existing or build new at levels > existingLevel
@@ -462,7 +462,8 @@ function generateBuildingCombinations(inputs: OptimizerInputs): BuildingPlan[][]
           hasCarFactory || bt.id === "1",
           hasDealership || bt.id === "2"
         );
-        results.push(...subResults);
+        // Avoid push(...largeArray) which can exceed max arguments
+        for (const r of subResults) results.push(r);
       }
     }
 
