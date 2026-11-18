@@ -37,48 +37,6 @@ const STARTING_BUILDINGS: Array<{ buildingId: string; level: number }> = [
   { buildingId: "R", level: 1 },  // Refinery L1
 ];
 
-// Building construction/upgrade times (hours)
-const BUILD_TIMES: Record<string, number[]> = {
-  "1": [6, 6, 12, 18, 24, 30, 36, 42, 48, 54], // Car factory
-  "2": [3, 3, 6, 9, 12, 15, 18, 21, 24, 27],    // Car dealership
-  "D": [7, 7, 14, 21, 28, 35, 42, 49, 56, 63],  // Propulsion factory
-  "E": [3, 3, 6, 9, 12, 15, 18, 21, 24, 27],    // Power plant
-  "T": [2, 2, 4, 6, 8, 10, 12, 14, 16, 18],     // Fashion factory
-  "R": [4, 4, 8, 12, 16, 20, 24, 28, 32, 36],   // Refinery
-  "Y": [3, 3, 6, 9, 12, 15, 18, 21, 24, 27],    // Factory
-  "L": [5, 5, 10, 15, 20, 25, 30, 35, 40, 45],  // Electronics factory
-  "8": [6, 6, 12, 18, 24, 30, 36, 42, 48, 54],  // Aerospace electronics
-  "a": [6, 6, 12, 18, 24, 30, 36, 42, 48, 54],  // Automotive R&D
-};
-
-interface BuildPlan {
-  buildings: Array<{ id: string; name: string; level: number; count: number }>;
-  totalSlots: number;
-  constructionTime: number; // hours
-  constructionCost: number; // cash
-  hourlyProduction: Record<number, number>; // resourceId -> units/hour
-  hourlyCosts: number; // wages + overhead
-  truckOutput: number; // trucks/hour
-  retailCapacity: number; // trucks/hour that can be sold
-  retailSellThroughHours: number; // hours to sell target trucks at retail
-  netProfitPerHour: number;
-  timeToFirstTruck: number;
-  timeToRecoup: number;
-  roi: number;
-  totalTimeToTarget: number; // construction + production + retail
-}
-
-interface ComponentAnalysis {
-  resourceId: number;
-  name: string;
-  neededPerTruck: number;
-  makeCost: number; // cost to produce 1 unit
-  buyPrice: number; // exchange price
-  decision: "make" | "buy";
-  savings: number;
-  buildingsNeeded: Array<{ id: string; level: number; count: number }>;
-}
-
 function getBuildingName(buildingId: string): string {
   return BUILDINGS.find(b => b.id === buildingId)?.name ?? buildingId;
 }
@@ -87,22 +45,16 @@ function getResourceName(resourceId: number): string {
   return RESOURCES.find(r => r.id === resourceId)?.name ?? `ID:${resourceId}`;
 }
 
-function calculateBuildCost(buildingId: string, targetLevel: number): number {
-  const building = BUILDINGS.find(b => b.id === buildingId);
-  if (!building) return 0;
-  
-  let total = 0;
-  for (let lvl = 1; lvl <= targetLevel; lvl++) {
-    const cost = building.cost * lvl; // Simplified - actual game uses different formula
-    total += cost;
-  }
-  return total;
-}
-
-function calculateBuildTime(buildingId: string, targetLevel: number): number {
-  const times = BUILD_TIMES[buildingId];
-  if (!times) return targetLevel * 6;
-  return times.slice(0, targetLevel).reduce((a, b) => a + b, 0);
+interface ComponentAnalysis {
+  resourceId: number;
+  name: string;
+  neededPerTruck: number;
+  makeCost: number;
+  buyPrice: number;
+  decision: "make" | "buy";
+  savings: number;
+  buildingsNeeded: Array<{ id: string; level: number; count: number }>;
+  productionCapacity: number; // units/hour from plan + starting buildings
 }
 
 export function ChallengeOptimizerPage() {
@@ -113,14 +65,19 @@ export function ChallengeOptimizerPage() {
   const [phase, setPhase] = useState<string>("normal");
   const [startingCash, setStartingCash] = useState(STARTING_CASH);
   const [targetTrucks, setTargetTrucks] = useState(DEFAULT_TARGET_TRUCKS);
-  const [productionMultiplier, setProductionMultiplier] = useState(5.4);
+  const [productionMultiplier, setProductionMultiplier] = useState(2.0); // Default 2x per user decision
+  const [qualityPriceMultiplier, setQualityPriceMultiplier] = useState(0.05); // 5% per quality
+  const [demolitionRefundRate, setDemolitionRefundRate] = useState(0.15); // 15% material refund per level
+  const [retailBaseRate, setRetailBaseRate] = useState(10); // base trucks/hour per dealership level
+  const [retailCapacityOverride, setRetailCapacityOverride] = useState<number | null>(null); // manual override
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [calcLiveData, setCalcLiveData] = useState<CalculatorLiveData | null>(null);
   const [marketTickerData, setMarketTickerData] = useState<SimCompaniesMarketTickerItem[]>([]);
   const [retailInfoData, setRetailInfoData] = useState<SimCompaniesRetailInfoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [optimizationRunning, setOptimizationRunning] = useState(false);
-  const [bestPlan, setBestPlan] = useState<BuildPlan | null>(null);
+  const [bestPlan, setBestPlan] = useState<OptimizedPlan | null>(null);
   const [componentAnalysis, setComponentAnalysis] = useState<ComponentAnalysis[]>([]);
 
   // Player company state (for optional manual input)
@@ -197,44 +154,15 @@ export function ChallengeOptimizerPage() {
     return MAT_REF_PRICES[resourceId] ?? 0;
   };
 
-  // Calculate cost to produce 1 unit of a resource
-  const calculateMakeCost = useMemo(() => {
-    return (resourceId: number, q: number, visited: Set<number> = new Set()): number => {
-      if (visited.has(resourceId)) return Infinity; // Circular dependency
-      visited.add(resourceId);
-
-      const resource = RESOURCES.find(r => r.id === resourceId);
-      if (!resource || !resource.inputs || Object.keys(resource.inputs).length === 0) {
-        // Raw resource - use exchange price
-        return getLivePrice(resourceId, q) || getVwapPrice(resourceId);
-      }
-
-      let totalCost = 0;
-      for (const [inpId, qty] of Object.entries(resource.inputs)) {
-        const inpCost = calculateMakeCost(Number(inpId), q, new Set(visited));
-        totalCost += inpCost * qty;
-      }
-
-      // Add wages and overhead for the building
-      const baseWages = resource.baseWages ?? 0;
-      const basePh = resource.basePh ?? 1;
-      const wagePerUnit = baseWages / basePh;
-      
-      // Add transport cost
-      const transport = resource.transport ?? 0;
-      const transportCostPerUnit = (totalCost + wagePerUnit) * transport * 0.01;
-
-      visited.delete(resourceId);
-      return totalCost + wagePerUnit + transportCostPerUnit;
-    };
-  }, [calcLiveData]);
-
-  // Analyze make vs buy for each truck component
+  // Analyze make vs buy for each truck component - uses optimizer's logic
   const analyzeComponents = useMemo(() => {
-    if (!calcLiveData) return [];
+    if (!calcLiveData || !bestPlan) return [];
 
     const truckRecipe = RESOURCES.find(r => r.id === 57);
     if (!truckRecipe || !truckRecipe.inputs) return [];
+
+    const phaseMult = PHASE_MULTIPLIERS[phase as "boom" | "normal" | "recession"] || 1.0;
+    const qualityMult = 1 + quality * qualityPriceMultiplier;
 
     const analysis: ComponentAnalysis[] = [];
 
@@ -242,19 +170,59 @@ export function ChallengeOptimizerPage() {
       const inpId = Number(inpIdStr);
       const inpResource = RESOURCES.find(r => r.id === inpId);
       const buyPrice = getLivePrice(inpId, quality) || getVwapPrice(inpId);
-      const makeCost = calculateMakeCost(inpId, quality);
+      
+      // Use optimizer's make-cost calculation (no transport)
+      const makeCostCache = new Map<number, number>();
+      const visited = new Set<number>();
+      
+      function calcMakeCost(resourceId: number, visited: Set<number>): number {
+        if (visited.has(resourceId)) return Infinity;
+        visited.add(resourceId);
+
+        const resource = RESOURCES.find(r => r.id === resourceId);
+        const marketPrice = marketTickerData.find(m => m.kind === resourceId)?.price || 0;
+        
+        if (!resource || !resource.inputs || Object.keys(resource.inputs).length === 0) {
+          visited.delete(resourceId);
+          return marketPrice > 0 ? marketPrice : (MAT_REF_PRICES[resourceId] || 0);
+        }
+
+        let makeCost = 0;
+        for (const [inpIdStr, qty] of Object.entries(resource.inputs)) {
+          const inpId = Number(inpIdStr);
+          const inpPrice = calcMakeCost(inpId, new Set(visited));
+          makeCost += inpPrice * qty;
+        }
+
+        // Add wages per unit (phase multiplier applies)
+        const baseWages = resource.baseWages || 0;
+        const basePh = resource.basePh || 1;
+        const wagePerUnit = baseWages / basePh / phaseMult;
+        
+        makeCost += wagePerUnit;
+        makeCostCache.set(resourceId, makeCost);
+        visited.delete(resourceId);
+
+        return marketPrice > 0 ? Math.min(makeCost, marketPrice) : makeCost;
+      }
+
+      const makeCost = calcMakeCost(inpId, new Set());
       
       // Determine buildings needed to produce this component
       const buildingsNeeded: Array<{ id: string; level: number; count: number }> = [];
       if (inpResource?.buildingId) {
         const buildingId = String(inpResource.buildingId);
-        // Calculate how many buildings needed for 1 truck/hour
         const basePh = inpResource.basePh ?? 1;
         const buildingsForOneTruck = qty / basePh;
         if (buildingsForOneTruck > 0) {
           buildingsNeeded.push({ id: buildingId, level: 1, count: Math.ceil(buildingsForOneTruck) });
         }
       }
+
+      // Get production capacity from plan + starting buildings
+      const planProduction = bestPlan.componentProduction.get(inpId) || 0;
+      const startingProduction = bestPlan.startingProduction.get(inpId) || 0;
+      const productionCapacity = planProduction + startingProduction;
 
       analysis.push({
         resourceId: inpId,
@@ -265,11 +233,12 @@ export function ChallengeOptimizerPage() {
         decision: makeCost < buyPrice ? "make" : "buy",
         savings: Math.abs(makeCost - buyPrice) * qty,
         buildingsNeeded,
+        productionCapacity,
       });
     }
 
     return analysis;
-  }, [calcLiveData, quality, calculateMakeCost]);
+  }, [calcLiveData, bestPlan, quality, phase, qualityPriceMultiplier, marketTickerData]);
 
   // Run optimization using true search
   const runOptimization = async () => {
@@ -283,9 +252,14 @@ export function ChallengeOptimizerPage() {
 
     // Build retail prices map
     const retailPrices: Record<number, number> = {};
+    // Build retail saturation map
+    const retailSaturation: Record<number, number> = {};
     for (const item of retailInfoData) {
       if (item.averagePrice !== null && item.averagePrice !== undefined) {
         retailPrices[item.dbLetter] = item.averagePrice;
+      }
+      if (item.saturation !== null && item.saturation !== undefined) {
+        retailSaturation[item.dbLetter] = item.saturation;
       }
     }
 
@@ -299,38 +273,18 @@ export function ChallengeOptimizerPage() {
       startingBuildings: STARTING_BUILDINGS,
       marketPrices,
       retailPrices,
+      retailSaturation,
+      qualityPriceMultiplier,
+      demolitionRefundRate,
+      retailBaseRate,
+      retailCapacityOverride,
     };
 
     const plans = optimizeChallenge(inputs);
     
     if (plans.length > 0) {
-      const best = plans[0];
-      
-      // Convert to BuildPlan format for UI compatibility
-      const buildPlan: BuildPlan = {
-        buildings: best.buildings.map(b => ({
-          id: b.buildingId,
-          name: getBuildingName(b.buildingId),
-          level: b.level,
-          count: b.count,
-        })),
-        totalSlots: best.totalSlots,
-        constructionTime: best.constructionTime,
-        constructionCost: best.constructionCost,
-        hourlyProduction: {},
-        hourlyCosts: 0,
-        truckOutput: best.truckOutputPerHour,
-        retailCapacity: best.retailCapacityPerHour,
-        retailSellThroughHours: best.productionTimeHours, // Now shows production time
-        netProfitPerHour: best.netProfitPerHour,
-        timeToFirstTruck: best.constructionTime + (1 / best.truckOutputPerHour),
-        timeToRecoup: best.netProfitPerHour > 0 ? best.constructionCost / best.netProfitPerHour : Infinity,
-        roi: best.roi,
-        totalTimeToTarget: best.totalTimeToTarget,
-      };
-      
-      setBestPlan(buildPlan);
-      setComponentAnalysis(analyzeComponents);
+      setBestPlan(plans[0]);
+      // Component analysis will update via useMemo
     } else {
       setBestPlan(null);
     }
@@ -340,9 +294,9 @@ export function ChallengeOptimizerPage() {
   // Trigger analysis when live data loads
   useEffect(() => {
     if (calcLiveData) {
-      setComponentAnalysis(analyzeComponents);
+      // Initial analysis without bestPlan (will re-run when bestPlan updates)
     }
-  }, [calcLiveData, analyzeComponents]);
+  }, [calcLiveData]);
 
   if (loading) {
     return (
@@ -384,7 +338,7 @@ export function ChallengeOptimizerPage() {
 
   const truckResource = RESOURCES.find(r => r.id === 57);
   const truckRetailPrice = getRetailPrice(57) || getLivePrice(57, quality) || getVwapPrice(57);
-  const sellingPrice = truckRetailPrice * (1 + quality * 0.05);
+  const sellingPrice = truckRetailPrice * (1 + quality * qualityPriceMultiplier);
 
   return (
     <div className="space-y-5 animate-slide-up">
@@ -410,7 +364,7 @@ export function ChallengeOptimizerPage() {
       {/* Parameters Panel */}
       <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-4">
         <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><Settings size={13} /> Challenge Parameters</div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
           <div>
             <label htmlFor="ch-quality" className="text-[10px] font-semibold text-surface-500 block mb-1">Truck Quality</label>
             <select id="ch-quality" value={quality} onChange={e => setQuality(Math.max(0, Math.min(12, Number(e.target.value))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-violet-500/20 bg-white dark:bg-surface-900">
@@ -428,6 +382,17 @@ export function ChallengeOptimizerPage() {
           <div>
             <label htmlFor="ch-prod-mult" className="text-[10px] font-semibold text-surface-500 block mb-1">Production Multiplier</label>
             <input id="ch-prod-mult" type="number" step="0.1" min="0.1" max="20" value={productionMultiplier} onChange={e => setProductionMultiplier(Math.max(0.1, Math.min(20, Number(e.target.value))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-violet-500/20 bg-white dark:bg-surface-900" />
+            <div className="text-[9px] text-surface-400 mt-1">Default 2.0 (community estimate)</div>
+          </div>
+          <div>
+            <label htmlFor="ch-quality-mult" className="text-[10px] font-semibold text-surface-500 block mb-1">Quality Price %</label>
+            <input id="ch-quality-mult" type="number" step="0.01" min="0" max="0.5" value={qualityPriceMultiplier} onChange={e => setQualityPriceMultiplier(Math.max(0, Math.min(0.5, Number(e.target.value))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-violet-500/20 bg-white dark:bg-surface-900" />
+            <div className="text-[9px] text-surface-400 mt-1">Default 5% per quality</div>
+          </div>
+          <div>
+            <label htmlFor="ch-demo-refund" className="text-[10px] font-semibold text-surface-500 block mb-1">Demo Refund %</label>
+            <input id="ch-demo-refund" type="number" step="0.01" min="0" max="1" value={demolitionRefundRate} onChange={e => setDemolitionRefundRate(Math.max(0, Math.min(1, Number(e.target.value))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-violet-500/20 bg-white dark:bg-surface-900" />
+            <div className="text-[9px] text-surface-400 mt-1">Default 15% materials per level</div>
           </div>
           <div>
             <label htmlFor="ch-cash" className="text-[10px] font-semibold text-surface-500 block mb-1">Starting Cash</label>
@@ -458,6 +423,48 @@ export function ChallengeOptimizerPage() {
           </div>
         </div>
       </div>
+
+      {/* Advanced Settings (Collapsible) */}
+      <details className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4">
+        <summary className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider cursor-pointer">
+          <Settings size={13} /> Advanced: Retail Capacity Settings
+        </summary>
+        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div>
+            <label htmlFor="ch-retail-base" className="text-[10px] font-semibold text-surface-500 block mb-1">Base Retail Rate</label>
+            <input id="ch-retail-base" type="number" step="0.5" min="0.5" max="50" value={retailBaseRate} onChange={e => setRetailBaseRate(Math.max(0.5, Math.min(50, Number(e.target.value))))} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-violet-500/20 bg-white dark:bg-surface-900" />
+            <div className="text-[9px] text-surface-400 mt-1">Trucks/hr per dealership level (default 10)</div>
+          </div>
+          <div>
+            <label htmlFor="ch-retail-override" className="text-[10px] font-semibold text-surface-500 block mb-1">Manual Override</label>
+            <input id="ch-retail-override" type="number" step="0.5" min="0" value={retailCapacityOverride ?? ""} onChange={e => { const v = e.target.value; setRetailCapacityOverride(v === "" ? null : Math.max(0, Number(v))); }} className="w-full border border-surface-300 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-violet-500/20 bg-white dark:bg-surface-900" placeholder="Auto (uses saturation)" />
+            <div className="text-[9px] text-surface-400 mt-1">Fixed trucks/hr (bypasses saturation formula)</div>
+          </div>
+          <div className="flex items-end">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={showAdvanced} onChange={e => setShowAdvanced(e.target.checked)} className="w-4 h-4 rounded border-surface-300 text-violet-600 focus:ring-violet-500" />
+              <span className="text-[10px] font-semibold text-surface-500">Show saturation debug</span>
+            </label>
+          </div>
+        </div>
+        {showAdvanced && retailInfoData.length > 0 && (
+          <div className="mt-3 p-3 bg-surface-50 dark:bg-surface-900/50 rounded-lg">
+            <div className="text-[10px] font-bold text-surface-500 mb-2">Saturation Debug (from API):</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[9px]">
+              {retailInfoData
+                .filter(item => item.saturation !== null && item.saturation !== undefined)
+                .slice(0, 20)
+                .map(item => (
+                  <div key={item.dbLetter} className="flex justify-between">
+                    <span className="text-surface-600 dark:text-surface-400">{getResourceName(item.dbLetter)} ({item.dbLetter})</span>
+                    <span className="font-mono text-violet-600">{item.saturation.toFixed(3)}</span>
+                  </div>
+                ))}
+            </div>
+            <div className="text-[9px] text-surface-400 mt-2">Lower saturation = higher demand = higher retail capacity (1/saturation multiplier)</div>
+          </div>
+        )}
+      </details>
 
       {/* Challenge Info & Player Progress */}
       <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
@@ -514,35 +521,20 @@ export function ChallengeOptimizerPage() {
       {/* Challenge Starting Buildings (fallback when no player data) */}
       {!playerCompany && (
         <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><Factory size={13} /> Challenge Starting Buildings (Can be demolished)</div>
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><Factory size={13} /> Challenge Starting Buildings (Can be demolished for material refund)</div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
             {STARTING_BUILDINGS.map((b, i) => {
               const building = BUILDINGS.find(bld => bld.id === b.buildingId);
+              const refund = building?.resources ? building.resources.reduce((sum, r) => {
+                const price = MAT_REF_PRICES[r.id] || 0;
+                return sum + r.qty * price * b.level * demolitionRefundRate;
+              }, 0) : 0;
               return (
                 <div key={i} className="bg-surface-50 dark:bg-surface-900/50 border border-surface-200 dark:border-surface-800 rounded-lg p-3 text-center">
                   <div className="text-xs font-bold text-surface-700 dark:text-surface-300">{building?.name ?? b.buildingId}</div>
                   <div className="text-[10px] text-surface-400">Level {b.level}</div>
                   <div className="text-[10px] text-violet-600 font-semibold">Slot {i + 1}</div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="text-[10px] text-surface-400">Used: {STARTING_BUILDINGS.length} / {SLOTS} slots • {SLOTS - STARTING_BUILDINGS.length} free</div>
-        </div>
-      )}
-
-      {/* Fallback - should never reach here */}
-      {!playerCompany && false && (
-        <div className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-3">
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider"><Factory size={13} /> Starting Buildings (Can be demolished)</div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-            {STARTING_BUILDINGS.map((b, i) => {
-              const building = BUILDINGS.find(bld => bld.id === b.buildingId);
-              return (
-                <div key={i} className="bg-surface-50 dark:bg-surface-900/50 border border-surface-200 dark:border-surface-800 rounded-lg p-3 text-center">
-                  <div className="text-xs font-bold text-surface-700 dark:text-surface-300">{building?.name ?? b.buildingId}</div>
-                  <div className="text-[10px] text-surface-400">Level {b.level}</div>
-                  <div className="text-[10px] text-violet-600 font-semibold">Slot {i + 1}</div>
+                  <div className="text-[9px] text-emerald-600 mt-1">Refund: ~${fmtNumber(refund)} materials</div>
                 </div>
               );
             })}
@@ -564,6 +556,7 @@ export function ChallengeOptimizerPage() {
                 <th className="text-right px-4 py-2.5">Buy Price</th>
                 <th className="text-center px-4 py-2.5">Decision</th>
                 <th className="text-right px-4 py-2.5">Savings/Truck</th>
+                <th className="text-right px-4 py-2.5">Plan Capacity /hr</th>
                 <th className="text-left px-4 py-2.5">Buildings Needed</th>
               </tr>
             </thead>
@@ -580,6 +573,7 @@ export function ChallengeOptimizerPage() {
                     </span>
                   </td>
                   <td className="px-4 py-2 text-right text-emerald-600 font-bold">${fmtNumber(comp.savings)}</td>
+                  <td className="px-4 py-2 text-right text-blue-600 font-mono">{fmtNumber(comp.productionCapacity)}</td>
                   <td className="px-4 py-2 text-[10px] text-surface-500">
                     {comp.buildingsNeeded.map(b => `${b.count}× ${getBuildingName(b.id)} L${b.level}`).join(", ") || "—"}
                   </td>
@@ -623,14 +617,16 @@ export function ChallengeOptimizerPage() {
               <div className="bg-white/10 rounded-xl p-4">
                 <div className="text-xs uppercase tracking-wider opacity-80 mb-1">Production Time</div>
                 <div className="text-2xl font-bold">
-                  {bestPlan.retailSellThroughHours === Infinity ? "∞" : bestPlan.retailSellThroughHours.toFixed(1)}h
+                  {bestPlan.productionTimeHours === Infinity ? "∞" : bestPlan.productionTimeHours.toFixed(1)}h
                 </div>
                 <div className="text-xs opacity-70">Produce {fmtNumber(targetTrucks)} trucks</div>
               </div>
               <div className="bg-white/10 rounded-xl p-4">
-                <div className="text-xs uppercase tracking-wider opacity-80 mb-1">Production Rate</div>
-                <div className="text-2xl font-bold">{fmtNumber(bestPlan.truckOutput)}/h</div>
-                <div className="text-xs opacity-70">{fmtNumber(bestPlan.retailCapacity)}/h retail capacity</div>
+                <div className="text-xs uppercase tracking-wider opacity-80 mb-1">Sell-Through Time</div>
+                <div className="text-2xl font-bold">
+                  {bestPlan.sellThroughTimeHours === Infinity ? "∞" : bestPlan.sellThroughTimeHours.toFixed(1)}h
+                </div>
+                <div className="text-xs opacity-70">Sell {fmtNumber(targetTrucks)} trucks at retail</div>
               </div>
             </div>
           </div>
@@ -638,8 +634,8 @@ export function ChallengeOptimizerPage() {
           {/* ─── KPI Cards ─── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: "Trucks/Hour", val: fmtNumber(bestPlan.truckOutput), color: "text-violet-600", icon: Truck, iconColor: "text-violet-500" },
-              { label: "Retail Capacity", val: fmtNumber(bestPlan.retailCapacity) + "/h", color: "text-blue-600", icon: Store, iconColor: "text-blue-500" },
+              { label: "Trucks/Hour", val: fmtNumber(bestPlan.truckOutputPerHour), color: "text-violet-600", icon: Truck, iconColor: "text-violet-500" },
+              { label: "Retail Capacity", val: fmtNumber(bestPlan.retailCapacityPerHour) + "/h", color: "text-blue-600", icon: Store, iconColor: "text-blue-500" },
               { label: "Net Profit/Hour", val: `${bestPlan.netProfitPerHour >= 0 ? "+" : ""}$${fmtNumber(bestPlan.netProfitPerHour)}`, color: bestPlan.netProfitPerHour >= 0 ? "text-emerald-600" : "text-rose-600", icon: Calculator, iconColor: bestPlan.netProfitPerHour >= 0 ? "text-emerald-500" : "text-rose-500" },
               { label: "Monthly ROI", val: `${fmtPct(bestPlan.roi / 100)}`, color: bestPlan.roi > 20 ? "text-emerald-600" : bestPlan.roi > 0 ? "text-amber-600" : "text-rose-600", icon: TrendingUp, iconColor: "text-violet-500" },
             ].map(c => (
@@ -658,13 +654,13 @@ export function ChallengeOptimizerPage() {
                   <div className="flex items-center gap-3">
                     <span className="w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center text-violet-600 font-bold text-sm">{i + 1}</span>
                     <div>
-                      <div className="font-bold text-sm">{b.name}</div>
+                      <div className="font-bold text-sm">{getBuildingName(b.buildingId)}</div>
                       <div className="text-[10px] text-surface-400">Level {b.level} × {b.count} • Slot {i + 1}</div>
                     </div>
                   </div>
                   <div className="text-right text-xs text-surface-500">
-                    <div>Build: {fmtNumber(calculateBuildTime(b.id, b.level))}h</div>
-                    <div>Cost: ${fmtNumber(calculateBuildCost(b.id, b.level) * b.count)}</div>
+                    <div>Build: {formatTime(calcBuildTime(b.buildingId, b.level))}</div>
+                    <div>Cost: ${fmtNumber(calcBuildCost(b.buildingId, b.level) * b.count)}</div>
                   </div>
                 </div>
               ))}
@@ -672,13 +668,16 @@ export function ChallengeOptimizerPage() {
             
             <div className="px-5 py-3 space-y-2 border-t border-surface-100 dark:border-surface-800">
               <div className="flex justify-between"><span className="text-xs text-surface-500">Total Slots Used</span><span className="text-sm font-bold">{bestPlan.totalSlots} / {SLOTS}</span></div>
-              <div className="flex justify-between"><span className="text-xs text-surface-500">Construction Time</span><span className="text-sm font-bold">{fmtNumber(bestPlan.constructionTime)}h ({(bestPlan.constructionTime / 24).toFixed(1)} days)</span></div>
-              <div className="flex justify-between"><span className="text-xs text-surface-500">Production Time</span><span className="text-sm font-bold text-blue-600">{bestPlan.retailSellThroughHours === Infinity ? "∞" : bestPlan.retailSellThroughHours.toFixed(1)}h</span></div>
-              <div className="flex justify-between"><span className="text-xs text-surface-500">Total Time to Target</span><span className="text-sm font-bold text-violet-600">{bestPlan.totalTimeToTarget === Infinity ? "∞" : bestPlan.totalTimeToTarget.toFixed(1)}h ({(bestPlan.totalTimeToTarget / 24).toFixed(1)} days)</span></div>
+              <div className="flex justify-between"><span className="text-xs text-surface-500">Construction Time</span><span className="text-sm font-bold">{formatTime(bestPlan.constructionTime)} ({(bestPlan.constructionTime / 24).toFixed(1)} days)</span></div>
+              <div className="flex justify-between"><span className="text-xs text-surface-500">Production Time</span><span className="text-sm font-bold text-blue-600">{formatTime(bestPlan.productionTimeHours)}</span></div>
+              <div className="flex justify-between"><span className="text-xs text-surface-500">Sell-Through Time</span><span className="text-sm font-bold text-amber-600">{formatTime(bestPlan.sellThroughTimeHours)}</span></div>
+              <div className="flex justify-between"><span className="text-xs text-surface-500">Total Time to Target</span><span className="text-sm font-bold text-violet-600">{formatTime(bestPlan.totalTimeToTarget)} ({(bestPlan.totalTimeToTarget / 24).toFixed(1)} days)</span></div>
               <div className="flex justify-between"><span className="text-xs text-surface-500">Construction Cost</span><span className="text-sm font-bold text-rose-500">${fmtNumber(bestPlan.constructionCost)}</span></div>
-              <div className="flex justify-between"><span className="text-xs text-surface-500">Remaining Cash</span><span className="text-sm font-bold text-emerald-600">${fmtNumber(startingCash - bestPlan.constructionCost)}</span></div>
-              <div className="flex justify-between"><span className="text-xs text-surface-500">Time to First Truck</span><span className="text-sm font-bold">{bestPlan.timeToFirstTruck.toFixed(1)}h</span></div>
-              <div className="flex justify-between"><span className="text-xs text-surface-500">Break-even Time</span><span className="text-sm font-bold">{bestPlan.timeToRecoup === Infinity ? "Never" : bestPlan.timeToRecoup.toFixed(1) + "h"}</span></div>
+              <div className="flex justify-between"><span className="text-xs text-surface-500">Demolition Refund (materials)</span><span className="text-sm font-bold text-emerald-600">~${fmtNumber(bestPlan.demolitionRefund)}</span></div>
+              <div className="flex justify-between"><span className="text-xs text-surface-500">Net Construction Cost</span><span className="text-sm font-bold">${fmtNumber(bestPlan.constructionCost + bestPlan.demolitionRefund)}</span></div>
+              <div className="flex justify-between"><span className="text-xs text-surface-500">Remaining Cash</span><span className="text-sm font-bold text-emerald-600">${fmtNumber(bestPlan.cashRemaining)}</span></div>
+              <div className="flex justify-between"><span className="text-xs text-surface-500">Time to First Sale</span><span className="text-sm font-bold">{formatTime(bestPlan.constructionTime + (1 / (Math.min(bestPlan.truckOutputPerHour, bestPlan.retailCapacityPerHour) || 1)))}</span></div>
+              <div className="flex justify-between"><span className="text-xs text-surface-500">Break-even Time</span><span className="text-sm font-bold">{bestPlan.netProfitPerHour > 0 ? formatTime(bestPlan.constructionCost / bestPlan.netProfitPerHour) : "Never"}</span></div>
             </div>
           </div>
 
@@ -704,9 +703,26 @@ export function ChallengeOptimizerPage() {
               </div>
             </div>
             <div className="text-[10px] text-surface-400">
-              Target: {targetTrucks} trucks • Build: {bestPlan.constructionTime.toFixed(1)}h + Produce: {bestPlan.retailSellThroughHours === Infinity ? "∞" : bestPlan.retailSellThroughHours.toFixed(1)}h = Total: {bestPlan.totalTimeToTarget === Infinity ? "∞" : bestPlan.totalTimeToTarget.toFixed(1)}h
+              Target: {targetTrucks} trucks • Build: {formatTime(bestPlan.constructionTime)} + Produce: {formatTime(bestPlan.productionTimeHours)} + Sell: {formatTime(bestPlan.sellThroughTimeHours)} = Total: {formatTime(bestPlan.totalTimeToTarget)}
             </div>
           </div>
+
+          {/* Component Production Breakdown */}
+          <details className="bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl p-4 mt-4">
+            <summary className="flex items-center gap-2 text-[10px] font-bold uppercase text-surface-400 tracking-wider cursor-pointer"><Factory size={13} /> Component Production Breakdown (units/hour)</summary>
+            <div className="mt-3 space-y-2 text-xs">
+              {Array.from(bestPlan.componentProduction.entries()).map(([resourceId, qty]) => {
+                const resource = RESOURCES.find(r => r.id === resourceId);
+                const starting = bestPlan.startingProduction.get(resourceId) || 0;
+                return (
+                  <div key={resourceId} className="flex items-center justify-between py-1">
+                    <span className="text-surface-600 dark:text-surface-400">{resource?.name ?? `ID:${resourceId}`}</span>
+                    <span className="text-surface-400">{fmtNumber(qty + starting)} /hr (plan: {fmtNumber(qty)}, starting: {fmtNumber(starting)})</span>
+                  </div>
+                );
+              })}
+            </div>
+          </details>
         </>
       )}
 
@@ -749,4 +765,44 @@ export function ChallengeOptimizerPage() {
       </details>
     </div>
   );
+}
+
+// Re-export optimizer's calc functions for UI display consistency
+function calcBuildTime(buildingId: string, targetLevel: number, startLevel = 1): number {
+  const BUILD_TIMES: Record<string, number[]> = {
+    "1": [6, 6, 12, 18, 24, 30, 36, 42, 48, 54],
+    "2": [3, 3, 6, 9, 12, 15, 18, 21, 24, 27],
+    "D": [7, 7, 14, 21, 28, 35, 42, 49, 56, 63],
+    "E": [3, 3, 6, 9, 12, 15, 18, 21, 24, 27],
+    "T": [2, 2, 4, 6, 8, 10, 12, 14, 16, 18],
+    "R": [4, 4, 8, 12, 16, 20, 24, 28, 32, 36],
+    "Y": [3, 3, 6, 9, 12, 15, 18, 21, 24, 27],
+    "L": [5, 5, 10, 15, 20, 25, 30, 35, 40, 45],
+    "8": [6, 6, 12, 18, 24, 30, 36, 42, 48, 54],
+    "a": [6, 6, 12, 18, 24, 30, 36, 42, 48, 54],
+    "M": [4, 4, 8, 12, 16, 20, 24, 28, 32, 36],
+    "S": [3, 3, 6, 9, 12, 15, 18, 21, 24, 27],
+    "Q": [2, 2, 4, 6, 8, 10, 12, 14, 16, 18],
+    "O": [4, 4, 8, 12, 16, 20, 24, 28, 32, 36],
+  };
+  const times = BUILD_TIMES[buildingId];
+  if (!times) return (targetLevel - startLevel + 1) * 6;
+  return times.slice(startLevel - 1, targetLevel).reduce((a, b) => a + b, 0);
+}
+
+function calcBuildCost(buildingId: string, targetLevel: number, startLevel = 1): number {
+  const building = BUILDINGS.find(b => b.id === buildingId);
+  if (!building || !building.resources) return 0;
+  
+  let costPerLevel = 0;
+  for (const res of building.resources) {
+    const price = MAT_REF_PRICES[res.id] || 0;
+    costPerLevel += res.qty * price;
+  }
+  
+  let total = 0;
+  for (let lvl = startLevel; lvl <= targetLevel; lvl++) {
+    total += costPerLevel * lvl;
+  }
+  return total;
 }

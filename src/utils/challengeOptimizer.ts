@@ -7,14 +7,21 @@ export interface OptimizerInputs {
   targetTrucks: number;           // PRODUCTION target (not sales)
   truckQuality: number;
   economyPhase: "boom" | "normal" | "recession";
-  productionMultiplier: number;   // multiplier for truck production rate (default ~5.4 for current game)
+  productionMultiplier: number;   // multiplier for truck production rate (default 2.0 for current game)
   
   // Starting buildings (can be demolished)
   startingBuildings: Array<{ buildingId: string; level: number }>;
   
-  // Live prices
+  // Live prices from API (realm 2)
   marketPrices: Record<number, number>; // resourceId -> Q0 price
   retailPrices: Record<number, number>; // resourceId -> retail price (for profit calc only)
+  retailSaturation: Record<number, number>; // resourceId -> saturation (for retail capacity calc)
+  
+  // Configurable parameters
+  qualityPriceMultiplier: number; // % per quality level (default 0.05 = 5%)
+  demolitionRefundRate: number;   // fraction of level 1 material cost refunded per level (default 0.15)
+  retailBaseRate: number;         // base trucks/hour per dealership level (default 10)
+  retailCapacityOverride: number | null; // manual override for retail capacity (trucks/hour)
 }
 
 export interface BuildingPlan {
@@ -28,16 +35,20 @@ export interface OptimizedPlan {
   totalSlots: number;
   constructionTime: number;       // hours (parallel)
   constructionCost: number;       // cash
+  demolitionRefund: number;       // material value refunded (not cash)
   truckOutputPerHour: number;     // trucks/hour PRODUCTION
-  retailCapacityPerHour: number;  // trucks/hour RETAIL CAPACITY
+  retailCapacityPerHour: number;  // trucks/hour RETAIL CAPACITY (from API data)
   productionTimeHours: number;    // hours to PRODUCE target trucks
-  totalTimeToTarget: number;      // construction + production (NOT retail sell-through)
+  sellThroughTimeHours: number;   // hours to SELL target trucks at retail
+  totalTimeToTarget: number;      // construction + max(production, sell-through)
   netProfitPerHour: number;       // profit from selling at retail
   roi: number;                    // monthly %
   cashFlowValid: boolean;
   inputCostPerTruck: number;
   makeBuyDecisions: Map<number, "make" | "buy">;
   cashRemaining: number;
+  componentProduction: Map<number, number>; // resourceId -> units/hour produced by plan
+  startingProduction: Map<number, number>;  // resourceId -> units/hour from starting buildings
 }
 
 // Building construction times per level (hours)
@@ -52,6 +63,10 @@ const BUILD_TIMES: Record<string, number[]> = {
   "L": [5, 5, 10, 15, 20, 25, 30, 35, 40, 45],    // Electronics factory
   "8": [6, 6, 12, 18, 24, 30, 36, 42, 48, 54],    // Aerospace electronics
   "a": [6, 6, 12, 18, 24, 30, 36, 42, 48, 54],    // Automotive R&D
+  "M": [4, 4, 8, 12, 16, 20, 24, 28, 32, 36],     // Mine
+  "S": [3, 3, 6, 9, 12, 15, 18, 21, 24, 27],      // Shipping depot
+  "Q": [2, 2, 4, 6, 8, 10, 12, 14, 16, 18],       // Quarry
+  "O": [4, 4, 8, 12, 16, 20, 24, 28, 32, 36],     // Oil rig
 };
 
 function getBuildingName(id: string): string {
@@ -61,7 +76,6 @@ function getBuildingName(id: string): string {
 function calcBuildTime(buildingId: string, targetLevel: number, startLevel = 1): number {
   const times = BUILD_TIMES[buildingId];
   if (!times) return (targetLevel - startLevel + 1) * 6;
-  // Sum from startLevel to targetLevel (inclusive)
   return times.slice(startLevel - 1, targetLevel).reduce((a, b) => a + b, 0);
 }
 
@@ -69,15 +83,12 @@ function calcBuildCost(buildingId: string, targetLevel: number, startLevel = 1):
   const building = BUILDINGS.find(b => b.id === buildingId);
   if (!building || !building.resources) return 0;
   
-  // Calculate cost per level using actual material quantities × reference prices
   let costPerLevel = 0;
   for (const res of building.resources) {
     const price = MAT_REF_PRICES[res.id] || 0;
     costPerLevel += res.qty * price;
   }
   
-  // Game scales quantities linearly: L1=1×, L2=2×, L3=3×, etc.
-  // Cost from startLevel to targetLevel (inclusive)
   let total = 0;
   for (let lvl = startLevel; lvl <= targetLevel; lvl++) {
     total += costPerLevel * lvl;
@@ -85,13 +96,27 @@ function calcBuildCost(buildingId: string, targetLevel: number, startLevel = 1):
   return total;
 }
 
-// Calculate effective price per unit (make vs buy)
+function calcDemolitionRefund(buildingId: string, currentLevel: number): number {
+  const building = BUILDINGS.find(b => b.id === buildingId);
+  if (!building || !building.resources) return 0;
+  
+  let lvl1MaterialCost = 0;
+  for (const res of building.resources) {
+    const price = MAT_REF_PRICES[res.id] || 0;
+    lvl1MaterialCost += res.qty * price;
+  }
+  
+  return lvl1MaterialCost * currentLevel;
+}
+
+// Calculate effective price per unit (make vs buy) - NO transport cost per user decision
 function calcEffectivePrice(
   resourceId: number,
   quality: number,
   marketPrices: Record<number, number>,
   makeCostCache: Map<number, number>,
-  visited: Set<number>
+  visited: Set<number>,
+  phaseMult: number
 ): number {
   if (visited.has(resourceId)) return Infinity;
   visited.add(resourceId);
@@ -104,29 +129,41 @@ function calcEffectivePrice(
     return marketPrice > 0 ? marketPrice : (MAT_REF_PRICES[resourceId] || 0);
   }
 
-  // Calculate make cost
   let makeCost = 0;
   for (const [inpIdStr, qty] of Object.entries(resource.inputs)) {
     const inpId = Number(inpIdStr);
-    const inpPrice = calcEffectivePrice(inpId, quality, marketPrices, makeCostCache, new Set(visited));
+    const inpPrice = calcEffectivePrice(inpId, quality, marketPrices, makeCostCache, new Set(visited), phaseMult);
     makeCost += inpPrice * qty;
   }
 
-  // Add wages per unit
+  // Add wages per unit (phase multiplier applies to ALL production)
   const baseWages = resource.baseWages || 0;
   const basePh = resource.basePh || 1;
-  const wagePerUnit = baseWages / basePh;
+  const wagePerUnit = baseWages / basePh / phaseMult; // higher phase = more output = lower wage/unit
   
-  // Add transport cost
-  const transport = resource.transport || 0;
-  const transportCostPerUnit = (makeCost + wagePerUnit) * transport * 0.01;
-  
-  makeCost += wagePerUnit + transportCostPerUnit;
+  // NO transport cost per user decision
+  makeCost += wagePerUnit;
   makeCostCache.set(resourceId, makeCost);
   visited.delete(resourceId);
 
-  // Return cheaper of make vs buy
   return marketPrice > 0 ? Math.min(makeCost, marketPrice) : makeCost;
+}
+
+function calculateStartingProduction(startingBuildings: Array<{ buildingId: string; level: number }>, phaseMult: number): Map<number, number> {
+  const production = new Map<number, number>();
+  
+  for (const sb of startingBuildings) {
+    const building = BUILDINGS.find(b => b.id === sb.buildingId);
+    if (!building) continue;
+    
+    const resource = RESOURCES.find(r => r.buildingId === sb.buildingId);
+    if (!resource || !resource.basePh) continue;
+    
+    const outputPerHour = resource.basePh * sb.level * phaseMult;
+    production.set(resource.id, (production.get(resource.id) || 0) + outputPerHour);
+  }
+  
+  return production;
 }
 
 function evaluatePlan(
@@ -134,7 +171,9 @@ function evaluatePlan(
   inputs: OptimizerInputs,
   startingBuildings: Array<{ buildingId: string; level: number }> = []
 ): OptimizedPlan | null {
-  const { maxSlots, startingCash, targetTrucks, truckQuality, economyPhase, productionMultiplier, marketPrices, retailPrices } = inputs;
+  const { maxSlots, startingCash, targetTrucks, truckQuality, economyPhase, productionMultiplier, marketPrices, retailPrices, qualityPriceMultiplier, demolitionRefundRate } = inputs;
+  
+  const phaseMult = PHASE_MULTIPLIERS[economyPhase] || 1.0;
   
   // Build map of starting building levels
   const startingLevels = new Map<string, number>();
@@ -146,15 +185,34 @@ function evaluatePlan(
   const totalSlots = buildings.reduce((sum, b) => sum + b.count, 0);
   if (totalSlots > maxSlots) return null;
 
-  // Validate construction cost (upgrade cost from starting level)
+  // Validate required buildings
+  const hasCarFactory = buildings.some(b => b.buildingId === "1");
+  const hasDealership = buildings.some(b => b.buildingId === "2");
+  if (!hasCarFactory || !hasDealership) return null;
+
+  // Validate construction cost + demolition refund (upgrade cost from starting level)
   let constructionCost = 0;
+  let demolitionRefund = 0;
   let constructionTime = 0;
+  
   for (const b of buildings) {
     const startLevel = startingLevels.get(b.buildingId) || 1;
-    constructionCost += calcBuildCost(b.buildingId, b.level, startLevel) * b.count;
-    constructionTime = Math.max(constructionTime, calcBuildTime(b.buildingId, b.level, startLevel));
+    if (b.level > startLevel) {
+      // Upgrade: pay for new levels only
+      constructionCost += calcBuildCost(b.buildingId, b.level, startLevel) * b.count;
+      constructionTime = Math.max(constructionTime, calcBuildTime(b.buildingId, b.level, startLevel));
+    } else if (b.level === startLevel) {
+      // Keep as-is: no cost, no time
+    } else {
+      // Demolish and rebuild lower: refund materials from starting, pay for new
+      demolitionRefund += calcDemolitionRefund(b.buildingId, startLevel) * demolitionRefundRate;
+      constructionCost += calcBuildCost(b.buildingId, b.level, 1) * b.count;
+      constructionTime = Math.max(constructionTime, calcBuildTime(b.buildingId, b.level, 1));
+    }
   }
-  if (constructionCost > startingCash) return null;
+  
+  const netConstructionCost = constructionCost - demolitionRefund;
+  if (netConstructionCost > startingCash) return null;
 
   // Calculate make/buy decisions for all truck components
   const truckResource = RESOURCES.find(r => r.id === 57);
@@ -167,7 +225,7 @@ function evaluatePlan(
   for (const [inpIdStr, qty] of Object.entries(truckResource.inputs)) {
     const inpId = Number(inpIdStr);
     const visited = new Set<number>();
-    const makeCost = calcEffectivePrice(inpId, truckQuality, marketPrices, makeCostCache, visited);
+    const makeCost = calcEffectivePrice(inpId, truckQuality, marketPrices, makeCostCache, visited, phaseMult);
     const marketPrice = marketPrices[inpId] || 0;
     
     const decision = makeCost < marketPrice ? "make" : "buy";
@@ -177,40 +235,80 @@ function evaluatePlan(
     inputCostPerTruck += effectivePrice * qty;
   }
 
+  // Calculate component production from plan buildings
+  const componentProduction = new Map<number, number>();
+  for (const b of buildings) {
+    const resource = RESOURCES.find(r => r.buildingId === b.buildingId);
+    if (!resource || !resource.basePh) continue;
+    
+    const outputPerHour = resource.basePh * b.level * phaseMult * b.count;
+    componentProduction.set(resource.id, (componentProduction.get(resource.id) || 0) + outputPerHour);
+  }
+
+  // Calculate starting building production
+  const startingProduction = calculateStartingProduction(startingBuildings, phaseMult);
+
+  // COUPLING: Verify every "make" decision has sufficient production capacity
+  for (const [inpId, decision] of makeBuyDecisions) {
+    if (decision === "make") {
+      const truckResource = RESOURCES.find(r => r.id === 57);
+      const neededPerTruck = truckResource?.inputs?.[inpId] || 0;
+      const neededPerHour = neededPerTruck; // for 1 truck/hour base
+      
+      const totalProduction = (componentProduction.get(inpId) || 0) + (startingProduction.get(inpId) || 0);
+      if (totalProduction < neededPerHour * 0.1) { // need at least 10% of 1 truck/hour capacity
+        return null; // insufficient production capacity for this component
+      }
+    }
+  }
+
   // Find car factory and dealership
   const carFactory = buildings.find(b => b.buildingId === "1");
   const dealership = buildings.find(b => b.buildingId === "2");
   
   if (!carFactory || !dealership) return null;
 
-  // PRODUCTION rate (trucks/hour produced)
-  const basePh = 2.8; // Truck base per hour at L1 (legacy static data)
-  const phaseMult = PHASE_MULTIPLIERS[economyPhase] || 1.0;
-  const prodMult = inputs.productionMultiplier || 5.4; // community-derived multiplier for current game version
+  // PRODUCTION rate (trucks/hour produced) - productionMultiplier applies here
+  const basePh = 2.8; // Truck base per hour at L1
+  const prodMult = inputs.productionMultiplier || 2.0; // user default 2x
   const truckOutputPerHour = basePh * phaseMult * prodMult * carFactory.level * carFactory.count;
 
-  // Retail capacity (trucks/hour that can be SOLD for profit)
-  const retailCapacityPerHour = 10 * dealership.level * dealership.count;
+  // Retail capacity from API data (dealership sales rate)
+  // Use retailPrices[57] for price, retailSaturation[57] for capacity adjustment
+  const truckRetailPrice = retailPrices[57] || marketPrices[57] || MAT_REF_PRICES[57] || 446;
+  const truckSaturation = inputs.retailSaturation?.[57] || 1.0;
+  
+  // Retail capacity: manual override takes precedence, else use saturation-adjusted formula
+  let retailCapacityPerHour: number;
+  if (inputs.retailCapacityOverride !== null && inputs.retailCapacityOverride > 0) {
+    retailCapacityPerHour = inputs.retailCapacityOverride;
+  } else {
+    const baseRate = inputs.retailBaseRate || 10;
+    // Saturation < 1 = undersaturated = higher sales rate; > 1 = oversaturated = lower
+    const saturationMult = 1 / truckSaturation;
+    retailCapacityPerHour = baseRate * saturationMult * dealership.level * dealership.count;
+  }
 
-  // PRODUCTION time to target (NOT retail sell-through)
+  // PRODUCTION time to target
   if (truckOutputPerHour <= 0) return null;
   const productionTimeHours = targetTrucks / truckOutputPerHour;
 
-  // Revenue from selling at retail (for profit calculation)
+  // SELL-THROUGH time at retail capacity
   const trucksSoldPerHour = Math.min(truckOutputPerHour, retailCapacityPerHour);
   if (trucksSoldPerHour <= 0) return null;
+  const sellThroughTimeHours = targetTrucks / trucksSoldPerHour;
 
-  const truckRetailPrice = retailPrices[57] || marketPrices[57] || MAT_REF_PRICES[57] || 446;
-  const qualityMult = 1 + truckQuality * 0.05;
+  // Revenue from selling at retail
+  const qualityMult = 1 + truckQuality * qualityPriceMultiplier;
   const sellingPrice = truckRetailPrice * qualityMult;
   const grossRevenuePerHour = trucksSoldPerHour * sellingPrice;
 
   // Costs per hour
   const marketFeePerHour = grossRevenuePerHour * 0.03;
-  const transportPerHour = grossRevenuePerHour * 5 * 0.01;
+  // NO transport cost per user decision
   const inputCostPerHour = trucksSoldPerHour * inputCostPerTruck;
 
-  // Wages
+  // Wages (phase multiplier increases output, reducing wage/unit)
   let hourlyWages = 0;
   for (const b of buildings) {
     const building = BUILDINGS.find(bld => bld.id === b.buildingId);
@@ -218,29 +316,40 @@ function evaluatePlan(
       hourlyWages += (building.wages * b.level) * b.count;
     }
   }
+  // Add starting building wages
+  for (const sb of startingBuildings) {
+    const building = BUILDINGS.find(bld => bld.id === sb.buildingId);
+    if (building) {
+      hourlyWages += (building.wages * sb.level);
+    }
+  }
   const overheadPerHour = hourlyWages * 0.15;
 
-  const netProfitPerHour = grossRevenuePerHour - marketFeePerHour - transportPerHour - inputCostPerHour - hourlyWages - overheadPerHour;
+  const netProfitPerHour = grossRevenuePerHour - marketFeePerHour - inputCostPerHour - hourlyWages - overheadPerHour;
 
   // ROI
-  const roi = constructionCost > 0 ? (netProfitPerHour * 24 * 30) / constructionCost * 100 : 0;
+  const roi = netConstructionCost > 0 ? (netProfitPerHour * 24 * 30) / netConstructionCost * 100 : 0;
 
-  // Total time = construction + PRODUCTION (not retail sell-through)
-  const totalTimeToTarget = constructionTime + productionTimeHours;
+  // Total time = construction + max(production, sell-through)
+  const totalTimeToTarget = constructionTime + Math.max(productionTimeHours, sellThroughTimeHours);
 
   // Cash flow validation: need cash for construction + operating until first revenue
-  const operatingCashNeeded = (inputCostPerHour + hourlyWages + overheadPerHour) * 24;
-  const cashRemaining = startingCash - constructionCost - operatingCashNeeded;
+  // First revenue at: constructionTime + (1 / trucksSoldPerHour) hours
+  const timeToFirstSale = constructionTime + (1 / trucksSoldPerHour);
+  const operatingCashNeeded = (inputCostPerHour + hourlyWages + overheadPerHour) * timeToFirstSale;
+  const cashRemaining = startingCash - netConstructionCost - operatingCashNeeded;
   const cashFlowValid = cashRemaining >= 0;
 
   return {
     buildings,
     totalSlots,
     constructionTime,
-    constructionCost,
+    constructionCost: netConstructionCost,
+    demolitionRefund,
     truckOutputPerHour,
     retailCapacityPerHour,
     productionTimeHours,
+    sellThroughTimeHours,
     totalTimeToTarget,
     netProfitPerHour,
     roi,
@@ -248,17 +357,19 @@ function evaluatePlan(
     inputCostPerTruck,
     makeBuyDecisions,
     cashRemaining,
+    componentProduction,
+    startingProduction,
   };
 }
 
-// Generate all valid building combinations
+// Generate all valid building combinations with pruning
 function generateBuildingCombinations(inputs: OptimizerInputs): BuildingPlan[][] {
-  const { maxSlots, startingBuildings } = inputs;
+  const { maxSlots, startingBuildings, startingCash } = inputs;
   
-  // Building types that can be used (production + retail)
+  // Building types that can be used (production + retail) - EXPANDED per user decision
   const buildingTypes = [
-    { id: "1", name: "Car Factory", maxLevel: 5 },      // Truck production
-    { id: "2", name: "Car Dealership", maxLevel: 5 },   // Retail (for profit)
+    { id: "1", name: "Car Factory", maxLevel: 5, required: true },      // Truck production
+    { id: "2", name: "Car Dealership", maxLevel: 5, required: true },   // Retail (for profit)
     { id: "D", name: "Propulsion Factory", maxLevel: 4 }, // Engines
     { id: "Y", name: "Factory", maxLevel: 4 },           // Steel, Alu, Basic Interior, Car Body
     { id: "L", name: "Electronics Factory", maxLevel: 4 }, // OBC, Displays
@@ -267,6 +378,10 @@ function generateBuildingCombinations(inputs: OptimizerInputs): BuildingPlan[][]
     { id: "R", name: "Refinery", maxLevel: 3 },          // Plastic, Chemicals
     { id: "8", name: "Aerospace Electronics", maxLevel: 2 }, // OBC alt
     { id: "a", name: "Automotive R&D", maxLevel: 2 },    // Research
+    { id: "M", name: "Mine", maxLevel: 4 },              // Iron Ore (for Steel)
+    { id: "S", name: "Shipping Depot", maxLevel: 3 },    // Transport
+    { id: "Q", name: "Quarry", maxLevel: 3 },            // Sand (for Glass)
+    { id: "O", name: "Oil Rig", maxLevel: 3 },           // Crude Oil (for Plastic/Petrol)
   ];
 
   // Start with existing buildings (can be kept, upgraded, or demolished)
@@ -276,54 +391,86 @@ function generateBuildingCombinations(inputs: OptimizerInputs): BuildingPlan[][]
   }
 
   const combinations: BuildingPlan[][] = [];
+  const memo = new Map<string, BuildingPlan[][]>();
 
   function generateRecursive(
     index: number,
     current: BuildingPlan[],
     slotsUsed: number,
-    cashSpent: number
-  ) {
+    cashSpent: number,
+    hasCarFactory: boolean,
+    hasDealership: boolean
+  ): BuildingPlan[][] {
+    // Memoization key
+    const key = `${index}-${slotsUsed}-${cashSpent}-${hasCarFactory}-${hasDealership}`;
+    if (memo.has(key)) {
+      return memo.get(key)!.map(combo => [...current, ...combo]);
+    }
+
     if (index >= buildingTypes.length) {
-      if (current.length > 0) combinations.push([...current]);
-      return;
+      if (current.length > 0 && hasCarFactory && hasDealership) {
+        return [[...current]];
+      }
+      return [];
     }
 
     const bt = buildingTypes[index];
     const existingLevel = baseBuildings.get(bt.id) || 0;
-    
-    // Option 1: Don't build this type (demolish if exists) - cost 0, time 0
-    generateRecursive(index + 1, current, slotsUsed, cashSpent);
+    const results: BuildingPlan[][] = [];
+
+    // Option 1: Don't build this type (demolish if exists)
+    // But don't demolish required buildings
+    if (!bt.required || existingLevel === 0) {
+      const subResults = generateRecursive(index + 1, current, slotsUsed, cashSpent, hasCarFactory, hasDealership);
+      results.push(...subResults);
+    }
 
     // Option 2: Keep existing building as-is (if it exists)
     if (existingLevel > 0) {
       const newPlan: BuildingPlan = { buildingId: bt.id, level: existingLevel, count: 1 };
-      generateRecursive(index + 1, [...current, newPlan], slotsUsed + 1, cashSpent);
+      const subResults = generateRecursive(
+        index + 1, 
+        [...current, newPlan], 
+        slotsUsed + 1, 
+        cashSpent,
+        hasCarFactory || bt.id === "1",
+        hasDealership || bt.id === "2"
+      );
+      results.push(...subResults);
     }
 
     // Option 3: Upgrade existing or build new at levels > existingLevel
-    // For buildings that exist, start from existingLevel + 1 (upgrade)
-    // For new buildings, start from 1
     const startLevel = existingLevel > 0 ? existingLevel + 1 : 1;
     for (let level = startLevel; level <= bt.maxLevel; level++) {
-      // Can build 1 or 2 of this type (for factories)
-      for (let count = 1; count <= (bt.id === "1" || bt.id === "2" ? 2 : 1); count++) {
+      // For car factory and dealership, allow up to 2
+      const maxCount = (bt.id === "1" || bt.id === "2") ? 2 : 1;
+      for (let count = 1; count <= maxCount; count++) {
         const newSlots = slotsUsed + count;
         if (newSlots > maxSlots) continue;
 
-        // For upgrades, calculate cost from existingLevel
         const startLevelForCost = existingLevel > 0 ? existingLevel + 1 : 1;
         const buildCost = calcBuildCost(bt.id, level, startLevelForCost) * count;
         const newCash = cashSpent + buildCost;
-        if (newCash > inputs.startingCash) continue;
+        if (newCash > startingCash) continue;
 
         const newPlan: BuildingPlan = { buildingId: bt.id, level, count };
-        generateRecursive(index + 1, [...current, newPlan], newSlots, newCash);
+        const subResults = generateRecursive(
+          index + 1, 
+          [...current, newPlan], 
+          newSlots, 
+          newCash,
+          hasCarFactory || bt.id === "1",
+          hasDealership || bt.id === "2"
+        );
+        results.push(...subResults);
       }
     }
+
+    memo.set(key, results.map(r => r.slice(current.length)));
+    return results;
   }
 
-  generateRecursive(0, [], 0, 0);
-  return combinations;
+  return generateRecursive(0, [], 0, 0, false, false);
 }
 
 export function optimizeChallenge(inputs: OptimizerInputs): OptimizedPlan[] {
