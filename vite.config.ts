@@ -7,6 +7,10 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     base: "/Web/",
+    define: {
+      'process.env.NODE_ENV': '"production"',
+      'process.env.__DEV__': 'false',
+    },
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
