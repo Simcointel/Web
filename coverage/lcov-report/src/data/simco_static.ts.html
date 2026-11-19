@@ -1,0 +1,943 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for src/data/simco_static.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/data</a> simco_static.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>0/13</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/6</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>0/12</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a>
+<a name='L160'></a><a href='#L160'>160</a>
+<a name='L161'></a><a href='#L161'>161</a>
+<a name='L162'></a><a href='#L162'>162</a>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a>
+<a name='L200'></a><a href='#L200'>200</a>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a>
+<a name='L205'></a><a href='#L205'>205</a>
+<a name='L206'></a><a href='#L206'>206</a>
+<a name='L207'></a><a href='#L207'>207</a>
+<a name='L208'></a><a href='#L208'>208</a>
+<a name='L209'></a><a href='#L209'>209</a>
+<a name='L210'></a><a href='#L210'>210</a>
+<a name='L211'></a><a href='#L211'>211</a>
+<a name='L212'></a><a href='#L212'>212</a>
+<a name='L213'></a><a href='#L213'>213</a>
+<a name='L214'></a><a href='#L214'>214</a>
+<a name='L215'></a><a href='#L215'>215</a>
+<a name='L216'></a><a href='#L216'>216</a>
+<a name='L217'></a><a href='#L217'>217</a>
+<a name='L218'></a><a href='#L218'>218</a>
+<a name='L219'></a><a href='#L219'>219</a>
+<a name='L220'></a><a href='#L220'>220</a>
+<a name='L221'></a><a href='#L221'>221</a>
+<a name='L222'></a><a href='#L222'>222</a>
+<a name='L223'></a><a href='#L223'>223</a>
+<a name='L224'></a><a href='#L224'>224</a>
+<a name='L225'></a><a href='#L225'>225</a>
+<a name='L226'></a><a href='#L226'>226</a>
+<a name='L227'></a><a href='#L227'>227</a>
+<a name='L228'></a><a href='#L228'>228</a>
+<a name='L229'></a><a href='#L229'>229</a>
+<a name='L230'></a><a href='#L230'>230</a>
+<a name='L231'></a><a href='#L231'>231</a>
+<a name='L232'></a><a href='#L232'>232</a>
+<a name='L233'></a><a href='#L233'>233</a>
+<a name='L234'></a><a href='#L234'>234</a>
+<a name='L235'></a><a href='#L235'>235</a>
+<a name='L236'></a><a href='#L236'>236</a>
+<a name='L237'></a><a href='#L237'>237</a>
+<a name='L238'></a><a href='#L238'>238</a>
+<a name='L239'></a><a href='#L239'>239</a>
+<a name='L240'></a><a href='#L240'>240</a>
+<a name='L241'></a><a href='#L241'>241</a>
+<a name='L242'></a><a href='#L242'>242</a>
+<a name='L243'></a><a href='#L243'>243</a>
+<a name='L244'></a><a href='#L244'>244</a>
+<a name='L245'></a><a href='#L245'>245</a>
+<a name='L246'></a><a href='#L246'>246</a>
+<a name='L247'></a><a href='#L247'>247</a>
+<a name='L248'></a><a href='#L248'>248</a>
+<a name='L249'></a><a href='#L249'>249</a>
+<a name='L250'></a><a href='#L250'>250</a>
+<a name='L251'></a><a href='#L251'>251</a>
+<a name='L252'></a><a href='#L252'>252</a>
+<a name='L253'></a><a href='#L253'>253</a>
+<a name='L254'></a><a href='#L254'>254</a>
+<a name='L255'></a><a href='#L255'>255</a>
+<a name='L256'></a><a href='#L256'>256</a>
+<a name='L257'></a><a href='#L257'>257</a>
+<a name='L258'></a><a href='#L258'>258</a>
+<a name='L259'></a><a href='#L259'>259</a>
+<a name='L260'></a><a href='#L260'>260</a>
+<a name='L261'></a><a href='#L261'>261</a>
+<a name='L262'></a><a href='#L262'>262</a>
+<a name='L263'></a><a href='#L263'>263</a>
+<a name='L264'></a><a href='#L264'>264</a>
+<a name='L265'></a><a href='#L265'>265</a>
+<a name='L266'></a><a href='#L266'>266</a>
+<a name='L267'></a><a href='#L267'>267</a>
+<a name='L268'></a><a href='#L268'>268</a>
+<a name='L269'></a><a href='#L269'>269</a>
+<a name='L270'></a><a href='#L270'>270</a>
+<a name='L271'></a><a href='#L271'>271</a>
+<a name='L272'></a><a href='#L272'>272</a>
+<a name='L273'></a><a href='#L273'>273</a>
+<a name='L274'></a><a href='#L274'>274</a>
+<a name='L275'></a><a href='#L275'>275</a>
+<a name='L276'></a><a href='#L276'>276</a>
+<a name='L277'></a><a href='#L277'>277</a>
+<a name='L278'></a><a href='#L278'>278</a>
+<a name='L279'></a><a href='#L279'>279</a>
+<a name='L280'></a><a href='#L280'>280</a>
+<a name='L281'></a><a href='#L281'>281</a>
+<a name='L282'></a><a href='#L282'>282</a>
+<a name='L283'></a><a href='#L283'>283</a>
+<a name='L284'></a><a href='#L284'>284</a>
+<a name='L285'></a><a href='#L285'>285</a>
+<a name='L286'></a><a href='#L286'>286</a>
+<a name='L287'></a><a href='#L287'>287</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export const BUILDINGS = <span class="cstat-no" title="statement not covered" >[</span>
+  // === Production Buildings (Concrete/Bricks/Planks/CU) ===
+  { "id": "P", "name": "Farm", "type": "production", "cost": 6900, "baseTime": 1, "wages": 103.5, "resources": [{ "id": 101, "qty": 8 }, { "id": 102, "qty": 110 }, { "id": 108, "qty": 32 }, { "id": 111, "qty": 2 }] },
+  { "id": "F", "name": "Ranch", "type": "production", "cost": 10350, "baseTime": 2, "wages": 138, "resources": [{ "id": 101, "qty": 12 }, { "id": 102, "qty": 165 }, { "id": 108, "qty": 48 }, { "id": 111, "qty": 3 }] },
+  { "id": "e", "name": "Slaughterhouse", "type": "production", "cost": 20700, "baseTime": 4, "wages": 414, "resources": [{ "id": 101, "qty": 24 }, { "id": 102, "qty": 330 }, { "id": 108, "qty": 96 }, { "id": 111, "qty": 6 }] },
+  { "id": "i", "name": "Mill", "type": "production", "cost": 27600, "baseTime": 3, "wages": 379.5, "resources": [{ "id": 101, "qty": 32 }, { "id": 102, "qty": 440 }, { "id": 108, "qty": 128 }, { "id": 111, "qty": 8 }] },
+  { "id": "6", "name": "Beverage factory", "type": "production", "cost": 13800, "baseTime": 2, "wages": 241.5, "resources": [{ "id": 101, "qty": 16 }, { "id": 102, "qty": 220 }, { "id": 108, "qty": 64 }, { "id": 111, "qty": 4 }] },
+  { "id": "j", "name": "Bakery", "type": "production", "cost": 37950, "baseTime": 5, "wages": 448.5, "resources": [{ "id": 101, "qty": 44 }, { "id": 102, "qty": 605 }, { "id": 108, "qty": 176 }, { "id": 111, "qty": 11 }] },
+  { "id": "k", "name": "Food processing plant", "type": "production", "cost": 86250, "baseTime": 6, "wages": 379.5, "resources": [{ "id": 101, "qty": 100 }, { "id": 102, "qty": 1375 }, { "id": 108, "qty": 400 }, { "id": 111, "qty": 25 }] },
+  { "id": "m", "name": "Catering", "type": "production", "cost": 103500, "baseTime": 4, "wages": 655.5, "resources": [{ "id": 101, "qty": 120 }, { "id": 102, "qty": 1650 }, { "id": 108, "qty": 480 }, { "id": 111, "qty": 30 }] },
+  { "id": "o", "name": "Concrete plant", "type": "production", "cost": 58650, "baseTime": 5, "wages": 379.5, "resources": [{ "id": 101, "qty": 68 }, { "id": 102, "qty": 935 }, { "id": 108, "qty": 272 }, { "id": 111, "qty": 17 }] },
+  { "id": "x", "name": "Construction factory", "type": "production", "cost": 72450, "baseTime": 6, "wages": 483, "resources": [{ "id": 101, "qty": 84 }, { "id": 102, "qty": 1155 }, { "id": 108, "qty": 336 }, { "id": 111, "qty": 21 }] },
+  { "id": "g", "name": "General contractor", "type": "production", "cost": 48300, "baseTime": 2, "wages": 345, "resources": [{ "id": 101, "qty": 56 }, { "id": 102, "qty": 770 }, { "id": 108, "qty": 224 }, { "id": 111, "qty": 14 }] },
+  { "id": "Q", "name": "Quarry", "type": "production", "cost": 13800, "baseTime": 2, "wages": 276, "abundance": true, "resources": [{ "id": 101, "qty": 16 }, { "id": 102, "qty": 220 }, { "id": 108, "qty": 64 }, { "id": 111, "qty": 4 }] },
+  { "id": "M", "name": "Mine", "type": "production", "cost": 24150, "baseTime": 4, "wages": 276, "abundance": true, "resources": [{ "id": 101, "qty": 28 }, { "id": 102, "qty": 385 }, { "id": 108, "qty": 112 }, { "id": 111, "qty": 7 }] },
+  { "id": "Y", "name": "Factory", "type": "production", "cost": 48300, "baseTime": 3, "wages": 414, "resources": [{ "id": 101, "qty": 56 }, { "id": 102, "qty": 770 }, { "id": 108, "qty": 224 }, { "id": 111, "qty": 14 }] },
+  { "id": "T", "name": "Fashion factory", "type": "production", "cost": 13800, "baseTime": 2, "wages": 138, "resources": [{ "id": 101, "qty": 16 }, { "id": 102, "qty": 220 }, { "id": 108, "qty": 64 }, { "id": 111, "qty": 4 }] },
+  { "id": "E", "name": "Power plant", "type": "production", "cost": 51750, "baseTime": 3, "wages": 414, "resources": [{ "id": 101, "qty": 60 }, { "id": 102, "qty": 825 }, { "id": 108, "qty": 240 }, { "id": 111, "qty": 15 }] },
+  { "id": "O", "name": "Oil rig", "type": "production", "cost": 69000, "baseTime": 4, "wages": 517.5, "abundance": true, "resources": [{ "id": 101, "qty": 80 }, { "id": 102, "qty": 1100 }, { "id": 108, "qty": 320 }, { "id": 111, "qty": 20 }] },
+  { "id": "R", "name": "Refinery", "type": "production", "cost": 69000, "baseTime": 4, "wages": 483, "resources": [{ "id": 101, "qty": 80 }, { "id": 102, "qty": 1100 }, { "id": 108, "qty": 320 }, { "id": 111, "qty": 20 }] },
+  { "id": "W", "name": "Water reservoir", "type": "production", "cost": 20700, "baseTime": 2, "wages": 345, "resources": [{ "id": 101, "qty": 24 }, { "id": 102, "qty": 330 }, { "id": 108, "qty": 96 }, { "id": 111, "qty": 6 }] },
+  { "id": "S", "name": "Shipping depot", "type": "production", "cost": 51750, "baseTime": 3, "wages": 310.5, "resources": [{ "id": 101, "qty": 60 }, { "id": 102, "qty": 825 }, { "id": 108, "qty": 240 }, { "id": 111, "qty": 15 }] },
+  { "id": "L", "name": "Electronics factory", "type": "production", "cost": 82800, "baseTime": 5, "wages": 379.5, "resources": [{ "id": 101, "qty": 96 }, { "id": 102, "qty": 1320 }, { "id": 108, "qty": 384 }, { "id": 111, "qty": 24 }] },
+  { "id": "1", "name": "Car factory", "type": "production", "cost": 93150, "baseTime": 6, "wages": 448.5, "resources": [{ "id": 101, "qty": 108 }, { "id": 102, "qty": 1485 }, { "id": 108, "qty": 432 }, { "id": 111, "qty": 27 }] },
+  { "id": "7", "name": "Aerospace factory", "type": "production", "cost": 106950, "baseTime": 6, "wages": 586.5, "resources": [{ "id": 101, "qty": 124 }, { "id": 102, "qty": 1705 }, { "id": 108, "qty": 496 }, { "id": 111, "qty": 31 }] },
+  { "id": "D", "name": "Propulsion factory", "type": "production", "cost": 103500, "baseTime": 7, "wages": 621, "resources": [{ "id": 101, "qty": 120 }, { "id": 102, "qty": 1650 }, { "id": 108, "qty": 480 }, { "id": 111, "qty": 30 }] },
+  { "id": "0", "name": "Hangar", "type": "production", "cost": 100050, "baseTime": 3, "wages": 414, "resources": [{ "id": 101, "qty": 116 }, { "id": 102, "qty": 1595 }, { "id": 108, "qty": 464 }, { "id": 111, "qty": 29 }] },
+  { "id": "8", "name": "Aerospace electronics", "type": "production", "cost": 141450, "baseTime": 6, "wages": 724.5, "resources": [{ "id": 101, "qty": 164 }, { "id": 102, "qty": 2255 }, { "id": 108, "qty": 656 }, { "id": 111, "qty": 41 }] },
+  { "id": "9", "name": "Vertical integration facility", "type": "production", "cost": 113850, "baseTime": 3, "wages": 414, "resources": [{ "id": 101, "qty": 132 }, { "id": 102, "qty": 1815 }, { "id": 108, "qty": 528 }, { "id": 111, "qty": 33 }] },
+  { "id": "l", "name": "Launch pad", "type": "production", "cost": 138000, "baseTime": 12, "wages": 414, "resources": [{ "id": 101, "qty": 144 }, { "id": 102, "qty": 1980 }, { "id": 108, "qty": 576 }, { "id": 111, "qty": 36 }] },
+  { "id": "V", "name": "Vehicle workshop", "type": "production", "cost": 93150, "baseTime": 6, "wages": 414, "resources": [{ "id": 101, "qty": 108 }, { "id": 102, "qty": 1485 }, { "id": 108, "qty": 432 }, { "id": 111, "qty": 27 }] },
+  // === Research Buildings ===
+  { "id": "s", "name": "Software R&amp;D", "type": "production", "cost": 65550, "baseTime": 3, "wages": 414, "resources": [{ "id": 101, "qty": 76 }, { "id": 102, "qty": 1045 }, { "id": 108, "qty": 304 }, { "id": 111, "qty": 19 }] },
+  { "id": "f", "name": "Fashion &amp; Design", "type": "production", "cost": 72450, "baseTime": 2, "wages": 448.5, "resources": [{ "id": 101, "qty": 84 }, { "id": 102, "qty": 1155 }, { "id": 108, "qty": 336 }, { "id": 111, "qty": 21 }] },
+  { "id": "q", "name": "Kitchen", "type": "production", "cost": 82800, "baseTime": 4, "wages": 414, "resources": [{ "id": 101, "qty": 96 }, { "id": 102, "qty": 1320 }, { "id": 108, "qty": 384 }, { "id": 111, "qty": 24 }] },
+  { "id": "b", "name": "Breeding laboratory", "type": "production", "cost": 96600, "baseTime": 5, "wages": 414, "resources": [{ "id": 101, "qty": 112 }, { "id": 102, "qty": 1540 }, { "id": 108, "qty": 448 }, { "id": 111, "qty": 28 }] },
+  { "id": "c", "name": "Chemistry laboratory", "type": "production", "cost": 96600, "baseTime": 5, "wages": 414, "resources": [{ "id": 101, "qty": 112 }, { "id": 102, "qty": 1540 }, { "id": 108, "qty": 448 }, { "id": 111, "qty": 28 }] },
+  { "id": "p", "name": "Plant research center", "type": "production", "cost": 103500, "baseTime": 5, "wages": 414, "resources": [{ "id": 101, "qty": 120 }, { "id": 102, "qty": 1650 }, { "id": 108, "qty": 480 }, { "id": 111, "qty": 30 }] },
+  { "id": "a", "name": "Automotive R&amp;D", "type": "production", "cost": 138000, "baseTime": 6, "wages": 552, "resources": [{ "id": 101, "qty": 160 }, { "id": 102, "qty": 2200 }, { "id": 108, "qty": 640 }, { "id": 111, "qty": 40 }] },
+  { "id": "h", "name": "Physics laboratory", "type": "production", "cost": 165600, "baseTime": 7, "wages": 586.5, "resources": [{ "id": 101, "qty": 192 }, { "id": 102, "qty": 2640 }, { "id": 108, "qty": 768 }, { "id": 111, "qty": 48 }] },
+  { "id": "y", "name": "Academy", "type": "production", "cost": 65550, "baseTime": 3, "wages": 414, "resources": [{ "id": 101, "qty": 76 }, { "id": 102, "qty": 1045 }, { "id": 108, "qty": 304 }, { "id": 111, "qty": 19 }] },
+  // === Resource Buildings ===
+  { "id": "v", "name": "Forest nursery", "type": "production", "cost": 20700, "baseTime": 2, "wages": 103.5, "resources": [{ "id": 101, "qty": 24 }, { "id": 102, "qty": 330 }, { "id": 108, "qty": 96 }, { "id": 111, "qty": 6 }] },
+  // === Retail Buildings (Concrete/Bricks/Planks/CU) ===
+  { "id": "G", "name": "Grocery store", "type": "retail", "cost": 10350, "baseTime": 1, "wages": 138, "resources": [{ "id": 101, "qty": 12 }, { "id": 102, "qty": 165 }, { "id": 108, "qty": 48 }, { "id": 111, "qty": 2 }] },
+  { "id": "C", "name": "Electronics store", "type": "retail", "cost": 17250, "baseTime": 1, "wages": 172.5, "resources": [{ "id": 101, "qty": 20 }, { "id": 102, "qty": 275 }, { "id": 108, "qty": 80 }, { "id": 111, "qty": 5 }] },
+  { "id": "d", "name": "Hardware store", "type": "retail", "cost": 13800, "baseTime": 4, "wages": 172.5, "resources": [{ "id": 101, "qty": 16 }, { "id": 102, "qty": 220 }, { "id": 108, "qty": 64 }, { "id": 111, "qty": 4 }] },
+  { "id": "A", "name": "Gas station", "type": "retail", "cost": 24150, "baseTime": 2, "wages": 345, "resources": [{ "id": 101, "qty": 28 }, { "id": 102, "qty": 385 }, { "id": 108, "qty": 112 }, { "id": 111, "qty": 7 }] },
+  { "id": "H", "name": "Fashion store", "type": "retail", "cost": 17250, "baseTime": 3, "wages": 310.5, "resources": [{ "id": 101, "qty": 20 }, { "id": 102, "qty": 275 }, { "id": 108, "qty": 80 }, { "id": 111, "qty": 5 }] },
+  { "id": "2", "name": "Car dealership", "type": "retail", "cost": 20700, "baseTime": 3, "wages": 379.5, "resources": [{ "id": 101, "qty": 24 }, { "id": 102, "qty": 330 }, { "id": 108, "qty": 96 }, { "id": 111, "qty": 6 }] },
+  { "id": "B", "name": "Sales offices", "type": "retail", "cost": 62100, "baseTime": 2, "wages": 586.5, "resources": [{ "id": 101, "qty": 72 }, { "id": 102, "qty": 990 }, { "id": 108, "qty": 288 }, { "id": 111, "qty": 18 }] },
+  { "id": "r", "name": "Restaurant", "type": "retail", "cost": 89700, "baseTime": 3, "wages": 655.5, "resources": [] },
+  { "id": "t", "name": "Halloween market", "type": "retail", "cost": 13800, "baseTime": 2, "wages": 207, "resources": [{ "id": 101, "qty": 16 }, { "id": 102, "qty": 220 }, { "id": 108, "qty": 64 }, { "id": 111, "qty": 4 }] },
+  { "id": "u", "name": "Xmas market", "type": "retail", "cost": 17250, "baseTime": 3, "wages": 207, "resources": [{ "id": 101, "qty": 20 }, { "id": 102, "qty": 275 }, { "id": 108, "qty": 80 }, { "id": 111, "qty": 5 }] },
+  { "id": "z", "name": "Beach market", "type": "retail", "cost": 10350, "baseTime": 1, "wages": 207, "resources": [{ "id": 101, "qty": 12 }, { "id": 102, "qty": 165 }, { "id": 108, "qty": 48 }, { "id": 111, "qty": 3 }] },
+  // === Special (Cash-only) ===
+  { "id": "5", "name": "Lake", "type": "retail", "cost": 138000, "baseTime": 12, "wages": 0, "resources": [] }
+];
+&nbsp;
+export const CONSTRUCTION_MATERIALS = <span class="cstat-no" title="statement not covered" >[</span>
+  { id: 101, name: "Reinforced concrete", basePrice: 500 },
+  { id: 102, name: "Bricks", basePrice: 15 },
+  { id: 108, name: "Planks", basePrice: 30 },
+  { id: 111, name: "Construction units", basePrice: 2673.75 }
+];
+&nbsp;
+// Retail store → sellable product IDs
+// Game API resource IDs per retail store (from api.simcotools.com)
+// These are the ACTUAL game IDs, not the simco_static.ts local IDs.
+export const RETAIL_PRODUCT_MAP: Record&lt;string, number[]&gt; = <span class="cstat-no" title="statement not covered" >{</span>
+  G: [3,4,5,7,8,9,117,119,121,122,123,124,125,126,127,129,130,131,132,134,140,142,143,146,149,152,153,154],
+  C: [24,25,26,27,28],
+  A: [11,12],
+  2: [53,54,55,56,57],
+  H: [60,61,62,63,64,65,70,71],
+  d: [102,103,108,109,110],
+  r: [],     // Restaurant — P2P menu/rating system, not a simple retail product
+  B: [],     // Sales offices — B2B contracts
+  t: [146,147,148],
+  u: [67,144,150],
+  z: [153,154],
+};
+&nbsp;
+// Game reference prices for construction materials (from game encyclopedia — source of truth)
+// These are the MARKET reference prices used for NPC buy/sell orders, NOT scrap prices.
+// Scrap uses lower prices (Concrete=$166.66, Bricks=$2.16, Planks=$9.08, CU=$2501.71)
+// and is reflected in building.cost (reference value).
+export const MAT_REF_PRICES: Record&lt;number, number&gt; = <span class="cstat-no" title="statement not covered" >{ 101: 500, 102: 15, 108: 30, 111: 2673.75 };</span>
+&nbsp;
+// Economic phase production multipliers (game uses these internally)
+export const PHASE_MULTIPLIERS: Record&lt;string, number&gt; = <span class="cstat-no" title="statement not covered" >{ boom: 1.25, normal: 1.0, recession: 0.8 };</span>
+&nbsp;
+export interface ResourceData {
+  id: number;
+  name: string;
+  transport: number;
+  buildingId?: string | number;
+  basePh?: number;
+  baseWages?: number;
+  inputs?: Record&lt;number, number&gt;;
+  retailInfo?: any[];
+}
+&nbsp;
+export const RESOURCES: ResourceData[] = <span class="cstat-no" title="statement not covered" >[</span>
+  { "id": 1, "name": "Power", "transport": 0, "buildingId": "E", "basePh": 2566.94, "baseWages": 414 },
+  { "id": 2, "name": "Water", "transport": 0, "buildingId": "W", "basePh": 1626.43, "baseWages": 345 },
+  { "id": 3, "name": "Apples", "transport": 1, "buildingId": "P", "basePh": 202.19, "baseWages": 103.5 },
+  { "id": 4, "name": "Oranges", "transport": 1, "buildingId": "P", "basePh": 186.01, "baseWages": 103.5 },
+  { "id": 5, "name": "Grapes", "transport": 1, "buildingId": "P", "basePh": 161.75, "baseWages": 103.5 },
+  { "id": 6, "name": "Grain", "transport": 0.1, "buildingId": "P", "basePh": 808.75, "baseWages": 103.5 },
+  { "id": 7, "name": "Steak", "transport": 1, "buildingId": "e", "basePh": 25.67, "baseWages": 414, "inputs": { 115: 0.125 } },
+  { "id": 8, "name": "Sausages", "transport": 0.1, "buildingId": "e", "basePh": 77.01, "baseWages": 414, "inputs": { 116: 0.0625 } },
+  { "id": 9, "name": "Eggs", "transport": 0.1, "buildingId": "F", "basePh": 316.47, "baseWages": 138, "inputs": { 2: 0.4, 6: 0.5 } },
+  { "id": 10, "name": "Crude oil", "transport": 1, "buildingId": "O", "basePh": 41.52, "baseWages": 517.5 },
+  { "id": 11, "name": "Petrol", "transport": 1, "buildingId": "R", "basePh": 111.41, "baseWages": 482.3, "inputs": { 10: 0.75, 73: 0.25 } },
+  { "id": 12, "name": "Diesel", "transport": 1, "buildingId": "R", "basePh": 115.13, "baseWages": 482.3, "inputs": { 10: 0.75, 73: 0.25 } },
+  { "id": 13, "name": "Transport", "transport": 0, "buildingId": "S", "basePh": 3173.95, "baseWages": 310.5 },
+  { "id": 14, "name": "Minerals", "transport": 1, "buildingId": "M", "basePh": 119.23, "baseWages": 276 },
+  { "id": 15, "name": "Bauxite", "transport": 1, "buildingId": "M", "basePh": 96.52, "baseWages": 276 },
+  { "id": 16, "name": "Silicon", "transport": 1, "buildingId": "Y", "basePh": 154.02, "baseWages": 414, "inputs": { 44: 2 } },
+  { "id": 17, "name": "Chemicals", "transport": 1, "buildingId": "Y", "basePh": 213.91, "baseWages": 414, "inputs": { 14: 1 } },
+  { "id": 18, "name": "Aluminium", "transport": 1, "buildingId": "Y", "basePh": 99.43, "baseWages": 414, "inputs": { 15: 1 } },
+  { "id": 19, "name": "Plastic", "transport": 1, "buildingId": "Y", "basePh": 204.25, "baseWages": 483, "inputs": { 10: 0.2 } },
+  { "id": 20, "name": "Processors", "transport": 1, "buildingId": "L", "basePh": 9.18, "baseWages": 379.5, "inputs": { 16: 4, 17: 1 } },
+  { "id": 21, "name": "Electronic components", "transport": 1, "buildingId": "L", "basePh": 41.33, "baseWages": 379.5, "inputs": { 16: 3, 17: 1 } },
+  { "id": 22, "name": "Batteries", "transport": 1, "buildingId": "L", "basePh": 25.26, "baseWages": 379.5, "inputs": { 17: 4 } },
+  { "id": 23, "name": "Displays", "transport": 1, "buildingId": "L", "basePh": 32.14, "baseWages": 379.5, "inputs": { 16: 5, 17: 4 } },
+  { "id": 24, "name": "Smart phones", "transport": 2, "buildingId": "L", "basePh": 11.48, "baseWages": 379.5, "inputs": { 18: 2, 20: 2, 21: 1, 22: 1, 23: 1 } },
+  { "id": 25, "name": "Tablets", "transport": 2, "buildingId": "L", "basePh": 0, "baseWages": 0 },
+  { "id": 26, "name": "Laptops", "transport": 2, "buildingId": "L", "basePh": 0, "baseWages": 0 },
+  { "id": 27, "name": "Monitors", "transport": 2, "buildingId": "L", "basePh": 0, "baseWages": 0 },
+  { "id": 28, "name": "Televisions", "transport": 2, "buildingId": "L", "basePh": 0, "baseWages": 0 },
+  { "id": 29, "name": "Plant research", "transport": 0, "buildingId": "p", "basePh": 0, "baseWages": 0 },
+  { "id": 30, "name": "Energy research", "transport": 0, "buildingId": "h", "basePh": 0, "baseWages": 0 },
+  { "id": 31, "name": "Mining research", "transport": 0, "buildingId": "h", "basePh": 0, "baseWages": 0 },
+  { "id": 32, "name": "Electronics research", "transport": 0, "buildingId": "h", "basePh": 0, "baseWages": 0 },
+  { "id": 33, "name": "Breeding research", "transport": 0, "buildingId": "b", "basePh": 0, "baseWages": 0 },
+  { "id": 34, "name": "Chemistry research", "transport": 0, "buildingId": "c", "basePh": 0, "baseWages": 0 },
+  { "id": 35, "name": "Software", "transport": 0, "buildingId": "s", "basePh": 0, "baseWages": 0 },
+  { "id": 40, "name": "Cotton", "transport": 0.5, "buildingId": "P", "basePh": 258.8, "baseWages": 103.5 },
+  { "id": 41, "name": "Fabric", "transport": 0.5, "buildingId": "T", "basePh": 241.12, "baseWages": 138, "inputs": { 40: 2 } },
+  { "id": 42, "name": "Iron ore", "transport": 1, "buildingId": "M", "basePh": 181.69, "baseWages": 276 },
+  { "id": 43, "name": "Steel", "transport": 1, "buildingId": "Y", "basePh": 192.52, "baseWages": 414, "inputs": { 42: 1, 17: 0.1 } },
+  { "id": 44, "name": "Sand", "transport": 1, "buildingId": "Q", "basePh": 1419.44, "baseWages": 276 },
+  { "id": 45, "name": "Glass", "transport": 1, "buildingId": "Y", "basePh": 128.35, "baseWages": 414, "inputs": { 16: 1 } },
+  { "id": 46, "name": "Leather", "transport": 1, "buildingId": "F", "basePh": 30.14, "baseWages": 138, "inputs": { 115: 0.125 } },
+  { "id": 47, "name": "On-board computer", "transport": 1, "buildingId": "8", "basePh": 13.78, "baseWages": 379.5, "inputs": { 20: 2, 21: 3 } },
+  { "id": 48, "name": "Electric motor", "transport": 2, "buildingId": "Y", "basePh": 30.78, "baseWages": 621, "inputs": { 21: 3, 43: 2 } },
+  { "id": 49, "name": "Luxury car interior", "transport": 2, "buildingId": "1", "basePh": 23.92, "baseWages": 448.5, "inputs": { 18: 2, 23: 2, 41: 5 } },
+  { "id": 50, "name": "Basic interior", "transport": 2, "buildingId": "1", "basePh": 31.89, "baseWages": 448.5, "inputs": { 19: 2, 23: 2, 41: 5 } },
+  { "id": 51, "name": "Car body", "transport": 2, "buildingId": "1", "basePh": 23.92, "baseWages": 448.5, "inputs": { 18: 30, 43: 5, 45: 5 } },
+  { "id": 52, "name": "Combustion engine", "transport": 2, "buildingId": "1", "basePh": 5.6, "baseWages": 621, "inputs": { 17: 5, 21: 5, 43: 6 } },
+  { "id": 53, "name": "Economy e-car", "transport": 5, "buildingId": "1", "basePh": 0, "baseWages": 0 },
+  { "id": 54, "name": "Luxury e-car", "transport": 5, "buildingId": "1", "basePh": 0, "baseWages": 0 },
+  { "id": 55, "name": "Economy car", "transport": 5, "buildingId": "1", "basePh": 0, "baseWages": 0 },
+  { "id": 56, "name": "Luxury car", "transport": 5, "buildingId": "1", "basePh": 0, "baseWages": 0 },
+  { "id": 57, "name": "Truck", "transport": 5, "buildingId": "1", "basePh": 2.8, "baseWages": 448.5, "inputs": { 43: 10, 47: 1, 50: 1, 51: 1, 52: 6, 13: 5 } },
+  { "id": 58, "name": "Automotive research", "transport": 0, "buildingId": "a", "basePh": 0, "baseWages": 0 },
+  { "id": 59, "name": "Fashion research", "transport": 0, "buildingId": "f", "basePh": 0, "baseWages": 0 },
+  { "id": 60, "name": "Underwear", "transport": 1, "buildingId": "T", "basePh": 0, "baseWages": 0 },
+  { "id": 61, "name": "Gloves", "transport": 1, "buildingId": "T", "basePh": 0, "baseWages": 0 },
+  { "id": 62, "name": "Dress", "transport": 1, "buildingId": "T", "basePh": 0, "baseWages": 0 },
+  { "id": 63, "name": "Stiletto Heel", "transport": 1, "buildingId": "T", "basePh": 0, "baseWages": 0 },
+  { "id": 64, "name": "Handbags", "transport": 1, "buildingId": "T", "basePh": 0, "baseWages": 0 },
+  { "id": 65, "name": "Sneakers", "transport": 1, "buildingId": "T", "basePh": 0, "baseWages": 0 },
+  { "id": 66, "name": "Seeds", "transport": 0.1, "buildingId": "P", "basePh": 0, "baseWages": 0 },
+  { "id": 67, "name": "Xmas crackers", "transport": 1, "buildingId": "T", "basePh": 0, "baseWages": 0 },
+  { "id": 68, "name": "Gold ore", "transport": 1, "buildingId": "M", "basePh": 15.6, "baseWages": 276 },
+  { "id": 69, "name": "Golden bars", "transport": 1, "buildingId": "Y", "basePh": 0, "baseWages": 0 },
+  { "id": 70, "name": "Luxury watch", "transport": 2, "buildingId": "T", "basePh": 0, "baseWages": 0 },
+  { "id": 71, "name": "Necklace", "transport": 1, "buildingId": "T", "basePh": 0, "baseWages": 0 },
+  { "id": 72, "name": "Sugarcane", "transport": 0.1, "buildingId": "P", "basePh": 647, "baseWages": 103.5 },
+  { "id": 73, "name": "Ethanol", "transport": 1, "buildingId": "R", "basePh": 60.94, "baseWages": 241.5, "inputs": { 72: 10 } },
+  { "id": 74, "name": "Methane", "transport": 1, "buildingId": "R", "basePh": 0, "baseWages": 0 },
+  { "id": 75, "name": "Carbon fibers", "transport": 0.1, "buildingId": "Y", "basePh": 245.11, "baseWages": 483, "inputs": { 10: 0.1 } },
+  { "id": 76, "name": "Carbon composite", "transport": 1, "buildingId": "7", "basePh": 68.45, "baseWages": 414, "inputs": { 75: 8 } },
+  { "id": 77, "name": "Fuselage", "transport": 2, "buildingId": "7", "basePh": 3.3, "baseWages": 586.5, "inputs": { 76: 40 } },
+  { "id": 78, "name": "Wing", "transport": 2, "buildingId": "7", "basePh": 8.11, "baseWages": 586.5, "inputs": { 18: 5, 76: 30 } },
+  { "id": 79, "name": "High grade e-comps", "transport": 1, "buildingId": "8", "basePh": 1.84, "baseWages": 379.5, "inputs": { 16: 4, 17: 3, 69: 0.0625 } },
+  { "id": 80, "name": "Flight computer", "transport": 1, "buildingId": "8", "basePh": 2.26, "baseWages": 724.5, "inputs": { 47: 2, 79: 4 } },
+  { "id": 81, "name": "Cockpit", "transport": 1, "buildingId": "8", "basePh": 2.26, "baseWages": 724.5, "inputs": { 23: 8, 50: 1, 79: 4 } },
+  { "id": 82, "name": "Attitude control", "transport": 1, "buildingId": "8", "basePh": 2.72, "baseWages": 724.5, "inputs": { 22: 5, 43: 3, 48: 3 } },
+  { "id": 83, "name": "Rocket fuel", "transport": 1, "buildingId": "R", "basePh": 0, "baseWages": 0 },
+  { "id": 84, "name": "Propellant tank", "transport": 1, "buildingId": "R", "basePh": 0, "baseWages": 0 },
+  { "id": 85, "name": "Solid fuel booster", "transport": 1, "buildingId": "7", "basePh": 0, "baseWages": 0 },
+  { "id": 86, "name": "Rocket engine", "transport": 1, "buildingId": "7", "basePh": 0, "baseWages": 0 },
+  { "id": 87, "name": "Heat shield", "transport": 1, "buildingId": "7", "basePh": 0, "baseWages": 0 },
+  { "id": 88, "name": "Ion drive", "transport": 1, "buildingId": "7", "basePh": 0, "baseWages": 0 },
+  { "id": 89, "name": "Jet engine", "transport": 1, "buildingId": "7", "basePh": 0, "baseWages": 0 },
+  { "id": 90, "name": "Sub-orbital 2nd stage", "transport": 1, "buildingId": "7", "basePh": 0, "baseWages": 0 },
+  { "id": 91, "name": "Sub-orbital rocket", "transport": 1, "buildingId": "7", "basePh": 0, "baseWages": 0 },
+  { "id": 92, "name": "Orbital booster", "transport": 1, "buildingId": "7", "basePh": 0, "baseWages": 0 },
+  { "id": 93, "name": "Starship", "transport": 1, "buildingId": "7", "basePh": 0, "baseWages": 0 },
+  { "id": 94, "name": "BFR", "transport": 2000, "buildingId": "l", "basePh": 0, "baseWages": 0 },
+  { "id": 95, "name": "Jumbo jet", "transport": 2000, "buildingId": "0", "basePh": 0, "baseWages": 0 },
+  { "id": 96, "name": "Luxury jet", "transport": 2000, "buildingId": "0", "basePh": 0, "baseWages": 0 },
+  { "id": 97, "name": "Single engine plane", "transport": 1, "buildingId": "0", "basePh": 0, "baseWages": 0 },
+  { "id": 98, "name": "Quadcopter", "transport": 1, "buildingId": "7", "basePh": 0, "baseWages": 0 },
+  { "id": 99, "name": "Satellite", "transport": 1, "buildingId": "7", "basePh": 0, "baseWages": 0 },
+  { "id": 100, "name": "Aerospace research", "transport": 0, "buildingId": "l", "basePh": 0, "baseWages": 0 },
+  { "id": 101, "name": "Reinforced concrete", "transport": 10, "buildingId": "o", "basePh": 188.27, "baseWages": 380, "inputs": { 103: 15, 43: 5, 44: 20 } },
+  { "id": 102, "name": "Bricks", "transport": 1, "buildingId": "x", "basePh": 367.35, "baseWages": 380, "inputs": { 104: 0.5 } },
+  { "id": 103, "name": "Cement", "transport": 1, "buildingId": "x", "basePh": 298.47, "baseWages": 380, "inputs": { 105: 3 } },
+  { "id": 104, "name": "Clay", "transport": 1, "buildingId": "Q", "basePh": 1078.77, "baseWages": 276 },
+  { "id": 105, "name": "Limestone", "transport": 1, "buildingId": "Q", "basePh": 794.89, "baseWages": 276 },
+  { "id": 106, "name": "Wood", "transport": 1, "buildingId": "v", "basePh": 92.97, "baseWages": 103.5 },
+  { "id": 107, "name": "Steel Beams", "transport": 5, "buildingId": "x", "basePh": 129.98, "baseWages": 483, "inputs": { 43: 1 } },
+  { "id": 108, "name": "Planks", "transport": 1, "buildingId": "x", "basePh": 115.13, "baseWages": 483, "inputs": { 106: 0.5 } },
+  { "id": 109, "name": "Windows", "transport": 1, "buildingId": "x", "basePh": 16.71, "baseWages": 483, "inputs": { 18: 2, 45: 1 } },
+  { "id": 110, "name": "Tools", "transport": 1, "buildingId": "x", "basePh": 26, "baseWages": 483, "inputs": { 108: 0.5, 21: 1, 22: 1, 43: 0.5 } },
+  { "id": 111, "name": "Construction units", "transport": 0, "buildingId": "x", "basePh": 0.99, "baseWages": 345, "inputs": { 107: 8, 110: 4, 112: 0.125, 12: 5 } },
+  { "id": 112, "name": "Bulldozers", "transport": 100, "buildingId": "x", "basePh": 0.125, "baseWages": 483, "inputs": { 43: 40, 110: 10 } },
+  { "id": 113, "name": "Materials research", "transport": 0, "buildingId": "h", "basePh": 0, "baseWages": 0 },
+  { "id": 114, "name": "Robots", "transport": 1, "buildingId": "Y", "basePh": 0, "baseWages": 0 },
+  { "id": 115, "name": "Cows", "transport": 1, "buildingId": "F", "basePh": 37.68, "baseWages": 138, "inputs": { 139: 12 } },
+  { "id": 116, "name": "Pigs", "transport": 1, "buildingId": "F", "basePh": 82.89, "baseWages": 138, "inputs": { 139: 4 } },
+  { "id": 117, "name": "Milk", "transport": 1, "buildingId": "F", "basePh": 120.56, "baseWages": 138, "inputs": { 139: 0.5 } },
+  { "id": 118, "name": "Coffee beans", "transport": 0.1, "buildingId": "P", "basePh": 412.46, "baseWages": 103.5 },
+  { "id": 119, "name": "Coffee powder", "transport": 1, "buildingId": "i", "basePh": 22.96, "baseWages": 380, "inputs": { 118: 10 } },
+  { "id": 120, "name": "Vegetables", "transport": 0.2, "buildingId": "P", "basePh": 283.06, "baseWages": 103.5 },
+  { "id": 121, "name": "Bread", "transport": 1, "buildingId": "j", "basePh": 11.96, "baseWages": 448.5, "inputs": { 137: 1 } },
+  { "id": 122, "name": "Cheese", "transport": 1, "buildingId": "k", "basePh": 5.51, "baseWages": 379.5, "inputs": { 117: 1 } },
+  { "id": 123, "name": "Apple pie", "transport": 2, "buildingId": "j", "basePh": 0, "baseWages": 0 },
+  { "id": 124, "name": "Orange juice", "transport": 1, "buildingId": "6", "basePh": 0, "baseWages": 0 },
+  { "id": 125, "name": "Apple cider", "transport": 1, "buildingId": "6", "basePh": 0, "baseWages": 0 },
+  { "id": 126, "name": "Ginger beer", "transport": 1, "buildingId": "6", "basePh": 0, "baseWages": 0 },
+  { "id": 127, "name": "Frozen pizza", "transport": 1, "buildingId": "q", "basePh": 0, "baseWages": 0 },
+  { "id": 128, "name": "Pasta", "transport": 1, "buildingId": "i", "basePh": 0, "baseWages": 0 },
+  { "id": 129, "name": "Hamburger", "transport": 2, "buildingId": "1", "basePh": 0, "baseWages": 0 },
+  { "id": 130, "name": "Lasagna", "transport": 2, "buildingId": "1", "basePh": 0, "baseWages": 0 },
+  { "id": 131, "name": "Meat balls", "transport": 1, "buildingId": "1", "basePh": 0, "baseWages": 0 },
+  { "id": 132, "name": "Cocktails", "transport": 1, "buildingId": "r", "basePh": 0, "baseWages": 0 },
+  { "id": 133, "name": "Flour", "transport": 0.1, "buildingId": "i", "basePh": 73.29, "baseWages": 379.5, "inputs": { 6: 15 } },
+  { "id": 134, "name": "Butter", "transport": 1, "buildingId": "k", "basePh": 13.78, "baseWages": 379.5, "inputs": { 117: 0.5 } },
+  { "id": 135, "name": "Sugar", "transport": 1, "buildingId": "i", "basePh": 41.33, "baseWages": 379.5, "inputs": { 72: 1 } },
+  { "id": 136, "name": "Cocoa", "transport": 0.1, "buildingId": "P", "basePh": 130.78, "baseWages": 103.5 },
+  { "id": 137, "name": "Dough", "transport": 1, "buildingId": "j", "basePh": 11.96, "baseWages": 448.5, "inputs": { 133: 2, 134: 0.5, 9: 1 } },
+  { "id": 138, "name": "Sauce", "transport": 1, "buildingId": "j", "basePh": 0, "baseWages": 0 },
+  { "id": 139, "name": "Fodder", "transport": 1, "buildingId": "i", "basePh": 284.7, "baseWages": 379.5, "inputs": { 120: 0.5, 6: 10 } },
+  { "id": 140, "name": "Chocolate", "transport": 1, "buildingId": "k", "basePh": 0, "baseWages": 0 },
+  { "id": 141, "name": "Vegetable oil", "transport": 1, "buildingId": "i", "basePh": 0, "baseWages": 0 },
+  { "id": 142, "name": "Salad", "transport": 1, "buildingId": "q", "basePh": 0, "baseWages": 0 },
+  { "id": 143, "name": "Samosa", "transport": 1, "buildingId": "q", "basePh": 0, "baseWages": 0 },
+  { "id": 144, "name": "Xmas ornament", "transport": 1, "buildingId": "T", "basePh": 0, "baseWages": 0 },
+  { "id": 145, "name": "Recipes", "transport": 0, "buildingId": "q", "basePh": 0, "baseWages": 0 },
+  { "id": 146, "name": "Pumpkin", "transport": 1, "buildingId": "P", "basePh": 0, "baseWages": 0 },
+  { "id": 147, "name": "Jack o'lantern", "transport": 1, "buildingId": "q", "basePh": 0, "baseWages": 0 },
+  { "id": 148, "name": "Witch costume", "transport": 1, "buildingId": "T", "basePh": 0, "baseWages": 0 },
+  { "id": 149, "name": "Pumpkin soup", "transport": 1, "buildingId": "q", "basePh": 0, "baseWages": 0 },
+  { "id": 150, "name": "Tree", "transport": 1, "buildingId": "v", "basePh": 0, "baseWages": 0 },
+  { "id": 151, "name": "Easter Bunny", "transport": 1, "buildingId": "v", "basePh": 0, "baseWages": 0 },
+  { "id": 152, "name": "Ramadan sweets", "transport": 1, "buildingId": "T", "basePh": 0, "baseWages": 0 },
+  { "id": 153, "name": "Chocolate icecream", "transport": 1, "buildingId": "q", "basePh": 0, "baseWages": 0 },
+  { "id": 154, "name": "Apple icecream", "transport": 1, "buildingId": "q", "basePh": 0, "baseWages": 0 },
+  { "id": 155, "name": "Cream egg", "transport": 1, "buildingId": "q", "basePh": 0, "baseWages": 0 }
+];
+&nbsp;
+// ============ XP Tables (Official Game Data) ============
+export const XP_TABLE: Record&lt;number, number&gt; = <span class="cstat-no" title="statement not covered" >{</span>
+  1: 0, 2: 100, 3: 300, 4: 600, 5: 1000, 6: 1500, 7: 2100, 8: 2800, 9: 3600, 10: 4500,
+  11: 5500, 12: 6600, 13: 7800, 14: 9100, 15: 10500, 16: 12000, 17: 13600, 18: 15300, 19: 17100, 20: 19000,
+  21: 21000, 22: 23100, 23: 25300, 24: 27600, 25: 30000, 26: 32500, 27: 35100, 28: 37800, 29: 40600, 30: 43500,
+  31: 46500, 32: 49600, 33: 52800, 34: 56100, 35: 59500, 36: 63000, 37: 66600, 38: 70300, 39: 74100, 40: 78000,
+  41: 82000, 42: 86100, 43: 90300, 44: 94600, 45: 99000, 46: 103500, 47: 108100, 48: 112800, 49: 117600, 50: 122500,
+  51: 127500, 52: 132600, 53: 137800, 54: 143100, 55: 148500, 56: 154000, 57: 159600, 58: 165300, 59: 171100, 60: 177000,
+};
+&nbsp;
+export const OP_XP_PER_LEVEL: Record&lt;number, number&gt; = <span class="cstat-no" title="statement not covered" >{</span>
+  1: 10, 2: 20, 3: 30, 4: 40, 5: 50, 6: 60, 7: 70, 8: 80, 9: 90, 10: 100,
+  11: 110, 12: 120, 13: 130, 14: 140, 15: 150, 16: 160, 17: 170, 18: 180, 19: 190, 20: 200,
+  21: 210, 22: 220, 23: 230, 24: 240, 25: 250, 26: 260, 27: 270, 28: 280, 29: 290, 30: 300,
+  31: 310, 32: 320, 33: 330, 34: 340, 35: 350, 36: 360, 37: 370, 38: 380, 39: 390, 40: 400,
+  41: 410, 42: 420, 43: 430, 44: 440, 45: 450, 46: 460, 47: 470, 48: 480, 49: 490, 50: 500,
+  51: 510, 52: 520, 53: 530, 54: 540, 55: 550, 56: 560, 57: 570, 58: 580, 59: 590, 60: 600,
+};
+&nbsp;
+export const REC_XP_PER_QUALITY: Record&lt;number, number&gt; = <span class="cstat-no" title="statement not covered" >{</span>
+  0: 5, 1: 10, 2: 20, 3: 35, 4: 55, 5: 80, 6: 110, 7: 145, 8: 185, 9: 230, 10: 280,
+  11: 340, 12: 410,
+};
+&nbsp;
+export const PROSPECT_XP_BASE = <span class="cstat-no" title="statement not covered" >100;</span>
+&nbsp;
+export function <span class="fstat-no" title="function not covered" >xpForLevel(l</span>v: number): number {
+<span class="cstat-no" title="statement not covered" >  if (lv &lt; 1 || lv &gt; 60) <span class="cstat-no" title="statement not covered" >return 0;</span></span>
+<span class="cstat-no" title="statement not covered" >  return XP_TABLE[lv] ?? 0;</span>
+}</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-11-17T14:47:35.314Z
+            </div>
+        <script src="../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
+    </body>
+</html>
+    

@@ -392,6 +392,10 @@ function generateBuildingCombinations(inputs: OptimizerInputs): BuildingPlan[][]
 
   const combinations: BuildingPlan[][] = [];
   const memo = new Map<string, BuildingPlan[][]>();
+  const MAX_COMBINATIONS = 50000; // Hard limit to prevent freezing
+  let combinationCount = 0;
+  const startTime = Date.now();
+  const MAX_TIME_MS = 8000; // 8 second timeout
 
   function generateRecursive(
     index: number,
@@ -401,14 +405,20 @@ function generateBuildingCombinations(inputs: OptimizerInputs): BuildingPlan[][]
     hasCarFactory: boolean,
     hasDealership: boolean
   ): BuildingPlan[][] {
-    // Memoization key
-    const key = `${index}-${slotsUsed}-${cashSpent}-${hasCarFactory}-${hasDealership}`;
+    // Timeout and combination count checks
+    if (Date.now() - startTime > MAX_TIME_MS || combinationCount >= MAX_COMBINATIONS) {
+      return [];
+    }
+
+    // Memoization key - simplified to improve hit rate
+    const key = `${index}-${slotsUsed}-${hasCarFactory}-${hasDealership}`;
     if (memo.has(key)) {
       return memo.get(key)!.map(combo => [...current, ...combo]);
     }
 
     if (index >= buildingTypes.length) {
       if (current.length > 0 && hasCarFactory && hasDealership) {
+        combinationCount++;
         return [[...current]];
       }
       return [];

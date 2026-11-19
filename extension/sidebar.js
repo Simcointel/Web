@@ -530,23 +530,31 @@
     const chatContainer = document.querySelector('[class*="chat"], [class*="Chat"], #chat, .messages');
     if (chatContainer) {
       const observer = new MutationObserver(() => {
-        if (!checkRateLimit('chat-parse', RATE_LIMITS.chatParse)) return;
-        chatContainer.querySelectorAll('[class*="message"], [class*="Message"], li, .msg').forEach(el => {
-          const text = el.textContent.trim();
-          if (!text || el.dataset.simcointelParsed) return;
-          const parsed = parseChatMessage(text);
-          if (parsed) {
-            parsed.time = new Date().toLocaleTimeString();
-            messages.unshift(parsed);
-            if (messages.length > 200) messages.pop();
-            if (parsed.type === 'buy') buy++; else sell++;
-            updateStats();
-            render();
-          }
-          el.dataset.simcointelParsed = 'true';
-        });
+        try {
+          if (!checkRateLimit('chat-parse', RATE_LIMITS.chatParse)) return;
+          chatContainer.querySelectorAll('[class*="message"], [class*="Message"], li, .msg').forEach(el => {
+            const text = el.textContent.trim();
+            if (!text || el.dataset.simcointelParsed) return;
+            const parsed = parseChatMessage(text);
+            if (parsed) {
+              parsed.time = new Date().toLocaleTimeString();
+              messages.unshift(parsed);
+              if (messages.length > 200) messages.pop();
+              if (parsed.type === 'buy') buy++; else sell++;
+              updateStats();
+              render();
+            }
+            el.dataset.simcointelParsed = 'true';
+          });
+        } catch (e) {
+          console.warn('[SimcoIntel] Chat observer error:', e);
+        }
       });
-      observer.observe(chatContainer, { childList: true, subtree: true });
+      try {
+        observer.observe(chatContainer, { childList: true, subtree: true });
+      } catch (e) {
+        console.warn('[SimcoIntel] Chat observer.observe failed:', e);
+      }
     }
 
     filter.addEventListener('input', render);

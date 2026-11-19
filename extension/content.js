@@ -437,7 +437,13 @@
     setTimeout(() => syncCompanyData().catch(() => {}), 6000);
 
     const observer = new MutationObserver(() => scheduleSync(2500));
-    observer.observe(document.body, { childList: true, subtree: true });
+    try {
+      if (document.body) {
+        observer.observe(document.body, { childList: true, subtree: true });
+      }
+    } catch (e) {
+      log('MutationObserver init failed: ' + e.message, 'warn');
+    }
 
     watchUrlChanges();
     window.addEventListener('popstate', () => scheduleSync(1500));

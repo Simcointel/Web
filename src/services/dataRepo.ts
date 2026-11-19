@@ -52,7 +52,19 @@ export async function fetchDashboardState(realm: number): Promise<DashboardMap> 
     alerts?: { total?: number };
     leaders?: Record<string, unknown>;
   }>(`aggregates/market/realm-${realm}`, "market-summary-");
-  if (!data) throw new Error("No dashboard data");
+  
+  // Return default/empty state instead of throwing - allows graceful degradation
+  if (!data) {
+    return {
+      [String(realm)]: {
+        scores: { eh: 0, ms: 0, st: 0, ip: 0, sr: 0 },
+        regime: { na: 'Normal', sc: 0 },
+        alerts: 0,
+        sectors: 0,
+      },
+    };
+  }
+  
   return {
     [String(realm)]: {
       scores: data.scores,

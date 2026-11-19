@@ -31,6 +31,11 @@ const GITHUB_TO_API_MAP: Record<string, (realm: number) => string> = {
   "public/realm-{realm}/indexes.json": (realm) => `/public/export/indexes?realm=${realm}&limit=60`,
   "public/realm-{realm}/inflation.json": (realm) => `/public/export/inflation?realm=${realm}&limit=60`,
   "public/realm-{realm}/margins.json": (realm) => `/public/export/margins?realm=${realm}`,
+  // Aggregates fallbacks (legacy paths)
+  "aggregates/market/realm-{realm}": (realm) => `/public/export/dashboard?realm=${realm}`,
+  "aggregates/realm-status/realm-{realm}": (realm) => `/public/export/macro?realm=${realm}`,
+  "aggregates/indexes/realm-{realm}": (realm) => `/public/export/indexes?realm=${realm}&limit=60`,
+  "aggregates/inflation/realm-{realm}": (realm) => `/public/export/inflation?realm=${realm}&limit=60`,
   // Retail and calculator-live don't have direct backend endpoints yet
 };
 

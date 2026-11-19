@@ -1,0 +1,754 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for src/pages/Encyclopedia.tsx</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/pages</a> Encyclopedia.tsx</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>0/47</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/76</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/27</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>0/33</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a>
+<a name='L160'></a><a href='#L160'>160</a>
+<a name='L161'></a><a href='#L161'>161</a>
+<a name='L162'></a><a href='#L162'>162</a>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a>
+<a name='L200'></a><a href='#L200'>200</a>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a>
+<a name='L205'></a><a href='#L205'>205</a>
+<a name='L206'></a><a href='#L206'>206</a>
+<a name='L207'></a><a href='#L207'>207</a>
+<a name='L208'></a><a href='#L208'>208</a>
+<a name='L209'></a><a href='#L209'>209</a>
+<a name='L210'></a><a href='#L210'>210</a>
+<a name='L211'></a><a href='#L211'>211</a>
+<a name='L212'></a><a href='#L212'>212</a>
+<a name='L213'></a><a href='#L213'>213</a>
+<a name='L214'></a><a href='#L214'>214</a>
+<a name='L215'></a><a href='#L215'>215</a>
+<a name='L216'></a><a href='#L216'>216</a>
+<a name='L217'></a><a href='#L217'>217</a>
+<a name='L218'></a><a href='#L218'>218</a>
+<a name='L219'></a><a href='#L219'>219</a>
+<a name='L220'></a><a href='#L220'>220</a>
+<a name='L221'></a><a href='#L221'>221</a>
+<a name='L222'></a><a href='#L222'>222</a>
+<a name='L223'></a><a href='#L223'>223</a>
+<a name='L224'></a><a href='#L224'>224</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { useState, useMemo, useEffect } from "react";
+import { useDataRepoPoll } from "../hooks/useDataRepo";
+import * as dataRepo from "../services/dataRepo";
+import { RESOURCES, BUILDINGS } from "../data/simco_static";
+import { useSharedRealm } from "../hooks/useSharedRealm";
+import { usePageTitleKey } from "../hooks/usePageTitle";
+import { Search, Info, Factory, ShoppingCart, TrendingUp, ChevronRight, BookOpen, Layers, BarChart, Share2, Zap } from "lucide-react";
+import { LoadingState } from "../components/States";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import type { ProfitMarginsResponse, PriceHistoryItem } from "../types/api";
+import { buildResourceTree, type TreeNode } from "../data/buildTree";
+import { InputNode } from "../components/InputNode";
+&nbsp;
+export function <span class="fstat-no" title="function not covered" >EncyclopediaPage() {</span>
+<span class="cstat-no" title="statement not covered" >  usePageTitleKey('encyclopedia');</span>
+&nbsp;
+  const [realm<span class="cstat-no" title="statement not covered" >] = useSharedRealm();</span>
+  const [search, setSearch<span class="cstat-no" title="statement not covered" >] = useState("");</span>
+  const [selectedId, setSelectedId<span class="cstat-no" title="statement not covered" >] = useState&lt;number | null&gt;(null);</span>
+  const [history, setHistory<span class="cstat-no" title="statement not covered" >] = useState&lt;PriceHistoryItem[]&gt;([]);</span>
+  const [hLoading, setHLoading<span class="cstat-no" title="statement not covered" >] = useState(false);</span>
+  const [showFlow, setShowFlow<span class="cstat-no" title="statement not covered" >] = useState(false);</span>
+&nbsp;
+  const { data: margins, loading <span class="cstat-no" title="statement not covered" >} = useDataRepoPoll(<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >d</span>ataRepo.fetchProfitMargins(realm), 1</span>20000, [realm]);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
+<span class="cstat-no" title="statement not covered" >    if (selectedId) {</span>
+<span class="cstat-no" title="statement not covered" >      setHLoading(true);</span>
+<span class="cstat-no" title="statement not covered" >      dataRepo.fetchResourcePriceHistory(realm, selectedId, 30)</span>
+        .then(<span class="fstat-no" title="function not covered" >data =&gt; {</span> <span class="cstat-no" title="statement not covered" >setHistory(data.map(<span class="fstat-no" title="function not covered" >d =&gt; (<span class="cstat-no" title="statement not covered" >{</span> ...d, d: new Date(d.date).toLocaleDateString() }))</span>); }</span>)
+        .finally(<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etHLoading(false))</span>;
+    }
+  }, [selectedId, realm]);
+&nbsp;
+  const <span class="cstat-no" title="statement not covered" >filtered = useMemo(<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >R</span>ESOURCES.filter(<span class="fstat-no" title="function not covered" >r =&gt; <span class="cstat-no" title="statement not covered" >r</span>.name.toLowerCase().includes(search.toLowerCase()))</span>.sort(<span class="fstat-no" title="function not covered" >(a</span>, b) =&gt; <span class="cstat-no" title="statement not covered" >a.name.localeCompare(b.name))</span>, [</span>search]);</span>
+&nbsp;
+  const <span class="cstat-no" title="statement not covered" >selected = useMemo(<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >R</span>ESOURCES.find(<span class="fstat-no" title="function not covered" >r =&gt; <span class="cstat-no" title="statement not covered" >r</span>.id === selectedId)</span>, [</span>selectedId]);</span>
+&nbsp;
+  const <span class="cstat-no" title="statement not covered" >selectedMargin = useMemo(<span class="fstat-no" title="function not covered" >() =&gt; (<span class="cstat-no" title="statement not covered" >m</span>argins as ProfitMarginsResponse | undefined)?.resources?.find(<span class="fstat-no" title="function not covered" >(r</span>) =&gt; <span class="cstat-no" title="statement not covered" >r.id === selectedId)</span>, [</span>margins, selectedId]);</span>
+&nbsp;
+  const <span class="cstat-no" title="statement not covered" >tree = useMemo(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
+<span class="cstat-no" title="statement not covered" >    if (!selectedId) <span class="cstat-no" title="statement not covered" >return null;</span></span>
+<span class="cstat-no" title="statement not covered" >    return buildResourceTree(selectedId);</span>
+  }, [selectedId]);
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  if (loading &amp;&amp; !margins) <span class="cstat-no" title="statement not covered" >return &lt;LoadingState text="Accessing Knowledge Base..." /&gt;;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  return (</span>
+    &lt;div className="grid grid-cols-12 gap-6 animate-in fade-in duration-300 text-sm"&gt;
+      &lt;div className="col-span-12 lg:col-span-4 space-y-4"&gt;
+        &lt;div className="card h-[75vh] flex flex-col overflow-hidden !shadow-none border-surface-200 dark:border-surface-800"&gt;
+          &lt;div className="p-4 border-b border-surface-100 dark:border-surface-800 bg-surface-50 dark:bg-surface-900"&gt;
+            &lt;div className="relative"&gt;
+              &lt;Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" /&gt;
+              &lt;input type="text" placeholder="Search encyclopedia..." value={search} onChange={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; <span class="cstat-no" title="statement not covered" >setSearch(e.target.value)} c</span>lassName="w-full pl-10 pr-4 py-2 bg-white dark:bg-surface-950 border border-surface-300 dark:border-surface-700 rounded-lg text-sm focus:ring-1 focus:ring-brand-500 outline-none" /&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div className="flex-1 overflow-y-auto divide-y divide-surface-100 dark:divide-surface-800"&gt;
+            {filtered.map(<span class="fstat-no" title="function not covered" >r =&gt; (</span>
+<span class="cstat-no" title="statement not covered" >              &lt;button key={r.id} onClick={<span class="fstat-no" title="function not covered" >() =&gt; {</span> <span class="cstat-no" title="statement not covered" >setSelectedId(r.id); <span class="cstat-no" title="statement not covered" >s</span>etShowFlow(false); }</span>} className={`w-full text-left px-4 py-3 hover:bg-surface-50 dark:hover:bg-brand-900/10 transition-all flex justify-between items-center group ${selectedId === r.id ? 'bg-brand-50 dark:bg-brand-900/20 border-l-4 border-brand-600' : ''}`}&gt;</span>
+                &lt;div className="flex items-center gap-3"&gt;
+                  &lt;div className={`w-8 h-8 rounded-lg flex items-center justify-center text-surface-400 group-hover:text-brand-600 transition-colors ${selectedId === r.id ? 'text-brand-600 bg-white dark:bg-surface-800 shadow-sm' : ''}`}&gt;&lt;Layers size={16} /&gt;&lt;/div&gt;
+                  &lt;span className={`font-semibold ${selectedId === r.id ? 'text-brand-600' : 'text-surface-700 dark:text-surface-300'}`}&gt;{r.name}&lt;/span&gt;
+                &lt;/div&gt;
+                &lt;ChevronRight size={14} className={`text-surface-300 transition-transform ${selectedId === r.id ? 'translate-x-1 text-brand-600' : ''}`} /&gt;
+              &lt;/button&gt;
+            ))}
+          &lt;/div&gt;
+          &lt;div className="p-3 border-t border-surface-100 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 text-center"&gt;
+            &lt;span className="text-[10px] font-bold text-surface-400"&gt;{filtered.length} of {RESOURCES.length} items&lt;/span&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+&nbsp;
+      &lt;div className="col-span-12 lg:col-span-8"&gt;
+        {selected &amp;&amp; !showFlow ? (
+          &lt;div className="space-y-6 animate-in slide-in-from-right-2 duration-300"&gt;
+            &lt;div className="card p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden group !shadow-none border-surface-200 dark:border-surface-800 border-t-4 border-t-brand-600"&gt;
+              &lt;div className="absolute -right-8 -top-8 text-brand-500/5 group-hover:scale-110 transition-transform duration-1000"&gt;&lt;BookOpen size={200} /&gt;&lt;/div&gt;
+              &lt;div className="relative z-10"&gt;
+                &lt;div className="flex items-center gap-2 mb-2"&gt;
+                  &lt;div className="px-2 py-0.5 bg-brand-600 text-white rounded text-[10px] font-bold uppercase"&gt;Registry Item&lt;/div&gt;
+                  &lt;span className="text-xs font-bold text-surface-400 uppercase tracking-widest"&gt;ID #{selected.id}&lt;/span&gt;
+                &lt;/div&gt;
+                &lt;h1 className="text-4xl font-bold tracking-tight text-surface-900 dark:text-white"&gt;{selected.name}&lt;/h1&gt;
+              &lt;/div&gt;
+              &lt;div className="relative z-10 flex items-center gap-3"&gt;
+                &lt;button onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etShowFlow(true)} c</span>lassName="px-3 py-2 bg-surface-100 dark:bg-surface-800 hover:bg-brand-100 dark:hover:bg-brand-900/30 rounded-lg text-xs font-bold uppercase flex items-center gap-2 transition-all"&gt;&lt;Share2 size={14} /&gt; Flow&lt;/button&gt;
+                {selectedMargin &amp;&amp; &lt;div className="text-right"&gt;&lt;span className="block text-xs font-bold uppercase text-surface-400 mb-1"&gt;Market Benchmark&lt;/span&gt;&lt;span className="text-3xl font-bold text-brand-600"&gt;${(selectedMargin.outputVwap ?? 0).toFixed(2)}&lt;/span&gt;&lt;/div&gt;}
+              &lt;/div&gt;
+            &lt;/div&gt;
+&nbsp;
+            &lt;div className="grid grid-cols-1 md:grid-cols-2 gap-6"&gt;
+              &lt;div className="card p-6 md:col-span-2 space-y-6 border-surface-200 dark:border-surface-800 !shadow-none"&gt;
+                &lt;div className="flex items-center justify-between"&gt;
+                  &lt;div className="flex items-center gap-2"&gt;&lt;BarChart size={18} className="text-brand-600" /&gt;&lt;h3 className="text-sm font-bold text-surface-500 uppercase"&gt;Market Price History (30D)&lt;/h3&gt;&lt;/div&gt;
+                  {hLoading &amp;&amp; &lt;span className="text-[10px] font-bold text-brand-600 animate-pulse uppercase"&gt;Syncing...&lt;/span&gt;}
+                &lt;/div&gt;
+                &lt;div className="h-[200px] w-full"&gt;
+                  {history.length &gt; 0 ? (
+                    &lt;ResponsiveContainer width="100%" height="100%"&gt;
+                      &lt;LineChart data={history}&gt;
+                        &lt;CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-surface-200 dark:stroke-surface-800" /&gt;
+                        &lt;XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} /&gt;
+                        &lt;YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} /&gt;
+                        &lt;Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} /&gt;
+                        &lt;Line type="monotone" dataKey="vwap" stroke="#0ea5e9" strokeWidth={3} dot={false} name="VWAP" /&gt;
+                      &lt;/LineChart&gt;
+                    &lt;/ResponsiveContainer&gt;
+                  ) : (
+                    &lt;div className="h-full flex items-center justify-center text-surface-400 italic text-xs"&gt;Insufficient data for trend analysis&lt;/div&gt;
+                  )}
+                &lt;/div&gt;
+              &lt;/div&gt;
+&nbsp;
+              &lt;div className="card p-6 space-y-6 border-surface-200 dark:border-surface-800 !shadow-none"&gt;
+                &lt;div className="flex items-center gap-2"&gt;&lt;TrendingUp size={18} className="text-emerald-600" /&gt;&lt;h3 className="text-sm font-bold text-surface-500 uppercase"&gt;Financial Model&lt;/h3&gt;&lt;/div&gt;
+                &lt;div className="space-y-3"&gt;
+                  &lt;FinancialLine label="Gross Revenue/H" value={`$${(selectedMargin?.revenuePerHour || 0).toFixed(0)}`} /&gt;
+                  &lt;FinancialLine label="Input Costs/H" value={`-$${(selectedMargin?.inputCostPerHour || 0).toFixed(0)}`} red /&gt;
+                  &lt;FinancialLine label="Wages Cost/H" value={`-$${(selectedMargin?.wagesPerHour || 0).toFixed(0)}`} red /&gt;
+                  &lt;div className="pt-4 border-t border-surface-100 dark:border-surface-800 flex justify-between items-center"&gt;&lt;span className="text-sm font-bold text-brand-600"&gt;Projected Net Profit/H&lt;/span&gt;&lt;span className="text-2xl font-bold"&gt;${(selectedMargin?.netProfitPerHour || 0).toFixed(0)}&lt;/span&gt;&lt;/div&gt;
+                &lt;/div&gt;
+              &lt;/div&gt;
+&nbsp;
+              &lt;div className="card p-6 space-y-6 border-surface-200 dark:border-surface-800 !shadow-none"&gt;
+                &lt;div className="flex items-center gap-2"&gt;&lt;Info size={18} className="text-brand-600" /&gt;&lt;h3 className="text-sm font-bold text-surface-500 uppercase"&gt;Entity Specifications&lt;/h3&gt;&lt;/div&gt;
+                &lt;div className="grid grid-cols-2 gap-4"&gt;
+                  &lt;SpecNode label="Base Wages" value={`$${selected.baseWages || 0}`} /&gt;
+                  &lt;SpecNode label="Base Units/H" value={`${(selected.basePh || 0).toFixed(1)}`} /&gt;
+                  &lt;SpecNode label="Transport Req" value={selected.transport} /&gt;
+                  &lt;SpecNode label="Facility ID" value={selected.buildingId || 'N/A'} /&gt;
+                &lt;/div&gt;
+              &lt;/div&gt;
+&nbsp;
+              &lt;div className="card flex flex-col border-surface-200 dark:border-surface-800 !shadow-none"&gt;
+                &lt;div className="px-6 py-4 border-b border-surface-100 dark:border-surface-800 flex items-center gap-2"&gt;&lt;Factory size={18} className="text-emerald-600" /&gt;&lt;h3 className="text-sm font-bold text-surface-500 uppercase"&gt;Production Process&lt;/h3&gt;&lt;/div&gt;
+                &lt;div className="p-6 space-y-4"&gt;
+                  &lt;div className="flex justify-between items-center p-3 bg-surface-50 dark:bg-surface-900 rounded-lg"&gt;&lt;span className="font-bold"&gt;{BUILDINGS.find(<span class="fstat-no" title="function not covered" >b =&gt; <span class="cstat-no" title="statement not covered" >b</span>.id === selected.buildingId)</span>?.name || 'Extraction Facility'}&lt;/span&gt;&lt;ChevronRight size={14} className="text-surface-300" /&gt;&lt;/div&gt;
+                  {selected.inputs &amp;&amp; Object.keys(selected.inputs).length &gt; 0 &amp;&amp; (
+                    &lt;div className="space-y-2"&gt;
+                      {Object.entries(selected.inputs).map(<span class="fstat-no" title="function not covered" >([</span>id, qty]) =&gt; (
+<span class="cstat-no" title="statement not covered" >                        &lt;div key={id} className="flex justify-between items-center px-2 py-2 border-b border-surface-50 dark:border-surface-800 last:border-0"&gt;&lt;span className="font-medium text-surface-600 dark:text-surface-400"&gt;{RESOURCES.find(<span class="fstat-no" title="function not covered" >r =&gt; <span class="cstat-no" title="statement not covered" >r</span>.id === Number(id))</span>?.name || `ID ${id}`}&lt;/span&gt;&lt;span className="font-bold"&gt;{Number(qty).toFixed(3)}&lt;/span&gt;&lt;/div&gt;</span>
+                      ))}
+                    &lt;/div&gt;
+                  )}
+                  {(!selected.inputs || Object.keys(selected.inputs).length === 0) &amp;&amp; &lt;p className="text-xs text-surface-400 italic text-center py-4"&gt;Raw resource — no production inputs&lt;/p&gt;}
+                &lt;/div&gt;
+              &lt;/div&gt;
+&nbsp;
+              &lt;div className="card flex flex-col border-surface-200 dark:border-surface-800 !shadow-none"&gt;
+                &lt;div className="px-6 py-4 border-b border-surface-100 dark:border-surface-800 flex items-center gap-2"&gt;&lt;ShoppingCart size={18} className="text-rose-600" /&gt;&lt;h3 className="text-sm font-bold text-surface-500 uppercase"&gt;Retail Outlook&lt;/h3&gt;&lt;/div&gt;
+                &lt;div className="p-6"&gt;
+                  &lt;div className="py-12 text-center opacity-30"&gt;&lt;Layers size={48} className="mx-auto mb-4" /&gt;&lt;p className="text-sm font-bold uppercase tracking-widest"&gt;Industrial Asset Only&lt;/p&gt;&lt;p className="text-xs mt-1"&gt;This node cannot be sold in retail stores.&lt;/p&gt;&lt;/div&gt;
+                &lt;/div&gt;
+              &lt;/div&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+        ) : selected &amp;&amp; showFlow ? (
+          &lt;div className="space-y-6 animate-in slide-in-from-right-2 duration-300"&gt;
+            &lt;div className="flex items-center justify-between"&gt;
+              &lt;div className="flex items-center gap-3"&gt;
+                &lt;div className="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center text-white shadow-md"&gt;&lt;Share2 size={20} /&gt;&lt;/div&gt;
+                &lt;div&gt;
+                  &lt;h2 className="text-lg font-bold"&gt;Production Flow: {selected.name}&lt;/h2&gt;
+                  &lt;p className="text-xs text-surface-400"&gt;Recursive input tree (max depth 5)&lt;/p&gt;
+                &lt;/div&gt;
+              &lt;/div&gt;
+              &lt;button onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etShowFlow(false)} c</span>lassName="px-3 py-2 bg-surface-100 dark:bg-surface-800 hover:bg-brand-100 dark:hover:bg-brand-900/30 rounded-lg text-xs font-bold uppercase transition-all"&gt;Detail View&lt;/button&gt;
+            &lt;/div&gt;
+            &lt;div className="card !bg-transparent p-4 min-h-[60vh] overflow-x-auto flex flex-col items-center justify-start border-none"&gt;
+              &lt;div className="animate-fade-in-scale"&gt;
+                {tree &amp;&amp; &lt;TreeNodeComponent node={tree} isRoot /&gt;}
+              &lt;/div&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+        ) : (
+          &lt;div className="h-full card border-dashed border-2 border-surface-200 dark:border-surface-800 flex flex-col items-center justify-center text-center p-16 group hover:border-brand-600/30 transition-all !shadow-none"&gt;
+            &lt;div className="w-24 h-24 rounded-3xl bg-surface-100 dark:bg-surface-900 flex items-center justify-center text-brand-600 dark:text-brand-400 mb-8 shadow-sm group-hover:scale-105 transition-transform duration-500"&gt;&lt;BookOpen size={48} /&gt;&lt;/div&gt;
+            &lt;h2 className="text-4xl font-bold tracking-tight text-surface-900 dark:text-white italic"&gt;Entity.&lt;span className="text-brand-600"&gt;Encyclopedia&lt;/span&gt;&lt;/h2&gt;
+            &lt;p className="mt-4 font-medium text-surface-500 max-w-sm text-sm leading-relaxed"&gt;{RESOURCES.length} resources indexed. Select an item from the registry to begin inspection.&lt;/p&gt;
+          &lt;/div&gt;
+        )}
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+&nbsp;
+function <span class="fstat-no" title="function not covered" >FinancialLine({</span> label, value, red }: { label: string; value: string; red?: boolean }) {
+<span class="cstat-no" title="statement not covered" >  return (&lt;div className="flex justify-between items-center text-[10px]"&gt;&lt;span className="font-bold text-surface-400 uppercase tracking-tighter"&gt;{label}&lt;/span&gt;&lt;span className={`font-black tabular-nums ${red ? 'text-rose-500' : 'text-surface-600 dark:text-surface-300'}`}&gt;{value}&lt;/span&gt;&lt;/div&gt;);</span>
+}
+&nbsp;
+function <span class="fstat-no" title="function not covered" >SpecNode({</span> label, value }: { label: string; value: string | number }) {
+<span class="cstat-no" title="statement not covered" >  return (&lt;div className="bg-surface-50 dark:bg-surface-950 p-2 rounded"&gt;&lt;span className="block text-[7px] font-black text-surface-400 uppercase mb-1"&gt;{label}&lt;/span&gt;&lt;span className="text-[11px] font-black text-surface-900 dark:text-white uppercase"&gt;{value}&lt;/span&gt;&lt;/div&gt;);</span>
+}
+&nbsp;
+function <span class="fstat-no" title="function not covered" >TreeNodeComponent({</span> node, isRoot, qty }: { node: TreeNode; isRoot?: boolean; qty?: number | string }) {
+<span class="cstat-no" title="statement not covered" >  return (</span>
+    &lt;div className="flex flex-col items-center"&gt;
+      &lt;div className={`p-4 px-6 rounded-xl border transition-all duration-300 group relative ${isRoot ? 'bg-brand-600 text-white shadow-md border-brand-700' : 'bg-white dark:bg-surface-900 border-surface-200 dark:border-surface-800 hover:border-brand-500 shadow-sm'}`}&gt;
+        {qty &amp;&amp; &lt;div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-emerald-600 text-white rounded-full text-[10px] font-bold shadow-md z-20 uppercase tracking-widest border border-white dark:border-surface-900"&gt;{Number(qty).toFixed(3)} / unit&lt;/div&gt;}
+        &lt;div className="flex flex-col items-center gap-2"&gt;
+          &lt;div className="flex items-center gap-3"&gt;
+            &lt;div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isRoot ? 'bg-white/20' : 'bg-brand-50 dark:bg-brand-900/20 text-brand-600'}`}&gt;{isRoot ? &lt;Zap size={18} /&gt; : &lt;Layers size={14} /&gt;}&lt;/div&gt;
+            &lt;span className="text-sm font-bold uppercase tracking-wide whitespace-nowrap"&gt;{node.name}&lt;/span&gt;
+          &lt;/div&gt;
+          {node.buildingId &amp;&amp; &lt;div className={`text-[9px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded ${isRoot ? 'bg-white/10 text-white' : 'bg-surface-100 dark:bg-surface-800 text-surface-500'}`}&gt;              {BUILDINGS.find(<span class="fstat-no" title="function not covered" >b =&gt; <span class="cstat-no" title="statement not covered" >b</span>.id === node.buildingId)</span>?.name || node.buildingId}&lt;/div&gt;}
+        &lt;/div&gt;
+      &lt;/div&gt;
+            {node.inputs.length &gt; 0 &amp;&amp; (
+        &lt;div className="flex gap-8 mt-12 relative"&gt;
+          &lt;div className="absolute -top-12 left-1/2 w-0.5 h-12 bg-surface-200 dark:bg-surface-800" /&gt;
+            {node.inputs.map(<span class="fstat-no" title="function not covered" >(i</span>nput, i) =&gt; (
+<span class="cstat-no" title="statement not covered" >            &lt;div key={i} className="relative pt-4"&gt;</span>
+              &lt;div className="absolute top-0 left-0 right-0 h-0.5 bg-surface-100 dark:bg-surface-800/50" /&gt;
+              &lt;TreeNodeComponent node={input} qty={input.qty} /&gt;
+            &lt;/div&gt;
+          ))}
+        &lt;/div&gt;
+      )}
+    &lt;/div&gt;
+  );
+}
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-11-17T14:47:36.179Z
+            </div>
+        <script src="../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
+    </body>
+</html>
+    
