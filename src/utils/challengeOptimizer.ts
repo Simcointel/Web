@@ -408,9 +408,14 @@ function generateBuildingCombinations(inputs: OptimizerInputs): BuildingPlan[][]
 
   // Start with existing buildings
   const baseBuildings = new Map<string, number>();
+  let hasCarFactoryFromStart = false;
+  let hasDealershipFromStart = false;
   for (const sb of startingBuildings) {
     baseBuildings.set(sb.buildingId, sb.level);
+    if (sb.buildingId === "1") hasCarFactoryFromStart = true;
+    if (sb.buildingId === "2") hasDealershipFromStart = true;
   }
+  console.log('[challengeOptimizer] startingBuildings:', startingBuildings.map(s => `${s.buildingId}:L${s.level}`).join(', '), 'hasCarFactory:', hasCarFactoryFromStart, 'hasDealership:', hasDealershipFromStart);
 
   // Beam search: keep only top N partial combinations at each step
   const BEAM_WIDTH = 50; // Maximum partial combinations to keep per step
@@ -430,8 +435,8 @@ function generateBuildingCombinations(inputs: OptimizerInputs): BuildingPlan[][]
     plans: [],
     slotsUsed: 0,
     cashSpent: 0,
-    hasCarFactory: false,
-    hasDealership: false,
+    hasCarFactory: hasCarFactoryFromStart,
+    hasDealership: hasDealershipFromStart,
     index: 0,
   }];
 
@@ -440,6 +445,7 @@ function generateBuildingCombinations(inputs: OptimizerInputs): BuildingPlan[][]
     if (Date.now() - startTime > MAX_TIME_MS) break;
 
     const existingLevel = baseBuildings.get(bt.id) || 0;
+    console.log('[challengeOptimizer] processing building type:', bt.id, bt.name, 'existingLevel:', existingLevel, 'beam size:', beam.length);
     const newBeam: PartialCombo[] = [];
 
     for (const partial of beam) {
@@ -504,6 +510,7 @@ function generateBuildingCombinations(inputs: OptimizerInputs): BuildingPlan[][]
         return bScore - aScore;
       })
       .slice(0, BEAM_WIDTH);
+    console.log('[challengeOptimizer] after pruning:', bt.id, 'beam size:', beam.length, 'top hasCF+HD:', beam.filter(p => p.hasCarFactory && p.hasDealership).length);
   }
 
   // Convert completed beam to final combinations
