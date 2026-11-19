@@ -183,12 +183,18 @@ function evaluatePlan(
   
   // Validate slots
   const totalSlots = buildings.reduce((sum, b) => sum + b.count, 0);
-  if (totalSlots > maxSlots) return null;
+  if (totalSlots > maxSlots) {
+    console.log('[evaluatePlan] FAIL: totalSlots', totalSlots, '>', maxSlots);
+    return null;
+  }
 
   // Validate required buildings
   const hasCarFactory = buildings.some(b => b.buildingId === "1");
   const hasDealership = buildings.some(b => b.buildingId === "2");
-  if (!hasCarFactory || !hasDealership) return null;
+  if (!hasCarFactory || !hasDealership) {
+    console.log('[evaluatePlan] FAIL: missing required buildings', { hasCarFactory, hasDealership });
+    return null;
+  }
 
   // Validate construction cost + demolition refund (upgrade cost from starting level)
   let constructionCost = 0;
@@ -212,11 +218,17 @@ function evaluatePlan(
   }
   
   const netConstructionCost = constructionCost - demolitionRefund;
-  if (netConstructionCost > startingCash) return null;
+  if (netConstructionCost > startingCash) {
+    console.log('[evaluatePlan] FAIL: netConstructionCost', netConstructionCost, '>', startingCash);
+    return null;
+  }
 
   // Calculate make/buy decisions for all truck components
   const truckResource = RESOURCES.find(r => r.id === 57);
-  if (!truckResource?.inputs) return null;
+  if (!truckResource?.inputs) {
+    console.log('[evaluatePlan] FAIL: truckResource not found or no inputs');
+    return null;
+  }
 
   const makeCostCache = new Map<number, number>();
   const makeBuyDecisions = new Map<number, "make" | "buy">();
@@ -257,6 +269,7 @@ function evaluatePlan(
       
       const totalProduction = (componentProduction.get(inpId) || 0) + (startingProduction.get(inpId) || 0);
       if (totalProduction < neededPerHour * 0.1) { // need at least 10% of 1 truck/hour capacity
+        console.log('[evaluatePlan] FAIL: insufficient production for', inpId, 'totalProduction', totalProduction, '< needed', neededPerHour * 0.1);
         return null; // insufficient production capacity for this component
       }
     }
@@ -266,7 +279,10 @@ function evaluatePlan(
   const carFactory = buildings.find(b => b.buildingId === "1");
   const dealership = buildings.find(b => b.buildingId === "2");
   
-  if (!carFactory || !dealership) return null;
+  if (!carFactory || !dealership) {
+    console.log('[evaluatePlan] FAIL: carFactory or dealership not in plan');
+    return null;
+  }
 
   // PRODUCTION rate (trucks/hour produced) - productionMultiplier applies here
   const basePh = 2.8; // Truck base per hour at L1
@@ -290,12 +306,18 @@ function evaluatePlan(
   }
 
   // PRODUCTION time to target
-  if (truckOutputPerHour <= 0) return null;
+  if (truckOutputPerHour <= 0) {
+    console.log('[evaluatePlan] FAIL: truckOutputPerHour <= 0');
+    return null;
+  }
   const productionTimeHours = targetTrucks / truckOutputPerHour;
 
   // SELL-THROUGH time at retail capacity
   const trucksSoldPerHour = Math.min(truckOutputPerHour, retailCapacityPerHour);
-  if (trucksSoldPerHour <= 0) return null;
+  if (trucksSoldPerHour <= 0) {
+    console.log('[evaluatePlan] FAIL: trucksSoldPerHour <= 0, retailCapacityPerHour', retailCapacityPerHour);
+    return null;
+  }
   const sellThroughTimeHours = targetTrucks / trucksSoldPerHour;
 
   // Revenue from selling at retail
@@ -339,6 +361,13 @@ function evaluatePlan(
   const operatingCashNeeded = (inputCostPerHour + hourlyWages + overheadPerHour) * timeToFirstSale;
   const cashRemaining = startingCash - netConstructionCost - operatingCashNeeded;
   const cashFlowValid = cashRemaining >= 0;
+  
+  if (!cashFlowValid) {
+    console.log('[evaluatePlan] FAIL: cashFlowValid false, totalCashNeeded', startingCash - cashRemaining, '>', startingCash, 'timeToFirstSale', timeToFirstSale);
+  }
+  if (netProfitPerHour <= 0) {
+    console.log('[evaluatePlan] FAIL: netProfitPerHour <= 0', netProfitPerHour);
+  }
 
   return {
     buildings,
@@ -488,6 +517,7 @@ function generateBuildingCombinations(inputs: OptimizerInputs): BuildingPlan[][]
 export function optimizeChallenge(inputs: OptimizerInputs): OptimizedPlan[] {
   const combinations = generateBuildingCombinations(inputs);
   console.log('[challengeOptimizer] optimizeChallenge: combinations to evaluate', combinations.length);
+  console.log('[challengeOptimizer] inputs:', { maxSlots: inputs.maxSlots, startingCash: inputs.startingCash, targetTrucks: inputs.targetTrucks, truckSaturation: inputs.retailSaturation?.[57] });
   
   const validPlans: OptimizedPlan[] = [];
   
@@ -500,7 +530,7 @@ export function optimizeChallenge(inputs: OptimizerInputs): OptimizedPlan[] {
     if (plan.cashFlowValid && plan.netProfitPerHour > 0) {
       validPlans.push(plan);
     } else {
-      console.log('[challengeOptimizer] plan rejected:', { cashFlowValid: plan.cashFlowValid, netProfitPerHour: plan.netProfitPerHour });
+      console.log('[challengeOptimizer] plan rejected:', { cashFlowValid: plan.cashFlowValid, netProfitPerHour: plan.netProfitPerHour, totalTimeToTarget: plan.totalTimeToTarget });
     }
   }
 
