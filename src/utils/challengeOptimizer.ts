@@ -478,22 +478,33 @@ function generateBuildingCombinations(inputs: OptimizerInputs): BuildingPlan[][]
   }
 
   // Convert completed beam to final combinations
-  return beam
+  const finalCombos = beam
     .filter(p => p.hasCarFactory && p.hasDealership && p.plans.length > 0)
     .map(p => p.plans);
+  console.log('[challengeOptimizer] generateBuildingCombinations: beam size', beam.length, 'final combos', finalCombos.length);
+  return finalCombos;
 }
 
 export function optimizeChallenge(inputs: OptimizerInputs): OptimizedPlan[] {
   const combinations = generateBuildingCombinations(inputs);
+  console.log('[challengeOptimizer] optimizeChallenge: combinations to evaluate', combinations.length);
   
   const validPlans: OptimizedPlan[] = [];
   
   for (const combo of combinations) {
     const plan = evaluatePlan(combo, inputs, inputs.startingBuildings);
-    if (plan && plan.cashFlowValid && plan.netProfitPerHour > 0) {
+    if (!plan) {
+      console.log('[challengeOptimizer] evaluatePlan returned null for combo:', combo);
+      continue;
+    }
+    if (plan.cashFlowValid && plan.netProfitPerHour > 0) {
       validPlans.push(plan);
+    } else {
+      console.log('[challengeOptimizer] plan rejected:', { cashFlowValid: plan.cashFlowValid, netProfitPerHour: plan.netProfitPerHour });
     }
   }
+
+  console.log('[challengeOptimizer] valid plans:', validPlans.length);
 
   // Sort by total time to target (ascending), then by ROI (descending)
   validPlans.sort((a, b) => {

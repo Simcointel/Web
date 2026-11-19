@@ -281,12 +281,14 @@ export function ChallengeOptimizerPage() {
     };
 
     const plans = optimizeChallenge(inputs);
+    console.log('[ChallengeOptimizer] optimizeChallenge returned:', plans.length, 'plans', plans);
     
     if (plans.length > 0) {
       setBestPlan(plans[0]);
       // Component analysis will update via useMemo
     } else {
       setBestPlan(null);
+      console.warn('[ChallengeOptimizer] No valid plans found. Inputs:', inputs);
     }
     setOptimizationRunning(false);
   };
