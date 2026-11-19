@@ -47,7 +47,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_API_BASE: https://api.simcointel.com
+          VITE_API_BASE: https://backend-beta-gules-78.vercel.app
 
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
@@ -82,7 +82,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_API_BASE: https://api.simcointel.com
+          VITE_API_BASE: https://backend-beta-gules-78.vercel.app
 
       - name: Start preview server
         run: npx http-server dist -p 8080 -c-1 &
@@ -155,7 +155,7 @@ jobs:
           # Here we use pr-preview-action to handle the complexity of subfolders on gh-pages branch.
           npm run build -- --base=/Web/pr-preview/pr-${{ github.event.number }}/
         env:
-          VITE_API_BASE: https://api.simcointel.com
+          VITE_API_BASE: https://backend-beta-gules-78.vercel.app
 
       - name: Deploy Preview
         uses: rossjrw/pr-preview-action@v1
