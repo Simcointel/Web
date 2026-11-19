@@ -362,126 +362,125 @@ function evaluatePlan(
   };
 }
 
-// Generate all valid building combinations with pruning
+// Generate building combinations using beam search (not exhaustive) to avoid freezing
 function generateBuildingCombinations(inputs: OptimizerInputs): BuildingPlan[][] {
   const { maxSlots, startingBuildings, startingCash } = inputs;
   
-  // Building types that can be used (production + retail) - EXPANDED per user decision
+  // Building types that can be used (production + retail) - LIMITED to essential ones
   const buildingTypes = [
     { id: "1", name: "Car Factory", maxLevel: 5, required: true },      // Truck production
     { id: "2", name: "Car Dealership", maxLevel: 5, required: true },   // Retail (for profit)
     { id: "D", name: "Propulsion Factory", maxLevel: 4 }, // Engines
     { id: "Y", name: "Factory", maxLevel: 4 },           // Steel, Alu, Basic Interior, Car Body
     { id: "L", name: "Electronics Factory", maxLevel: 4 }, // OBC, Displays
-    { id: "T", name: "Fashion Factory", maxLevel: 3 },   // Fabric
     { id: "E", name: "Power Plant", maxLevel: 3 },       // Power
     { id: "R", name: "Refinery", maxLevel: 3 },          // Plastic, Chemicals
-    { id: "8", name: "Aerospace Electronics", maxLevel: 2 }, // OBC alt
-    { id: "a", name: "Automotive R&D", maxLevel: 2 },    // Research
-    { id: "M", name: "Mine", maxLevel: 4 },              // Iron Ore (for Steel)
-    { id: "S", name: "Shipping Depot", maxLevel: 3 },    // Transport
-    { id: "Q", name: "Quarry", maxLevel: 3 },            // Sand (for Glass)
-    { id: "O", name: "Oil Rig", maxLevel: 3 },           // Crude Oil (for Plastic/Petrol)
   ];
 
-  // Start with existing buildings (can be kept, upgraded, or demolished)
+  // Start with existing buildings
   const baseBuildings = new Map<string, number>();
   for (const sb of startingBuildings) {
     baseBuildings.set(sb.buildingId, sb.level);
   }
 
-  const combinations: BuildingPlan[][] = [];
-  const memo = new Map<string, BuildingPlan[][]>();
-  const MAX_COMBINATIONS = 50000; // Hard limit to prevent freezing
-  let combinationCount = 0;
+  // Beam search: keep only top N partial combinations at each step
+  const BEAM_WIDTH = 50; // Maximum partial combinations to keep per step
+  const MAX_TIME_MS = 3000; // 3 second hard limit
   const startTime = Date.now();
-  const MAX_TIME_MS = 8000; // 8 second timeout
 
-  function generateRecursive(
-    index: number,
-    current: BuildingPlan[],
-    slotsUsed: number,
-    cashSpent: number,
-    hasCarFactory: boolean,
-    hasDealership: boolean
-  ): BuildingPlan[][] {
-    // Timeout and combination count checks
-    if (Date.now() - startTime > MAX_TIME_MS || combinationCount >= MAX_COMBINATIONS) {
-      return [];
-    }
+  type PartialCombo = {
+    plans: BuildingPlan[];
+    slotsUsed: number;
+    cashSpent: number;
+    hasCarFactory: boolean;
+    hasDealership: boolean;
+    index: number;
+  };
 
-    // Memoization key - simplified to improve hit rate
-    const key = `${index}-${slotsUsed}-${hasCarFactory}-${hasDealership}`;
-    if (memo.has(key)) {
-      return memo.get(key)!.map(combo => [...current, ...combo]);
-    }
+  let beam: PartialCombo[] = [{
+    plans: [],
+    slotsUsed: 0,
+    cashSpent: 0,
+    hasCarFactory: false,
+    hasDealership: false,
+    index: 0,
+  }];
 
-    if (index >= buildingTypes.length) {
-      if (current.length > 0 && hasCarFactory && hasDealership) {
-        combinationCount++;
-        return [[...current]];
-      }
-      return [];
-    }
+  for (const bt of buildingTypes) {
+    // Timeout check at each building type
+    if (Date.now() - startTime > MAX_TIME_MS) break;
 
-    const bt = buildingTypes[index];
     const existingLevel = baseBuildings.get(bt.id) || 0;
-    const results: BuildingPlan[][] = [];
+    const newBeam: PartialCombo[] = [];
 
-    // Option 1: Don't build this type (demolish if exists)
-    // But don't demolish required buildings
-    if (!bt.required || existingLevel === 0) {
-      const subResults = generateRecursive(index + 1, current, slotsUsed, cashSpent, hasCarFactory, hasDealership);
-      for (const r of subResults) results.push(r);
-    }
+    for (const partial of beam) {
+      // Option 1: Don't build this type (demolish if exists, unless required)
+      if (!bt.required || existingLevel === 0) {
+        newBeam.push({
+          ...partial,
+          index: partial.index + 1,
+        });
+      }
 
-    // Option 2: Keep existing building as-is (if it exists)
-    if (existingLevel > 0) {
-      const newPlan: BuildingPlan = { buildingId: bt.id, level: existingLevel, count: 1 };
-      const subResults = generateRecursive(
-        index + 1, 
-        [...current, newPlan], 
-        slotsUsed + 1, 
-        cashSpent,
-        hasCarFactory || bt.id === "1",
-        hasDealership || bt.id === "2"
-      );
-      for (const r of subResults) results.push(r);
-    }
+      // Option 2: Keep existing building as-is
+      if (existingLevel > 0) {
+        const newPlan: BuildingPlan = { buildingId: bt.id, level: existingLevel, count: 1 };
+        newBeam.push({
+          plans: [...partial.plans, newPlan],
+          slotsUsed: partial.slotsUsed + 1,
+          cashSpent: partial.cashSpent,
+          hasCarFactory: partial.hasCarFactory || bt.id === "1",
+          hasDealership: partial.hasDealership || bt.id === "2",
+          index: partial.index + 1,
+        });
+      }
 
-    // Option 3: Upgrade existing or build new at levels > existingLevel
-    const startLevel = existingLevel > 0 ? existingLevel + 1 : 1;
-    for (let level = startLevel; level <= bt.maxLevel; level++) {
-      // For car factory and dealership, allow up to 2
+      // Option 3: Build/upgrade - only consider a few promising levels
+      // Limit: try at most 2 levels (existing+1, and maxLevel) and 1 count for non-essential
+      const levelsToTry = existingLevel > 0 
+        ? [existingLevel + 1, bt.maxLevel].filter(l => l <= bt.maxLevel)
+        : [1, Math.min(3, bt.maxLevel)]; // Start with level 1, maybe 2, 3
+      
       const maxCount = (bt.id === "1" || bt.id === "2") ? 2 : 1;
-      for (let count = 1; count <= maxCount; count++) {
-        const newSlots = slotsUsed + count;
-        if (newSlots > maxSlots) continue;
+      
+      for (const level of levelsToTry) {
+        for (let count = 1; count <= maxCount; count++) {
+          const newSlots = partial.slotsUsed + count;
+          if (newSlots > maxSlots) continue;
 
-        const startLevelForCost = existingLevel > 0 ? existingLevel + 1 : 1;
-        const buildCost = calcBuildCost(bt.id, level, startLevelForCost) * count;
-        const newCash = cashSpent + buildCost;
-        if (newCash > startingCash) continue;
+          const startLevelForCost = existingLevel > 0 ? existingLevel + 1 : 1;
+          const buildCost = calcBuildCost(bt.id, level, startLevelForCost) * count;
+          const newCash = partial.cashSpent + buildCost;
+          if (newCash > startingCash) continue;
 
-        const newPlan: BuildingPlan = { buildingId: bt.id, level, count };
-        const subResults = generateRecursive(
-          index + 1, 
-          [...current, newPlan], 
-          newSlots, 
-          newCash,
-          hasCarFactory || bt.id === "1",
-          hasDealership || bt.id === "2"
-        );
-        // Avoid push(...largeArray) which can exceed max arguments
-        for (const r of subResults) results.push(r);
+          const newPlan: BuildingPlan = { buildingId: bt.id, level, count };
+          newBeam.push({
+            plans: [...partial.plans, newPlan],
+            slotsUsed: newSlots,
+            cashSpent: newCash,
+            hasCarFactory: partial.hasCarFactory || bt.id === "1",
+            hasDealership: partial.hasDealership || bt.id === "2",
+            index: partial.index + 1,
+          });
+        }
       }
     }
 
-    memo.set(key, results.map(r => r.slice(current.length)));
-    return results;
+    // Prune beam: keep only top BEAM_WIDTH by estimated potential
+    beam = newBeam
+      .sort((a, b) => {
+        // Prefer combinations that have both required buildings and use more slots efficiently
+        const aScore = (a.hasCarFactory && a.hasDealership ? 1000 : 0) + a.slotsUsed * 10 - a.cashSpent / 10000;
+        const bScore = (b.hasCarFactory && b.hasDealership ? 1000 : 0) + b.slotsUsed * 10 - b.cashSpent / 10000;
+        return bScore - aScore;
+      })
+      .slice(0, BEAM_WIDTH);
   }
 
-  return generateRecursive(0, [], 0, 0, false, false);
+  // Convert completed beam to final combinations
+  return beam
+    .filter(p => p.hasCarFactory && p.hasDealership && p.plans.length > 0)
+    .map(p => p.plans);
 }
 
 export function optimizeChallenge(inputs: OptimizerInputs): OptimizedPlan[] {
